@@ -26,22 +26,22 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 - [x] 2.7 Write repository-level tests for the storage wrappers against a temp-directory Isar instance and in-memory fakes.
 - [x] 2.8 Implement the cross-feature contracts in `lib/core/contracts/` (`DocumentReader`, `DocumentWriter`, `PageBundleSink`, `OcrTextSource`, `FolderReader`, `StorageSummaryReader`, `AppLockGate`) and their Freezed value objects (`DocumentId`, `PageRef`, `ScannedPageBundle`, `RecognisedText`).
 - [x] 2.9 Write serialization round-trip tests for every core contract value object.
-- [ ] 2.10 Implement `lib/core/isolates/` — one-shot `Isolate.run` wrapper and the progress-reporting worker with a cooperative `CancellationToken` (`design.md` §7).
-- [ ] 2.11 Unit-test the isolate helpers: progress emission, cooperative cancellation, and that cancellation leaves completed work intact and removes partial output.
-- [ ] 2.12 Implement the bounded LRU thumbnail cache with count and byte limits; unit-test eviction behaviour.
-- [ ] 2.13 Implement the Material 3 light and dark themes in `lib/core/theme/`, including high-contrast handling and text-scaling behaviour.
-- [ ] 2.14 Implement the shared widgets in `lib/core/widgets/`: `AppEmptyState`, `AppErrorView` (with retry), `AppLoadingIndicator`, `AppProgressIndicator`, each with keys and semantics labels.
-- [ ] 2.15 Widget-test the shared widgets, including the retry callback and semantics labels.
-- [ ] 2.16 Add `@Preview()` entries for every shared widget: default, loading, empty, error and long-content.
-- [ ] 2.17 Implement `lib/core/previews/fixtures/` (`sampleDocument`, `sampleDocuments(n)`, `sampleFolder`, `samplePage`, `sampleRecognisedText`, `longTitleDocument`, `sampleStorageSummary`) with fixed timestamps and no randomness.
-- [ ] 2.18 Implement `lib/core/previews/fakes/` — fake Cubit base helpers that emit fixed states without touching any repository.
-- [ ] 2.19 Implement `lib/core/permissions/` permission abstraction with granted / denied / permanently-denied states and an open-settings action; unit-test each state.
-- [ ] 2.20 Implement `lib/app/composition_root.dart` and the immutable `AppDependencies` `InheritedWidget` (`design.md` §5).
-- [ ] 2.21 Test that `AppDependencies` can be fully overridden with fakes in a widget test.
-- [ ] 2.22 Implement the GoRouter typed route table in `lib/app/router/app_router.dart` with all routes from `design.md` §8 and both redirect gates, lock gate ordered before onboarding gate.
-- [ ] 2.23 Write navigation tests for every route, both redirect gates, the gate ordering, and the unknown-document not-found path.
-- [ ] 2.24 Add dartdoc to every public API in `lib/core/` and `lib/app/`, and inline comments at the isolate boundary, cache bounds and router redirect ordering.
-- [ ] 2.25 Run `dart format`, `flutter analyze`, the layering check and coverage for groups 1–2; resolve all findings.
+- [x] 2.10 Implement `lib/core/isolates/` — one-shot `Isolate.run` wrapper and the progress-reporting worker with a cooperative `CancellationToken` (`design.md` §7).
+- [x] 2.11 Unit-test the isolate helpers: progress emission, cooperative cancellation, and that cancellation leaves completed work intact and removes partial output.
+- [x] 2.12 Implement the bounded LRU thumbnail cache with count and byte limits; unit-test eviction behaviour.
+- [x] 2.13 Implement the Material 3 light and dark themes in `lib/core/theme/`, including high-contrast handling and text-scaling behaviour.
+- [x] 2.14 Implement the shared widgets in `lib/core/widgets/`: `AppEmptyState`, `AppErrorView` (with retry), `AppLoadingIndicator`, `AppProgressIndicator`, each with keys and semantics labels.
+- [x] 2.15 Widget-test the shared widgets, including the retry callback and semantics labels.
+- [x] 2.16 Add `@Preview()` entries for every shared widget: default, loading, empty, error and long-content.
+- [x] 2.17 Implement `lib/core/previews/fixtures/` (`sampleDocument`, `sampleDocuments(n)`, `sampleFolder`, `samplePage`, `sampleRecognisedText`, `longTitleDocument`, `sampleStorageSummary`) with fixed timestamps and no randomness.
+- [x] 2.18 Implement `lib/core/previews/fakes/` — fake Cubit base helpers that emit fixed states without touching any repository.
+- [x] 2.19 Implement `lib/core/permissions/` permission abstraction with granted / denied / permanently-denied states and an open-settings action; unit-test each state.
+- [x] 2.20 Implement `lib/app/composition_root.dart` and the immutable `AppDependencies` `InheritedWidget` (`design.md` §5).
+- [x] 2.21 Test that `AppDependencies` can be fully overridden with fakes in a widget test.
+- [x] 2.22 Implement the GoRouter typed route table in `lib/app/router/app_router.dart` with all routes from `design.md` §8 and both redirect gates, lock gate ordered before onboarding gate.
+- [x] 2.23 Write navigation tests for every route, both redirect gates, the gate ordering, and the unknown-document not-found path.
+- [x] 2.24 Add dartdoc to every public API in `lib/core/` and `lib/app/`, and inline comments at the isolate boundary, cache bounds and router redirect ordering.
+- [x] 2.25 Run `dart format`, `flutter analyze`, the layering check and coverage for groups 1–2; resolve all findings.
 
 ## 3. Onboarding
 

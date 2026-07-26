@@ -1,0 +1,20 @@
+# Analysis overrides for test sources.
+#
+# Inherits every rule from the project configuration, then relaxes the few that
+# fight the way tests are written. Production code keeps the stricter set.
+
+include: ../analysis_options.yaml
+
+linter:
+  rules:
+    # Tests are structured arrange / act / assert, and the act step is often
+    # several separate calls on the same object whose ORDER and SEPARATION are
+    # the point of the test. Folding them into a cascade obscures which call is
+    # the action under test. The rule stays enabled for lib/, where repeated
+    # receivers usually are accidental duplication.
+    cascade_invocations: false
+
+    # Test helpers and fixtures are self-describing and are never part of the
+    # public API surface, so requiring dartdoc on each adds noise without
+    # adding information.
+    public_member_api_docs: false
