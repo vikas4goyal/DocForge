@@ -103,13 +103,13 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 ## 6. Document scanning
 
 - [x] 6.1 Implement the `document-scanning` domain layer: `ScanSession`, `PageQuad` value objects and the `ScannerRepository` and `EdgeDetector` interfaces.
-- [ ] 6.2 Implement the camera-backed `ScannerRepository` and a fake implementation for tests and previews.
-- [ ] 6.3 Write repository tests for `ScannerRepository` against the fake, including camera-unavailable and permission-denied failures.
-- [ ] 6.4 Implement `CapturePage` and the disk-first page persistence rule (write immediately, keep only thumbnails in memory); unit-test both.
-- [ ] 6.5 Implement `ApplyPerspectiveCorrection` running in a background isolate with progress and cancellation; unit-test the transform maths against known fixtures.
+- [x] 6.2 Implement the camera-backed `ScannerRepository` and a fake implementation for tests and previews.
+- [x] 6.3 Write repository tests for `ScannerRepository` against the fake, including camera-unavailable and permission-denied failures.
+- [x] 6.4 Implement `CapturePage` and the disk-first page persistence rule (write immediately, keep only thumbnails in memory); unit-test both.
+- [x] 6.5 Implement `ApplyPerspectiveCorrection` running in a background isolate with progress and cancellation; unit-test the transform maths against known fixtures.
 - [x] 6.6 Implement the phase-3a `EdgeDetector` fallback returning the full page quad; unit-test it.
-- [ ] 6.7 Implement `ScanCaptureCubit`, `PageReviewCubit` and `CropCubit` with their Equatable states.
-- [ ] 6.8 Write `bloc_test` coverage for all three Cubits, including batch mode, permission denied, camera unavailable, storage full and deleting the last page.
+- [x] 6.7 Implement `ScanCaptureCubit`, `PageReviewCubit` and `CropCubit` with their Equatable states.
+- [x] 6.8 Write `bloc_test` coverage for all three Cubits, including batch mode, permission denied, camera unavailable, storage full and deleting the last page.
 - [ ] 6.9 Implement the camera capture screen with live preview, shutter, batch-mode toggle and page counter, using the specified keys.
 - [ ] 6.10 Implement the page review screen with rotate, drag-to-reorder, delete with undo, and the empty state.
 - [ ] 6.11 Implement the crop screen with the edge overlay and draggable corner handles.

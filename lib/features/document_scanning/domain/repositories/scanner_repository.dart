@@ -1,9 +1,30 @@
 /// The contracts the scanning feature depends on.
 library;
 
+import 'dart:io';
+
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/result.dart';
+
+/// Where a scanning session writes its captures.
+///
+/// A session's pages are written before the document exists, so they cannot go
+/// in the document's own directory yet. They live in a staging directory that
+/// is handed to PDF generation on save and cleared if the session is abandoned.
+///
+/// Declared here rather than in infrastructure because the use cases depend on
+/// it: discarding a session clears it, and correcting a page writes into it.
+abstract interface class ScanStagingArea {
+  /// Returns the directory this session's captures are written to.
+  Future<Result<Directory>> directory();
+
+  /// Removes everything the session wrote.
+  ///
+  /// Called when a session is abandoned. Without it, every cancelled scan would
+  /// leave full-resolution captures on the device forever.
+  Future<Result<void>> clear();
+}
 
 /// A capture written to disk, plus what was learned about it.
 class CaptureResult {

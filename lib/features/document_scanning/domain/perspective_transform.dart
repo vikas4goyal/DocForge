@@ -291,3 +291,51 @@ abstract final class PerspectiveTransform {
     return [for (var row = 0; row < size; row++) matrix[row][size]];
   }
 }
+
+/// What a correction job needs, and all that crosses the isolate boundary.
+///
+/// Paths and eight doubles — no decoded image. Sending a full-resolution bitmap
+/// to an isolate copies it, and a batch correction would run out of memory long
+/// before it finished (`design.md` §7).
+class PageCorrectionRequest {
+  /// Creates a correction request.
+  const PageCorrectionRequest({
+    required this.sourcePath,
+    required this.destinationPath,
+    required this.corners,
+  }) : assert(corners.length == 8, 'need four x,y pairs');
+
+  /// Creates a request for [quad], flattening it for the isolate boundary.
+  factory PageCorrectionRequest.forQuad({
+    required String sourcePath,
+    required String destinationPath,
+    required PageQuad quad,
+  }) => PageCorrectionRequest(
+    sourcePath: sourcePath,
+    destinationPath: destinationPath,
+    corners: [
+      for (final corner in quad.corners) ...[corner.x, corner.y],
+    ],
+  );
+
+  /// Path to the capture to correct.
+  final String sourcePath;
+
+  /// Path the corrected page is written to.
+  final String destinationPath;
+
+  /// Corner coordinates in canonical order, x before y, normalised.
+  ///
+  /// A flat list rather than the `PageQuad` itself: the Freezed type would
+  /// survive the copy, but a payload type that *cannot* hold anything large is
+  /// a rule that stays kept rather than one that has to be remembered.
+  final List<double> corners;
+
+  /// Rebuilds the quad these corners describe.
+  PageQuad get quad => PageQuad(
+    topLeft: NormalisedPoint(x: corners[0], y: corners[1]),
+    topRight: NormalisedPoint(x: corners[2], y: corners[3]),
+    bottomRight: NormalisedPoint(x: corners[4], y: corners[5]),
+    bottomLeft: NormalisedPoint(x: corners[6], y: corners[7]),
+  );
+}
