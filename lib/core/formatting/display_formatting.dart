@@ -1,15 +1,19 @@
-/// How library metadata is rendered as text.
+/// How document metadata is rendered as text.
+///
+/// In `core/` rather than in the library feature because Home, search, sharing
+/// and settings all display a size, a date or a page count, and features may
+/// not import each other. Two features formatting the same 482 KB differently
+/// is the drift this prevents.
 ///
 /// Kept out of the widgets so the strings a screen reader announces and the
-/// strings shown on screen are produced by the same tested functions, and so a
-/// change to date or size formatting happens in one place.
+/// strings shown on screen are produced by the same tested functions.
 library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:intl/intl.dart';
 
 /// Formats document and folder metadata for display.
-abstract final class LibraryFormatting {
+abstract final class DisplayFormatting {
   /// Formats [bytes] as a short human-readable size.
   ///
   /// Uses binary units, which is what a device's own storage screen reports —

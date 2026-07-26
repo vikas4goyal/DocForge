@@ -2,8 +2,8 @@
 library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
+import 'package:doc_forge/core/formatting/display_formatting.dart';
 import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/library_formatting.dart';
 import 'package:flutter/material.dart';
 
 /// A single folder in a list, showing its current document count.
@@ -36,7 +36,7 @@ class FolderTile extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: LibraryFormatting.folderSemanticsLabel(folder),
+      label: DisplayFormatting.folderSemanticsLabel(folder),
       child: ExcludeSemantics(
         child: ListTile(
           key: LibraryKeys.folderListItem(folder.id.value),
@@ -50,7 +50,7 @@ class FolderTile extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
-          subtitle: Text(LibraryFormatting.documentCount(folder.documentCount)),
+          subtitle: Text(DisplayFormatting.documentCount(folder.documentCount)),
           trailing: hasMenu ? _FolderMenu(this) : null,
         ),
       ),

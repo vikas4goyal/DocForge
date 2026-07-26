@@ -85,20 +85,20 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 5. App shell and Home
 
-- [ ] 5.1 Implement the `app-shell` application layer: `LoadHomeData` use case composing recents, folders, favourites, archive and storage summary through core contracts.
-- [ ] 5.2 Unit-test `LoadHomeData`, including ordering by modified date descending and exclusion of archived documents.
-- [ ] 5.3 Implement `HomeCubit` and `HomeState` with initial / loading / ready / empty / failure factories.
-- [ ] 5.4 Write `bloc_test` coverage for `HomeCubit` including the retry-after-failure path.
-- [ ] 5.5 Implement the Home screen with every key from `specs/app-shell/spec.md`.
-- [ ] 5.6 Implement the `StorageSummaryCard`, `RecentDocumentsSection` and `HomeShortcut` widgets with keys and semantics labels.
-- [ ] 5.7 Widget-test the Home screen and its widgets, including the empty state and its call to action.
-- [ ] 5.8 Implement the responsive Home layout (multi-column grid on tablet) and verify state preservation across orientation change.
-- [ ] 5.9 Add `@Preview()` entries for every Home widget and the Home screen across all required states, form factors and themes.
-- [ ] 5.10 Wire theme mode through the app so a system or explicit theme change re-renders without restart; test both paths.
-- [ ] 5.11 Verify the accessibility baseline on Home: semantics labels, 48dp targets, maximum text scale, high contrast. Add tests.
-- [ ] 5.12 Add golden tests for Home in light and dark, phone and tablet.
-- [ ] 5.13 Add dartdoc to all new public APIs in the app-shell feature.
-- [ ] 5.14 Run `dart format`, `flutter analyze`, the layering check and coverage for group 5.
+- [x] 5.1 Implement the `app-shell` application layer: `LoadHomeData` use case composing recents, folders, favourites, archive and storage summary through core contracts.
+- [x] 5.2 Unit-test `LoadHomeData`, including ordering by modified date descending and exclusion of archived documents.
+- [x] 5.3 Implement `HomeCubit` and `HomeState` with initial / loading / ready / empty / failure factories.
+- [x] 5.4 Write `bloc_test` coverage for `HomeCubit` including the retry-after-failure path.
+- [x] 5.5 Implement the Home screen with every key from `specs/app-shell/spec.md`.
+- [x] 5.6 Implement the `StorageSummaryCard`, `RecentDocumentsSection` and `HomeShortcut` widgets with keys and semantics labels.
+- [x] 5.7 Widget-test the Home screen and its widgets, including the empty state and its call to action.
+- [x] 5.8 Implement the responsive Home layout (multi-column grid on tablet) and verify state preservation across orientation change.
+- [x] 5.9 Add `@Preview()` entries for every Home widget and the Home screen across all required states, form factors and themes.
+- [x] 5.10 Wire theme mode through the app so a system or explicit theme change re-renders without restart; test both paths.
+- [x] 5.11 Verify the accessibility baseline on Home: semantics labels, 48dp targets, maximum text scale, high contrast. Add tests.
+- [x] 5.12 Add golden tests for Home in light and dark, phone and tablet.
+- [x] 5.13 Add dartdoc to all new public APIs in the app-shell feature.
+- [x] 5.14 Run `dart format`, `flutter analyze`, the layering check and coverage for group 5.
 
 ## 6. Document scanning
 

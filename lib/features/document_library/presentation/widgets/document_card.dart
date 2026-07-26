@@ -2,9 +2,9 @@
 library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
+import 'package:doc_forge/core/formatting/display_formatting.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/library_formatting.dart';
 import 'package:flutter/material.dart';
 
 /// A single document in a list.
@@ -39,7 +39,7 @@ class DocumentCard extends StatelessWidget {
     // making the user swipe through four fragments to learn what the row is.
     return Semantics(
       button: true,
-      label: LibraryFormatting.documentSemanticsLabel(document),
+      label: DisplayFormatting.documentSemanticsLabel(document),
       child: ExcludeSemantics(
         child: ListTile(
           key: LibraryKeys.documentListItem(document.id.value),
@@ -54,7 +54,7 @@ class DocumentCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
           subtitle: Text(
-            LibraryFormatting.documentSubtitle(document),
+            DisplayFormatting.documentSubtitle(document),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),

@@ -8,6 +8,7 @@ library;
 import 'package:doc_forge/app/app_dependencies.dart';
 import 'package:doc_forge/core/storage/storage_keys.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
+import 'package:doc_forge/core/theme/theme_mode_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -21,8 +22,8 @@ class DocForgeApp extends StatelessWidget {
   const DocForgeApp({
     required this.dependencies,
     required this.router,
+    required this.themeMode,
     super.key,
-    this.themeMode = ThemeMode.system,
   });
 
   /// The dependency graph made available to every screen.
@@ -31,26 +32,31 @@ class DocForgeApp extends StatelessWidget {
   /// The router owning every route in the application.
   final GoRouter router;
 
-  /// Which theme to apply.
+  /// Which theme to apply, and a way to observe changes to it.
   ///
-  /// Defaults to following the system. The settings feature replaces this with
-  /// the persisted preference read from [PreferenceKeys.themeMode]; until then
-  /// the system value is the documented default.
-  final ThemeMode themeMode;
+  /// Listened to rather than read once: the spec requires an explicit theme
+  /// selection in settings to apply without a restart, and settings is several
+  /// routes below this widget. The initial value is the persisted preference
+  /// read from [PreferenceKeys.themeMode] by the composition root.
+  final ThemeModeController themeMode;
 
   @override
   Widget build(BuildContext context) {
     return AppDependenciesScope(
       dependencies: dependencies,
-      child: MaterialApp.router(
-        title: 'DocForge',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        // Supplying both themes plus a mode is what makes a system dark-mode
-        // change re-render the whole app without a restart.
-        themeMode: themeMode,
-        routerConfig: router,
+      child: ValueListenableBuilder<ThemeMode>(
+        valueListenable: themeMode,
+        builder: (context, mode, _) => MaterialApp.router(
+          title: 'DocForge',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          // Supplying both themes plus a mode is what makes a *system* dark-mode
+          // change re-render without a restart; rebuilding on the notifier is
+          // what makes an *explicit* selection do the same.
+          themeMode: mode,
+          routerConfig: router,
+        ),
       ),
     );
   }

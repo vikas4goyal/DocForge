@@ -8,10 +8,24 @@ library;
 import 'package:doc_forge/app/app.dart';
 import 'package:doc_forge/app/app_dependencies.dart';
 import 'package:doc_forge/app/composition_root.dart';
+import 'package:doc_forge/app/library_module.dart';
 import 'package:doc_forge/app/router/app_router.dart';
 import 'package:doc_forge/app/router/app_routes.dart';
 import 'package:doc_forge/app/router/route_gates.dart';
+import 'package:doc_forge/core/contracts/models/document.dart';
+import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/theme/theme_mode_controller.dart';
 import 'package:doc_forge/core/widgets/app_state_views.dart';
+import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
+import 'package:doc_forge/features/app_shell/presentation/cubit/home_cubit.dart';
+import 'package:doc_forge/features/app_shell/presentation/screens/home_screen.dart';
+import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
+import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
+import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
+import 'package:doc_forge/features/document_library/presentation/screens/document_detail_screen.dart';
+import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
+import 'package:doc_forge/features/document_library/presentation/screens/folder_detail_screen.dart';
+import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
 import 'package:doc_forge/features/onboarding/application/usecases/onboarding_usecases.dart';
 import 'package:doc_forge/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
 import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_cubit.dart';
@@ -22,11 +36,17 @@ import 'package:go_router/go_router.dart';
 
 /// Boots the application.
 Future<void> main() async {
-  // Required before any plugin is touched — SharedPreferences and secure
-  // storage are both resolved inside buildAppDependencies.
+  // Required before any plugin is touched — SharedPreferences, secure storage
+  // and the Isar directory lookup are all resolved below.
   WidgetsFlutterBinding.ensureInitialized();
 
   final dependencies = await buildAppDependencies();
+
+  final library = await buildLibraryModule(
+    clock: dependencies.clock,
+    ids: dependencies.idGenerator,
+    secureStorage: dependencies.secureStorage,
+  );
 
   // Onboarding owns its own gate. The flag is read once here, before the first
   // frame, so the router's synchronous redirect has an answer immediately —
@@ -45,18 +65,59 @@ Future<void> main() async {
       lockGate: FakeAppLockGate(),
       onboardingGate: onboardingGate,
     ),
-    screens: _screens(dependencies, onboardingRepository, onboardingGate),
+    screens: _screens(
+      dependencies,
+      library,
+      onboardingRepository,
+      onboardingGate,
+    ),
   );
 
-  runApp(DocForgeApp(dependencies: dependencies, router: router));
+  runApp(
+    DocForgeApp(
+      dependencies: dependencies,
+      router: router,
+      themeMode: ThemeModeController(),
+    ),
+  );
 }
 
 /// Builds the screen set, replacing placeholders as features land.
 AppScreens _screens(
   AppDependencies dependencies,
+  LibraryModule library,
   OnboardingRepositoryImpl onboardingRepository,
   OnboardingGateImpl onboardingGate,
 ) {
+  /// Builds a document list scoped to [filter]; four routes differ only here.
+  Widget documentList(
+    BuildContext context, {
+    required String title,
+    DocumentFilter filter = DocumentFilter.all,
+    FolderId? folderId,
+    String? emptyTitle,
+    String? emptyMessage,
+    bool offerScan = true,
+  }) => BlocProvider(
+    create: (_) => DocumentListCubit(
+      library.loadDocuments,
+      library.toggleFavourite,
+      library.archiveDocument,
+      library.restoreDocument,
+      filter: filter,
+      folderId: folderId,
+    ),
+    child: DocumentListScreen(
+      title: title,
+      emptyTitle: emptyTitle,
+      emptyMessage: emptyMessage,
+      // The archive and favourites deliberately offer no scan action: "scan
+      // your first document" is not what an empty archive should suggest.
+      onScan: offerScan ? () => context.push(AppRoutes.scan) : null,
+      onOpenDocument: (id) => context.push(AppRoutes.documentDetail(id)),
+    ),
+  );
+
   return AppScreens(
     onboarding: (context) => BlocProvider(
       create: (_) => OnboardingCubit(
@@ -74,19 +135,97 @@ AppScreens _screens(
       ),
     ),
     unlock: (_) => const _Placeholder('Unlock'),
-    home: (_) => const _Placeholder('Home'),
+    home: (context) => BlocProvider(
+      create: (_) => HomeCubit(
+        LoadHomeData(
+          library.documentReader,
+          library.folderReader,
+          library.storageSummaryReader,
+        ),
+      ),
+      child: HomeScreen(
+        actions: HomeActions(
+          onScan: () => context.push(AppRoutes.scan),
+          onSearch: () => context.push(AppRoutes.search),
+          onOpenDocument: (id) => context.push(AppRoutes.documentDetail(id)),
+          onOpenFolder: (id) => context.push(AppRoutes.folderDetail(id)),
+          onAllDocuments: () => context.push(AppRoutes.documents),
+          onFolders: () => context.push(AppRoutes.folders),
+          onFavourites: () => context.push(AppRoutes.favourites),
+          onArchive: () => context.push(AppRoutes.archive),
+          onStorage: () => context.push(AppRoutes.settings),
+        ),
+      ),
+    ),
     scan: (_) => const _Placeholder('Scan'),
     scanReview: (_) => const _Placeholder('Review pages'),
     scanEnhance: (_) => const _Placeholder('Enhance'),
     scanPreview: (_) => const _Placeholder('Preview document'),
-    documents: (_) => const _Placeholder('Documents'),
-    documentDetail: (_, id) => _Placeholder('Document ${id.value}'),
+    documents: (context) => documentList(context, title: 'Documents'),
+    documentDetail: (context, id) => BlocProvider(
+      create: (_) => DocumentDetailCubit(
+        id,
+        library.loadDocumentDetail,
+        library.renameDocument,
+        library.moveDocument,
+        library.toggleFavourite,
+        library.archiveDocument,
+        library.restoreDocument,
+        library.duplicateDocument,
+        library.purgeDocument,
+      ),
+      child: DocumentDetailScreen(
+        onClose: () => context.pop(),
+        // Replaces rather than pushes: the user asked for a copy, and leaving
+        // the original underneath would make Back feel like an undo it is not.
+        onOpenDocument: (document) =>
+            context.pushReplacement(AppRoutes.documentDetail(document.id)),
+      ),
+    ),
     documentEdit: (_, id) => _Placeholder('Edit ${id.value}'),
-    folders: (_) => const _Placeholder('Folders'),
-    folderDetail: (_, id) => _Placeholder('Folder ${id.value}'),
+    folders: (context) => BlocProvider(
+      create: (_) => FolderCubit(
+        library.loadFolders,
+        library.createFolder,
+        library.renameFolder,
+        library.deleteFolder,
+      ),
+      child: FolderListScreen(
+        onOpenFolder: (id) => context.push(AppRoutes.folderDetail(id)),
+      ),
+    ),
+    folderDetail: (context, id) => BlocProvider(
+      create: (_) => DocumentListCubit(
+        library.loadDocuments,
+        library.toggleFavourite,
+        library.archiveDocument,
+        library.restoreDocument,
+        filter: DocumentFilter.folder,
+        folderId: id,
+      ),
+      child: FolderDetailScreen(
+        folderName: 'Folder',
+        onOpenDocument: (documentId) =>
+            context.push(AppRoutes.documentDetail(documentId)),
+      ),
+    ),
     search: (_) => const _Placeholder('Search'),
-    favourites: (_) => const _Placeholder('Favourites'),
-    archive: (_) => const _Placeholder('Archive'),
+    favourites: (context) => documentList(
+      context,
+      title: 'Favourites',
+      filter: DocumentFilter.favourites,
+      emptyTitle: 'No favourites yet',
+      emptyMessage: 'Mark a document as a favourite to find it here.',
+      offerScan: false,
+    ),
+    archive: (context) => documentList(
+      context,
+      title: 'Archive',
+      filter: DocumentFilter.archived,
+      emptyTitle: 'Nothing archived',
+      emptyMessage: 'Archived documents are kept here, out of your main list.',
+      offerScan: false,
+    ),
     settings: (_) => const _Placeholder('Settings'),
     about: (_) => const _Placeholder('About'),
     privacy: (_) => const _Placeholder('Privacy policy'),

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_forge/core/formatting/display_formatting.dart';
 import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
@@ -19,7 +20,6 @@ import 'package:doc_forge/features/document_library/presentation/screens/documen
 import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/widgets/document_card.dart';
 import 'package:doc_forge/features/document_library/presentation/widgets/folder_tile.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/library_formatting.dart';
 import 'package:doc_forge/features/document_library/presentation/widgets/page_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -197,7 +197,7 @@ void main() {
       await tester.pumpWidget(build());
       await tester.pumpAndSettle();
 
-      final label = LibraryFormatting.documentSemanticsLabel(sampleDocument);
+      final label = DisplayFormatting.documentSemanticsLabel(sampleDocument);
       expect(find.bySemanticsLabel(label), findsOneWidget);
 
       handle.dispose();
@@ -264,19 +264,19 @@ void main() {
       expect(find.byKey(LibraryKeys.documentDetailScreen), findsOneWidget);
       expect(find.text(sampleDocument.title), findsWidgets);
       expect(
-        find.text(LibraryFormatting.pageCount(sampleDocument.pageCount)),
+        find.text(DisplayFormatting.pageCount(sampleDocument.pageCount)),
         findsOneWidget,
       );
       expect(
-        find.text(LibraryFormatting.fileSize(sampleDocument.sizeInBytes)),
+        find.text(DisplayFormatting.fileSize(sampleDocument.sizeInBytes)),
         findsOneWidget,
       );
       expect(
-        find.text(LibraryFormatting.dateTime(sampleDocument.createdAt)),
+        find.text(DisplayFormatting.dateTime(sampleDocument.createdAt)),
         findsOneWidget,
       );
       expect(
-        find.text(LibraryFormatting.dateTime(sampleDocument.updatedAt)),
+        find.text(DisplayFormatting.dateTime(sampleDocument.updatedAt)),
         findsOneWidget,
       );
     });
@@ -547,19 +547,19 @@ void main() {
     });
   });
 
-  group('LibraryFormatting', () {
+  group('DisplayFormatting', () {
     test('formats sizes with one decimal below ten units', () {
-      expect(LibraryFormatting.fileSize(512), '512 B');
-      expect(LibraryFormatting.fileSize(1536), '1.5 KB');
-      expect(LibraryFormatting.fileSize(20 * 1024), '20 KB');
-      expect(LibraryFormatting.fileSize(3 * 1024 * 1024), '3.0 MB');
+      expect(DisplayFormatting.fileSize(512), '512 B');
+      expect(DisplayFormatting.fileSize(1536), '1.5 KB');
+      expect(DisplayFormatting.fileSize(20 * 1024), '20 KB');
+      expect(DisplayFormatting.fileSize(3 * 1024 * 1024), '3.0 MB');
     });
 
     test('uses the singular for exactly one', () {
-      expect(LibraryFormatting.pageCount(1), '1 page');
-      expect(LibraryFormatting.pageCount(2), '2 pages');
-      expect(LibraryFormatting.documentCount(1), '1 document');
-      expect(LibraryFormatting.documentCount(0), '0 documents');
+      expect(DisplayFormatting.pageCount(1), '1 page');
+      expect(DisplayFormatting.pageCount(2), '2 pages');
+      expect(DisplayFormatting.documentCount(1), '1 document');
+      expect(DisplayFormatting.documentCount(0), '0 documents');
     });
 
     test('renders a stored UTC timestamp in local time', () {
@@ -568,18 +568,18 @@ void main() {
       // Formatting the UTC value directly would show the wrong day for any
       // user east of UTC — the bug the UTC-everywhere rule exists to surface.
       expect(
-        LibraryFormatting.date(utc),
-        LibraryFormatting.date(utc.toLocal()),
+        DisplayFormatting.date(utc),
+        DisplayFormatting.date(utc.toLocal()),
       );
     });
 
     test('the semantics label carries everything the spec requires', () {
-      final label = LibraryFormatting.documentSemanticsLabel(favouriteDocument);
+      final label = DisplayFormatting.documentSemanticsLabel(favouriteDocument);
 
       expect(label, contains(favouriteDocument.title));
       expect(
         label,
-        contains(LibraryFormatting.pageCount(favouriteDocument.pageCount)),
+        contains(DisplayFormatting.pageCount(favouriteDocument.pageCount)),
       );
       expect(label, contains('modified'));
       expect(label, contains('favourite'));

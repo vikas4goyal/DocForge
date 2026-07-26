@@ -3,13 +3,13 @@ library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_forge/core/formatting/display_formatting.dart';
 import 'package:doc_forge/core/widgets/app_state_views.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_state.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_list_state.dart';
 import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
 import 'package:doc_forge/features/document_library/presentation/widgets/library_dialogs.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/library_formatting.dart';
 import 'package:doc_forge/features/document_library/presentation/widgets/page_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -124,19 +124,19 @@ class _Body extends StatelessWidget {
         const SizedBox(height: 16),
         _MetadataRow(
           label: 'Pages',
-          value: LibraryFormatting.pageCount(document.pageCount),
+          value: DisplayFormatting.pageCount(document.pageCount),
         ),
         _MetadataRow(
           label: 'Size',
-          value: LibraryFormatting.fileSize(document.sizeInBytes),
+          value: DisplayFormatting.fileSize(document.sizeInBytes),
         ),
         _MetadataRow(
           label: 'Created',
-          value: LibraryFormatting.dateTime(document.createdAt),
+          value: DisplayFormatting.dateTime(document.createdAt),
         ),
         _MetadataRow(
           label: 'Modified',
-          value: LibraryFormatting.dateTime(document.updatedAt),
+          value: DisplayFormatting.dateTime(document.updatedAt),
         ),
         if (document.isArchived)
           const _MetadataRow(label: 'Status', value: 'Archived'),

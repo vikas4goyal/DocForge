@@ -347,6 +347,37 @@ Cubits override `load()` to do nothing for the same reason.
 `limit + 1` and discards the extra, which answers "is there more?" without a
 count query over the whole library on every page.
 
+### 19. Corrections recorded during group 5
+
+**Metadata formatting moved to `core/formatting/`.** Home shows the same file
+sizes, dates and page counts the library does, and features may not import each
+other, so `LibraryFormatting` became `DisplayFormatting` in `core`. Leaving it
+in the library feature would have meant Home reimplementing it and the two
+disagreeing about the same 482 KB.
+
+**Theme mode is a `ThemeModeController`, not a field.** The spec requires an
+explicit theme selection in settings to apply without a restart. Settings is
+several routes below the root, and a leaf screen cannot rebuild the root through
+the router — so the mode is a `ValueNotifier` created in the composition root,
+listened to at the root, and injected downwards. It is the one mutable object
+above the router, and it is still injected rather than global.
+
+**`LoadHomeData` fails only on the recents query.** A folder or storage read
+that fails degrades to an empty folder list or a zero summary rather than
+failing the whole screen: losing Home entirely over a storage figure is a worse
+outcome than showing Home without one. Recents are the one section the screen
+cannot be assembled without.
+
+**The Home empty state is driven by the storage document count, not by recents.**
+A library consisting entirely of archived documents has no recents but is not
+empty, and telling that user to scan their first document would be wrong.
+
+**`LibraryModule` was introduced.** `main.dart` was becoming a wiring diagram.
+The module opens Isar once, builds the repositories and use cases, and exposes
+use cases only — a screen that could reach a repository directly could bypass
+the rules the use cases enforce. `buildLibraryModuleOver` takes an already-open
+database so an integration test can supply a temporary one.
+
 ## Risks / Trade-offs
 
 - **Isar's maintenance status** → Resolved to the community fork (§6); upstream is incompatible with Freezed, so this was a real blocker rather than a theoretical one. The fork is itself community-maintained, so the residual risk stands: access is entirely behind repository interfaces and covered by a repository test suite, so a swap to Drift + SQLite FTS5 touches only `infrastructure/`.
