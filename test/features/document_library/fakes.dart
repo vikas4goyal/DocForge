@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:doc_forge/core/contracts/models/document.dart';
@@ -6,8 +7,8 @@ import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/features/document_library/domain/library_rules.dart';
+import 'package:doc_forge/features/document_library/domain/repositories/document_file_store.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
-import 'package:doc_forge/features/document_library/infrastructure/datasource/document_file_store.dart';
 
 /// An in-memory [DocumentRepository].
 ///
@@ -26,6 +27,12 @@ class FakeDocumentRepository implements DocumentRepository {
   /// When set, every operation fails with this failure.
   Failure? failure;
 
+  /// When set, every query waits on this before returning.
+  ///
+  /// Lets a widget test observe the in-flight loading state, which is otherwise
+  /// unreachable: an in-memory fake completes within the same frame.
+  Completer<void>? gate;
+
   @override
   Future<Result<Document>> findById(DocumentId id) async {
     if (failure != null) return Result<Document>.failure(failure!);
@@ -43,6 +50,7 @@ class FakeDocumentRepository implements DocumentRepository {
     int? limit,
     int offset = 0,
   }) async {
+    if (gate != null) await gate!.future;
     if (failure != null) return Result<List<Document>>.failure(failure!);
 
     final matching = documents.values

@@ -27,7 +27,7 @@ class CreateFolder {
     final normalised = NameRules.normalise(name);
     if (normalised == null) {
       return const Result<Folder>.failure(
-        Failure.unexpected(debugDetail: 'empty folder name'),
+        Failure.validation(issue: ValidationIssue.emptyName),
       );
     }
 
@@ -37,7 +37,7 @@ class CreateFolder {
     }
     if (existing.valueOrNull != null) {
       return const Result<Folder>.failure(
-        Failure.unexpected(debugDetail: 'duplicate folder name'),
+        Failure.validation(issue: ValidationIssue.duplicateFolderName),
       );
     }
 
@@ -66,7 +66,7 @@ class RenameFolder {
     final normalised = NameRules.normalise(name);
     if (normalised == null) {
       return const Result<Folder>.failure(
-        Failure.unexpected(debugDetail: 'empty folder name'),
+        Failure.validation(issue: ValidationIssue.emptyName),
       );
     }
 
@@ -78,7 +78,7 @@ class RenameFolder {
     final existing = clash.valueOrNull;
     if (existing != null && existing.id != id) {
       return const Result<Folder>.failure(
-        Failure.unexpected(debugDetail: 'duplicate folder name'),
+        Failure.validation(issue: ValidationIssue.duplicateFolderName),
       );
     }
 

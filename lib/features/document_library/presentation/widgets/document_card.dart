@@ -1,0 +1,104 @@
+/// A document row in a library list.
+library;
+
+import 'package:doc_forge/core/contracts/models/document.dart';
+import 'package:doc_forge/core/theme/app_theme.dart';
+import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
+import 'package:doc_forge/features/document_library/presentation/widgets/library_formatting.dart';
+import 'package:flutter/material.dart';
+
+/// A single document in a list.
+///
+/// Renders metadata only — never a page image. The spec requires list rows not
+/// to load full-resolution images, and the surest way to honour that is for the
+/// row to have no way to reach one.
+class DocumentCard extends StatelessWidget {
+  /// Creates a card for [document].
+  const DocumentCard({
+    required this.document,
+    super.key,
+    this.onTap,
+    this.onToggleFavourite,
+  });
+
+  /// The document to present.
+  final Document document;
+
+  /// Called when the row is activated.
+  final VoidCallback? onTap;
+
+  /// Called when the favourite control is activated.
+  final VoidCallback? onToggleFavourite;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    // The whole row is one semantics node: a screen reader announces the title,
+    // page count, modified date and favourite status together, rather than
+    // making the user swipe through four fragments to learn what the row is.
+    return Semantics(
+      button: true,
+      label: LibraryFormatting.documentSemanticsLabel(document),
+      child: ExcludeSemantics(
+        child: ListTile(
+          key: LibraryKeys.documentListItem(document.id.value),
+          onTap: onTap,
+          leading: Icon(
+            Icons.description_outlined,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            document.title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          subtitle: Text(
+            LibraryFormatting.documentSubtitle(document),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          trailing: switch (onToggleFavourite) {
+            null => null,
+            final onPressed => _FavouriteButton(
+              isFavourite: document.isFavourite,
+              onPressed: onPressed,
+            ),
+          },
+        ),
+      ),
+    );
+  }
+}
+
+/// The favourite toggle inside a document row.
+///
+/// Lifted out of the row's merged semantics so it stays independently
+/// actionable: the row announces the favourite *status*, this control offers
+/// the *action*.
+class _FavouriteButton extends StatelessWidget {
+  const _FavouriteButton({required this.isFavourite, required this.onPressed});
+
+  final bool isFavourite;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      toggled: isFavourite,
+      label: isFavourite ? 'Remove from favourites' : 'Add to favourites',
+      child: ExcludeSemantics(
+        child: IconButton(
+          key: LibraryKeys.documentFavouriteToggle,
+          onPressed: onPressed,
+          constraints: const BoxConstraints(
+            minWidth: AppTheme.minimumTouchTarget,
+            minHeight: AppTheme.minimumTouchTarget,
+          ),
+          icon: Icon(isFavourite ? Icons.star : Icons.star_border),
+        ),
+      ),
+    );
+  }
+}

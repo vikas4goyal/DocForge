@@ -71,17 +71,17 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 - [x] 4.9 Implement the folder use cases: `CreateFolder`, `RenameFolder`, `DeleteFolder` (with the move-or-delete choice), and per-folder document counts.
 - [x] 4.10 Unit-test the folder use cases, including that deleting a folder never silently loses documents.
 - [x] 4.11 Implement `ComputeStorageSummary` and unit-test it against known fixtures.
-- [ ] 4.12 Implement `DocumentListCubit`, `DocumentDetailCubit` and `FolderCubit` with their Equatable states and named factory constructors.
-- [ ] 4.13 Write `bloc_test` coverage for all three Cubits: loading, ready, empty, failure, pagination and each lifecycle action.
-- [ ] 4.14 Implement the document list, document detail, folder list and folder detail screens with the keys from `specs/document-library/spec.md`.
-- [ ] 4.15 Implement the reusable `DocumentCard`, `FolderTile` and `PageThumbnail` widgets with keys and semantics labels.
-- [ ] 4.16 Widget-test all library screens and reusable widgets, including confirmation dialogs for destructive actions.
-- [ ] 4.17 Add `@Preview()` entries for every library widget (default, loading, empty, error, long content) and every library screen (plus phone, tablet, light, dark).
-- [ ] 4.18 Implement lazy/paginated loading and verify list performance with a fixture library of several thousand documents.
-- [ ] 4.19 Implement `DocumentReader`, `DocumentWriter`, `FolderReader` and `StorageSummaryReader` contract implementations; test them against the contract.
-- [ ] 4.20 Add navigation tests for the library routes and the document detail route parameter.
-- [ ] 4.21 Add dartdoc to all new public APIs and inline comments on the Isar schema and index choices and their migration implications.
-- [ ] 4.22 Run `dart format`, `flutter analyze`, the layering check and coverage for group 4.
+- [x] 4.12 Implement `DocumentListCubit`, `DocumentDetailCubit` and `FolderCubit` with their Equatable states and named factory constructors.
+- [x] 4.13 Write `bloc_test` coverage for all three Cubits: loading, ready, empty, failure, pagination and each lifecycle action.
+- [x] 4.14 Implement the document list, document detail, folder list and folder detail screens with the keys from `specs/document-library/spec.md`.
+- [x] 4.15 Implement the reusable `DocumentCard`, `FolderTile` and `PageThumbnail` widgets with keys and semantics labels.
+- [x] 4.16 Widget-test all library screens and reusable widgets, including confirmation dialogs for destructive actions.
+- [x] 4.17 Add `@Preview()` entries for every library widget (default, loading, empty, error, long content) and every library screen (plus phone, tablet, light, dark).
+- [x] 4.18 Implement lazy/paginated loading and verify list performance with a fixture library of several thousand documents.
+- [x] 4.19 Implement `DocumentReader`, `DocumentWriter`, `FolderReader` and `StorageSummaryReader` contract implementations; test them against the contract.
+- [x] 4.20 Add navigation tests for the library routes and the document detail route parameter.
+- [x] 4.21 Add dartdoc to all new public APIs and inline comments on the Isar schema and index choices and their migration implications.
+- [x] 4.22 Run `dart format`, `flutter analyze`, the layering check and coverage for group 4.
 
 ## 5. App shell and Home
 

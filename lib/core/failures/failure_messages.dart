@@ -121,6 +121,19 @@ extension FailurePresentationX on Failure {
       action: notEnrolled ? RecoveryAction.openSettings : RecoveryAction.retry,
     ),
 
+    // Correctable input: the message states what to change, and there is no
+    // recovery action because the user is already on the screen that fixes it.
+    ValidationFailure(:final issue) => FailurePresentation(
+      message: switch (issue) {
+        ValidationIssue.emptyName => 'Enter a name.',
+        ValidationIssue.duplicateFolderName =>
+          'A folder with this name already exists.',
+        ValidationIssue.documentWouldHaveNoPages =>
+          'A document must keep at least one page.',
+      },
+      action: RecoveryAction.none,
+    ),
+
     NotFoundFailure() => const FailurePresentation(
       message: 'That item no longer exists.',
       action: RecoveryAction.goBack,

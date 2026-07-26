@@ -23,6 +23,9 @@ const allFailures = <Failure>[
   Failure.auth(),
   Failure.auth(rejected: false),
   Failure.auth(notEnrolled: true),
+  Failure.validation(issue: ValidationIssue.emptyName),
+  Failure.validation(issue: ValidationIssue.duplicateFolderName),
+  Failure.validation(issue: ValidationIssue.documentWouldHaveNoPages),
   Failure.notFound(),
   Failure.corruptFile(),
   Failure.secureStorageUnavailable(),
@@ -65,6 +68,20 @@ void main() {
         );
       }
     });
+
+    test('each validation issue names what to correct', () {
+      final messages = {
+        for (final issue in ValidationIssue.values)
+          issue: Failure.validation(issue: issue).presentation.message,
+      };
+
+      // Distinct messages, because "that name is not allowed" for both an
+      // empty name and a duplicate leaves the user guessing which it was.
+      expect(messages.values.toSet(), hasLength(ValidationIssue.values.length));
+      for (final message in messages.values) {
+        expect(message, isNotEmpty);
+      }
+    });
   });
 
   group('presentation mapping is exhaustive and usable', () {
@@ -88,8 +105,16 @@ void main() {
       }
     });
 
-    test('every non-cancellation variant offers a recovery action', () {
-      for (final failure in allFailures.where((f) => !f.isCancellation)) {
+    test('every failure the user cannot fix in place offers a way forward', () {
+      // Cancellation and validation are the two exceptions, for opposite
+      // reasons: cancellation is what the user just chose, and a rejected name
+      // is corrected in the field it was typed into — neither has anywhere to
+      // send the user.
+      final needsAction = allFailures.where(
+        (f) => !f.isCancellation && f is! ValidationFailure,
+      );
+
+      for (final failure in needsAction) {
         expect(
           failure.presentation.action,
           isNot(RecoveryAction.none),

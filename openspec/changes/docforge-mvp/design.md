@@ -312,6 +312,41 @@ Per the project context: dartdoc on every public class, function, method, constr
 
 Inline `//` comments are required — explaining **why**, not what — at these specific places, which are where a future reader will otherwise be lost: the perspective-transform and enhancement maths; the invisible-OCR-text-layer positioning; isolate boundaries and what may cross them; the Isar schema and index choices and their migration implications; the atomic write-verify-replace sequence in `PdfRepository`; the router redirect ordering (lock gate before onboarding gate); the thumbnail cache bounds; and every deliberate trade-off recorded in this document. Docs are updated in the same change as the behaviour; stale docs are defects.
 
+### 18. Corrections recorded during group 4
+
+**`Failure.validation` was added to the sealed union.** The specs require a
+*validation message* when a name is empty or a folder name is duplicated. Those
+paths originally returned `Failure.unexpected`, which maps to "Something went
+wrong. Please try again." — telling the user a correctable typing mistake was
+an internal error. `Failure.validation(issue:)` carries a `ValidationIssue`, and
+`FolderCubit` routes it to the text field while every other failure goes to the
+screen-level error surface. The exhaustiveness test was amended: validation and
+cancellation are the only two variants with no recovery action, for opposite
+reasons — cancellation is what the user just chose, and a rejected name is fixed
+in the field it was typed into.
+
+**Cubit states carry a `Failure`, not a rendered message string.** The states
+first held `String? message`. That made `AppErrorView` — which builds its
+recovery control from the failure — unable to offer anything but a generic
+retry, so a permission failure would not have offered "Open settings". The
+states now hold `Failure? failure` and expose `message` as a derived getter.
+
+**`DocumentFileStore`'s interface moved to `domain/repositories/`.** It was
+declared alongside its filesystem implementation in `infrastructure/`, so
+`PurgeDocument` and `DuplicateDocument` — which delete and copy a document's
+files — imported infrastructure from the application layer. `check_layering.dart`
+caught it. The interface is a domain contract; only `LocalDocumentFileStore`,
+which knows the directory layout, is infrastructure.
+
+**Screens load in `initState`, not in a Cubit constructor.** A Cubit that starts
+work on construction cannot be built in a test or a preview without also running
+it, which is what forces a preview to reach a real repository. The preview
+Cubits override `load()` to do nothing for the same reason.
+
+**Pagination asks for one row more than it needs.** `LoadDocuments` requests
+`limit + 1` and discards the extra, which answers "is there more?" without a
+count query over the whole library on every page.
+
 ## Risks / Trade-offs
 
 - **Isar's maintenance status** → Resolved to the community fork (§6); upstream is incompatible with Freezed, so this was a real blocker rather than a theoretical one. The fork is itself community-maintained, so the residual risk stands: access is entirely behind repository interfaces and covered by a repository test suite, so a swap to Drift + SQLite FTS5 touches only `infrastructure/`.

@@ -24,6 +24,23 @@ enum PermissionKind {
   files,
 }
 
+/// Why user-supplied input was rejected.
+///
+/// Distinct from the technical failures below: nothing went wrong, the input
+/// simply cannot be accepted, and the user can correct it in place. Kept in
+/// `core` rather than in the library feature because naming rules apply to
+/// scanning, import and settings too.
+enum ValidationIssue {
+  /// A title or folder name was empty or contained only whitespace.
+  emptyName,
+
+  /// A folder with the same name already exists.
+  duplicateFolderName,
+
+  /// The operation would leave a document with no pages.
+  documentWouldHaveNoPages,
+}
+
 /// Every way an operation in DocForge can fail.
 ///
 /// Variants carry only what a caller needs in order to recover or to explain
@@ -85,6 +102,16 @@ sealed class Failure with _$Failure {
     @Default(false) bool notEnrolled,
     String? debugDetail,
   }) = AuthFailure;
+
+  /// User-supplied input was rejected before anything was attempted.
+  ///
+  /// Carries the specific [issue] so the presentation layer can put the right
+  /// message beside the offending field, rather than showing a screen-level
+  /// error for something the user can fix by typing.
+  const factory Failure.validation({
+    required ValidationIssue issue,
+    String? debugDetail,
+  }) = ValidationFailure;
 
   /// The requested document, folder or page does not exist.
   const factory Failure.notFound({String? debugDetail}) = NotFoundFailure;

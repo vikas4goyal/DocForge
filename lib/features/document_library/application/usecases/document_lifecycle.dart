@@ -12,8 +12,8 @@ import 'package:doc_forge/core/storage/key_value_store.dart';
 import 'package:doc_forge/core/storage/storage_keys.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_library/domain/library_rules.dart';
+import 'package:doc_forge/features/document_library/domain/repositories/document_file_store.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
-import 'package:doc_forge/features/document_library/infrastructure/datasource/document_file_store.dart';
 
 /// Renames a document.
 class RenameDocument {
@@ -31,7 +31,7 @@ class RenameDocument {
     final normalised = NameRules.normalise(title);
     if (normalised == null) {
       return const Result<Document>.failure(
-        Failure.unexpected(debugDetail: 'empty document title'),
+        Failure.validation(issue: ValidationIssue.emptyName),
       );
     }
 
