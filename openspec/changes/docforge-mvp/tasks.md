@@ -102,12 +102,12 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 6. Document scanning
 
-- [ ] 6.1 Implement the `document-scanning` domain layer: `ScanSession`, `PageQuad` value objects and the `ScannerRepository` and `EdgeDetector` interfaces.
+- [x] 6.1 Implement the `document-scanning` domain layer: `ScanSession`, `PageQuad` value objects and the `ScannerRepository` and `EdgeDetector` interfaces.
 - [ ] 6.2 Implement the camera-backed `ScannerRepository` and a fake implementation for tests and previews.
 - [ ] 6.3 Write repository tests for `ScannerRepository` against the fake, including camera-unavailable and permission-denied failures.
 - [ ] 6.4 Implement `CapturePage` and the disk-first page persistence rule (write immediately, keep only thumbnails in memory); unit-test both.
 - [ ] 6.5 Implement `ApplyPerspectiveCorrection` running in a background isolate with progress and cancellation; unit-test the transform maths against known fixtures.
-- [ ] 6.6 Implement the phase-3a `EdgeDetector` fallback returning the full page quad; unit-test it.
+- [x] 6.6 Implement the phase-3a `EdgeDetector` fallback returning the full page quad; unit-test it.
 - [ ] 6.7 Implement `ScanCaptureCubit`, `PageReviewCubit` and `CropCubit` with their Equatable states.
 - [ ] 6.8 Write `bloc_test` coverage for all three Cubits, including batch mode, permission denied, camera unavailable, storage full and deleting the last page.
 - [ ] 6.9 Implement the camera capture screen with live preview, shutter, batch-mode toggle and page counter, using the specified keys.
