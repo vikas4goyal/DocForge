@@ -18,25 +18,48 @@ context: |
   ## Architecture — Feature-First Clean Architecture
   Every feature lives in `lib/features/<feature>/` and contains exactly these
   layers:
-    presentation/    # widgets, screens, controllers bound to UI
-    application/     # use cases, orchestration, app services
-    domain/          # entities, value objects, repository interfaces, failures
-    infrastructure/  # repository implementations, data sources, DTO mapping
+    presentation/    # widgets, screens, Cubits bound to UI
+      cubit/           # Cubit + immutable State per screen/flow
+      screens/         # full pages wired to Cubits
+      widgets/         # reusable widgets for this feature
+    application/     # orchestration
+      usecases/        # one use case per business operation
+    domain/          # pure business core, depends on nothing
+      entities/        # entities and value objects
+      repositories/    # repository interfaces (abstractions)
+      failures/        # typed failures / error model
+    infrastructure/  # outward-facing implementations
+      datasource/      # Isar, SharedPreferences, secure storage, Dio clients
+      models/          # DTOs with Freezed + json_serializable, mappers
+      repositories/    # repository implementations of domain interfaces
   Shared/cross-cutting code lives in `lib/core/` (or `lib/shared/`).
 
   Rules:
   - No feature may import from another feature directly.
   - Cross-feature communication happens through abstractions only (domain-level
-    interfaces exposed via providers in core/shared).
+    interfaces declared in core/shared and injected via constructors).
   - Dependency direction: presentation -> application -> domain; infrastructure
     depends on domain and implements its interfaces. Domain depends on nothing.
 
-  ## State management
-  - Riverpod (latest) is the only state management solution.
-  - Do NOT recommend or introduce Bloc, Provider (package:provider), GetX, or
-    similar alternatives.
-  - Prefer code-generated providers (riverpod_generator) and AsyncNotifier /
-    Notifier over legacy StateNotifier/ChangeNotifier.
+  ## State management — flutter_bloc
+  - flutter_bloc is the project's official and only state management solution.
+  - Prefer Cubit. Use a full Bloc only when an event-driven workflow clearly
+    benefits from explicit events (event transformers, debounce/throttle,
+    replayable event streams, complex event sequencing).
+  - Do NOT introduce Riverpod, package:provider, GetX, or similar alternatives.
+  - Each feature owns its own Cubit(s) and its own immutable State.
+  - State classes are immutable, extend Equatable, and live beside their Cubit.
+    List every field in `props` so `emit` correctly de-duplicates identical
+    states and `bloc_test` can assert on state sequences by value.
+    (Equatable is for Cubit states only — domain models and DTOs still use
+    Freezed + json_serializable.)
+  - Business logic must NEVER live inside a Cubit. A Cubit is responsible only
+    for:
+      * managing UI state
+      * invoking use cases
+      * emitting immutable states
+  - Business rules belong in the domain layer (entities, value objects) and are
+    orchestrated by use cases in the application layer.
 
   ## Navigation
   - GoRouter with typed routes (go_router_builder / TypedGoRoute).
@@ -58,9 +81,16 @@ context: |
   - Networking layer designed for future cloud sync (interceptors, retry,
     auth token refresh, cancellation, typed error mapping).
 
-  ## Dependency injection
-  - Riverpod providers only. Avoid service locators (get_it, etc.) and
-    singletons.
+  ## Dependency injection — explicit constructors
+  - Dependencies are passed explicitly through constructors. Keep DI simple and
+    explicit.
+  - Do NOT introduce get_it or any other service locator, and do not use
+    Riverpod for DI.
+  - Composition happens near the application root: build data sources ->
+    repositories -> use cases -> Cubits there and pass them down.
+  - Cubits are supplied to the widget tree with BlocProvider; widgets read them
+    with context.read / context.watch / BlocBuilder / BlocSelector.
+  - No singletons and no global mutable state for dependency access.
 
   ## Code style
   - Follow Effective Dart.
@@ -68,6 +98,37 @@ context: |
     methods, composition over inheritance, small widgets, small files.
   - Avoid: God classes, singletons, global mutable state, massive widgets,
     business logic inside UI.
+  - Avoid large Cubits. A Cubit coordinates state only; split it when it grows.
+  - Layer responsibilities are strict:
+      * Cubits          -> UI state coordination, invoke use cases, emit states
+      * Use cases       -> business logic
+      * Repositories    -> persistence abstraction (domain interfaces)
+      * Infrastructure  -> implements repositories and talks to storage/network
+  - Presentation must NEVER directly access storage (Isar, SharedPreferences,
+    flutter_secure_storage) or Dio. It goes through Cubit -> use case ->
+    repository.
+
+  ## Code documentation (mandatory)
+  - Every public class, function, method, constructor, and top-level constant
+    carries a dartdoc comment (`///`). Follow Effective Dart doc guidelines.
+  - Start with a single-sentence summary in the third person ("Loads the ...",
+    not "Load the ..."), then a blank `///` line before further detail.
+  - Function and method docs must state: what it does, its parameters, what it
+    returns, and which failures/exceptions it can produce.
+  - Reference other APIs with square brackets (`[DocRepository]`) so dartdoc
+    links them.
+  - Document every Cubit (what UI state it owns), every State variant (what it
+    means), every use case (which business rule it enforces), and every
+    repository interface (its contract, including offline behaviour).
+  - Add a short `///` doc to each widget describing its purpose, its required
+    inputs, and its widget keys / semantics labels.
+  - Inline comments (`//`) are required wherever intent is not obvious from the
+    code: non-trivial algorithms, workarounds, platform quirks, Isar schema or
+    migration decisions, concurrency/isolate boundaries, and any deliberate
+    trade-off. Explain WHY, not WHAT the line already says.
+  - Keep documentation truthful and current — update docs in the same change
+    that alters the behaviour. Stale docs are treated as defects.
+  - Do not add noise comments that merely restate the code.
 
   ## UI
   - Material 3 with adaptive Cupertino widgets where platform-appropriate.
@@ -82,13 +143,22 @@ context: |
     `flutter widget-preview start`.
   - EVERY reusable widget and every screen must ship at least one `@Preview()`
     entry alongside it.
-  - Previews must cover the meaningful states of the widget: default, loading,
-    error, empty, and long-content/overflow where applicable.
-  - Previews must also cover light and dark theme, and phone plus tablet sizes
-    for screens.
-  - Previews must be deterministic: no live network, no real database, no
-    randomness or wall-clock dependence. Feed them fixed fixture data through
-    Riverpod provider overrides.
+  - Every reusable widget and every screen must preview these states:
+      * default
+      * loading
+      * empty
+      * error
+      * long content
+  - Screens must additionally preview:
+      * phone
+      * tablet
+      * light theme
+      * dark theme
+  - Preview data must come from fixtures. No live services, no network, no real
+    database, no randomness or wall-clock dependence.
+  - Feed previews by constructing the widget with fixture data directly, or by
+    wrapping it in a BlocProvider whose Cubit is seeded to the desired state
+    (or a fake Cubit that emits fixed states).
   - Preview functions are const-friendly, self-contained, and named clearly
     (e.g. `@Preview(name: 'DocCard — dark')`).
   - Widgets must be previewable by construction: no hidden dependency on
@@ -97,25 +167,37 @@ context: |
   ## Performance
   - Prefer lazy loading, background isolates for heavy work, memory
     optimisation, and battery optimisation.
-  - Avoid unnecessary rebuilds (fine-grained provider watching, const widgets,
-    selective `select()` usage).
+  - Avoid unnecessary rebuilds: prefer BlocSelector and `buildWhen` to rebuild
+    only the smallest affected subtree, and use const widgets.
 
   ## Testing (mandatory)
-  - Every implementation must include tests. A feature without tests is not
-    complete.
-  - Required test types: unit, widget, integration, golden tests for major
-    screens, repository tests, serialization tests, navigation tests, state
-    management tests.
+  - Every implementation must include ALL of the following:
+      * Unit tests
+      * Widget tests
+      * Cubit tests (bloc_test — assert emitted state sequences)
+      * Repository tests
+      * Serialization tests
+      * Navigation tests
+      * Integration tests
+  - Major screens additionally require golden tests.
+  - A feature is incomplete until every required test exists and passes.
   - Mock platform integrations where appropriate.
-  - Minimum overall coverage: 80%. Business logic coverage target: 90%.
+  - Overall code coverage must stay >= 80%. Business logic coverage target
+    is >= 90%.
 
-  ## AI-assisted development
-  The codebase is optimised for AI-assisted development. Every feature must be
-  modular, independently testable, deterministic, free of hidden state, and
-  loosely coupled.
-  - Every screen exposes stable widget keys (`Key('<feature>_<element>')`).
-  - Every important control exposes a semantics label.
-  - Architecture must permit automated UI testing end to end.
+  ## AI implementation guidelines
+  The codebase is optimised for AI-assisted development. Every implementation
+  must satisfy all of the following:
+  - Behaviour must be deterministic — same inputs produce the same states.
+  - Avoid hidden state.
+  - Avoid static mutable state.
+  - Avoid global mutable variables.
+  - Every feature must be independently testable in isolation, with its
+    dependencies substitutable via constructor injection.
+  - Every feature exposes stable widget keys (`Key('<feature>_<element>')`).
+  - Every important widget exposes a semantics label.
+  - Every implementation must be easily exercised by automated Flutter
+    integration tests, end to end.
 
   ## CI
   CI must run, in order: `flutter pub get`, `dart format --set-exit-if-changed`,
@@ -138,8 +220,12 @@ rules:
       loading, memory, battery).
     - Include security considerations (what data is sensitive and where it is
       stored).
-    - Include the testing strategy across unit, widget, golden, integration,
-      repository, serialization, navigation, and state tests.
+    - "Explain what is added or changed for each of: Cubits, States, use cases,
+      repositories, Isar schema, navigation."
+    - Include the testing strategy across unit, widget, Cubit, repository,
+      serialization, navigation, integration, and golden tests.
+    - "Include preview coverage: which widgets and screens gain `@Preview()`
+      entries and which states, themes, and form factors they cover."
     - Include an explicit Definition of Done.
     - Include risks and mitigations.
     - Include future extensibility, especially the path to cloud sync.
@@ -148,8 +234,13 @@ rules:
   design:
     - Respect feature-first clean architecture; show the dependency direction
       and prove no feature-to-feature coupling.
-    - Specify Riverpod providers (names, types, scopes) instead of any service
-      locator.
+    - Specify the Cubits and their immutable States (name each state variant and
+      the transitions between them); justify any use of a full Bloc over a
+      Cubit.
+    - Specify the use cases that hold the business logic, and confirm no
+      business logic sits inside a Cubit.
+    - Show how dependencies are constructed and passed explicitly through
+      constructors from the composition root; no service locators.
     - Specify Freezed models and json_serializable contracts; no manual JSON.
     - Specify GoRouter typed routes for any navigation change.
     - Specify persistence choice per data item — Isar, SharedPreferences, or
@@ -159,8 +250,10 @@ rules:
     - "Define the `@Preview()` coverage for each new widget and screen: which
       states, themes, and form factors are previewed and which fixtures feed
       them."
-    - Call out anything that would introduce hidden state, global mutable
-      state, or nondeterminism, and how it is avoided.
+    - Call out anything that would introduce hidden state, static or global
+      mutable state, or nondeterminism, and how it is avoided.
+    - Note which new public APIs require dartdoc and which areas need inline
+      comments explaining intent.
   specs:
     - Write requirements as observable, testable behaviour.
     - Include accessibility, dark mode, responsive/tablet, and offline-first
@@ -173,6 +266,9 @@ rules:
       until its tests pass.
     - Include a task for `@Preview()` entries whenever a widget or screen is
       added or changed.
+    - Include a Cubit test task (bloc_test) for every Cubit added or changed.
+    - Include a task for dartdoc comments on new public APIs and inline
+      comments explaining non-obvious logic.
     - Include tasks for `dart format`, `flutter analyze`, and coverage
       verification before completion.
     - Include a golden-test task for any new or materially changed major
