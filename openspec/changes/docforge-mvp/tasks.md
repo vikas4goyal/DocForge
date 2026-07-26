@@ -110,17 +110,17 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 - [x] 6.6 Implement the phase-3a `EdgeDetector` fallback returning the full page quad; unit-test it.
 - [x] 6.7 Implement `ScanCaptureCubit`, `PageReviewCubit` and `CropCubit` with their Equatable states.
 - [x] 6.8 Write `bloc_test` coverage for all three Cubits, including batch mode, permission denied, camera unavailable, storage full and deleting the last page.
-- [ ] 6.9 Implement the camera capture screen with live preview, shutter, batch-mode toggle and page counter, using the specified keys.
-- [ ] 6.10 Implement the page review screen with rotate, drag-to-reorder, delete with undo, and the empty state.
-- [ ] 6.11 Implement the crop screen with the edge overlay and draggable corner handles.
-- [ ] 6.12 Widget-test all three scanning screens against the fake `ScannerRepository`.
-- [ ] 6.13 Verify the camera is released on every exit path from the capture screen; add a test.
-- [ ] 6.14 Implement the permission-denied and camera-error views with their recovery actions; widget-test both.
-- [ ] 6.15 Add `@Preview()` entries for every scanning widget and screen across all required states, form factors and themes, fed only by fixtures.
-- [ ] 6.16 Verify scanning accessibility: semantics labels on shutter, batch toggle, flash and page counter; 48dp targets. Add tests.
-- [ ] 6.17 Add golden tests for the page review and crop screens in light and dark, phone and tablet.
-- [ ] 6.18 Add dartdoc to all new public APIs and inline comments on the perspective-transform maths and the isolate boundary.
-- [ ] 6.19 Run `dart format`, `flutter analyze`, the layering check and coverage for group 6.
+- [x] 6.9 Implement the camera capture screen with live preview, shutter, batch-mode toggle and page counter, using the specified keys.
+- [x] 6.10 Implement the page review screen with rotate, drag-to-reorder, delete with undo, and the empty state.
+- [x] 6.11 Implement the crop screen with the edge overlay and draggable corner handles.
+- [x] 6.12 Widget-test all three scanning screens against the fake `ScannerRepository`.
+- [x] 6.13 Verify the camera is released on every exit path from the capture screen; add a test.
+- [x] 6.14 Implement the permission-denied and camera-error views with their recovery actions; widget-test both.
+- [x] 6.15 Add `@Preview()` entries for every scanning widget and screen across all required states, form factors and themes, fed only by fixtures.
+- [x] 6.16 Verify scanning accessibility: semantics labels on shutter, batch toggle, flash and page counter; 48dp targets. Add tests.
+- [x] 6.17 Add golden tests for the page review and crop screens in light and dark, phone and tablet.
+- [x] 6.18 Add dartdoc to all new public APIs and inline comments on the perspective-transform maths and the isolate boundary.
+- [x] 6.19 Run `dart format`, `flutter analyze`, the layering check and coverage for group 6.
 - [ ] 6.20 Phase 3b — resolve open question 3, implement automatic edge detection behind `EdgeDetector`, and unit-test it against real-capture fixtures including the not-detected fallback.
 
 ## 7. Image enhancement

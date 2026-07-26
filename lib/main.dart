@@ -12,6 +12,7 @@ import 'package:doc_forge/app/library_module.dart';
 import 'package:doc_forge/app/router/app_router.dart';
 import 'package:doc_forge/app/router/app_routes.dart';
 import 'package:doc_forge/app/router/route_gates.dart';
+import 'package:doc_forge/app/scanning_module.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/theme/theme_mode_controller.dart';
@@ -33,6 +34,7 @@ import 'package:doc_forge/features/onboarding/presentation/screens/onboarding_sc
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:path_provider/path_provider.dart';
 
 /// Boots the application.
 Future<void> main() async {
@@ -41,6 +43,13 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   final dependencies = await buildAppDependencies();
+
+  final scanning = buildScanningModule(
+    directory: await getApplicationCacheDirectory(),
+    permissions: dependencies.permissions,
+    ids: dependencies.idGenerator,
+    worker: dependencies.worker,
+  );
 
   final library = await buildLibraryModule(
     clock: dependencies.clock,
@@ -68,6 +77,7 @@ Future<void> main() async {
     screens: _screens(
       dependencies,
       library,
+      scanning,
       onboardingRepository,
       onboardingGate,
     ),
@@ -86,6 +96,7 @@ Future<void> main() async {
 AppScreens _screens(
   AppDependencies dependencies,
   LibraryModule library,
+  ScanningModule scanning,
   OnboardingRepositoryImpl onboardingRepository,
   OnboardingGateImpl onboardingGate,
 ) {
@@ -157,7 +168,18 @@ AppScreens _screens(
         ),
       ),
     ),
-    scan: (_) => const _Placeholder('Scan'),
+    scan: (context) => ScanFlow(
+      module: scanning,
+      onExit: () => context.go(AppRoutes.home),
+      // Saving needs PDF generation, which lands in group 9. Until then the
+      // flow is complete up to the point where a document would be created,
+      // and says so rather than silently discarding the pages.
+      onSave: (_) => ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Saving arrives with PDF generation.')),
+      ),
+      onImportInstead: () => context.go(AppRoutes.home),
+      onOpenSettings: () => dependencies.permissions.openSettings(),
+    ),
     scanReview: (_) => const _Placeholder('Review pages'),
     scanEnhance: (_) => const _Placeholder('Enhance'),
     scanPreview: (_) => const _Placeholder('Preview document'),

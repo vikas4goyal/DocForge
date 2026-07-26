@@ -378,6 +378,49 @@ use cases only — a screen that could reach a repository directly could bypass
 the rules the use cases enforce. `buildLibraryModuleOver` takes an already-open
 database so an integration test can supply a temporary one.
 
+### 20. Corrections recorded during group 6
+
+**The resampler mutated its own source image.** Bilinear sampling read four
+pixels from the capture and wrote the blended result back through one of them.
+`img.getPixel` returns a live view into the image's buffer, so every write
+corrupted the neighbours the next samples read — damage that compounds across
+the image rather than being visibly wrong at one spot. It now reads channel
+values out as plain numbers and writes only to the output, with a test that
+compares the source bytes before and after.
+
+**The correction job is injected into the use case.** The pixel work is
+infrastructure and the application layer may not import it, but an isolate job
+must be a top-level function. `ApplyPerspectiveCorrection` therefore takes an
+`IsolateJob` as a constructor argument and the composition root supplies
+`correctPageJob`. This is also what lets a test substitute a failing job.
+
+**`ScanStagingArea` was declared in domain, not infrastructure.** Captures are
+written before the document exists, so they need somewhere to live; the use
+cases depend on that somewhere (discarding a session clears it), which makes it
+a domain contract with a filesystem implementation.
+
+**Widget tests use the non-writing fake scanner.** `testWidgets` runs in a
+fake-async zone where real file I/O never completes, so a fake that writes would
+hang every `pumpAndSettle` rather than fail it. The disk-first rule is exercised
+against the writing fake in `scanning_usecases_test.dart`, which runs outside
+that zone. The same applies to the staging area, which the screen tests replace
+with a recording stand-in.
+
+**Releasing the camera leaves an indefinite spinner, so those tests use bounded
+pumps.** `pumpAndSettle` waits for animations to finish and that one never does.
+
+**The camera preview builder is supplied by the composition root.** A preview is
+a Flutter widget tied to the plugin's controller, so it cannot sit on
+`ScannerRepository` — the application layer depends on that contract and may not
+import Flutter. `CameraScannerRepository` exposes `buildPreview`, the module
+passes it down, and the screen takes it as a parameter, which is also what makes
+the screen testable and previewable without a camera.
+
+**The scanning flow is one route, not three.** Capture, review and crop share a
+session. Three sibling routes would mean lifting that session above the router
+into ambient state, and would let a deep link drop a user into a review screen
+for a session that does not exist.
+
 ## Risks / Trade-offs
 
 - **Isar's maintenance status** → Resolved to the community fork (§6); upstream is incompatible with Freezed, so this was a real blocker rather than a theoretical one. The fork is itself community-maintained, so the residual risk stands: access is entirely behind repository interfaces and covered by a repository test suite, so a swap to Drift + SQLite FTS5 touches only `infrastructure/`.

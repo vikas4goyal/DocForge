@@ -11,6 +11,7 @@ import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/permissions/permission_service.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:flutter/material.dart';
 
 /// A staging area under the application's cache directory.
 class LocalScanStagingArea implements ScanStagingArea {
@@ -80,6 +81,25 @@ class CameraScannerRepository implements ScannerRepository {
 
   @override
   bool get isTorchOn => _torchOn;
+
+  /// Builds the live preview for the current controller.
+  ///
+  /// Lives on the concrete repository rather than on [ScannerRepository]: a
+  /// preview is a Flutter widget, and the contract is depended on by the
+  /// application layer, which may not import Flutter. The composition root
+  /// knows the concrete type and passes this down to the screen.
+  ///
+  /// Returns a plain surface when the camera is not running, so a caller never
+  /// has to handle a null and the screen never flashes an empty hole between
+  /// frames.
+  Widget buildPreview(BuildContext context) {
+    final controller = _controller;
+    if (controller == null || !controller.value.isInitialized) {
+      return const ColoredBox(color: Color(0xFF101010));
+    }
+
+    return CameraPreview(controller);
+  }
 
   @override
   Future<Result<void>> initialise() async {
