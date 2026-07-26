@@ -1,0 +1,34 @@
+# Code-generation configuration for DocForge.
+#
+# Run with `dart run build_runner build`. Note that the current build_runner has
+# REMOVED `--delete-conflicting-outputs`; passing it is an error.
+
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          # Emit `instance.field.toJson()` for nested objects instead of
+          # `instance.field`.
+          #
+          # Without this, `toJson()` returns a map whose nested values are still
+          # model instances rather than maps. `jsonEncode` happens to paper over
+          # that by calling toJson recursively, but anything that consumes the
+          # map directly — an in-memory round trip, or writing a value into Isar
+          # — gets an object where it expects a map and fails at runtime with a
+          # confusing cast error. Caught by the model round-trip tests.
+          explicit_to_json: true
+
+          # A field missing from stored JSON is a schema mismatch, not a value
+          # of null. Failing loudly here surfaces a bad migration during
+          # development rather than silently dropping user data.
+          checked: true
+
+          # Reject unknown keys only in debug: stored data written by a NEWER
+          # app version may legitimately carry fields this version predates.
+          disallow_unrecognized_keys: false
+
+          # Generated code is excluded from analysis, so there is no value in
+          # generating the extra ignore comments.
+          create_factory: true
+          create_to_json: true

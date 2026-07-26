@@ -19,6 +19,8 @@ android {
         applicationId = "com.bruxkey.doc_forge"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
+        // Flutter's default is 24, which already satisfies the highest plugin
+        // floor in this project (local_auth and flutter_secure_storage need 23).
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

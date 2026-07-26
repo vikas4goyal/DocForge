@@ -1,28 +1,82 @@
-# This file configures the analyzer, which statically analyzes Dart code to
-# check for errors, warnings, and lints.
+# Static analysis configuration for DocForge.
 #
-# The issues identified by the analyzer are surfaced in the UI of Dart-enabled
-# IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
-# invoked from the command line by running `flutter analyze`.
+# The project context mandates Effective Dart, dartdoc on every public API,
+# const constructors and immutability. Those rules are enforced here so
+# `flutter analyze` fails the build rather than leaving them to review.
+#
+# Run with `flutter analyze`. CI treats any finding as a failure.
 
-# The following line activates a set of recommended lints for Flutter apps,
-# packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
-linter:
-  # The lint rules applied to this project can be customized in the
-  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
-  # included above or to enable additional rules. A list of all available lints
-  # and their documentation is published at https://dart.dev/lints.
-  #
-  # Instead of disabling a lint rule for the entire project in the
-  # section below, it can also be suppressed for a single line of code
-  # or a specific dart file by using the `// ignore: name_of_lint` and
-  # `// ignore_for_file: name_of_lint` syntax on the line or in the file
-  # producing the lint.
-  rules:
-    # avoid_print: false  # Uncomment to disable the `avoid_print` rule
-    # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
+analyzer:
+  errors:
+    # Documentation is mandatory per the project context, so a missing dartdoc
+    # on a public member is an error rather than an easily-ignored info.
+    public_member_api_docs: error
+    # Layer discipline: these indicate a widget or Cubit is being handed a
+    # dependency it should not have, which the layering check cannot see.
+    implementation_imports: error
+    # Immutability is a hard requirement for entities, DTOs and Cubit states.
+    must_be_immutable: error
+  exclude:
+    # Generated sources reflect their annotations, are not hand-maintained, and
+    # cannot be made to satisfy the documentation or style rules above. Isar's
+    # generator in particular emits `experimental_member_use` warnings for its
+    # putByIndex family that no change on our side can silence.
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.mocks.dart"
 
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
+linter:
+  rules:
+    # --- Documentation (project context: "Code documentation (mandatory)") ---
+    public_member_api_docs: true
+    comment_references: true
+    slash_for_doc_comments: true
+
+    # --- Immutability and const (project context: "Code style") ---
+    prefer_const_constructors: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_declarations: true
+    prefer_const_literals_to_create_immutables: true
+    prefer_final_fields: true
+    prefer_final_locals: true
+    prefer_final_in_for_each: true
+    avoid_final_parameters: false
+
+    # --- Effective Dart style ---
+    always_declare_return_types: true
+    prefer_single_quotes: true
+    directives_ordering: true
+    sort_constructors_first: true
+    unnecessary_lambdas: true
+    unnecessary_parenthesis: true
+    use_super_parameters: true
+    avoid_redundant_argument_values: true
+    cascade_invocations: true
+    join_return_with_assignment: true
+
+    # --- Correctness ---
+    always_use_package_imports: true
+    avoid_dynamic_calls: true
+    avoid_slow_async_io: true
+    cancel_subscriptions: true
+    close_sinks: true
+    only_throw_errors: true
+    throw_in_finally: true
+    unawaited_futures: true
+    test_types_in_equals: true
+
+    # --- Things the architecture forbids outright ---
+    # A global mutable variable is banned by the AI implementation guidelines.
+    prefer_typing_uninitialized_variables: true
+    avoid_positional_boolean_parameters: true
+    # Presentation must not reach past its layer; print() also leaks data that
+    # may include document content or, worse, a PDF password.
+    avoid_print: true
+
+    # --- Accessibility and UI correctness ---
+    use_build_context_synchronously: true
+    use_colored_box: true
+    use_decorated_box: true
+    sized_box_for_whitespace: true

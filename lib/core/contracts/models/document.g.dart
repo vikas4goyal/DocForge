@@ -1,0 +1,90 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'document.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_Document _$DocumentFromJson(
+  Map<String, dynamic> json,
+) => $checkedCreate('_Document', json, ($checkedConvert) {
+  final val = _Document(
+    id: $checkedConvert('id', (v) => DocumentId.fromJson(v as String)),
+    title: $checkedConvert('title', (v) => v as String),
+    createdAt: $checkedConvert('createdAt', (v) => DateTime.parse(v as String)),
+    updatedAt: $checkedConvert('updatedAt', (v) => DateTime.parse(v as String)),
+    pageCount: $checkedConvert('pageCount', (v) => (v as num).toInt()),
+    sizeInBytes: $checkedConvert('sizeInBytes', (v) => (v as num).toInt()),
+    filePath: $checkedConvert('filePath', (v) => v as String),
+    folderId: $checkedConvert(
+      'folderId',
+      (v) => v == null ? null : FolderId.fromJson(v as String),
+    ),
+    isFavourite: $checkedConvert('isFavourite', (v) => v as bool? ?? false),
+    isArchived: $checkedConvert('isArchived', (v) => v as bool? ?? false),
+    isProtected: $checkedConvert('isProtected', (v) => v as bool? ?? false),
+    hasRecognisedText: $checkedConvert(
+      'hasRecognisedText',
+      (v) => v as bool? ?? false,
+    ),
+  );
+  return val;
+});
+
+Map<String, dynamic> _$DocumentToJson(_Document instance) => <String, dynamic>{
+  'id': instance.id.toJson(),
+  'title': instance.title,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'pageCount': instance.pageCount,
+  'sizeInBytes': instance.sizeInBytes,
+  'filePath': instance.filePath,
+  'folderId': instance.folderId?.toJson(),
+  'isFavourite': instance.isFavourite,
+  'isArchived': instance.isArchived,
+  'isProtected': instance.isProtected,
+  'hasRecognisedText': instance.hasRecognisedText,
+};
+
+_Folder _$FolderFromJson(Map<String, dynamic> json) =>
+    $checkedCreate('_Folder', json, ($checkedConvert) {
+      final val = _Folder(
+        id: $checkedConvert('id', (v) => FolderId.fromJson(v as String)),
+        name: $checkedConvert('name', (v) => v as String),
+        createdAt: $checkedConvert(
+          'createdAt',
+          (v) => DateTime.parse(v as String),
+        ),
+        documentCount: $checkedConvert(
+          'documentCount',
+          (v) => (v as num?)?.toInt() ?? 0,
+        ),
+      );
+      return val;
+    });
+
+Map<String, dynamic> _$FolderToJson(_Folder instance) => <String, dynamic>{
+  'id': instance.id.toJson(),
+  'name': instance.name,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'documentCount': instance.documentCount,
+};
+
+_StorageSummary _$StorageSummaryFromJson(Map<String, dynamic> json) =>
+    $checkedCreate('_StorageSummary', json, ($checkedConvert) {
+      final val = _StorageSummary(
+        totalBytes: $checkedConvert('totalBytes', (v) => (v as num).toInt()),
+        documentCount: $checkedConvert(
+          'documentCount',
+          (v) => (v as num).toInt(),
+        ),
+      );
+      return val;
+    });
+
+Map<String, dynamic> _$StorageSummaryToJson(_StorageSummary instance) =>
+    <String, dynamic>{
+      'totalBytes': instance.totalBytes,
+      'documentCount': instance.documentCount,
+    };
