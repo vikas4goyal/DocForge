@@ -3,18 +3,177 @@ schema: spec-driven
 # Project context (optional)
 # This is shown to AI when creating artifacts.
 # Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  # doc_forge — Project Context
+
+  ## General
+  - Project type: Flutter (production application)
+  - Language: Dart (SDK ^3.12.2)
+  - Target platforms: Android and iOS ONLY
+  - Explicitly out of scope: Web, macOS, Windows, Linux. Never propose,
+    scaffold, or add dependencies for these platforms.
+  - Version 1 is offline-first, but every design must leave room for future
+    cloud sync.
+
+  ## Architecture — Feature-First Clean Architecture
+  Every feature lives in `lib/features/<feature>/` and contains exactly these
+  layers:
+    presentation/    # widgets, screens, controllers bound to UI
+    application/     # use cases, orchestration, app services
+    domain/          # entities, value objects, repository interfaces, failures
+    infrastructure/  # repository implementations, data sources, DTO mapping
+  Shared/cross-cutting code lives in `lib/core/` (or `lib/shared/`).
+
+  Rules:
+  - No feature may import from another feature directly.
+  - Cross-feature communication happens through abstractions only (domain-level
+    interfaces exposed via providers in core/shared).
+  - Dependency direction: presentation -> application -> domain; infrastructure
+    depends on domain and implements its interfaces. Domain depends on nothing.
+
+  ## State management
+  - Riverpod (latest) is the only state management solution.
+  - Do NOT recommend or introduce Bloc, Provider (package:provider), GetX, or
+    similar alternatives.
+  - Prefer code-generated providers (riverpod_generator) and AsyncNotifier /
+    Notifier over legacy StateNotifier/ChangeNotifier.
+
+  ## Navigation
+  - GoRouter with typed routes (go_router_builder / TypedGoRoute).
+  - No untyped string-literal navigation in feature code.
+
+  ## Models
+  - Freezed for immutable models and sealed unions.
+  - json_serializable for (de)serialization.
+  - No manual JSON parsing anywhere. All models are immutable.
+
+  ## Data & storage
+  - Primary database: Isar
+  - Simple preferences: SharedPreferences
+  - Sensitive data (tokens, secrets, PII): flutter_secure_storage
+  - Storage access is always behind a domain-level repository interface.
+
+  ## Networking
+  - Dio, wrapped behind repository abstractions.
+  - Networking layer designed for future cloud sync (interceptors, retry,
+    auth token refresh, cancellation, typed error mapping).
+
+  ## Dependency injection
+  - Riverpod providers only. Avoid service locators (get_it, etc.) and
+    singletons.
+
+  ## Code style
+  - Follow Effective Dart.
+  - Prefer: const constructors, immutable classes, sealed classes, extension
+    methods, composition over inheritance, small widgets, small files.
+  - Avoid: God classes, singletons, global mutable state, massive widgets,
+    business logic inside UI.
+
+  ## UI
+  - Material 3 with adaptive Cupertino widgets where platform-appropriate.
+  - Responsive layouts including tablet support.
+  - Dark mode support is mandatory.
+  - Accessibility is mandatory: semantics labels, contrast, text scaling,
+    touch target sizes.
+
+  ## Widget previews (mandatory)
+  - Flutter supports SwiftUI-style widget previews via the `@Preview()`
+    annotation from `package:flutter/widget_previews.dart`, rendered with
+    `flutter widget-preview start`.
+  - EVERY reusable widget and every screen must ship at least one `@Preview()`
+    entry alongside it.
+  - Previews must cover the meaningful states of the widget: default, loading,
+    error, empty, and long-content/overflow where applicable.
+  - Previews must also cover light and dark theme, and phone plus tablet sizes
+    for screens.
+  - Previews must be deterministic: no live network, no real database, no
+    randomness or wall-clock dependence. Feed them fixed fixture data through
+    Riverpod provider overrides.
+  - Preview functions are const-friendly, self-contained, and named clearly
+    (e.g. `@Preview(name: 'DocCard — dark')`).
+  - Widgets must be previewable by construction: no hidden dependency on
+    ambient state that a preview cannot supply.
+
+  ## Performance
+  - Prefer lazy loading, background isolates for heavy work, memory
+    optimisation, and battery optimisation.
+  - Avoid unnecessary rebuilds (fine-grained provider watching, const widgets,
+    selective `select()` usage).
+
+  ## Testing (mandatory)
+  - Every implementation must include tests. A feature without tests is not
+    complete.
+  - Required test types: unit, widget, integration, golden tests for major
+    screens, repository tests, serialization tests, navigation tests, state
+    management tests.
+  - Mock platform integrations where appropriate.
+  - Minimum overall coverage: 80%. Business logic coverage target: 90%.
+
+  ## AI-assisted development
+  The codebase is optimised for AI-assisted development. Every feature must be
+  modular, independently testable, deterministic, free of hidden state, and
+  loosely coupled.
+  - Every screen exposes stable widget keys (`Key('<feature>_<element>')`).
+  - Every important control exposes a semantics label.
+  - Architecture must permit automated UI testing end to end.
+
+  ## CI
+  CI must run, in order: `flutter pub get`, `dart format --set-exit-if-changed`,
+  `flutter analyze`, `flutter test`, integration tests, golden tests, coverage.
+  The build fails when coverage < 80%, analysis fails, tests fail, or
+  formatting fails.
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+rules:
+  proposal:
+    - State the architecture impact, including which feature folders and layers
+      are touched.
+    - Include the resulting folder structure under
+      presentation/application/domain/infrastructure.
+    - List new or changed dependencies and justify each one.
+    - Include migration considerations (Isar schema migrations, stored
+      preference keys, secure-storage keys, route changes).
+    - Include performance considerations (rebuild cost, isolate usage, lazy
+      loading, memory, battery).
+    - Include security considerations (what data is sensitive and where it is
+      stored).
+    - Include the testing strategy across unit, widget, golden, integration,
+      repository, serialization, navigation, and state tests.
+    - Include an explicit Definition of Done.
+    - Include risks and mitigations.
+    - Include future extensibility, especially the path to cloud sync.
+    - Confirm the change is Android/iOS only; never introduce web or desktop
+      support.
+  design:
+    - Respect feature-first clean architecture; show the dependency direction
+      and prove no feature-to-feature coupling.
+    - Specify Riverpod providers (names, types, scopes) instead of any service
+      locator.
+    - Specify Freezed models and json_serializable contracts; no manual JSON.
+    - Specify GoRouter typed routes for any navigation change.
+    - Specify persistence choice per data item — Isar, SharedPreferences, or
+      flutter_secure_storage — with a rationale.
+    - Define widget keys and semantics labels for every screen and important
+      control.
+    - "Define the `@Preview()` coverage for each new widget and screen: which
+      states, themes, and form factors are previewed and which fixtures feed
+      them."
+    - Call out anything that would introduce hidden state, global mutable
+      state, or nondeterminism, and how it is avoided.
+  specs:
+    - Write requirements as observable, testable behaviour.
+    - Include accessibility, dark mode, responsive/tablet, and offline-first
+      behaviour as explicit requirements where relevant.
+    - Reference the widget keys and semantics labels that automated UI tests
+      will rely on.
+  tasks:
+    - Break tasks into chunks of at most 2 hours.
+    - Pair every implementation task with its test task; a task is not done
+      until its tests pass.
+    - Include a task for `@Preview()` entries whenever a widget or screen is
+      added or changed.
+    - Include tasks for `dart format`, `flutter analyze`, and coverage
+      verification before completion.
+    - Include a golden-test task for any new or materially changed major
+      screen.
