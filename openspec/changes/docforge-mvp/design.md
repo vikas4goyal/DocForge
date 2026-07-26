@@ -140,12 +140,14 @@ Cubits are **not** created in the composition root; the root exposes a plain `Ap
 | Document record (id, title, dates, pageCount, size, folderId, isFavourite, isArchived, updatedAt) | **Isar** | Queried, sorted and filtered constantly; needs indexes on `updatedAt`, `folderId`, `isArchived`. |
 | Folder record (id, name, createdAt) | **Isar** | Queried and joined for counts. |
 | Page record (id, documentId, order, imagePath, rotation, enhancement settings) | **Isar** | Ordered queries per document; small rows. |
-| Recognised OCR text | **Isar**, separate `OcrTextEntity` collection with a word index | Large text must not be loaded by document-list queries; a separate collection keeps list queries fast while giving search an index. |
+| Recognised OCR text | **Isar**, separate `OcrTextEntity` collection with a tokenised word-list index | Large text must not be loaded by document-list queries; a separate collection keeps list queries fast while giving search an index. |
 | Page image files and generated PDFs | **Filesystem**, app-private, `<appDocuments>/documents/<documentId>/` | Binary blobs in a database bloat it, slow queries and make backup/migration harder. Isar stores only the path. |
 | Theme, OCR language, PDF quality, image quality, file-naming pattern, default save location, onboarding-completed flag | **SharedPreferences**, namespaced `settings.*` / `app.*` | Small, non-sensitive scalars read at startup; no query needs. |
 | App-lock enabled flag, PDF passwords | **flutter_secure_storage**, namespaced `secure.*` | Secrets. Keychain on iOS, EncryptedSharedPreferences on Android. Held in memory only for the duration of an operation and never logged. |
 
 Every key is a documented constant in `lib/core/storage/storage_keys.dart` — never an inline string.
+
+**Timestamps are UTC throughout (task 4.6).** Isar returns every `DateTime` in *local* time regardless of what was written, so a UTC value round-trips to an equal instant that is not `==`. Both the entity mappers and `SystemClock` therefore normalise to UTC, and conversion to local time happens only when formatting for display. Beyond fixing equality, this is what lets a future sync layer reconcile records written on devices in different timezones. Caught by the repository round-trip tests.
 
 **Sync-readiness baked in now:** every Isar entity carries a stable UUID `id` (not an auto-increment key) plus `createdAt` and `updatedAt`. This costs nothing today and is the difference between a tractable and an intractable sync migration later.
 
@@ -154,7 +156,7 @@ Every key is a documented constant in `lib/core/storage/storage_keys.dart` — n
 Verified empirically against Flutter 3.44.8 / Dart 3.12.2:
 
 - `isar` ^3.1.0+1 resolves *on its own*, but `isar_generator` 3.1.0+1 pins `source_gen ^1.2.2` and `dart_style ^2.2.3`, which is **incompatible with `freezed` ^3.0.0** (needs `source_gen ^2.0.0` / `dart_style ^3.0.0`). Version solving fails outright. Upstream Isar is therefore unusable in this project, not merely stale.
-- `isar_community` / `isar_community_flutter_libs` / `isar_community_generator` ^3.3.2 resolve cleanly alongside `freezed` ^3.0.0 and `json_serializable` ^6.8.0 (it pulls `source_gen` 4.2.4), and a combined `build_runner` run generates Isar, Freezed and json_serializable outputs together with no conflict. A collection using `@Index(type: IndexType.words)` — the index search depends on — generates and analyses correctly.
+- `isar_community` / `isar_community_flutter_libs` / `isar_community_generator` ^3.3.2 resolve cleanly alongside `freezed` ^3.0.0 and `json_serializable` ^6.8.0 (it pulls `source_gen` 4.2.4), and a combined `build_runner` run generates Isar, Freezed and json_serializable outputs together with no conflict. **Correction (task 4.3):** an earlier note here claimed Isar offers an `IndexType.words` full-text index. It does not — `IndexType` provides only `value`, `hash` and `hashElements`. Word search is instead implemented by tokenising the text into a `List<String>` field and indexing it with `IndexType.value`, which supports `anyStartsWith` prefix queries. `DocumentEntity.titleWords` is derived from the title on every write so the two cannot drift apart, and `OcrTextEntity` will use the same pattern. This changes the mechanism, not the design: search still runs on an index rather than an in-memory scan.
 
 Two consequences to carry forward: `json_annotation` must be constrained `^4.12.0` (json_serializable rejects earlier versions), and the current `build_runner` has **removed** `--delete-conflicting-outputs`, so build scripts and CI must not pass it. Generated Isar code emits `experimental_member_use` warnings for `putByIndex`-family members, so generated files are excluded from analysis in `analysis_options.yaml`.
 
@@ -269,7 +271,7 @@ All three sit behind `PdfRepository`, so the manipulation library can be swapped
 
 ### 13. Search
 
-`SearchDocuments` queries Isar's word-indexed `OcrTextEntity` and the `title` index, merges by document id, and returns results with a match snippet and its source (title or text). Archived documents are excluded unless explicitly requested. Filters (folder, creation-date range, modified-date range) are applied as indexed query clauses, not as in-memory post-filtering, so performance holds at several thousand documents.
+`SearchDocuments` queries the tokenised word-list indexes on `OcrTextEntity` and `DocumentEntity.titleWords`, merges by document id, and returns results with a match snippet and its source (title or text). Archived documents are excluded unless explicitly requested. Filters (folder, creation-date range, modified-date range) are applied as indexed query clauses, not as in-memory post-filtering, so performance holds at several thousand documents.
 
 If the Isar decision reverses (see Open Questions), SQLite FTS5 is the replacement and `SearchDocuments` is the only use case that changes shape.
 

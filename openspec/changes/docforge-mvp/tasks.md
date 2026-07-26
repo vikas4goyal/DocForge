@@ -45,32 +45,32 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 3. Onboarding
 
-- [ ] 3.1 Implement the `onboarding` domain and application layers: onboarding-completed flag repository interface, `CompleteOnboarding` and `IsOnboardingComplete` use cases.
-- [ ] 3.2 Unit-test the onboarding use cases.
-- [ ] 3.3 Implement the SharedPreferences-backed onboarding repository; write repository tests.
-- [ ] 3.4 Implement `OnboardingCubit` and `OnboardingState` (Equatable, all fields in `props`) with the welcome → privacy → permission → finished transitions.
-- [ ] 3.5 Write `bloc_test` coverage for `OnboardingCubit`: full state sequence including permission granted, denied and skipped.
-- [ ] 3.6 Implement the Welcome, Privacy & Offline Introduction and Camera Permission screens with the keys from `specs/onboarding/spec.md`.
-- [ ] 3.7 Widget-test all three onboarding screens, asserting through the specified keys.
-- [ ] 3.8 Wire the onboarding gate so first launch routes to onboarding and returning launches route to Home; write navigation tests for both branches, including after an app update.
-- [ ] 3.9 Add `@Preview()` entries for each onboarding screen: default, loading, empty, error, long content, plus phone, tablet, light and dark.
-- [ ] 3.10 Verify accessibility: semantics labels on every control, 48dp touch targets, maximum text scale without overflow, high contrast. Add tests.
-- [ ] 3.11 Add dartdoc to all new public APIs in the onboarding feature.
-- [ ] 3.12 Run `dart format`, `flutter analyze`, the layering check and coverage for group 3.
+- [x] 3.1 Implement the `onboarding` domain and application layers: onboarding-completed flag repository interface, `CompleteOnboarding` and `IsOnboardingComplete` use cases.
+- [x] 3.2 Unit-test the onboarding use cases.
+- [x] 3.3 Implement the SharedPreferences-backed onboarding repository; write repository tests.
+- [x] 3.4 Implement `OnboardingCubit` and `OnboardingState` (Equatable, all fields in `props`) with the welcome → privacy → permission → finished transitions.
+- [x] 3.5 Write `bloc_test` coverage for `OnboardingCubit`: full state sequence including permission granted, denied and skipped.
+- [x] 3.6 Implement the Welcome, Privacy & Offline Introduction and Camera Permission screens with the keys from `specs/onboarding/spec.md`.
+- [x] 3.7 Widget-test all three onboarding screens, asserting through the specified keys.
+- [x] 3.8 Wire the onboarding gate so first launch routes to onboarding and returning launches route to Home; write navigation tests for both branches, including after an app update.
+- [x] 3.9 Add `@Preview()` entries for each onboarding screen: default, loading, empty, error, long content, plus phone, tablet, light and dark.
+- [x] 3.10 Verify accessibility: semantics labels on every control, 48dp touch targets, maximum text scale without overflow, high contrast. Add tests.
+- [x] 3.11 Add dartdoc to all new public APIs in the onboarding feature.
+- [x] 3.12 Run `dart format`, `flutter analyze`, the layering check and coverage for group 3.
 
 ## 4. Document library and folders
 
-- [ ] 4.1 Implement the `document-library` domain layer: `Document`, `Folder`, `Page`, `StorageSummary` entities and the `DocumentRepository`, `FolderRepository`, `PageRepository` interfaces.
-- [ ] 4.2 Unit-test the domain business rules: a document must retain at least one page, duplicate folder names are rejected, archived documents are excluded from recents and lists.
-- [ ] 4.3 Implement the Isar collections (`DocumentEntity`, `PageEntity`, `FolderEntity`) with UUID ids, `createdAt`/`updatedAt`, `schemaVersion` and the indexes from `design.md` §6.
-- [ ] 4.4 Implement DTOs and mappers between Isar collections and domain entities; write serialization round-trip tests for each.
-- [ ] 4.5 Implement the file store for `<appDocuments>/documents/<documentId>/` with the on-disk layout version marker.
-- [ ] 4.6 Implement the repositories; write repository tests against a temp-directory Isar instance, including offline behaviour.
-- [ ] 4.7 Implement the lifecycle use cases: `SaveDocument`, `RenameDocument`, `MoveDocument`, `DuplicateDocument`, `ArchiveDocument`, `RestoreDocument`, `DeleteDocument`, `PurgeDocument`.
-- [ ] 4.8 Unit-test every lifecycle use case, including empty-name rejection and that permanent removal deletes the record, PDF, page images and OCR text.
-- [ ] 4.9 Implement the folder use cases: `CreateFolder`, `RenameFolder`, `DeleteFolder` (with the move-or-delete choice), and per-folder document counts.
-- [ ] 4.10 Unit-test the folder use cases, including that deleting a folder never silently loses documents.
-- [ ] 4.11 Implement `ComputeStorageSummary` and unit-test it against known fixtures.
+- [x] 4.1 Implement the `document-library` domain layer: `Document`, `Folder`, `Page`, `StorageSummary` entities and the `DocumentRepository`, `FolderRepository`, `PageRepository` interfaces.
+- [x] 4.2 Unit-test the domain business rules: a document must retain at least one page, duplicate folder names are rejected, archived documents are excluded from recents and lists.
+- [x] 4.3 Implement the Isar collections (`DocumentEntity`, `PageEntity`, `FolderEntity`) with UUID ids, `createdAt`/`updatedAt`, `schemaVersion` and the indexes from `design.md` §6.
+- [x] 4.4 Implement DTOs and mappers between Isar collections and domain entities; write serialization round-trip tests for each.
+- [x] 4.5 Implement the file store for `<appDocuments>/documents/<documentId>/` with the on-disk layout version marker.
+- [x] 4.6 Implement the repositories; write repository tests against a temp-directory Isar instance, including offline behaviour.
+- [x] 4.7 Implement the lifecycle use cases: `SaveDocument`, `RenameDocument`, `MoveDocument`, `DuplicateDocument`, `ArchiveDocument`, `RestoreDocument`, `DeleteDocument`, `PurgeDocument`.
+- [x] 4.8 Unit-test every lifecycle use case, including empty-name rejection and that permanent removal deletes the record, PDF, page images and OCR text.
+- [x] 4.9 Implement the folder use cases: `CreateFolder`, `RenameFolder`, `DeleteFolder` (with the move-or-delete choice), and per-folder document counts.
+- [x] 4.10 Unit-test the folder use cases, including that deleting a folder never silently loses documents.
+- [x] 4.11 Implement `ComputeStorageSummary` and unit-test it against known fixtures.
 - [ ] 4.12 Implement `DocumentListCubit`, `DocumentDetailCubit` and `FolderCubit` with their Equatable states and named factory constructors.
 - [ ] 4.13 Write `bloc_test` coverage for all three Cubits: loading, ready, empty, failure, pagination and each lifecycle action.
 - [ ] 4.14 Implement the document list, document detail, folder list and folder detail screens with the keys from `specs/document-library/spec.md`.

@@ -17,6 +17,13 @@ abstract interface class Clock {
 
 /// A [Clock] backed by the real system time.
 ///
+/// Reports **UTC**, not local time. Timestamps are stored, compared and sorted
+/// throughout the app, and Isar returns every `DateTime` in local time — so
+/// without one canonical representation a stored value and a freshly-read one
+/// describe the same instant yet compare unequal. UTC is also what a future
+/// sync layer needs when reconciling devices in different timezones. Convert to
+/// local only when formatting for display.
+///
 /// Used in production only. Anything that renders or asserts on a timestamp
 /// must be given a [FixedClock] instead.
 class SystemClock implements Clock {
@@ -24,7 +31,7 @@ class SystemClock implements Clock {
   const SystemClock();
 
   @override
-  DateTime now() => DateTime.now();
+  DateTime now() => DateTime.now().toUtc();
 }
 
 /// A [Clock] that always reports the same instant.

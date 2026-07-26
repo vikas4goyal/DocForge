@@ -6,11 +6,19 @@
 library;
 
 import 'package:doc_forge/app/app.dart';
+import 'package:doc_forge/app/app_dependencies.dart';
 import 'package:doc_forge/app/composition_root.dart';
 import 'package:doc_forge/app/router/app_router.dart';
+import 'package:doc_forge/app/router/app_routes.dart';
 import 'package:doc_forge/app/router/route_gates.dart';
 import 'package:doc_forge/core/widgets/app_state_views.dart';
+import 'package:doc_forge/features/onboarding/application/usecases/onboarding_usecases.dart';
+import 'package:doc_forge/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
+import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:doc_forge/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 /// Boots the application.
 Future<void> main() async {
@@ -20,47 +28,70 @@ Future<void> main() async {
 
   final dependencies = await buildAppDependencies();
 
-  // Both gates are placeholders until their owning features land: the app is
-  // unlocked and onboarding is complete, so every route is reachable while the
-  // remaining capabilities are built. `app-security` supplies the real lock
-  // gate and `onboarding` the real onboarding gate.
+  // Onboarding owns its own gate. The flag is read once here, before the first
+  // frame, so the router's synchronous redirect has an answer immediately —
+  // otherwise a first-time user would see Home flash before onboarding.
+  final onboardingRepository = OnboardingRepositoryImpl(
+    dependencies.preferences,
+  );
+  final onboardingGate = OnboardingGateImpl(
+    IsOnboardingComplete(onboardingRepository).call,
+  );
+  await onboardingGate.load();
+
+  // The lock gate is still a placeholder: `app-security` supplies the real one.
   final router = createAppRouter(
     guard: RouteGuard(
       lockGate: FakeAppLockGate(),
-      onboardingGate: FakeOnboardingGate(),
+      onboardingGate: onboardingGate,
     ),
-    screens: _placeholderScreens,
+    screens: _screens(dependencies, onboardingRepository, onboardingGate),
   );
 
   runApp(DocForgeApp(dependencies: dependencies, router: router));
 }
 
-/// Placeholder screens shown until each capability is implemented.
-///
-/// Every route resolves to a labelled screen rather than a crash, so the app is
-/// runnable on a device throughout the build-out and each route can be checked
-/// as its feature lands. Entries are replaced one at a time as the
-/// corresponding feature group is completed.
-final _placeholderScreens = AppScreens(
-  onboarding: (_) => const _Placeholder('Onboarding'),
-  unlock: (_) => const _Placeholder('Unlock'),
-  home: (_) => const _Placeholder('Home'),
-  scan: (_) => const _Placeholder('Scan'),
-  scanReview: (_) => const _Placeholder('Review pages'),
-  scanEnhance: (_) => const _Placeholder('Enhance'),
-  scanPreview: (_) => const _Placeholder('Preview document'),
-  documents: (_) => const _Placeholder('Documents'),
-  documentDetail: (_, id) => _Placeholder('Document ${id.value}'),
-  documentEdit: (_, id) => _Placeholder('Edit ${id.value}'),
-  folders: (_) => const _Placeholder('Folders'),
-  folderDetail: (_, id) => _Placeholder('Folder ${id.value}'),
-  search: (_) => const _Placeholder('Search'),
-  favourites: (_) => const _Placeholder('Favourites'),
-  archive: (_) => const _Placeholder('Archive'),
-  settings: (_) => const _Placeholder('Settings'),
-  about: (_) => const _Placeholder('About'),
-  privacy: (_) => const _Placeholder('Privacy policy'),
-);
+/// Builds the screen set, replacing placeholders as features land.
+AppScreens _screens(
+  AppDependencies dependencies,
+  OnboardingRepositoryImpl onboardingRepository,
+  OnboardingGateImpl onboardingGate,
+) {
+  return AppScreens(
+    onboarding: (context) => BlocProvider(
+      create: (_) => OnboardingCubit(
+        CompleteOnboarding(onboardingRepository),
+        RequestOnboardingCameraPermission(dependencies.permissions),
+      ),
+      child: OnboardingScreen(
+        onFinished: () {
+          // Update the gate first: the router re-evaluates its redirect on
+          // navigation, and a stale gate would bounce the user straight back
+          // into onboarding.
+          onboardingGate.markComplete();
+          context.go(AppRoutes.home);
+        },
+      ),
+    ),
+    unlock: (_) => const _Placeholder('Unlock'),
+    home: (_) => const _Placeholder('Home'),
+    scan: (_) => const _Placeholder('Scan'),
+    scanReview: (_) => const _Placeholder('Review pages'),
+    scanEnhance: (_) => const _Placeholder('Enhance'),
+    scanPreview: (_) => const _Placeholder('Preview document'),
+    documents: (_) => const _Placeholder('Documents'),
+    documentDetail: (_, id) => _Placeholder('Document ${id.value}'),
+    documentEdit: (_, id) => _Placeholder('Edit ${id.value}'),
+    folders: (_) => const _Placeholder('Folders'),
+    folderDetail: (_, id) => _Placeholder('Folder ${id.value}'),
+    search: (_) => const _Placeholder('Search'),
+    favourites: (_) => const _Placeholder('Favourites'),
+    archive: (_) => const _Placeholder('Archive'),
+    settings: (_) => const _Placeholder('Settings'),
+    about: (_) => const _Placeholder('About'),
+    privacy: (_) => const _Placeholder('Privacy policy'),
+  );
+}
 
 /// A labelled stand-in for a screen that has not been built yet.
 class _Placeholder extends StatelessWidget {

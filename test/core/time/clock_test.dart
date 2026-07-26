@@ -14,6 +14,13 @@ void main() {
         lessThan(const Duration(seconds: 5)),
       );
     });
+
+    test('reports UTC', () {
+      // Isar returns every DateTime in local time, so the domain has to have
+      // one canonical representation or a stored value and a freshly-read one
+      // describe the same instant yet compare unequal.
+      expect(const SystemClock().now().isUtc, isTrue);
+    });
   });
 
   group('FixedClock', () {

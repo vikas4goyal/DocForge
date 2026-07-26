@@ -57,6 +57,18 @@ sealed class Result<T> with _$Result<T> {
     Failed<T>(:final failure) => Result<R>.failure(failure),
   };
 
+  /// Chains an asynchronous fallible operation onto a successful result.
+  ///
+  /// The common shape in a use case: read a record, then write it back. Without
+  /// this each call site would unwrap and rewrap the result by hand, which is
+  /// exactly where a failure tends to get silently dropped.
+  Future<Result<R>> flatMapAsync<R>(
+    Future<Result<R>> Function(T value) transform,
+  ) async => switch (this) {
+    Success<T>(:final value) => await transform(value),
+    Failed<T>(:final failure) => Result<R>.failure(failure),
+  };
+
   /// Returns the value when successful, or [fallback] when not.
   T getOrElse(T fallback) => valueOrNull ?? fallback;
 }

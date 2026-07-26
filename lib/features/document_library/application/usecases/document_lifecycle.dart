@@ -1,0 +1,293 @@
+/// Use cases for the document lifecycle.
+///
+/// Every rule the library enforces lives here or in `domain/library_rules.dart`
+/// — never in a Cubit. A Cubit calls one of these and emits the result.
+library;
+
+import 'package:doc_forge/core/contracts/models/document.dart';
+import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/storage_keys.dart';
+import 'package:doc_forge/core/time/clock.dart';
+import 'package:doc_forge/features/document_library/domain/library_rules.dart';
+import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
+import 'package:doc_forge/features/document_library/infrastructure/datasource/document_file_store.dart';
+
+/// Renames a document.
+class RenameDocument {
+  /// Creates the use case.
+  const RenameDocument(this._documents, this._clock);
+
+  final DocumentRepository _documents;
+  final Clock _clock;
+
+  /// Renames [id] to [title].
+  ///
+  /// Rejects an empty or whitespace-only name; the existing title is kept. The
+  /// modified date is refreshed, the creation date never is.
+  Future<Result<Document>> call(DocumentId id, String title) async {
+    final normalised = NameRules.normalise(title);
+    if (normalised == null) {
+      return const Result<Document>.failure(
+        Failure.unexpected(debugDetail: 'empty document title'),
+      );
+    }
+
+    final found = await _documents.findById(id);
+
+    return found.flatMapAsync(
+      (document) => _documents.save(
+        document.copyWith(title: normalised, updatedAt: _clock.now()),
+      ),
+    );
+  }
+}
+
+/// Moves a document into a folder, or out of one.
+class MoveDocument {
+  /// Creates the use case.
+  const MoveDocument(this._documents, this._clock);
+
+  final DocumentRepository _documents;
+  final Clock _clock;
+
+  /// Moves [id] into [folderId], or unfiles it when [folderId] is null.
+  Future<Result<Document>> call(DocumentId id, FolderId? folderId) async {
+    final found = await _documents.findById(id);
+
+    return found.flatMapAsync(
+      (document) => _documents.save(
+        // copyWith cannot clear a nullable field, so unfiling is expressed by
+        // rebuilding the record without a folder.
+        Document(
+          id: document.id,
+          title: document.title,
+          createdAt: document.createdAt,
+          updatedAt: _clock.now(),
+          pageCount: document.pageCount,
+          sizeInBytes: document.sizeInBytes,
+          filePath: document.filePath,
+          folderId: folderId,
+          isFavourite: document.isFavourite,
+          isArchived: document.isArchived,
+          isProtected: document.isProtected,
+          hasRecognisedText: document.hasRecognisedText,
+        ),
+      ),
+    );
+  }
+}
+
+/// Toggles a document's favourite status.
+class ToggleFavourite {
+  /// Creates the use case.
+  const ToggleFavourite(this._documents, this._clock);
+
+  final DocumentRepository _documents;
+  final Clock _clock;
+
+  /// Toggles whether [id] is a favourite.
+  Future<Result<Document>> call(DocumentId id) async {
+    final found = await _documents.findById(id);
+
+    return found.flatMapAsync(
+      (document) => _documents.save(
+        document.copyWith(
+          isFavourite: !document.isFavourite,
+          updatedAt: _clock.now(),
+        ),
+      ),
+    );
+  }
+}
+
+/// Archives a document, removing it from lists and recents.
+class ArchiveDocument {
+  /// Creates the use case.
+  const ArchiveDocument(this._documents, this._clock);
+
+  final DocumentRepository _documents;
+  final Clock _clock;
+
+  /// Archives [id].
+  Future<Result<Document>> call(DocumentId id) async {
+    final found = await _documents.findById(id);
+
+    return found.flatMapAsync(
+      (document) => _documents.save(
+        document.copyWith(isArchived: true, updatedAt: _clock.now()),
+      ),
+    );
+  }
+}
+
+/// Restores an archived document.
+class RestoreDocument {
+  /// Creates the use case.
+  const RestoreDocument(this._documents, this._clock);
+
+  final DocumentRepository _documents;
+  final Clock _clock;
+
+  /// Restores [id] to its previous folder.
+  ///
+  /// The folder assignment was never cleared by archiving, so restoring simply
+  /// clears the flag and the document reappears where it was.
+  Future<Result<Document>> call(DocumentId id) async {
+    final found = await _documents.findById(id);
+
+    return found.flatMapAsync(
+      (document) => _documents.save(
+        document.copyWith(isArchived: false, updatedAt: _clock.now()),
+      ),
+    );
+  }
+}
+
+/// Creates an independent copy of a document.
+class DuplicateDocument {
+  /// Creates the use case.
+  const DuplicateDocument(
+    this._documents,
+    this._pages,
+    this._files,
+    this._clock,
+    this._ids,
+  );
+
+  final DocumentRepository _documents;
+  final PageRepository _pages;
+  final DocumentFileStore _files;
+  final Clock _clock;
+  final IdGenerator _ids;
+
+  /// Duplicates [id], returning the new document.
+  ///
+  /// The copy is fully independent: its own identifier, its own files and its
+  /// own page records, so editing or deleting one cannot affect the other.
+  Future<Result<Document>> call(DocumentId id) async {
+    final found = await _documents.findById(id);
+    if (found case Failed<Document>(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
+
+    final original = found.valueOrNull!;
+    final newId = DocumentId(_ids.generate());
+
+    final copied = await _files.copyDocument(id, newId);
+    if (copied case Failed<void>(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
+
+    final pdfPath = await _files.pdfPathFor(newId);
+    if (pdfPath case Failed<String>(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
+
+    final now = _clock.now();
+    final duplicate = original.copyWith(
+      id: newId,
+      title: DocumentRules.duplicateTitle(original.title),
+      createdAt: now,
+      updatedAt: now,
+      filePath: pdfPath.valueOrNull!,
+    );
+
+    final saved = await _documents.save(duplicate);
+    if (saved case Failed<Document>(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
+
+    // Page records are copied with fresh identifiers so the two documents never
+    // share a page row.
+    final originalPages = await _pages.forDocument(id);
+    if (originalPages case Success(:final value)) {
+      final copiedPages = value
+          .map(
+            (page) =>
+                page.copyWith(id: PageId(_ids.generate()), documentId: newId),
+          )
+          .toList();
+      await _pages.replaceAll(newId, copiedPages);
+    }
+
+    return Result<Document>.success(duplicate);
+  }
+}
+
+/// Permanently removes a document and everything belonging to it.
+class PurgeDocument {
+  /// Creates the use case.
+  const PurgeDocument(
+    this._documents,
+    this._pages,
+    this._files,
+    this._secureStorage,
+  );
+
+  final DocumentRepository _documents;
+  final PageRepository _pages;
+  final DocumentFileStore _files;
+  final SecureStore _secureStorage;
+
+  /// Permanently removes [id].
+  ///
+  /// Removes the record, the page rows, every file on disk and any stored PDF
+  /// password. Ordered record-last on purpose: if a step fails part-way, an
+  /// orphaned file is recoverable, whereas a record pointing at deleted files
+  /// renders as a broken document the user cannot fix.
+  Future<Result<void>> call(DocumentId id) async {
+    final passwordRemoved = await _secureStorage.delete(
+      SecureStorageKeys.pdfPassword(id.value),
+    );
+    if (passwordRemoved case Failed<void>(:final failure)) {
+      return Result<void>.failure(failure);
+    }
+
+    final filesRemoved = await _files.deleteDocument(id);
+    if (filesRemoved case Failed<void>(:final failure)) {
+      return Result<void>.failure(failure);
+    }
+
+    final pagesRemoved = await _pages.deleteForDocument(id);
+    if (pagesRemoved case Failed<void>(:final failure)) {
+      return Result<void>.failure(failure);
+    }
+
+    return _documents.delete(id);
+  }
+}
+
+/// Computes how much storage the library consumes.
+class ComputeStorageSummary {
+  /// Creates the use case.
+  const ComputeStorageSummary(this._documents, this._files);
+
+  final DocumentRepository _documents;
+  final DocumentFileStore _files;
+
+  /// Returns the current storage summary.
+  ///
+  /// Bytes come from the filesystem rather than the sum of recorded document
+  /// sizes: page images and thumbnails also occupy space, and the recorded size
+  /// covers only the PDF.
+  Future<Result<StorageSummary>> call() async {
+    final bytes = await _files.totalBytes();
+    if (bytes case Failed<int>(:final failure)) {
+      return Result<StorageSummary>.failure(failure);
+    }
+
+    // Archived documents still occupy storage, so the count includes them.
+    final visible = await _documents.count();
+    final archived = await _documents.count(filter: DocumentFilter.archived);
+
+    return Result<StorageSummary>.success(
+      StorageSummary(
+        totalBytes: bytes.valueOrNull!,
+        documentCount: visible.getOrElse(0) + archived.getOrElse(0),
+      ),
+    );
+  }
+}
