@@ -144,21 +144,21 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 8. OCR
 
-- [ ] 8.1 Implement the `ocr` domain layer: `RecognisedText`, text-block and bounding-box value objects, and the `OcrRepository` interface.
-- [ ] 8.2 Implement the on-device `OcrRepository` and a fake implementation returning fixture text with bounding boxes.
-- [ ] 8.3 Write repository tests against the fake, including the no-recognisable-text and failure paths.
-- [ ] 8.4 Implement the `OcrTextEntity` Isar collection with the word index; write repository and serialization tests.
-- [ ] 8.5 Implement `RecogniseText` running in a background isolate with per-page progress and cancellation; unit-test it, including that results are persisted and never recomputed.
-- [ ] 8.6 Implement `OcrCubit` and `OcrState`.
-- [ ] 8.7 Write `bloc_test` coverage for `OcrCubit`: running with progress, ready, empty, failure, cancelled and re-run.
-- [ ] 8.8 Implement the extracted-text view with copy, export and re-run controls using the specified keys.
-- [ ] 8.9 Widget-test the extracted-text view, including copy-to-clipboard confirmation and the long-text scrolling case.
-- [ ] 8.10 Implement `OcrTextSource` contract implementation for search and sharing; test against the contract.
-- [ ] 8.11 Add `@Preview()` entries for the extracted-text view and its widgets across all required states, form factors and themes.
-- [ ] 8.12 Verify OCR accessibility: text exposed as readable content, controls labelled.
-- [ ] 8.13 Verify OCR runs with no network connection; add a test asserting no network call is made.
-- [ ] 8.14 Add dartdoc to all new public APIs and inline comments on bounding-box handling.
-- [ ] 8.15 Run `dart format`, `flutter analyze`, the layering check and coverage for group 8.
+- [x] 8.1 Implement the `ocr` domain layer: `RecognisedText`, text-block and bounding-box value objects, and the `OcrRepository` interface.
+- [x] 8.2 Implement the on-device `OcrRepository` and a fake implementation returning fixture text with bounding boxes.
+- [x] 8.3 Write repository tests against the fake, including the no-recognisable-text and failure paths.
+- [x] 8.4 Implement the `OcrTextEntity` Isar collection with the word index; write repository and serialization tests.
+- [x] 8.5 Implement `RecogniseText` running in a background isolate with per-page progress and cancellation; unit-test it, including that results are persisted and never recomputed.
+- [x] 8.6 Implement `OcrCubit` and `OcrState`.
+- [x] 8.7 Write `bloc_test` coverage for `OcrCubit`: running with progress, ready, empty, failure, cancelled and re-run.
+- [x] 8.8 Implement the extracted-text view with copy, export and re-run controls using the specified keys.
+- [x] 8.9 Widget-test the extracted-text view, including copy-to-clipboard confirmation and the long-text scrolling case.
+- [x] 8.10 Implement `OcrTextSource` contract implementation for search and sharing; test against the contract.
+- [x] 8.11 Add `@Preview()` entries for the extracted-text view and its widgets across all required states, form factors and themes.
+- [x] 8.12 Verify OCR accessibility: text exposed as readable content, controls labelled.
+- [x] 8.13 Verify OCR runs with no network connection; add a test asserting no network call is made.
+- [x] 8.14 Add dartdoc to all new public APIs and inline comments on bounding-box handling.
+- [x] 8.15 Run `dart format`, `flutter analyze`, the layering check and coverage for group 8.
 
 ## 9. PDF generation
 

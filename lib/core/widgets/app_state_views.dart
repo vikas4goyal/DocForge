@@ -111,6 +111,7 @@ class AppEmptyState extends StatelessWidget {
     this.icon,
     this.actionLabel,
     this.onAction,
+    this.actionKey,
   }) : assert(
          (actionLabel == null) == (onAction == null),
          'an action needs both a label and a callback',
@@ -130,6 +131,13 @@ class AppEmptyState extends StatelessWidget {
 
   /// Called when the call to action is activated.
   final VoidCallback? onAction;
+
+  /// Key applied to the call to action, so feature tests can target it.
+  ///
+  /// Mirrors [AppErrorView.retryKey]: an empty state's action is named by the
+  /// feature's spec, and a shared default key would make every feature's test
+  /// match every other feature's button.
+  final Key? actionKey;
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +177,7 @@ class AppEmptyState extends StatelessWidget {
             if (onAction != null) ...[
               const SizedBox(height: 24),
               FilledButton(
-                key: const Key('app_empty_state_action_button'),
+                key: actionKey ?? const Key('app_empty_state_action_button'),
                 onPressed: onAction,
                 child: Text(actionLabel!),
               ),

@@ -562,3 +562,60 @@ an undetected or unreadable capture returns `PageQuad.full`, which is the
 specified behaviour — the capture is kept, the whole frame becomes the default
 crop, and the user adjusts the corners by hand. `FullPageEdgeDetector` remains,
 both as that fallback and as the substitute tests and previews inject.
+
+### 23. OCR: language packs, granularity and persistence
+
+**Scripts, not languages.** ML Kit groups recognisers by script — one reads
+every Latin-script language, another every Chinese one. `OcrScript` follows that
+grouping because it is what the engine actually offers; modelling individual
+languages would promise a distinction the recogniser cannot make.
+
+**Only Latin ships, and the honest reason is that the choice is made at build
+time.** ML Kit's non-Latin recognisers are separate build dependencies, not
+runtime downloads, so a "first-use download" flow cannot be built over them
+without also shipping and hosting the models ourselves. Rather than offer a
+script and fail at the point of use, availability is a question behind
+`OcrLanguagePacks`: `BundledOcrLanguagePacks` reports Latin as available and
+everything else as not, and settings renders that. Adding a script later is a
+build-configuration change plus one line. The consequence to be clear about: the
+"works entirely offline" claim is unqualified for what ships, because what ships
+is bundled.
+
+**Text is taken at line granularity, not at ML Kit's block granularity.** A
+"block" is a paragraph, and its bounding box spans several lines of differing
+length. Placing invisible PDF text across that box makes selection in a reader
+grab the wrong words. A line's box is a tight fit around the text it contains,
+which is what the searchable-PDF requirement needs.
+
+**Bounding boxes are normalised against the image's own dimensions, read from
+the file.** ML Kit returns pixels; a caller describing the image wrongly would
+put the text layer in the wrong place, and that is invisible until someone
+selects text in a reader.
+
+**Recognition is per page, persisted immediately, and never recomputed.** Each
+result is stored before its event is emitted, so a page is either recognised and
+durable or never started — which is what makes "cancelling keeps already
+recognised pages" true, and what stops a reported-but-unstored result from being
+recomputed on the next open. An empty result is stored too: a page with nothing
+legible is a real answer, and retrying it every open would recognise a blank page
+forever.
+
+**A failed page does not stop the run**, unlike an enhancement batch. There, a
+failure means the later pages' inputs are suspect; here one unreadable page says
+nothing about the next, and the spec requires the document to stay usable
+without recognised text.
+
+**A store that cannot be read is treated as empty rather than fatal.** Worst
+case every page is recognised again — slow but correct — where failing outright
+would leave a usable document with no text at all.
+
+**The row records its document.** Permanent removal has to delete a document's
+recognised text after its pages are gone, so the link cannot be derived from the
+page at that point and is recorded at write time.
+
+**Correction found during this group: a tooltip is not a label.** The copy and
+export controls are icon-only and carried only `tooltip:`, which Flutter turns
+into a semantics *tooltip* rather than a label — so a screen reader announced
+nothing actionable, in direct violation of the spec. The label now lives on the
+icon's `semanticLabel`. Worth remembering for every icon-only button in the
+codebase.
