@@ -154,6 +154,7 @@ class _GatedApply implements ApplyEnhancement {
     required String sourcePath,
     required String destinationPath,
     required EnhancementSettings settings,
+    int? maxDimension,
   }) => _gate._enqueue();
 
   @override

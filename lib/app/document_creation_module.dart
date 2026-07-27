@@ -7,11 +7,13 @@
 library;
 
 import 'dart:io';
-
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/contracts/models/recognised_text.dart';
 import 'package:doc_forge/core/time/clock.dart';
+import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:doc_forge/features/ocr/application/usecases/ocr_usecases.dart';
 import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
 import 'package:doc_forge/features/ocr/infrastructure/repositories/isar_ocr_text_store.dart';
@@ -21,6 +23,8 @@ import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:doc_forge/features/pdf_generation/domain/repositories/pdf_repository.dart';
 import 'package:doc_forge/features/pdf_generation/infrastructure/pdf_composer.dart';
 import 'package:isar_community/isar.dart';
+
+
 
 /// Everything OCR and PDF generation need, built once.
 class DocumentCreationModule {
@@ -84,6 +88,7 @@ DocumentCreationModule buildDocumentCreationModule({
   required DocumentReader documentReader,
   required DocumentWriter documentWriter,
   required NamingPattern Function() namingPattern,
+  required ApplyEnhancement applyEnhancement,
   PdfComposer composer = const IsolatePdfComposer(),
   OcrRepository? recogniser,
   OcrScript Function() script = _defaultScript,
@@ -99,8 +104,39 @@ DocumentCreationModule buildDocumentCreationModule({
     return {for (final entry in texts.entries) entry.key.value: entry.value};
   }
 
+  /// Renders a page's stored enhancement before it is drawn into the PDF.
+  ///
+  /// Without this the composer draws the capture, and the saved document does
+  /// not carry the settings the user chose on the enhance screen — they were
+  /// recorded against the page and then never applied to anything.
+  ///
+  /// Written beside the capture rather than over it, so the settings stay
+  /// re-editable: a page enhanced once can be enhanced differently later from
+  /// the original rather than from an already-filtered image.
+  Future<String> resolvePageImage(
+    PageRef page, {
+    required int maxDimension,
+  }) async {
+    if (!EnhancementRules.requiresProcessing(page.enhancement)) {
+      return page.imagePath;
+    }
+
+    final result = await applyEnhancement.single(
+      sourcePath: page.imagePath,
+      destinationPath: '${page.imagePath}.composed.jpg',
+      settings: page.enhancement,
+      // The size composition will draw at. Filtering the full capture would do
+      // several times the work and then throw most of it away.
+      maxDimension: maxDimension,
+    );
+
+    // A page that could not be enhanced is still drawn, unfiltered. Losing the
+    // page from the document would be far worse than losing its filter.
+    return result.valueOrNull ?? page.imagePath;
+  }
+
   final save = SaveDocument(
-    BuildSearchablePdf(composer, textFor),
+    BuildSearchablePdf(composer, textFor, resolveImage: resolvePageImage),
     documentWriter,
     clock,
     ids,

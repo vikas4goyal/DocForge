@@ -14,6 +14,24 @@ import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:doc_forge/features/pdf_generation/domain/repositories/pdf_repository.dart';
 
+/// Produces the image a page should actually be drawn from.
+///
+/// A seam rather than a direct call into image enhancement: composing a PDF
+/// must not depend on the enhancement feature (`design.md` §2). The composition
+/// root supplies one that applies each page's stored settings; everything else
+/// — previews, tests, imports that were never enhanced — uses the identity.
+///
+/// [maxDimension] is the size the page will be drawn at, so an implementation
+/// can avoid processing pixels composition is about to discard.
+typedef PageImageResolver =
+    Future<String> Function(PageRef page, {required int maxDimension});
+
+/// Draws the page exactly as it was captured.
+Future<String> _unmodifiedPage(
+  PageRef page, {
+  required int maxDimension,
+}) async => page.imagePath;
+
 /// Reads recognised text for pages about to be composed.
 ///
 /// A function rather than the whole `OcrTextSource` contract, because
@@ -80,10 +98,20 @@ class GenerateDocumentName {
 /// Builds a searchable PDF from a bundle of pages.
 class BuildSearchablePdf {
   /// Creates the use case.
-  const BuildSearchablePdf(this._composer, this._textFor);
+  const BuildSearchablePdf(
+    this._composer,
+    this._textFor, {
+    this.resolveImage = _unmodifiedPage,
+  });
 
   final PdfComposer _composer;
   final PageTextLookup _textFor;
+
+  /// Produces the image each page is drawn from.
+  ///
+  /// Defaults to the capture itself, so every caller that never enhanced
+  /// anything — imports, previews, tests — keeps working untouched.
+  final PageImageResolver resolveImage;
 
   /// Composes [pages] into a PDF at [destinationPath].
   ///
@@ -115,9 +143,30 @@ class BuildSearchablePdf {
       return const Result<ComposedPdf>.failure(Failure.cancelled());
     }
 
+    // Resolved before composing, because the settings the user chose are stored
+    // against the page rather than baked into the file it points at. Composing
+    // straight from `imagePath` drew the unenhanced capture — the saved
+    // document did not match the preview the settings were chosen from.
+    //
+    // Rendered at the size the page will be drawn at, not at the capture's:
+    // composition caps every page at the quality setting, so filtering the full
+    // capture would do several times the work and then discard most of it.
+    final drawable = <PageRef>[];
+    for (final page in pages) {
+      if (token?.isCancelled ?? false) {
+        return const Result<ComposedPdf>.failure(Failure.cancelled());
+      }
+
+      final path = await resolveImage(
+        page,
+        maxDimension: quality.maxDimension,
+      );
+      drawable.add(page.copyWith(imagePath: path));
+    }
+
     return _composer.compose(
       PdfBuildRequest(
-        pages: PdfComposition.specsFor(pages, texts),
+        pages: PdfComposition.specsFor(drawable, texts),
         destinationPath: destinationPath,
         quality: quality,
       ),

@@ -36,6 +36,8 @@ import 'package:doc_forge/features/app_shell/application/usecases/load_home_data
 import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:doc_forge/features/document_search/domain/search_query.dart';
 import 'package:doc_forge/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
+import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_forge/features/image_enhancement/infrastructure/enhancement_job.dart';
 import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:doc_forge/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
 import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
@@ -127,6 +129,11 @@ void main() {
     );
 
     creation = buildDocumentCreationModule(
+      // Inline so composition runs the real enhancement path without isolates.
+      applyEnhancement: const ApplyEnhancement(
+        InlineBackgroundWorker(),
+        enhancePageJob,
+      ),
       isar: isar,
       documentsDirectory: documents,
       clock: clock,

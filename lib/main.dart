@@ -137,6 +137,9 @@ Future<void> main() async {
     documentReader: library.documentReader,
     documentWriter: library.documentWriter,
     namingPattern: () => currentSettings.value.namingPattern,
+    // Shared with the scanning module so a page enhanced on screen and a page
+    // enhanced while saving go through exactly the same code.
+    applyEnhancement: scanning.applyEnhancement,
   );
 
   final importing = buildImportModule(

@@ -39,17 +39,24 @@ class ApplyEnhancement {
     ),
   );
 
-  /// Applies [settings] to one page at full resolution.
+  /// Applies [settings] to one page.
+  ///
+  /// [maxDimension] bounds the output. Left null the page keeps its captured
+  /// size; given the size the page will actually be drawn at, the filters run
+  /// over that many pixels instead of over a capture that is several times
+  /// larger and about to be scaled down anyway.
   Future<Result<String>> single({
     required String sourcePath,
     required String destinationPath,
     required EnhancementSettings settings,
+    int? maxDimension,
   }) => _worker.run(
     _job,
     EnhancementRequest(
       sourcePath: sourcePath,
       destinationPath: destinationPath,
       settings: settings,
+      maxDimension: maxDimension,
     ),
   );
 

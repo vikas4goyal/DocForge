@@ -127,6 +127,11 @@ void main() {
     recogniser = FakeOcrRepository();
 
     creation = buildDocumentCreationModule(
+      // Inline so composition runs the real enhancement path without isolates.
+      applyEnhancement: const ApplyEnhancement(
+        InlineBackgroundWorker(),
+        enhancePageJob,
+      ),
       isar: isar,
       documentsDirectory: documents,
       clock: clock,
