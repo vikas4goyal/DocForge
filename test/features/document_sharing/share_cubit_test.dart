@@ -267,7 +267,7 @@ void main() {
     blocTest<ShareCubit, ShareState>(
       'reports done when the job was submitted',
       build: build,
-      act: (cubit) => cubit.print(),
+      act: (cubit) => cubit.printDocument(),
       expect: () => [
         isA<ShareState>().having((s) => s.action, 'action', ShareAction.print),
         isA<ShareState>().having((s) => s.status, 'status', ShareStatus.done),
@@ -277,7 +277,7 @@ void main() {
     blocTest<ShareCubit, ShareState>(
       'returns to the options when the dialogue is dismissed',
       build: () => build(printer: FakePrintRepository(submitted: false)),
-      act: (cubit) => cubit.print(),
+      act: (cubit) => cubit.printDocument(),
       skip: 1,
       expect: () => [
         isA<ShareState>()
@@ -290,7 +290,7 @@ void main() {
       'reports a print failure',
       build: () =>
           build(printer: FakePrintRepository(failure: const Failure.export())),
-      act: (cubit) => cubit.print(),
+      act: (cubit) => cubit.printDocument(),
       skip: 1,
       expect: () => [
         isA<ShareState>().having(

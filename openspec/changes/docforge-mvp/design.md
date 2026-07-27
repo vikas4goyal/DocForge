@@ -1012,3 +1012,60 @@ readable with no network connection, which a hosted policy behind a web view
 would not be. Holding the text in `SettingsCopy` also means the guarantee is one
 string a test asserts on, so weakening it is a deliberate act rather than a copy
 edit in a widget tree.
+
+## 31. Security and the application lock (group 16)
+
+**`AppLockStatus.unknown` is the reason nothing leaks on launch.** The router's
+redirect is synchronous and runs on the very first navigation — before secure
+storage has been read. A gate that answered "unlocked" in that instant would
+render a document list for one frame behind an enabled lock. `hidesContent`
+therefore treats *unknown* as locked, and `main` awaits `gate.load()` before
+building the router, so the guess never has to be made.
+
+**The lock is enforced at the router, not per screen.** Every non-exempt route
+redirects to the unlock screen while the gate reports locked, so no screen has
+to remember to check — and the navigation test walks every route to prove it,
+including deep links, which are the way round a per-screen check would be found.
+Lock is evaluated *before* onboarding: onboarding is a screen, and a screen
+shown behind an enabled lock is still a screen shown behind an enabled lock.
+
+**Four outcomes, not a boolean.** `AuthOutcome` distinguishes succeeded,
+rejected, notEnrolled and error because they lead to four different things:
+unlock, retry, send to system settings, report. Collapsing them is how a device
+with nothing enrolled ends up being offered a retry that can never succeed —
+so `notEnrolled` is the one outcome where the retry button is *replaced* rather
+than accompanied.
+
+**Every non-success returns to `locked`, never to an error state.** The
+application stays locked whatever went wrong, which is what the spec states for
+a rejection and a mechanism failure alike.
+
+**Disabling the lock requires authentication too.** Requiring it only to enable
+would let anyone holding an unlocked phone switch the lock off — precisely the
+situation the lock exists for. Enabling additionally checks availability
+*before* prompting, so a device with nothing enrolled gets an explanation rather
+than a dialogue that fails.
+
+**Reading the configuration degrades to *locked*.** If secure storage cannot be
+read, `IsAppLockEnabled` reports enabled. Guessing the other way would open the
+library on a device where the user had turned the lock on.
+
+**Re-locking happens on `paused`, not on `resumed`.** Locking as the app goes
+away means the unlock screen is already in place before the first frame comes
+back — no window in which the previous screen is visible — and the content is
+not in the app switcher's snapshot either. `inactive` is deliberately not used:
+it fires for a notification shade pull, and re-locking for that would make the
+app unusable.
+
+**The security guarantees are asserted against the source tree.** A feature test
+cannot claim "no document content is transmitted off the device" — that is a
+statement about code no test happens to walk. `security_guarantees_test.dart`
+scans `lib/` for `package:dio`, `HttpClient(`, external-storage paths, `print`
+in any form, and plugins imported into a `domain/` folder. It found a real one:
+`ShareCubit.print()` shadowed `dart:core`'s `print` inside its own class, so any
+genuine log call in there would silently have become a recursive Cubit call. It
+is now `printDocument()`.
+
+**A password is deleted with its document**, in `PurgeDocument`, which already
+removed it before this group — the secure delete runs *first*, so a purge that
+fails part-way never leaves a password for a document that is gone.

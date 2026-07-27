@@ -109,7 +109,7 @@ class _StubCubit extends ShareCubit {
   Future<void> shareText() async => calls.add('text');
 
   @override
-  Future<void> print() async => calls.add('print');
+  Future<void> printDocument() async => calls.add('print');
 
   @override
   Future<void> export({String? initialDirectory}) async => calls.add('export');

@@ -27,6 +27,13 @@ import 'package:doc_forge/core/failures/failure_messages.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/theme/theme_mode_controller.dart';
 import 'package:doc_forge/core/widgets/app_state_views.dart';
+import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
+import 'package:doc_forge/features/app_security/domain/app_lock.dart';
+import 'package:doc_forge/features/app_security/domain/repositories/app_lock_repository.dart';
+import 'package:doc_forge/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
+import 'package:doc_forge/features/app_security/presentation/cubit/app_lock_cubit.dart';
+import 'package:doc_forge/features/app_security/presentation/screens/unlock_screen.dart';
+import 'package:doc_forge/features/app_security/presentation/widgets/app_lock_observer.dart';
 import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
 import 'package:doc_forge/features/app_settings/presentation/cubit/settings_cubit.dart';
 import 'package:doc_forge/features/app_settings/presentation/screens/settings_screen.dart';
@@ -90,6 +97,11 @@ Future<void> main() async {
     preferences: dependencies.preferences,
     storageReader: library.storageSummaryReader,
     clock: dependencies.clock,
+    // Read from secure storage, never preferences: an unprotected file can be
+    // edited on a rooted device.
+    isAppLockEnabled: () => IsAppLockEnabled(
+      SecureAppLockConfiguration(dependencies.secureStorage),
+    )(),
   );
 
   // Read once at startup and kept current by the settings screen. The features
@@ -158,12 +170,21 @@ Future<void> main() async {
   );
   await onboardingGate.load();
 
-  // The lock gate is still a placeholder: `app-security` supplies the real one.
+  // Read before the first frame, exactly like the onboarding gate: the router's
+  // redirect is synchronous, and a gate that had to guess would show a document
+  // list for a frame behind an enabled lock.
+  final lockConfiguration = SecureAppLockConfiguration(
+    dependencies.secureStorage,
+  );
+  final isLockEnabled = IsAppLockEnabled(lockConfiguration);
+  final lockGate = AppLockGateImpl(isLockEnabled);
+  await lockGate.load();
+
   final router = createAppRouter(
-    guard: RouteGuard(
-      lockGate: FakeAppLockGate(),
-      onboardingGate: onboardingGate,
-    ),
+    guard: RouteGuard(lockGate: lockGate, onboardingGate: onboardingGate),
+    // Without this the user would sit on the unlock screen after authenticating,
+    // because GoRouter re-evaluates its redirect only when told to.
+    refreshListenable: AppLockListenable(lockGate),
     screens: _screens(
       dependencies,
       library,
@@ -176,16 +197,23 @@ Future<void> main() async {
       currentSettings,
       themeMode,
       appVersion,
+      lockGate,
+      lockConfiguration,
       onboardingRepository,
       onboardingGate,
     ),
   );
 
   runApp(
-    DocForgeApp(
-      dependencies: dependencies,
-      router: router,
-      themeMode: themeMode,
+    // Wrapped outside the app, so the re-lock happens whatever route the user
+    // was on when the phone went into a pocket.
+    AppLockObserver(
+      gate: lockGate,
+      child: DocForgeApp(
+        dependencies: dependencies,
+        router: router,
+        themeMode: themeMode,
+      ),
     ),
   );
 }
@@ -203,6 +231,8 @@ AppScreens _screens(
   ValueNotifier<AppSettings> currentSettings,
   ThemeModeController themeMode,
   String appVersion,
+  AppLockGateImpl lockGate,
+  AppLockConfiguration lockConfiguration,
   OnboardingRepositoryImpl onboardingRepository,
   OnboardingGateImpl onboardingGate,
 ) {
@@ -251,7 +281,16 @@ AppScreens _screens(
         },
       ),
     ),
-    unlock: (_) => const _Placeholder('Unlock'),
+    unlock: (context) => BlocProvider(
+      create: (_) => AppLockCubit(
+        const AuthenticateAppLock(LocalAuthAuthenticator()),
+        IsAppLockEnabled(lockConfiguration),
+        onUnlocked: lockGate.markUnlocked,
+      ),
+      child: UnlockScreen(
+        onOpenSettings: dependencies.permissions.openSettings,
+      ),
+    ),
     home: (context) => SharedContentWatcher(
       takePending: importing.takePending,
       watchShared: importing.watchShared,
@@ -458,8 +497,15 @@ AppScreens _screens(
                 ),
               ),
             ),
-            // The app lock lands in group 16; until then the switch is inert
-            // rather than absent, so its place in the list is already right.
+            onToggleAppLock: (requested) => _toggleAppLock(
+              context,
+              SetAppLockEnabled(
+                const LocalAuthAuthenticator(),
+                lockConfiguration,
+              ),
+              screenContext.read<SettingsCubit>(),
+              enabled: requested,
+            ),
           );
         },
       ),
@@ -558,6 +604,35 @@ Future<void> _importShared(
     }
   } finally {
     await cubit.close();
+  }
+}
+
+/// Turns the application lock on or off, confirming who is asking.
+///
+/// Authentication happens inside the use case, in **both** directions:
+/// requiring it only to enable would let anyone holding an unlocked phone
+/// switch the lock off, which is exactly the situation the lock exists for.
+Future<void> _toggleAppLock(
+  BuildContext context,
+  SetAppLockEnabled setEnabled,
+  SettingsCubit settings, {
+  required bool enabled,
+}) async {
+  final result = await setEnabled(enabled: enabled);
+  if (!context.mounted) return;
+
+  switch (result) {
+    case Success(:final value):
+      if (value == AuthOutcome.succeeded) {
+        // Re-read so the switch reflects what is actually stored rather than
+        // what was asked for.
+        await settings.load();
+      } else {
+        final message = AppLockRules.messageFor(value);
+        if (message != null && context.mounted) _report(context, message);
+      }
+    case Failed(:final failure):
+      _report(context, failure.presentation.message);
   }
 }
 
@@ -662,7 +737,7 @@ Future<void> _openShareSheet(
         sharing.sharePdf,
         sharing.shareImages,
         sharing.shareText,
-        sharing.print,
+        sharing.printDocument,
         sharing.export,
         initial: ShareState.initial(
           title: document.title,
@@ -693,7 +768,7 @@ Future<void> _print(
   SharingModule sharing,
   DocumentId id,
 ) async {
-  final result = await sharing.print(id);
+  final result = await sharing.printDocument(id);
   if (!context.mounted) return;
 
   if (result case Failed(:final failure)) {

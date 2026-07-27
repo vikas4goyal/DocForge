@@ -23,7 +23,7 @@ class SharingModule {
     required this.sharePdf,
     required this.shareImages,
     required this.shareText,
-    required this.print,
+    required this.printDocument,
     required this.export,
   });
 
@@ -47,7 +47,7 @@ class SharingModule {
   final ShareExtractedText shareText;
 
   /// Prints the document.
-  final PrintDocument print;
+  final PrintDocument printDocument;
 
   /// Exports the document to a chosen destination.
   final ExportDocument export;
@@ -88,7 +88,7 @@ SharingModule buildSharingModule({
       renderSharePageJob,
     ),
     shareText: ShareExtractedText(documentReader, ocrTextSource, share),
-    print: PrintDocument(documentReader, printer),
+    printDocument: PrintDocument(documentReader, printer),
     export: ExportDocument(documentReader, picker),
   );
 }

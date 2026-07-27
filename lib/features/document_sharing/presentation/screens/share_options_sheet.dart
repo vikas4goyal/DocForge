@@ -132,7 +132,7 @@ class _Options extends StatelessWidget {
           label: 'Print',
           icon: Icons.print_outlined,
           semanticsLabel: label(ShareAction.print, ShareFormat.pdf),
-          onTap: cubit.print,
+          onTap: cubit.printDocument,
         ),
         ShareOptionTile(
           key: ShareKeys.exportButton,

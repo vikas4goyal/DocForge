@@ -103,7 +103,7 @@ class _PreviewShareCubit extends ShareCubit {
   Future<void> shareText() async {}
 
   @override
-  Future<void> print() async {}
+  Future<void> printDocument() async {}
 
   @override
   Future<void> export({String? initialDirectory}) async {}

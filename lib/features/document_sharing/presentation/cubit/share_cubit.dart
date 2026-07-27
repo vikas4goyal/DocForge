@@ -111,7 +111,11 @@ class ShareCubit extends Cubit<ShareState> {
   }
 
   /// Prints the document.
-  Future<void> print() async {
+  ///
+  /// Named `printDocument` rather than `print`: a method called `print`
+  /// shadows `dart:core`'s inside its own class, so every genuine log call in
+  /// here would silently become a recursive Cubit call.
+  Future<void> printDocument() async {
     emit(
       state.copyWith(
         status: ShareStatus.preparing,

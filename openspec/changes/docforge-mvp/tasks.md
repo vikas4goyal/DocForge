@@ -289,22 +289,22 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 16. Security and app lock
 
-- [ ] 16.1 Implement the `app-security` domain layer, the `AppLockRepository` interface and the `SecureStorageRepository` interface.
-- [ ] 16.2 Implement the secure-storage-backed repositories; write repository tests including the storage-unavailable failure.
-- [ ] 16.3 Implement `AuthenticateAppLock` with biometric and device-credential fallback; unit-test success, rejection, error and not-enrolled paths.
-- [ ] 16.4 Implement `AppLockCubit` and `AppLockState`; write `bloc_test` coverage for unknown → locked → authenticating → unlocked and every failure path.
-- [ ] 16.5 Implement the `AppLockGate` contract implementation and wire it into the router ahead of the onboarding gate.
-- [ ] 16.6 Write navigation tests proving no document title, thumbnail or content renders before authentication, on launch and on resume from background.
-- [ ] 16.7 Implement the unlock screen with the specified keys and its retry control.
-- [ ] 16.8 Widget-test the unlock screen, including that failed authentication keeps the app locked.
-- [ ] 16.9 Implement enabling and disabling the lock from settings, requiring authentication to confirm; widget-test both.
-- [ ] 16.10 Implement deletion of a document's stored password on permanent removal; add a test.
-- [ ] 16.11 Add a test asserting that no document content, page image or OCR text is transmitted off the device by any flow, and that all writes go to app-private storage.
-- [ ] 16.12 Add a test asserting no secret is ever written to preferences, the database or logs.
-- [ ] 16.13 Add `@Preview()` entries for the unlock screen and its widgets across all required states, form factors and themes.
-- [ ] 16.14 Verify security-screen accessibility and add golden tests for the unlock screen in light and dark, phone and tablet.
-- [ ] 16.15 Add dartdoc to all new public APIs in the security feature.
-- [ ] 16.16 Run `dart format`, `flutter analyze`, the layering check and coverage for group 16.
+- [x] 16.1 Implement the `app-security` domain layer, the `AppLockRepository` interface and the `SecureStorageRepository` interface.
+- [x] 16.2 Implement the secure-storage-backed repositories; write repository tests including the storage-unavailable failure.
+- [x] 16.3 Implement `AuthenticateAppLock` with biometric and device-credential fallback; unit-test success, rejection, error and not-enrolled paths.
+- [x] 16.4 Implement `AppLockCubit` and `AppLockState`; write `bloc_test` coverage for unknown → locked → authenticating → unlocked and every failure path.
+- [x] 16.5 Implement the `AppLockGate` contract implementation and wire it into the router ahead of the onboarding gate.
+- [x] 16.6 Write navigation tests proving no document title, thumbnail or content renders before authentication, on launch and on resume from background.
+- [x] 16.7 Implement the unlock screen with the specified keys and its retry control.
+- [x] 16.8 Widget-test the unlock screen, including that failed authentication keeps the app locked.
+- [x] 16.9 Implement enabling and disabling the lock from settings, requiring authentication to confirm; widget-test both.
+- [x] 16.10 Implement deletion of a document's stored password on permanent removal; add a test.
+- [x] 16.11 Add a test asserting that no document content, page image or OCR text is transmitted off the device by any flow, and that all writes go to app-private storage.
+- [x] 16.12 Add a test asserting no secret is ever written to preferences, the database or logs.
+- [x] 16.13 Add `@Preview()` entries for the unlock screen and its widgets across all required states, form factors and themes.
+- [x] 16.14 Verify security-screen accessibility and add golden tests for the unlock screen in light and dark, phone and tablet.
+- [x] 16.15 Add dartdoc to all new public APIs in the security feature.
+- [x] 16.16 Run `dart format`, `flutter analyze`, the layering check and coverage for group 16.
 
 ## 17. Finalisation
 
