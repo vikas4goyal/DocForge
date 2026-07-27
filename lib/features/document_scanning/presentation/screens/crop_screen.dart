@@ -62,7 +62,21 @@ class CropScreen extends StatelessWidget {
         ),
         body: Stack(
           children: [
-            Positioned.fill(child: _CropCanvas(state: state)),
+            // Inset so the page never reaches the screen edge. A corner sitting
+            // against it is unusable: half the touch target is off-screen, and
+            // the drag that is left starts in the system's back-swipe and
+            // control-centre gutters, so the gesture leaves the app instead of
+            // moving the handle. The margin is a little over one touch target,
+            // which is what it takes to get a whole fingertip beside a corner.
+            Positioned.fill(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 28,
+                  vertical: 20,
+                ),
+                child: _CropCanvas(state: state),
+              ),
+            ),
             if (state.isWorking)
               const Positioned.fill(
                 child: ColoredBox(

@@ -209,11 +209,36 @@ void main() {
     });
   });
 
+  group('undo', () {
+    testWidgets('is inert until something has been adjusted', (tester) async {
+      await pumpScreen(tester);
+
+      final button = tester.widget<IconButton>(
+        find.byKey(EnhanceKeys.undoButton),
+      );
+
+      expect(button.onPressed, isNull);
+    });
+
+    testWidgets('becomes available once a filter is chosen', (tester) async {
+      await pumpScreen(tester);
+
+      await tapFilter(tester, EnhanceKeys.filterBlackWhite);
+      await tester.pumpAndSettle();
+
+      final button = tester.widget<IconButton>(
+        find.byKey(EnhanceKeys.undoButton),
+      );
+
+      expect(button.onPressed, isNotNull);
+    });
+  });
+
   group('reset', () {
     testWidgets('is inert until something has changed', (tester) async {
       await pumpScreen(tester);
 
-      final button = tester.widget<OutlinedButton>(
+      final button = tester.widget<IconButton>(
         find.byKey(EnhanceKeys.resetButton),
       );
 

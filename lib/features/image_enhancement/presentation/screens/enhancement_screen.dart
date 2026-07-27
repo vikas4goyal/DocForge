@@ -36,7 +36,24 @@ class EnhancementScreen extends StatelessWidget {
           key: EnhanceKeys.screen,
           appBar: AppBar(
             title: const Text('Enhance'),
+            // Undo and Reset live here rather than under the controls. Below a
+            // column of filters and sliders they sat at the very bottom of the
+            // screen — the furthest point from the thing being corrected, and
+            // off-screen entirely once the controls scrolled. Undo in
+            // particular is used *while* adjusting, so it has to stay put.
             actions: [
+              IconButton(
+                key: EnhanceKeys.undoButton,
+                tooltip: 'Undo last change',
+                onPressed: state.canUndo ? cubit.undo : null,
+                icon: const Icon(Icons.undo),
+              ),
+              IconButton(
+                key: EnhanceKeys.resetButton,
+                tooltip: 'Reset all changes',
+                onPressed: state.hasChanges ? cubit.reset : null,
+                icon: const Icon(Icons.restart_alt),
+              ),
               TextButton(
                 key: EnhanceKeys.doneButton,
                 onPressed: () {
@@ -212,28 +229,9 @@ class _Actions extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            key: EnhanceKeys.undoButton,
-            // Steps back one adjustment, where Reset beside it clears them all.
-            // Both are offered because "that last change was wrong" and "start
-            // again" are different intentions, and only one of them was served.
-            onPressed: state.canUndo ? cubit.undo : null,
-            icon: const Icon(Icons.undo),
-            label: const Text('Undo'),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: OutlinedButton.icon(
-            key: EnhanceKeys.resetButton,
-            onPressed: state.hasChanges ? cubit.reset : null,
-            icon: const Icon(Icons.restart_alt),
-            label: const Text('Reset'),
-          ),
-        ),
-        if (state.canApplyToAll) ...[
-          const SizedBox(width: 12),
+        // Undo and Reset moved to the app bar, where they stay reachable while
+        // the controls below scroll. Only the session-wide action remains here.
+        if (state.canApplyToAll)
           Expanded(
             child: FilledButton.icon(
               key: EnhanceKeys.applyToAllButton,
@@ -242,7 +240,6 @@ class _Actions extends StatelessWidget {
               label: const Text('Apply to all'),
             ),
           ),
-        ],
       ],
     );
   }
