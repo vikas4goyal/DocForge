@@ -619,3 +619,55 @@ into a semantics *tooltip* rather than a label — so a screen reader announced
 nothing actionable, in direct violation of the spec. The label now lives on the
 icon's `semanticLabel`. Worth remembering for every icon-only button in the
 codebase.
+
+### 24. PDF generation
+
+**Composition owns its own isolate.** `pw.Document.save` is asynchronous, and
+`BackgroundWorker`'s job contract is synchronous by design — a synchronous job
+cannot accidentally hold a stream open across the boundary. `IsolatePdfComposer`
+therefore calls `Isolate.run` directly rather than going through the worker.
+`InlinePdfComposer` is its test and integration counterpart.
+
+**Written to a temporary file and renamed into place.** A rename within a
+directory is atomic on both platforms, so a failure part-way leaves the
+temporary file — which is deleted — rather than a truncated PDF where a real one
+is expected. The spec requires no partial artefact, and this is the mechanism.
+
+**Rotation is baked into the image, not set as page metadata.** A PDF page
+rotation is metadata a reader may or may not honour, and the text layer's
+coordinates would then have to be rotated to match it — two chances to disagree
+where there can be one.
+
+**The page is the image's aspect ratio at a fixed scale.** The image fills the
+page edge to edge with no letterboxing, which means the normalised text boxes
+map onto the page by multiplication alone. Any other page geometry would need a
+letterbox offset in the text-layer maths, which is one more thing to get wrong
+invisibly.
+
+**The text layer uses `PdfTextRenderingMode.invisible`.** White text is visible
+against a dark scan, and text at zero opacity still prints. Invisible rendering
+is the mechanism PDF defines for exactly this.
+
+**`SaveDocument` composes first and writes the record second.** A record written
+first would leave a document the user can see but cannot open if composition
+then failed. If the record write fails after the file exists, the file is
+deleted: an orphan in app-private storage is invisible to the user and never
+reclaimed, which is worse than none. Cancellation between the two does the same.
+
+**Naming is a pure function of its inputs.** `DocumentNaming.expand` takes the
+instant rather than reading a clock, which is what makes it testable and every
+golden stable. The date is formatted by hand rather than through `intl` because
+the result is a *file name*: a locale-dependent one would sort differently on
+different devices and could contain a slash. Note that names use **local** time
+while stored timestamps are **UTC** — a user naming a scan at half past nine
+expects "09.30", and a document must not appear to move when the device travels.
+
+**A blank name field means the default, not a nameless document.** An untitled
+document is unfindable and the library forbids an empty title, so the entered
+value and the generated one are kept separately and resolved at save time.
+
+**Correction found during this group: a Cubit delivers state on a microtask.**
+A widget test that emits and then pumps once sees the *previous* state — the
+frame is built before the stream delivers. Two bounded pumps are needed, and
+`pumpAndSettle` cannot be used where the state shows an indefinite progress bar.
+The same trap applies anywhere a test seeds a Cubit directly.

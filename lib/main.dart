@@ -8,6 +8,7 @@ library;
 import 'package:doc_forge/app/app.dart';
 import 'package:doc_forge/app/app_dependencies.dart';
 import 'package:doc_forge/app/composition_root.dart';
+import 'package:doc_forge/app/document_creation_module.dart';
 import 'package:doc_forge/app/library_module.dart';
 import 'package:doc_forge/app/router/app_router.dart';
 import 'package:doc_forge/app/router/app_routes.dart';
@@ -31,6 +32,7 @@ import 'package:doc_forge/features/onboarding/application/usecases/onboarding_us
 import 'package:doc_forge/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
 import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:doc_forge/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -57,6 +59,17 @@ Future<void> main() async {
     secureStorage: dependencies.secureStorage,
   );
 
+  final creation = buildDocumentCreationModule(
+    isar: library.isar,
+    documentsDirectory: library.documentsDirectory,
+    clock: dependencies.clock,
+    ids: dependencies.idGenerator,
+    documentReader: library.documentReader,
+    documentWriter: library.documentWriter,
+    // Settings land in group 15; until then the default pattern applies.
+    namingPattern: () => NamingPattern.defaultPattern,
+  );
+
   // Onboarding owns its own gate. The flag is read once here, before the first
   // frame, so the router's synchronous redirect has an answer immediately —
   // otherwise a first-time user would see Home flash before onboarding.
@@ -78,6 +91,7 @@ Future<void> main() async {
       dependencies,
       library,
       scanning,
+      creation,
       onboardingRepository,
       onboardingGate,
     ),
@@ -97,6 +111,7 @@ AppScreens _screens(
   AppDependencies dependencies,
   LibraryModule library,
   ScanningModule scanning,
+  DocumentCreationModule creation,
   OnboardingRepositoryImpl onboardingRepository,
   OnboardingGateImpl onboardingGate,
 ) {
@@ -170,13 +185,11 @@ AppScreens _screens(
     ),
     scan: (context) => ScanFlow(
       module: scanning,
+      creation: creation,
       onExit: () => context.go(AppRoutes.home),
-      // Saving needs PDF generation, which lands in group 9. Until then the
-      // flow is complete up to the point where a document would be created,
-      // and says so rather than silently discarding the pages.
-      onSave: (_) => ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Saving arrives with PDF generation.')),
-      ),
+      // Home reloads on navigation, so the new document appears at the top of
+      // Recent without anything having to tell it.
+      onSaved: (_) => context.go(AppRoutes.home),
       onImportInstead: () => context.go(AppRoutes.home),
       onOpenSettings: () => dependencies.permissions.openSettings(),
     ),

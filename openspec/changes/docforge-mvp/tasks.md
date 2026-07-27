@@ -162,25 +162,25 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 9. PDF generation
 
-- [ ] 9.1 Implement the `pdf-generation` domain layer and the `PdfRepository` interface (composition methods only at this stage).
-- [ ] 9.2 Implement PDF composition from page images preserving order, rotation and enhancement; write repository tests asserting page count and order.
-- [ ] 9.3 Implement the invisible OCR text-layer placement using bounding boxes; write a test asserting the generated PDF's text is selectable and positioned over the correct region.
-- [ ] 9.4 Implement `BuildSearchablePdf` running in a background isolate with progress and cancellation; unit-test it, including that a PDF is still produced when OCR is unavailable.
-- [ ] 9.5 Implement the default file-naming pattern expansion as a use case; unit-test it against each supported pattern.
-- [ ] 9.6 Implement `SaveDocument` end to end (write PDF, create record, compute size) and unit-test it.
-- [ ] 9.7 Verify cancellation and failure leave no partial document record and no orphaned file; add tests for both, plus the storage-full path.
-- [ ] 9.8 Implement `PdfGenerationCubit` and `PdfGenerationState`.
-- [ ] 9.9 Write `bloc_test` coverage for `PdfGenerationCubit`: generating with progress, saved, failure, cancelled.
-- [ ] 9.10 Implement the document preview and save screen with the name field and save control using the specified keys.
-- [ ] 9.11 Widget-test the preview screen, including that navigating back preserves the session and writes no PDF.
-- [ ] 9.12 Implement the `PageBundleSink` contract implementation consumed by scanning and import; test against the contract.
-- [ ] 9.13 Verify the saved document appears at the top of Recent on Home; add a test.
-- [ ] 9.14 Add `@Preview()` entries for the preview screen and its widgets across all required states, form factors and themes.
-- [ ] 9.15 Verify PDF-generation accessibility and quality-setting application (lowest quality yields a smaller file than highest).
-- [ ] 9.16 Add golden tests for the document preview screen in light and dark, phone and tablet.
-- [ ] 9.17 Add dartdoc to all new public APIs and inline comments on the text-layer positioning.
-- [ ] 9.18 Run `dart format`, `flutter analyze`, the layering check and coverage for group 9.
-- [ ] 9.19 Write the vertical-slice integration test: scan → review → crop → enhance → OCR → generate → save → appears in Recent, with camera and OCR faked at the repository boundary.
+- [x] 9.1 Implement the `pdf-generation` domain layer and the `PdfRepository` interface (composition methods only at this stage).
+- [x] 9.2 Implement PDF composition from page images preserving order, rotation and enhancement; write repository tests asserting page count and order.
+- [x] 9.3 Implement the invisible OCR text-layer placement using bounding boxes; write a test asserting the generated PDF's text is selectable and positioned over the correct region.
+- [x] 9.4 Implement `BuildSearchablePdf` running in a background isolate with progress and cancellation; unit-test it, including that a PDF is still produced when OCR is unavailable.
+- [x] 9.5 Implement the default file-naming pattern expansion as a use case; unit-test it against each supported pattern.
+- [x] 9.6 Implement `SaveDocument` end to end (write PDF, create record, compute size) and unit-test it.
+- [x] 9.7 Verify cancellation and failure leave no partial document record and no orphaned file; add tests for both, plus the storage-full path.
+- [x] 9.8 Implement `PdfGenerationCubit` and `PdfGenerationState`.
+- [x] 9.9 Write `bloc_test` coverage for `PdfGenerationCubit`: generating with progress, saved, failure, cancelled.
+- [x] 9.10 Implement the document preview and save screen with the name field and save control using the specified keys.
+- [x] 9.11 Widget-test the preview screen, including that navigating back preserves the session and writes no PDF.
+- [x] 9.12 Implement the `PageBundleSink` contract implementation consumed by scanning and import; test against the contract.
+- [x] 9.13 Verify the saved document appears at the top of Recent on Home; add a test.
+- [x] 9.14 Add `@Preview()` entries for the preview screen and its widgets across all required states, form factors and themes.
+- [x] 9.15 Verify PDF-generation accessibility and quality-setting application (lowest quality yields a smaller file than highest).
+- [x] 9.16 Add golden tests for the document preview screen in light and dark, phone and tablet.
+- [x] 9.17 Add dartdoc to all new public APIs and inline comments on the text-layer positioning.
+- [x] 9.18 Run `dart format`, `flutter analyze`, the layering check and coverage for group 9.
+- [x] 9.19 Write the vertical-slice integration test: scan → review → crop → enhance → OCR → generate → save → appears in Recent, with camera and OCR faked at the repository boundary.
 
 ## 10. Document viewer
 

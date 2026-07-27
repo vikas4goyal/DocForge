@@ -21,6 +21,7 @@ import 'package:doc_forge/features/document_library/infrastructure/datasource/do
 import 'package:doc_forge/features/document_library/infrastructure/library_contracts_impl.dart';
 import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:doc_forge/features/document_library/infrastructure/repositories/isar_library_repositories.dart';
+import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -31,6 +32,8 @@ import 'package:path_provider/path_provider.dart';
 class LibraryModule {
   /// Creates the module over an already-built object graph.
   const LibraryModule({
+    required this.isar,
+    required this.documentsDirectory,
     required this.loadDocuments,
     required this.loadDocumentDetail,
     required this.loadFolderOptions,
@@ -104,6 +107,20 @@ class LibraryModule {
 
   /// Storage reporting for Home and settings.
   final StorageSummaryReader storageSummaryReader;
+
+  /// The open database.
+  ///
+  /// Exposed so other capabilities can register their own collections against
+  /// the same instance. Recognised text in particular has to live here: search
+  /// queries the title and text indexes together, and two databases could not
+  /// be kept consistent across a permanent deletion.
+  final Isar isar;
+
+  /// Where document files are written.
+  ///
+  /// Exposed for the same reason: PDF generation writes into the directory the
+  /// library reads from, and resolving it twice invites the two to disagree.
+  final Directory documentsDirectory;
 }
 
 /// Opens the library database and builds the module over it.
@@ -123,6 +140,10 @@ Future<LibraryModule> buildLibraryModule({
     DocumentEntitySchema,
     FolderEntitySchema,
     PageEntitySchema,
+    // Recognised text lives in the same database as the documents it belongs
+    // to: search queries both indexes together, and two databases could not be
+    // kept consistent across a permanent deletion.
+    OcrTextEntitySchema,
   ], directory: supportDirectory.path);
 
   return buildLibraryModuleOver(
@@ -156,6 +177,8 @@ LibraryModule buildLibraryModuleOver({
   final storageSummary = ComputeStorageSummary(documents, files);
 
   return LibraryModule(
+    isar: isar,
+    documentsDirectory: documentsDirectory,
     loadDocuments: LoadDocuments(documents),
     loadDocumentDetail: LoadDocumentDetail(documents, pages),
     loadFolderOptions: LoadFolderOptions(folders),

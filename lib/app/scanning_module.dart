@@ -3,6 +3,10 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_forge/app/document_creation_module.dart';
+import 'package:doc_forge/core/contracts/models/document.dart';
+import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/permissions/permission_service.dart';
 import 'package:doc_forge/core/time/clock.dart';
@@ -16,6 +20,12 @@ import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cub
 import 'package:doc_forge/features/document_scanning/presentation/screens/crop_screen.dart';
 import 'package:doc_forge/features/document_scanning/presentation/screens/page_review_screen.dart';
 import 'package:doc_forge/features/document_scanning/presentation/screens/scan_capture_screen.dart';
+import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_forge/features/image_enhancement/infrastructure/enhancement_job.dart';
+import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
+import 'package:doc_forge/features/image_enhancement/presentation/screens/enhancement_screen.dart';
+import 'package:doc_forge/features/pdf_generation/presentation/cubit/pdf_generation_cubit.dart';
+import 'package:doc_forge/features/pdf_generation/presentation/screens/pdf_preview_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -28,6 +38,8 @@ class ScanningModule {
     required this.capturePage,
     required this.applyCorrection,
     required this.discardSession,
+    required this.applyEnhancement,
+    required this.enhancementDestination,
     required this.buildPreview,
   });
 
@@ -45,6 +57,12 @@ class ScanningModule {
 
   /// Releases the camera and clears an abandoned session.
   final DiscardScanSession discardSession;
+
+  /// Applies enhancement settings, off the UI thread.
+  final ApplyEnhancement applyEnhancement;
+
+  /// Names the file an enhancement result is written to.
+  final EnhancementDestination enhancementDestination;
 
   /// Builds the live camera preview.
   ///
@@ -75,6 +93,14 @@ ScanningModule buildScanningModule({
   final staging = LocalScanStagingArea(directory);
   final scanner = CameraScannerRepository(permissions, staging, ids);
 
+  /// Enhancement output lives beside the capture, in the same staging area.
+  ///
+  /// Beside rather than over: keeping the original means a filter the user
+  /// dislikes can be redone from the capture rather than from an already
+  /// enhanced image, which would compound the processing.
+  String enhancementDestination(PageRef page, {required bool isPreview}) =>
+      '${page.imagePath}.${isPreview ? 'preview' : 'enhanced'}.jpg';
+
   return ScanningModule(
     scanner: scanner,
     staging: staging,
@@ -84,6 +110,8 @@ ScanningModule buildScanningModule({
     capturePage: CapturePage(scanner, detector),
     applyCorrection: ApplyPerspectiveCorrection(worker, correctPageJob),
     discardSession: DiscardScanSession(staging, scanner),
+    applyEnhancement: ApplyEnhancement(worker, enhancePageJob),
+    enhancementDestination: enhancementDestination,
     buildPreview: scanner.buildPreview,
   );
 }
@@ -95,6 +123,12 @@ enum _ScanStep {
 
   /// The captured-page review list.
   review,
+
+  /// The enhancement controls for one page.
+  enhance,
+
+  /// The document preview, where the PDF is named and saved.
+  save,
 }
 
 /// Hosts the whole scanning flow behind one route.
@@ -111,8 +145,9 @@ class ScanFlow extends StatefulWidget {
   /// Creates the scanning flow.
   const ScanFlow({
     required this.module,
+    required this.creation,
     required this.onExit,
-    required this.onSave,
+    required this.onSaved,
     required this.onImportInstead,
     required this.onOpenSettings,
     super.key,
@@ -121,11 +156,14 @@ class ScanFlow extends StatefulWidget {
   /// The scanning object graph.
   final ScanningModule module;
 
+  /// The OCR and PDF-generation object graph.
+  final DocumentCreationModule creation;
+
   /// Called when the flow ends without a document.
   final VoidCallback onExit;
 
-  /// Called with the finished pages when the user saves.
-  final void Function(List<CapturedPage> pages) onSave;
+  /// Called with the document once it has been saved.
+  final void Function(Document document) onSaved;
 
   /// Offers the photo library instead of the camera.
   final VoidCallback onImportInstead;
@@ -147,6 +185,12 @@ class _ScanFlowState extends State<ScanFlow> {
 
   _ScanStep _step = _ScanStep.capture;
 
+  /// The session's pages once review is finished, carrying their enhancement.
+  ///
+  /// Held here rather than in a Cubit because three later steps share it, and
+  /// the flow — not any one screen — owns the session.
+  List<PageRef> _pages = const [];
+
   @override
   void dispose() {
     // Closing the capture Cubit releases the camera, which is the backstop for
@@ -163,6 +207,18 @@ class _ScanFlowState extends State<ScanFlow> {
     _review.addAll(_capture.pages);
     _capture.pages.clear();
     setState(() => _step = _ScanStep.review);
+  }
+
+  /// Moves from review into enhancement.
+  void _finishReview() {
+    _pages = [for (final page in _review.state.pages) page.toPageRef()];
+    setState(() => _step = _ScanStep.enhance);
+  }
+
+  /// Moves from enhancement into the save step, carrying the settings chosen.
+  void _finishEnhancing(List<PageRef> pages) {
+    _pages = pages;
+    setState(() => _step = _ScanStep.save);
   }
 
   Future<void> _cropPage(int index, CapturedPage page) async {
@@ -201,10 +257,34 @@ class _ScanFlowState extends State<ScanFlow> {
       _ScanStep.review => BlocProvider.value(
         value: _review,
         child: PageReviewScreen(
-          onSave: () => widget.onSave(_review.state.pages),
+          onSave: _finishReview,
           onAddPages: () => setState(() => _step = _ScanStep.capture),
           onExit: widget.onExit,
           onCropPage: _cropPage,
+        ),
+      ),
+      _ScanStep.enhance => BlocProvider<EnhancementCubit>(
+        create: (_) => EnhancementCubit(
+          _pages,
+          widget.module.applyEnhancement,
+          const PlanSessionEnhancement(),
+          widget.module.enhancementDestination,
+        ),
+        child: EnhancementScreen(onDone: _finishEnhancing),
+      ),
+      _ScanStep.save => BlocProvider<PdfGenerationCubit>(
+        create: (_) => PdfGenerationCubit(
+          _pages,
+          widget.creation.saveDocument,
+          widget.creation.generateName,
+          source: PageSource.camera,
+        )..load(),
+        child: PdfPreviewScreen(
+          onSaved: widget.onSaved,
+          // Back to enhancement rather than out of the flow: the pages are
+          // intact and nothing has been written, so the user can change their
+          // mind about the result without rescanning.
+          onBack: () => setState(() => _step = _ScanStep.enhance),
         ),
       ),
     };

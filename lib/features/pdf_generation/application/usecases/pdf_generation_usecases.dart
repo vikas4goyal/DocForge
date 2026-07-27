@@ -1,0 +1,250 @@
+/// Use cases for turning a page bundle into a stored document.
+library;
+
+import 'package:doc_forge/core/contracts/contracts.dart';
+import 'package:doc_forge/core/contracts/models/document.dart';
+import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/recognised_text.dart';
+import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_forge/core/isolates/cancellation.dart';
+import 'package:doc_forge/core/time/clock.dart';
+import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_forge/features/pdf_generation/domain/repositories/pdf_repository.dart';
+
+/// Reads recognised text for pages about to be composed.
+///
+/// A function rather than the whole `OcrTextSource` contract, because
+/// composition needs exactly one thing from OCR and taking the narrower
+/// dependency keeps a test from having to stand up a text source it does not
+/// care about.
+typedef PageTextLookup =
+    Future<Map<String, RecognisedText>> Function(List<PageId> pageIds);
+
+/// Decides where a document's PDF is written.
+///
+/// Injected because where a file may be written is a property of the running
+/// application, and no use case may perform an ambient path lookup.
+typedef PdfDestination = String Function(DocumentId id);
+
+/// Expands the configured naming pattern for a new document.
+class GenerateDocumentName {
+  /// Creates the use case.
+  const GenerateDocumentName(this._clock, this._documents);
+
+  final Clock _clock;
+  final DocumentReader _documents;
+
+  /// Returns the title a document created now would be given.
+  ///
+  /// [suggested] wins when the source offered one — an imported file's name is
+  /// more useful than a generated timestamp.
+  Future<String> call(
+    NamingPattern pattern, {
+    String? suggested,
+    String? entered,
+  }) async {
+    if (entered != null && entered.trim().isNotEmpty) {
+      return DocumentNaming.resolve(entered, DocumentNaming.fallback);
+    }
+
+    if (suggested != null && suggested.trim().isNotEmpty) {
+      return suggested.trim();
+    }
+
+    // Only the sequential pattern needs the count, and a query per keystroke
+    // for the others would be pure waste.
+    final count = pattern == NamingPattern.sequential
+        ? await _existingCount()
+        : 0;
+
+    return DocumentNaming.expand(
+      pattern,
+      now: _clock.now(),
+      existingCount: count,
+    );
+  }
+
+  /// How many documents the library already holds.
+  ///
+  /// A failed count degrades to zero rather than failing the save: a document
+  /// named "Scan 1" twice is a nuisance, losing a scan is not.
+  Future<int> _existingCount() async {
+    final result = await _documents.query();
+    return result.valueOrNull?.length ?? 0;
+  }
+}
+
+/// Builds a searchable PDF from a bundle of pages.
+class BuildSearchablePdf {
+  /// Creates the use case.
+  const BuildSearchablePdf(this._composer, this._textFor);
+
+  final PdfComposer _composer;
+  final PageTextLookup _textFor;
+
+  /// Composes [pages] into a PDF at [destinationPath].
+  ///
+  /// Attaches an invisible text layer wherever recognition has produced one.
+  /// A page with no recognised text simply gets no layer: the spec states
+  /// outright that a PDF must still be produced when OCR is unavailable, so a
+  /// text lookup that fails degrades to an unsearchable document rather than
+  /// to no document at all.
+  Future<Result<ComposedPdf>> call(
+    List<PageRef> pages, {
+    required String destinationPath,
+    PdfQuality quality = PdfQuality.defaultQuality,
+    CancellationToken? token,
+  }) async {
+    if (token?.isCancelled ?? false) {
+      return const Result<ComposedPdf>.failure(Failure.cancelled());
+    }
+
+    Map<String, RecognisedText> texts;
+    try {
+      texts = await _textFor([for (final page in pages) page.id]);
+    } on Object {
+      texts = const {};
+    }
+
+    // Checked again after the lookup: it is the last point before composition
+    // begins, and composition is the expensive part.
+    if (token?.isCancelled ?? false) {
+      return const Result<ComposedPdf>.failure(Failure.cancelled());
+    }
+
+    return _composer.compose(
+      PdfBuildRequest(
+        pages: PdfComposition.specsFor(pages, texts),
+        destinationPath: destinationPath,
+        quality: quality,
+      ),
+    );
+  }
+}
+
+/// Creates a stored document from a bundle of captured or imported pages.
+///
+/// The whole point of this use case is the ordering. The PDF is composed first
+/// and the record written only once the file exists, so a failure cannot leave
+/// a document the user can see but not open. If the record write then fails,
+/// the PDF is deleted — an orphaned file in app-private storage is invisible
+/// and permanent, which is worse than none.
+class SaveDocument {
+  /// Creates the use case.
+  const SaveDocument(
+    this._build,
+    this._writer,
+    this._clock,
+    this._ids,
+    this._destinationFor,
+    this._deleteFile,
+  );
+
+  final BuildSearchablePdf _build;
+  final DocumentWriter _writer;
+  final Clock _clock;
+  final IdGenerator _ids;
+  final PdfDestination _destinationFor;
+  final Future<void> Function(String path) _deleteFile;
+
+  /// Saves [bundle] as a document titled [title].
+  Future<Result<Document>> call(
+    ScannedPageBundle bundle, {
+    required String title,
+    PdfQuality quality = PdfQuality.defaultQuality,
+    FolderId? folderId,
+    CancellationToken? token,
+  }) async {
+    if (!bundle.canCreateDocument) {
+      return const Result<Document>.failure(
+        Failure.validation(issue: ValidationIssue.documentWouldHaveNoPages),
+      );
+    }
+
+    final documentId = DocumentId(_ids.generate());
+    final destination = _destinationFor(documentId);
+
+    final composed = await _build(
+      bundle.pages,
+      destinationPath: destination,
+      quality: quality,
+      token: token,
+    );
+
+    return composed.flatMapAsync((pdf) async {
+      // Cancelled after composition but before the record exists: the file is
+      // removed so no orphan survives, and no partial record is ever created.
+      if (token?.isCancelled ?? false) {
+        await _deleteFile(pdf.filePath);
+        return const Result<Document>.failure(Failure.cancelled());
+      }
+
+      final now = _clock.now().toUtc();
+
+      final document = Document(
+        id: documentId,
+        title: title,
+        createdAt: now,
+        updatedAt: now,
+        pageCount: pdf.pageCount,
+        sizeInBytes: pdf.sizeInBytes,
+        filePath: pdf.filePath,
+        folderId: folderId,
+      );
+
+      final pages = [
+        for (var index = 0; index < bundle.pages.length; index++)
+          DocumentPage(
+            id: bundle.pages[index].id,
+            documentId: documentId,
+            order: index,
+            imagePath: bundle.pages[index].imagePath,
+            rotation: bundle.pages[index].rotation,
+            enhancement: bundle.pages[index].enhancement,
+          ),
+      ];
+
+      final saved = await _writer.save(document, pages);
+
+      if (saved case Failed()) {
+        // The PDF exists but nothing references it. An orphaned file in
+        // app-private storage is invisible to the user and never reclaimed, so
+        // it goes with the failed record.
+        await _deleteFile(pdf.filePath);
+      }
+
+      return saved;
+    });
+  }
+}
+
+/// Turns captured or imported pages into a stored document.
+///
+/// Implements the shared [PageBundleSink] contract so `document-scanning` and
+/// `document-import` can create documents without importing `pdf-generation`
+/// (`design.md` §2).
+class PageBundleSinkImpl implements PageBundleSink {
+  /// Creates the sink.
+  const PageBundleSinkImpl(this._save, this._name, this._patternFor);
+
+  final SaveDocument _save;
+  final GenerateDocumentName _name;
+  final NamingPattern Function() _patternFor;
+
+  @override
+  Future<Result<Document>> createDocument(
+    ScannedPageBundle bundle, {
+    String? title,
+  }) async {
+    final resolved = await _name(
+      _patternFor(),
+      suggested: bundle.suggestedTitle,
+      entered: title,
+    );
+
+    return _save(bundle, title: resolved);
+  }
+}
