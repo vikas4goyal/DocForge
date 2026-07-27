@@ -14,6 +14,7 @@ import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/previews/fakes/fake_cubit.dart';
 import 'package:doc_forge/core/previews/preview_scaffold.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
 import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
@@ -100,6 +101,7 @@ class _PreviewPdfCubit extends PdfGenerationCubit
           SequentialIdGenerator(prefix: 'preview'),
           _previewDestination,
           _noDelete,
+          InMemoryPublicFileStore(),
         ),
         GenerateDocumentName(
           FixedClock(DateTime(2026, 3, 14, 9, 30)),

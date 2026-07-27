@@ -8,6 +8,7 @@ import 'dart:io';
 
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
 import 'package:doc_forge/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
@@ -35,7 +36,8 @@ PdfEditingModule buildPdfEditingModule({
   required DocumentReader documentReader,
   required DocumentWriter documentWriter,
   required SecureStore secureStorage,
-  required Directory documentsDirectory,
+  required PublicFileStore store,
+  required Directory workingDirectory,
   required Clock clock,
   required IdGenerator ids,
   PdfEditorRepository? editor,
@@ -50,7 +52,8 @@ PdfEditingModule buildPdfEditingModule({
       (path, password) => active.pageCountOf(path, password: password),
     ),
     secrets: secureStorage,
-    destination: (id) => '${documentsDirectory.path}/${id.value}.pdf',
+    store: store,
+    workingDirectory: workingDirectory,
     clock: clock,
     ids: ids,
   );

@@ -4,6 +4,7 @@ library;
 import 'package:bloc_test/bloc_test.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/features/document_search/domain/repositories/search_repository.dart';
@@ -26,7 +27,7 @@ Document doc(
   updatedAt: updatedAt ?? DateTime.utc(2026, 3, 14),
   pageCount: 2,
   sizeInBytes: 20480,
-  filePath: '/documents/$id.pdf',
+  libraryPath: LibraryPath.parse('$id.pdf'),
   folderId: folderId,
   isArchived: archived,
 );

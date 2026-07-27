@@ -286,7 +286,9 @@ class _CropScreenState extends State<CropScreen> {
                 state: state,
                 rotation: _rotation,
                 onLayout: (available, imageSize) {
-                  if (_available == available && _imageSize == imageSize) return;
+                  if (_available == available && _imageSize == imageSize) {
+                    return;
+                  }
                   // Reported from a build, so applied after it.
                   WidgetsBinding.instance.addPostFrameCallback((_) {
                     if (!mounted) return;
@@ -321,14 +323,14 @@ class _CropScreenState extends State<CropScreen> {
                 const SizedBox(height: 8),
                 FilledButton(
                   key: ScanKeys.cropConfirmButton,
-              onPressed: state.isWorking
-                  ? null
-                  : () async {
-                      final page = await context.read<CropCubit>().confirm(
-                        destinationPath: widget.destinationPath,
-                      );
-                      if (page != null) widget.onCropped(page);
-                    },
+                  onPressed: state.isWorking
+                      ? null
+                      : () async {
+                          final page = await context.read<CropCubit>().confirm(
+                            destinationPath: widget.destinationPath,
+                          );
+                          if (page != null) widget.onCropped(page);
+                        },
                   child: const Text('Apply crop'),
                 ),
               ],
@@ -396,10 +398,7 @@ class _RotationSlider extends StatelessWidget {
         // width. A tenth of a degree is visible in the reading even though it is
         // far finer than a fingertip can place, because the number is what turns
         // "about right" into square.
-        Text(
-          '$reading°',
-          style: Theme.of(context).textTheme.labelMedium,
-        ),
+        Text('$reading°', style: Theme.of(context).textTheme.labelMedium),
         Row(
           children: [
             IconButton(
@@ -872,9 +871,7 @@ class _EdgeHandle extends StatelessWidget {
           child: GestureDetector(
             key: ScanKeys.cropEdgeHandle(edge),
             onPanStart: enabled ? (_) => onDragPoint(centre) : null,
-            onPanUpdate: enabled
-                ? (details) => _drag(context, details)
-                : null,
+            onPanUpdate: enabled ? (details) => _drag(context, details) : null,
             onPanEnd: enabled ? (_) => onDragPoint(null) : null,
             onPanCancel: enabled ? () => onDragPoint(null) : null,
             child: SizedBox(

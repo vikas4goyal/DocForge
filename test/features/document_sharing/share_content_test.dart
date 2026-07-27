@@ -3,6 +3,7 @@ library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,7 +16,7 @@ Document doc({String title = 'Invoice', bool hasRecognisedText = false}) =>
       updatedAt: DateTime.utc(2026, 3, 14),
       pageCount: 3,
       sizeInBytes: 2048,
-      filePath: '/documents/a.pdf',
+      libraryPath: LibraryPath.parse('a.pdf'),
       hasRecognisedText: hasRecognisedText,
     );
 

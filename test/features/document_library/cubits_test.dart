@@ -5,6 +5,7 @@ import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/failure_messages.dart';
 import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
@@ -29,6 +30,7 @@ void main() {
   late FakeFolderRepository folders;
   late FakePageRepository pages;
   late FakeDocumentFileStore files;
+  late InMemoryPublicFileStore store;
   late InMemorySecureStore secure;
   late Clock clock;
   late IdGenerator ids;
@@ -38,6 +40,10 @@ void main() {
     folders = FakeFolderRepository();
     pages = FakePageRepository();
     files = FakeDocumentFileStore();
+    store = InMemoryPublicFileStore();
+    // Duplicating reads the original's bytes, so the file has to be there:
+    // the record is an index entry and the library folder is the truth.
+    store.files[sampleDocument.relativePath] = 'pdf-bytes';
     secure = InMemorySecureStore();
     clock = FixedClock(_now);
     ids = SequentialIdGenerator(prefix: 'new');
@@ -63,13 +69,13 @@ void main() {
     ToggleFavourite(documents, clock),
     ArchiveDocument(documents, clock),
     RestoreDocument(documents, clock),
-    DuplicateDocument(documents, pages, files, clock, ids),
-    PurgeDocument(documents, pages, files, secure),
+    DuplicateDocument(documents, pages, store, clock, ids),
+    PurgeDocument(documents, pages, store, files, secure),
   );
 
   FolderCubit buildFolders() {
     final move = MoveDocument(documents, clock);
-    final purge = PurgeDocument(documents, pages, files, secure);
+    final purge = PurgeDocument(documents, pages, store, files, secure);
 
     return FolderCubit(
       LoadFolders(folders),

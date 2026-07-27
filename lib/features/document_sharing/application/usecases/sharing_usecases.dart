@@ -22,6 +22,7 @@ import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/isolates/cancellation.dart';
+import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_forge/features/document_sharing/domain/repositories/share_repository.dart';
 import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
 
@@ -70,10 +71,11 @@ class SharePreparationFailed extends SharePreparationEvent {
 /// fastest path and the one that cannot accidentally strip protection.
 class ShareDocumentPdf {
   /// Creates the use case.
-  const ShareDocumentPdf(this._documents, this._share);
+  const ShareDocumentPdf(this._documents, this._share, this._files);
 
   final DocumentReader _documents;
   final ShareRepository _share;
+  final DocumentFileResolver _files;
 
   /// Shares the PDF of [documentId].
   Future<Result<void>> call(DocumentId documentId) async {
@@ -85,15 +87,17 @@ class ShareDocumentPdf {
 
     final document = found.valueOrNull!;
 
-    if (!File(document.filePath).existsSync()) {
-      return const Result<void>.failure(
-        Failure.notFound(debugDetail: 'the stored PDF is missing'),
-      );
+    // Resolved rather than read off the record: the file lives in the user's
+    // own folder now, so "missing" is an ordinary outcome — they can delete it
+    // from the file browser while the app is open.
+    final resolved = await _files.pathFor(document);
+    if (resolved case Failed(:final failure)) {
+      return Result<void>.failure(failure);
     }
 
     return _share.share(
       SharePayload(
-        filePaths: [document.filePath],
+        filePaths: [resolved.valueOrNull!],
         subject: ShareRules.subjectFor(document),
       ),
     );
@@ -278,10 +282,11 @@ class ShareExtractedText {
 /// Prints a document through the system print flow.
 class PrintDocument {
   /// Creates the use case.
-  const PrintDocument(this._documents, this._printer);
+  const PrintDocument(this._documents, this._printer, this._files);
 
   final DocumentReader _documents;
   final PrintRepository _printer;
+  final DocumentFileResolver _files;
 
   /// Prints [documentId].
   ///
@@ -294,8 +299,13 @@ class PrintDocument {
     }
     final document = found.valueOrNull!;
 
+    final resolved = await _files.pathFor(document);
+    if (resolved case Failed(:final failure)) {
+      return Result<bool>.failure(failure);
+    }
+
     return _printer.printFile(
-      document.filePath,
+      resolved.valueOrNull!,
       jobName: ShareRules.sanitise(document.title),
     );
   }
@@ -304,10 +314,11 @@ class PrintDocument {
 /// Exports a document's PDF to a destination the user chooses.
 class ExportDocument {
   /// Creates the use case.
-  const ExportDocument(this._documents, this._picker);
+  const ExportDocument(this._documents, this._picker, this._files);
 
   final DocumentReader _documents;
   final ExportDestinationPicker _picker;
+  final DocumentFileResolver _files;
 
   /// Exports [documentId], asking the user where it should go.
   ///
@@ -325,12 +336,11 @@ class ExportDocument {
     }
     final document = found.valueOrNull!;
 
-    final source = File(document.filePath);
-    if (!source.existsSync()) {
-      return const Result<String?>.failure(
-        Failure.notFound(debugDetail: 'the stored PDF is missing'),
-      );
+    final resolved = await _files.pathFor(document);
+    if (resolved case Failed(:final failure)) {
+      return Result<String?>.failure(failure);
     }
+    final source = File(resolved.valueOrNull!);
 
     final chosen = await _picker.chooseDestination(
       suggestedName: ShareRules.pdfFileName(document.title),

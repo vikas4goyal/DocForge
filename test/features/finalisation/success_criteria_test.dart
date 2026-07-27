@@ -26,11 +26,14 @@ import 'package:doc_forge/app/pdf_editing_module.dart';
 import 'package:doc_forge/app/sharing_module.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
 import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
@@ -94,7 +97,9 @@ void _writeCapture(String path) {
 
 void main() {
   late Directory root;
+  late Directory documents;
   late Isar isar;
+  late FilesystemPublicFileStore publicStore;
   late LibraryModule library;
   late DocumentCreationModule creation;
   late _Secrets secrets;
@@ -109,7 +114,7 @@ void main() {
     HttpOverrides.global = _AirplaneMode();
 
     root = Directory.systemTemp.createTempSync('docforge_success');
-    final documents = Directory('${root.path}/documents')..createSync();
+    documents = Directory('${root.path}/documents')..createSync();
 
     isar = await Isar.open([
       DocumentEntitySchema,
@@ -120,9 +125,13 @@ void main() {
 
     secrets = _Secrets();
 
+    publicStore = FilesystemPublicFileStore(documents);
+    await publicStore.initialise();
+
     library = buildLibraryModuleOver(
       isar: isar,
       documentsDirectory: documents,
+      store: publicStore,
       clock: clock,
       ids: SequentialIdGenerator(prefix: 'doc'),
       secureStorage: secrets,
@@ -135,7 +144,8 @@ void main() {
         enhancePageJob,
       ),
       isar: isar,
-      documentsDirectory: documents,
+      workingDirectory: documents,
+      publicStore: publicStore,
       clock: clock,
       ids: SequentialIdGenerator(prefix: 'page'),
       documentReader: library.documentReader,
@@ -171,9 +181,12 @@ void main() {
     final document = (saved as Success<Document>).value;
 
     expect(document.pageCount, 1);
-    expect(File(document.filePath).existsSync(), isTrue);
-    // Locally: inside the directory this application owns, not anywhere shared.
-    expect(document.filePath, startsWith(root.path));
+    // Published into the user's own library folder, which is the point: it has
+    // to be reachable from the Files app and from other applications.
+    expect(
+      File('${documents.path}/DocForge/${document.relativePath}').existsSync(),
+      isTrue,
+    );
     // Searchable: recognition ran and its text is stored.
     expect(document.hasRecognisedText, isTrue);
 
@@ -214,14 +227,18 @@ void main() {
     // The real engine cannot load here, so the editor runs over the fake — what
     // this step proves is that the *pipeline* reaches editing with a document
     // the editor can act on, and that the record is updated afterwards.
-    final editable = '${root.path}/editable.pdf';
+    // Written into the library folder, which is where a document lives now.
+    final editable = '${documents.path}/DocForge/Editable.pdf';
+    Directory(editable).parent.createSync(recursive: true);
     writeFakePdf(editable, pageCount: 3);
 
     final editing = buildPdfEditingModule(
       documentReader: library.documentReader,
       documentWriter: library.documentWriter,
       secureStorage: secrets,
-      documentsDirectory: Directory('${root.path}/documents'),
+      store: publicStore,
+      workingDirectory: Directory('${root.path}/work')
+        ..createSync(recursive: true),
       clock: clock,
       ids: SequentialIdGenerator(prefix: 'edit'),
       editor: FakePdfEditor(),
@@ -230,7 +247,7 @@ void main() {
     final editableDocument = await library.documentWriter.save(
       document.copyWith(
         id: const DocumentId('editable'),
-        filePath: editable,
+        libraryPath: LibraryPath.parse('Editable.pdf'),
         pageCount: 3,
       ),
       // Page records as well as the document: the library derives the page
@@ -260,6 +277,7 @@ void main() {
     final sharing = buildSharingModule(
       documentReader: library.documentReader,
       ocrTextSource: creation.ocrTextSource,
+      documentFiles: PublicStoreDocumentFileResolver(publicStore),
       cacheDirectory: root,
       worker: const InlineBackgroundWorker(),
       share: share,
@@ -267,7 +285,9 @@ void main() {
 
     final shared = await sharing.sharePdf(document.id);
     expect(shared, isA<Success<void>>());
-    expect(share.shared.single.filePaths, [document.filePath]);
+    // Resolved through the library rather than read off the record: the
+    // record carries an address, and the share sheet needs a real path.
+    expect(share.shared.single.filePaths.single, endsWith('.pdf'));
 
     // ---- ...without an account or an internet connection -----------------
     // Reached only because no HTTP client was ever opened; the override above

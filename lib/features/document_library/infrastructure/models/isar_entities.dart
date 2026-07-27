@@ -13,13 +13,15 @@
 ///   exposed or persisted anywhere else.
 /// * `schemaVersion` is written on every row so a later release can detect and
 ///   upgrade older records without guessing.
-/// * Page images and PDFs are stored on disk; only their paths live here. A
-///   database holding binary blobs bloats, slows every query and complicates
-///   backup.
+/// * PDFs live in the user-visible library folder; only their library-relative
+///   address lives here. A database holding binary blobs bloats, slows every
+///   query and complicates backup — and an *absolute* path stored here would be
+///   wrong after a restore and meaningless to a future sync layer.
 library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:isar_community/isar.dart';
 
@@ -29,7 +31,10 @@ part 'isar_entities.g.dart';
 ///
 /// Bump when a collection's shape changes in a way an older row cannot satisfy,
 /// and add the corresponding upgrade step.
-const librarySchemaVersion = 1;
+/// Version 2 replaced `filePath` — an absolute device path into app-private
+/// storage — with `folderPath` and `fileName`, which address the file inside
+/// the user-visible library folder. See `LibraryStorageMigration`.
+const librarySchemaVersion = 2;
 
 /// Isar row for a document.
 @collection
@@ -66,8 +71,15 @@ class DocumentEntity {
   /// Size of the stored PDF in bytes.
   late int sizeInBytes;
 
-  /// Path to the PDF inside app-private storage.
-  late String filePath;
+  /// The document's folder path relative to the library root.
+  ///
+  /// Empty for a document sitting directly in the library folder. Stored apart
+  /// from [fileName] so a folder rename is one indexed update per document
+  /// rather than a string rewrite per row.
+  late String folderPath;
+
+  /// The document's file name, including its `.pdf` extension.
+  late String fileName;
 
   /// UUID of the owning folder, or null when unfiled. Indexed for folder views.
   @Index()
@@ -108,7 +120,8 @@ class DocumentEntity {
     ..updatedAt = document.updatedAt.toUtc()
     ..pageCount = document.pageCount
     ..sizeInBytes = document.sizeInBytes
-    ..filePath = document.filePath
+    ..folderPath = document.libraryPath.folderPath
+    ..fileName = document.libraryPath.fileName
     ..folderUuid = document.folderId?.value
     ..isFavourite = document.isFavourite
     ..isArchived = document.isArchived
@@ -130,7 +143,10 @@ class DocumentEntity {
     updatedAt: updatedAt.toUtc(),
     pageCount: pageCount,
     sizeInBytes: sizeInBytes,
-    filePath: filePath,
+    libraryPath: LibraryPath.raw(
+      folders: folderPath.isEmpty ? const [] : folderPath.split('/'),
+      fileName: fileName,
+    ),
     folderId: folderUuid == null ? null : FolderId(folderUuid!),
     isFavourite: isFavourite,
     isArchived: isArchived,
@@ -153,6 +169,12 @@ class FolderEntity {
   @Index(caseSensitive: false)
   late String name;
 
+  /// The folder's path relative to the library root.
+  ///
+  /// Stored as well as [name] because folders nest: `name` is what the user
+  /// reads on a row, `relativePath` is what addresses the directory on disk.
+  late String relativePath;
+
   /// When the folder was created.
   late DateTime createdAt;
 
@@ -166,6 +188,7 @@ class FolderEntity {
   static FolderEntity fromDomain(Folder folder) => FolderEntity()
     ..uuid = folder.id.value
     ..name = folder.name
+    ..relativePath = folder.relativePath
     ..createdAt = folder.createdAt.toUtc()
     ..schemaVersion = librarySchemaVersion;
 
@@ -175,6 +198,7 @@ class FolderEntity {
   Folder toDomain({int documentCount = 0}) => Folder(
     id: FolderId(uuid),
     name: name,
+    relativePath: relativePath,
     createdAt: createdAt.toUtc(),
     documentCount: documentCount,
   );

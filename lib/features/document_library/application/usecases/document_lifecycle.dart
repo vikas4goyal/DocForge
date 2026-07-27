@@ -6,9 +6,11 @@ library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_forge/core/storage/storage_keys.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_library/domain/library_rules.dart';
@@ -68,7 +70,7 @@ class MoveDocument {
           updatedAt: _clock.now(),
           pageCount: document.pageCount,
           sizeInBytes: document.sizeInBytes,
-          filePath: document.filePath,
+          libraryPath: document.libraryPath,
           folderId: folderId,
           isFavourite: document.isFavourite,
           isArchived: document.isArchived,
@@ -152,14 +154,14 @@ class DuplicateDocument {
   const DuplicateDocument(
     this._documents,
     this._pages,
-    this._files,
+    this._store,
     this._clock,
     this._ids,
   );
 
   final DocumentRepository _documents;
   final PageRepository _pages;
-  final DocumentFileStore _files;
+  final PublicFileStore _store;
   final Clock _clock;
   final IdGenerator _ids;
 
@@ -175,24 +177,37 @@ class DuplicateDocument {
 
     final original = found.valueOrNull!;
     final newId = DocumentId(_ids.generate());
+    final title = DocumentRules.duplicateTitle(original.title);
 
-    final copied = await _files.copyDocument(id, newId);
-    if (copied case Failed<void>(:final failure)) {
+    // A second file beside the first in the user's own folder, under a name
+    // de-duplicated the way the file browser would do it — the copy has to be
+    // something they can tell apart from the original at a glance.
+    final destination = await _availablePathFor(title, original);
+    if (destination case Failed<LibraryPath>(:final failure)) {
       return Result<Document>.failure(failure);
     }
 
-    final pdfPath = await _files.pdfPathFor(newId);
-    if (pdfPath case Failed<String>(:final failure)) {
+    final source = await _store.materialise(original.libraryPath);
+    if (source case Failed<String>(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
+
+    final copied = await _store.writeFile(
+      destination.valueOrNull!,
+      source.valueOrNull!,
+    );
+    await _store.releaseMaterialised(original.libraryPath);
+    if (copied case Failed<String>(:final failure)) {
       return Result<Document>.failure(failure);
     }
 
     final now = _clock.now();
     final duplicate = original.copyWith(
       id: newId,
-      title: DocumentRules.duplicateTitle(original.title),
+      title: title,
       createdAt: now,
       updatedAt: now,
-      filePath: pdfPath.valueOrNull!,
+      libraryPath: destination.valueOrNull!,
     );
 
     final saved = await _documents.save(duplicate);
@@ -215,6 +230,41 @@ class DuplicateDocument {
 
     return Result<Document>.success(duplicate);
   }
+
+  /// A library path for [title] beside [original] that nothing already holds.
+  Future<Result<LibraryPath>> _availablePathFor(
+    String title,
+    Document original,
+  ) async {
+    final folders = original.libraryPath.folders;
+    final existing = await _store.list(folders);
+    // Propagated, not defaulted to empty: without the listing there is no way
+    // to know whether the name is free, and writing anyway would silently
+    // overwrite a document the user still has.
+    if (existing case Failed(:final failure)) {
+      return Result<LibraryPath>.failure(failure);
+    }
+
+    final taken = <String>{
+      for (final entry in existing.valueOrNull!)
+        if (!entry.isFolder) entry.name,
+    };
+
+    final desired = LibraryPath.pdfFileName(LibraryPath.sanitiseName(title));
+
+    try {
+      return Result<LibraryPath>.success(
+        LibraryPath.inFolder(folders, LibraryPath.deduplicate(desired, taken)),
+      );
+    } on InvalidLibraryPath catch (error) {
+      return Result<LibraryPath>.failure(
+        Failure.validation(
+          issue: ValidationIssue.illegalName,
+          debugDetail: '$error',
+        ),
+      );
+    }
+  }
 }
 
 /// Permanently removes a document and everything belonging to it.
@@ -223,13 +273,15 @@ class PurgeDocument {
   const PurgeDocument(
     this._documents,
     this._pages,
-    this._files,
+    this._store,
+    this._thumbnails,
     this._secureStorage,
   );
 
   final DocumentRepository _documents;
   final PageRepository _pages;
-  final DocumentFileStore _files;
+  final PublicFileStore _store;
+  final DocumentFileStore _thumbnails;
   final SecureStore _secureStorage;
 
   /// Permanently removes [id].
@@ -246,8 +298,18 @@ class PurgeDocument {
       return Result<void>.failure(failure);
     }
 
-    final filesRemoved = await _files.deleteDocument(id);
-    if (filesRemoved case Failed<void>(:final failure)) {
+    final found = await _documents.findById(id);
+    if (found case Success<Document>(:final value)) {
+      final fileRemoved = await _store.delete(value.libraryPath);
+      if (fileRemoved case Failed<void>(:final failure)) {
+        return Result<void>.failure(failure);
+      }
+    }
+
+    // Cached thumbnails are derived from the file that has just gone, so they
+    // go with it rather than being left to be re-rendered from nothing.
+    final thumbnailsRemoved = await _thumbnails.deleteDocument(id);
+    if (thumbnailsRemoved case Failed<void>(:final failure)) {
       return Result<void>.failure(failure);
     }
 
@@ -263,18 +325,18 @@ class PurgeDocument {
 /// Computes how much storage the library consumes.
 class ComputeStorageSummary {
   /// Creates the use case.
-  const ComputeStorageSummary(this._documents, this._files);
+  const ComputeStorageSummary(this._documents, this._store);
 
   final DocumentRepository _documents;
-  final DocumentFileStore _files;
+  final PublicFileStore _store;
 
   /// Returns the current storage summary.
   ///
-  /// Bytes come from the filesystem rather than the sum of recorded document
-  /// sizes: page images and thumbnails also occupy space, and the recorded size
-  /// covers only the PDF.
+  /// Bytes come from the library folder rather than the sum of recorded
+  /// document sizes: a file changed outside the application would make the two
+  /// disagree, and the folder is the truth about what is occupying space.
   Future<Result<StorageSummary>> call() async {
-    final bytes = await _files.totalBytes();
+    final bytes = await _store.totalBytes();
     if (bytes case Failed<int>(:final failure)) {
       return Result<StorageSummary>.failure(failure);
     }

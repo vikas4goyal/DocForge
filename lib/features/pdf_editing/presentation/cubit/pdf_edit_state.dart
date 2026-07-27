@@ -27,6 +27,7 @@ class PdfEditState extends Equatable {
   const PdfEditState._({
     required this.status,
     this.document,
+    this.filePath,
     this.selection = const {},
     this.operation,
     this.derived,
@@ -44,6 +45,13 @@ class PdfEditState extends Equatable {
 
   /// The document being edited, once it is loaded.
   final Document? document;
+
+  /// A readable device path for the document's file, once it is loaded.
+  ///
+  /// Resolved rather than read off the record: [Document.libraryPath] is an
+  /// address, and on Android the readable path is a cache copy. Re-resolved
+  /// after every edit, because an edit replaces the file the copy was made of.
+  final String? filePath;
 
   /// The zero-based indices of the selected pages.
   final Set<int> selection;
@@ -115,6 +123,7 @@ class PdfEditState extends Equatable {
   PdfEditState copyWith({
     PdfEditStatus? status,
     Document? document,
+    String? filePath,
     Set<int>? selection,
     PdfEditOperation? operation,
     Document? derived,
@@ -125,6 +134,7 @@ class PdfEditState extends Equatable {
   }) => PdfEditState._(
     status: status ?? this.status,
     document: document ?? this.document,
+    filePath: filePath ?? this.filePath,
     selection: selection ?? this.selection,
     operation: operation ?? this.operation,
     derived: derived,
@@ -138,6 +148,7 @@ class PdfEditState extends Equatable {
   List<Object?> get props => [
     status,
     document,
+    filePath,
     selection,
     operation,
     derived,

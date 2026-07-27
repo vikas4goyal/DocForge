@@ -104,5 +104,4 @@ abstract final class ScanKeys {
 
   /// Mirrors the page top-to-bottom.
   static const cropFlipVerticalButton = Key('scan_crop_flip_vertical');
-
 }

@@ -14,6 +14,7 @@ import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/isolates/cancellation.dart';
 import 'package:doc_forge/core/previews/preview_scaffold.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_import/application/usecases/import_usecases.dart';
 import 'package:doc_forge/features/document_import/domain/import_rules.dart';
@@ -66,6 +67,7 @@ class _PreviewImportCubit extends ImportCubit {
             FakePdfInspector(),
             const _PreviewWriter(),
             (id) => '/preview/${id.value}.pdf',
+            InMemoryPublicFileStore(),
             FixedClock(DateTime.utc(2026, 3, 14)),
             SequentialIdGenerator(),
           ),

@@ -16,7 +16,10 @@ _Document _$DocumentFromJson(
     updatedAt: $checkedConvert('updatedAt', (v) => DateTime.parse(v as String)),
     pageCount: $checkedConvert('pageCount', (v) => (v as num).toInt()),
     sizeInBytes: $checkedConvert('sizeInBytes', (v) => (v as num).toInt()),
-    filePath: $checkedConvert('filePath', (v) => v as String),
+    libraryPath: $checkedConvert(
+      'libraryPath',
+      (v) => LibraryPath.fromJson(v as String),
+    ),
     folderId: $checkedConvert(
       'folderId',
       (v) => v == null ? null : FolderId.fromJson(v as String),
@@ -39,7 +42,7 @@ Map<String, dynamic> _$DocumentToJson(_Document instance) => <String, dynamic>{
   'updatedAt': instance.updatedAt.toIso8601String(),
   'pageCount': instance.pageCount,
   'sizeInBytes': instance.sizeInBytes,
-  'filePath': instance.filePath,
+  'libraryPath': instance.libraryPath.toJson(),
   'folderId': instance.folderId?.toJson(),
   'isFavourite': instance.isFavourite,
   'isArchived': instance.isArchived,
@@ -47,27 +50,27 @@ Map<String, dynamic> _$DocumentToJson(_Document instance) => <String, dynamic>{
   'hasRecognisedText': instance.hasRecognisedText,
 };
 
-_Folder _$FolderFromJson(Map<String, dynamic> json) =>
-    $checkedCreate('_Folder', json, ($checkedConvert) {
-      final val = _Folder(
-        id: $checkedConvert('id', (v) => FolderId.fromJson(v as String)),
-        name: $checkedConvert('name', (v) => v as String),
-        createdAt: $checkedConvert(
-          'createdAt',
-          (v) => DateTime.parse(v as String),
-        ),
-        documentCount: $checkedConvert(
-          'documentCount',
-          (v) => (v as num?)?.toInt() ?? 0,
-        ),
-      );
-      return val;
-    });
+_Folder _$FolderFromJson(
+  Map<String, dynamic> json,
+) => $checkedCreate('_Folder', json, ($checkedConvert) {
+  final val = _Folder(
+    id: $checkedConvert('id', (v) => FolderId.fromJson(v as String)),
+    name: $checkedConvert('name', (v) => v as String),
+    createdAt: $checkedConvert('createdAt', (v) => DateTime.parse(v as String)),
+    relativePath: $checkedConvert('relativePath', (v) => v as String? ?? ''),
+    documentCount: $checkedConvert(
+      'documentCount',
+      (v) => (v as num?)?.toInt() ?? 0,
+    ),
+  );
+  return val;
+});
 
 Map<String, dynamic> _$FolderToJson(_Folder instance) => <String, dynamic>{
   'id': instance.id.toJson(),
   'name': instance.name,
   'createdAt': instance.createdAt.toIso8601String(),
+  'relativePath': instance.relativePath,
   'documentCount': instance.documentCount,
 };
 

@@ -5,6 +5,7 @@ import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
@@ -122,8 +123,20 @@ void main() {
         ToggleFavourite(documents, clock),
         ArchiveDocument(documents, clock),
         RestoreDocument(documents, clock),
-        DuplicateDocument(documents, pages, files, clock, ids),
-        PurgeDocument(documents, pages, files, secure),
+        DuplicateDocument(
+          documents,
+          pages,
+          InMemoryPublicFileStore(),
+          clock,
+          ids,
+        ),
+        PurgeDocument(
+          documents,
+          pages,
+          InMemoryPublicFileStore(),
+          files,
+          secure,
+        ),
       ),
       child: DocumentDetailScreen(onClose: () => context.pop()),
     ),
@@ -137,7 +150,13 @@ void main() {
           folders,
           documents,
           MoveDocument(documents, clock),
-          PurgeDocument(documents, pages, files, secure),
+          PurgeDocument(
+            documents,
+            pages,
+            InMemoryPublicFileStore(),
+            files,
+            secure,
+          ),
         ),
       ),
       child: FolderListScreen(

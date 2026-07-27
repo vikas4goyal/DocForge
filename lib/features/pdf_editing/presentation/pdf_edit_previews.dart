@@ -4,14 +4,19 @@
 /// so nothing here opens a PDF or reaches the engine (`design.md` §15).
 library;
 
+import 'dart:io';
+
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/previews/preview_scaffold.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
 import 'package:doc_forge/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
@@ -60,7 +65,11 @@ class _PreviewLibrary implements DocumentReader, DocumentWriter {
 /// A Cubit frozen at [_seeded], with every action inert.
 class _PreviewPdfEditCubit extends PdfEditCubit {
   _PreviewPdfEditCubit(this._seeded)
-    : super(const DocumentId('preview'), _useCases());
+    : super(
+        const DocumentId('preview'),
+        _useCases(),
+        PublicStoreDocumentFileResolver(InMemoryPublicFileStore()),
+      );
 
   static PdfEditUseCases _useCases() {
     final editor = FakePdfEditor();
@@ -73,7 +82,8 @@ class _PreviewPdfEditCubit extends PdfEditCubit {
         (path, password) => editor.pageCountOf(path, password: password),
       ),
       secrets: InMemorySecureStore(),
-      destination: (id) => '/preview/${id.value}.pdf',
+      store: InMemoryPublicFileStore(),
+      workingDirectory: Directory('/preview/work'),
       clock: FixedClock(DateTime.utc(2026, 3, 14)),
       ids: SequentialIdGenerator(),
     );
@@ -139,7 +149,7 @@ Document _document({
   updatedAt: DateTime.utc(2026, 4),
   pageCount: pageCount,
   sizeInBytes: 1_884_160,
-  filePath: '/preview/a.pdf',
+  libraryPath: LibraryPath.parse('Invoice 2026.pdf'),
   isProtected: isProtected,
 );
 

@@ -7,6 +7,7 @@ library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,7 +19,7 @@ Document doc(String id, {String title = 'Invoice', int pageCount = 4}) =>
       updatedAt: DateTime.utc(2026, 3, 14),
       pageCount: pageCount,
       sizeInBytes: 4096,
-      filePath: '/documents/$id.pdf',
+      libraryPath: LibraryPath.parse('$id.pdf'),
     );
 
 void main() {

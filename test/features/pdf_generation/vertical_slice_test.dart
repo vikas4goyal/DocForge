@@ -23,6 +23,7 @@ import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
 import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
@@ -89,6 +90,7 @@ void main() {
   late Directory staging;
   late Directory documents;
   late Isar isar;
+  late FilesystemPublicFileStore publicStore;
   late LibraryModule library;
   late DocumentCreationModule creation;
   late FakeScannerRepository scanner;
@@ -112,9 +114,13 @@ void main() {
       OcrTextEntitySchema,
     ], directory: root.path);
 
+    publicStore = FilesystemPublicFileStore(documents);
+    await publicStore.initialise();
+
     library = buildLibraryModuleOver(
       isar: isar,
       documentsDirectory: documents,
+      store: publicStore,
       clock: clock,
       ids: SequentialIdGenerator(prefix: 'doc'),
       secureStorage: _InMemorySecureStore(),
@@ -133,7 +139,8 @@ void main() {
         enhancePageJob,
       ),
       isar: isar,
-      documentsDirectory: documents,
+      workingDirectory: documents,
+      publicStore: publicStore,
       clock: clock,
       ids: SequentialIdGenerator(prefix: 'doc'),
       documentReader: library.documentReader,
@@ -271,12 +278,12 @@ void main() {
       expect(document.title, 'Scan 2026-03-14');
       expect(document.pageCount, 3);
       expect(document.sizeInBytes, greaterThan(0));
-      expect(File(document.filePath).existsSync(), isTrue);
-      // A real PDF, not a stub.
-      expect(
-        File(document.filePath).readAsBytesSync().take(5).toList(),
-        '%PDF-'.codeUnits,
+      final published = File(
+        '${documents.path}/DocForge/${document.relativePath}',
       );
+      expect(published.existsSync(), isTrue);
+      // A real PDF, not a stub.
+      expect(published.readAsBytesSync().take(5).toList(), '%PDF-'.codeUnits);
 
       // --- The document is in the library, in order --------------------------
       final stored = await library.documentReader.findById(document.id);
@@ -339,10 +346,13 @@ void main() {
 
     final document = (saved as Success<Document>).value;
     expect(document.pageCount, 2);
-    expect(File(document.filePath).existsSync(), isTrue);
+    expect(
+      File('${documents.path}/DocForge/${document.relativePath}').existsSync(),
+      isTrue,
+    );
   });
 
-  test('nothing is written anywhere but app-private storage', () async {
+  test('the PDF is published and the captures stay private', () async {
     final captured = await capture(1);
     writeCapture(captured.single.imagePath);
 
@@ -355,9 +365,12 @@ void main() {
 
     final document = (saved as Success<Document>).value;
 
-    // Every artefact is under the directories the composition root chose, both
-    // of which are app-private on a device.
-    expect(document.filePath, startsWith(documents.path));
+    // The finished PDF goes into the user-visible library folder — that is the
+    // point of it. The captures it was built from stay in private staging.
+    expect(
+      File('${documents.path}/DocForge/${document.relativePath}').existsSync(),
+      isTrue,
+    );
     expect(captured.single.imagePath, startsWith(staging.path));
   });
 }

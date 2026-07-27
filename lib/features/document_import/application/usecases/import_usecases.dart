@@ -18,12 +18,14 @@ import 'dart:io';
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/isolates/cancellation.dart';
+import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_import/domain/import_rules.dart';
 import 'package:doc_forge/features/document_import/domain/repositories/import_repository.dart';
@@ -219,6 +221,7 @@ class ImportPdf {
     this._inspector,
     this._writer,
     this._destination,
+    this._store,
     this._clock,
     this._ids,
   );
@@ -226,6 +229,7 @@ class ImportPdf {
   final ImportedPdfInspector _inspector;
   final DocumentWriter _writer;
   final ImportedPdfDestination _destination;
+  final PublicFileStore _store;
   final Clock _clock;
   final IdGenerator _ids;
 
@@ -238,7 +242,11 @@ class ImportPdf {
   /// the file is copied first, read second, and the record written last. A
   /// record is never created for a file that is not there or cannot be opened,
   /// and a copy that fails inspection is deleted rather than left orphaned.
-  Future<Result<Document>> call(String sourcePath, {String? password}) async {
+  Future<Result<Document>> call(
+    String sourcePath, {
+    String? password,
+    List<String> folders = const [],
+  }) async {
     if (ImportRules.kindFor(sourcePath) != ImportedFileKind.pdf) {
       return const Result<Document>.failure(
         Failure.import(unsupportedType: true),
@@ -251,8 +259,10 @@ class ImportPdf {
     }
 
     final id = DocumentId(_ids.generate());
-    final destination = File(_destination(id));
-    final temporary = File('${destination.path}.partial');
+    // Staged in private storage first. The library folder is visible to the
+    // user's file browser, so a partial or unreadable copy must never appear
+    // there even briefly.
+    final temporary = File('${_destination(id)}.partial');
 
     try {
       temporary.parent.createSync(recursive: true);
@@ -274,25 +284,36 @@ class ImportPdf {
       return Result<Document>.failure(failure);
     }
 
-    final File stored;
-    try {
-      stored = temporary.renameSync(destination.path);
-    } on FileSystemException catch (error) {
+    final title = ImportRules.suggestedTitle(sourcePath) ?? 'Document';
+    final sizeInBytes = temporary.lengthSync();
+
+    final libraryPath = await _availablePathFor(title, folders);
+    if (libraryPath case Failed(:final failure)) {
       if (temporary.existsSync()) temporary.deleteSync();
-      return Result<Document>.failure(_fileFailure(error));
+      return Result<Document>.failure(failure);
+    }
+
+    final published = await _store.writeFile(
+      libraryPath.valueOrNull!,
+      temporary.path,
+    );
+    if (temporary.existsSync()) temporary.deleteSync();
+
+    if (published case Failed(:final failure)) {
+      return Result<Document>.failure(failure);
     }
 
     final now = _clock.now();
     final document = Document(
       id: id,
-      title: ImportRules.suggestedTitle(sourcePath) ?? 'Document',
+      title: title,
       createdAt: now,
       updatedAt: now,
       pageCount: inspected.valueOrNull!,
-      // Measured from the stored file rather than the source, so the figure on
-      // the record is what the filesystem actually reports.
-      sizeInBytes: stored.lengthSync(),
-      filePath: stored.path,
+      // Measured from the staged copy rather than the source, so the figure on
+      // the record is what was actually written.
+      sizeInBytes: sizeInBytes,
+      libraryPath: libraryPath.valueOrNull!,
       isProtected: password != null,
     );
 
@@ -302,12 +323,47 @@ class ImportPdf {
 
     if (saved case Failed(:final failure)) {
       // The record is the thing that makes a file a document. Without one the
-      // file is unreachable, so it is removed rather than left orphaned.
-      if (stored.existsSync()) stored.deleteSync();
+      // file is unreachable from the app but *visible* in the user's folder,
+      // which is worse than not having written it.
+      await _store.delete(libraryPath.valueOrNull!);
       return Result<Document>.failure(failure);
     }
 
     return saved;
+  }
+
+  /// A library path for [title] in [folders] that nothing already occupies.
+  Future<Result<LibraryPath>> _availablePathFor(
+    String title,
+    List<String> folders,
+  ) async {
+    final existing = await _store.list(folders);
+    // Propagated, not defaulted to empty: without the listing there is no way
+    // to know whether the name is free, and writing anyway would silently
+    // overwrite a document the user still has.
+    if (existing case Failed(:final failure)) {
+      return Result<LibraryPath>.failure(failure);
+    }
+
+    final taken = <String>{
+      for (final entry in existing.valueOrNull!)
+        if (!entry.isFolder) entry.name,
+    };
+
+    final desired = LibraryPath.pdfFileName(LibraryPath.sanitiseName(title));
+
+    try {
+      return Result<LibraryPath>.success(
+        LibraryPath.inFolder(folders, LibraryPath.deduplicate(desired, taken)),
+      );
+    } on InvalidLibraryPath catch (error) {
+      return Result<LibraryPath>.failure(
+        Failure.validation(
+          issue: ValidationIssue.illegalName,
+          debugDetail: '$error',
+        ),
+      );
+    }
   }
 
   /// Maps a filesystem error onto the failure the user can act on.

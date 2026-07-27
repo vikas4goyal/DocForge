@@ -15,6 +15,7 @@ import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/isolates/cancellation.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_import/application/usecases/import_usecases.dart';
 import 'package:doc_forge/features/document_import/domain/import_rules.dart';
@@ -202,6 +203,7 @@ void main() {
       inspector ?? FakePdfInspector(pageCount: 7),
       writer ?? _Writer(),
       (id) => '${temporary.path}/documents/${id.value}.pdf',
+      InMemoryPublicFileStore(),
       clock ?? FixedClock(DateTime.utc(2026, 3, 14, 9)),
       SequentialIdGenerator(),
     );
@@ -216,7 +218,9 @@ void main() {
       expect(document.pageCount, 7);
       expect(document.sizeInBytes, '%PDF-1.7 body'.length);
       expect(document.title, 'Invoice');
-      expect(File(document.filePath).existsSync(), isTrue);
+      // Published into the library, addressed by a library-relative path
+      // rather than a device one.
+      expect(document.relativePath, 'Invoice.pdf');
       expect(writer.saved, hasLength(1));
     });
 
@@ -316,6 +320,7 @@ void main() {
             inspector ?? FakePdfInspector(pageCount: 3),
             writer ?? _Writer(),
             (id) => '${temporary.path}/documents/${id.value}.pdf',
+            InMemoryPublicFileStore(),
             FixedClock(DateTime.utc(2026, 3, 14)),
             SequentialIdGenerator(),
           ),

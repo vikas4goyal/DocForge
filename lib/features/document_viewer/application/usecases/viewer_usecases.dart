@@ -7,6 +7,7 @@ import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_forge/core/storage/storage_keys.dart';
 import 'package:doc_forge/features/document_viewer/domain/repositories/pdf_renderer.dart';
 
@@ -15,12 +16,20 @@ class ViewableDocument {
   /// Creates a viewable document.
   const ViewableDocument({
     required this.document,
+    required this.filePath,
     required this.pageCount,
     this.password,
   });
 
   /// The document's metadata.
   final Document document;
+
+  /// A readable device path for the opened file.
+  ///
+  /// Resolved when the document was opened rather than read off the record:
+  /// [Document.libraryPath] is an address, and on Android the readable path is
+  /// a cache copy that only exists while the document is open.
+  final String filePath;
 
   /// How many pages the file actually contains.
   ///
@@ -47,11 +56,17 @@ class ViewableDocument {
 /// authentication is needed and prompts.
 class OpenDocumentForViewing {
   /// Creates the use case.
-  const OpenDocumentForViewing(this._documents, this._renderer, this._secrets);
+  const OpenDocumentForViewing(
+    this._documents,
+    this._renderer,
+    this._secrets,
+    this._files,
+  );
 
   final DocumentReader _documents;
   final PdfRenderer _renderer;
   final SecureStore _secrets;
+  final DocumentFileResolver _files;
 
   /// Opens the document identified by [id].
   ///
@@ -67,11 +82,23 @@ class OpenDocumentForViewing {
     return found.flatMapAsync((document) async {
       final stored = password ?? await _storedPassword(id);
 
-      final opened = await _renderer.open(document.filePath, password: stored);
+      // The document is addressed by library path, not by device path: on
+      // Android the file is a MediaStore item and the renderer needs a real
+      // path, so it is materialised here and released when the viewer closes.
+      final resolved = await _files.pathFor(document);
+      if (resolved case Failed(:final failure)) {
+        return Result<ViewableDocument>.failure(failure);
+      }
+
+      final opened = await _renderer.open(
+        resolved.valueOrNull!,
+        password: stored,
+      );
 
       return opened.map(
         (opened) => ViewableDocument(
           document: document,
+          filePath: resolved.valueOrNull!,
           pageCount: opened.pageCount,
           password: opened.isProtected ? stored : null,
         ),

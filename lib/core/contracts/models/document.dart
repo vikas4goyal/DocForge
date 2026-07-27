@@ -8,6 +8,7 @@
 library;
 
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'document.freezed.dart';
@@ -15,8 +16,8 @@ part 'document.g.dart';
 
 /// A stored document.
 ///
-/// Holds metadata only. The PDF itself lives on disk at [filePath], inside
-/// app-private storage, and is never loaded merely to display a list row.
+/// Holds metadata only. The PDF itself lives in the user-visible library folder
+/// at [libraryPath], and is never loaded merely to display a list row.
 @freezed
 abstract class Document with _$Document {
   /// Creates a document record.
@@ -32,10 +33,20 @@ abstract class Document with _$Document {
     /// Size of the stored PDF in bytes.
     required int sizeInBytes,
 
-    /// Path to the PDF inside app-private storage.
-    required String filePath,
+    /// Where the PDF lives, relative to the library folder.
+    ///
+    /// A library-relative address rather than a device path: the same document
+    /// resolves to a real file on iOS and to a MediaStore item on Android, and
+    /// a stored absolute path would be wrong on the next launch after a restore
+    /// and meaningless to a future sync layer (`design.md` D1).
+    required LibraryPath libraryPath,
 
     /// The folder this document belongs to, or null when unfiled.
+    ///
+    /// Retained alongside [libraryPath] because a folder carries its own
+    /// identity and creation date, and because a device that refused to create
+    /// a nested folder stores the file flat while the document still belongs to
+    /// the folder the user chose.
     FolderId? folderId,
     @Default(false) bool isFavourite,
     @Default(false) bool isArchived,
@@ -64,6 +75,12 @@ abstract class Document with _$Document {
 
   /// Whether this document is unfiled.
   bool get isUnfiled => folderId == null;
+
+  /// The document's file name including its extension.
+  String get fileName => libraryPath.fileName;
+
+  /// The document's location relative to the library folder.
+  String get relativePath => libraryPath.relative;
 }
 
 /// A folder grouping documents.
@@ -74,6 +91,13 @@ abstract class Folder with _$Folder {
     required FolderId id,
     required String name,
     required DateTime createdAt,
+
+    /// The folder's path relative to the library root, e.g. `Invoices/2026`.
+    ///
+    /// Folders are real directories in the user-visible library folder, so a
+    /// folder needs an address as well as a name — two folders called `2026`
+    /// under different parents are different folders.
+    @Default('') String relativePath,
 
     /// Number of non-archived documents the folder currently contains.
     ///

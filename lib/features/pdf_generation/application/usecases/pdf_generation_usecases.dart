@@ -4,12 +4,14 @@ library;
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/contracts/models/recognised_text.dart';
 import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/cancellation.dart';
+import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:doc_forge/features/pdf_generation/domain/repositories/pdf_repository.dart';
@@ -157,10 +159,7 @@ class BuildSearchablePdf {
         return const Result<ComposedPdf>.failure(Failure.cancelled());
       }
 
-      final path = await resolveImage(
-        page,
-        maxDimension: quality.maxDimension,
-      );
+      final path = await resolveImage(page, maxDimension: quality.maxDimension);
       drawable.add(page.copyWith(imagePath: path));
     }
 
@@ -190,6 +189,7 @@ class SaveDocument {
     this._ids,
     this._destinationFor,
     this._deleteFile,
+    this._store,
   );
 
   final BuildSearchablePdf _build;
@@ -198,6 +198,7 @@ class SaveDocument {
   final IdGenerator _ids;
   final PdfDestination _destinationFor;
   final Future<void> Function(String path) _deleteFile;
+  final PublicFileStore _store;
 
   /// Saves [bundle] as a document titled [title].
   ///
@@ -210,6 +211,7 @@ class SaveDocument {
     required String title,
     PdfQuality quality = PdfQuality.defaultQuality,
     FolderId? folderId,
+    List<String> folders = const [],
     CancellationToken? token,
     DocumentId? documentId,
   }) async {
@@ -239,6 +241,25 @@ class SaveDocument {
 
       final now = _clock.now().toUtc();
 
+      // Composed into private storage, then published into the user-visible
+      // library. Composing straight into the library would let a half-written
+      // PDF appear in the user's file browser while it was still being built.
+      final libraryPath = await _availablePathFor(title, folders);
+      if (libraryPath case Failed(:final failure)) {
+        await _deleteFile(pdf.filePath);
+        return Result<Document>.failure(failure);
+      }
+
+      final published = await _store.writeFile(
+        libraryPath.valueOrNull!,
+        pdf.filePath,
+      );
+      await _deleteFile(pdf.filePath);
+
+      if (published case Failed(:final failure)) {
+        return Result<Document>.failure(failure);
+      }
+
       final document = Document(
         id: id,
         title: title,
@@ -246,7 +267,7 @@ class SaveDocument {
         updatedAt: now,
         pageCount: pdf.pageCount,
         sizeInBytes: pdf.sizeInBytes,
-        filePath: pdf.filePath,
+        libraryPath: libraryPath.valueOrNull!,
         folderId: folderId,
         // Taken from what was actually composed rather than from whether
         // recognition was attempted: a run that produced no legible text
@@ -270,14 +291,48 @@ class SaveDocument {
       final saved = await _writer.save(document, pages);
 
       if (saved case Failed()) {
-        // The PDF exists but nothing references it. An orphaned file in
-        // app-private storage is invisible to the user and never reclaimed, so
-        // it goes with the failed record.
-        await _deleteFile(pdf.filePath);
+        // The PDF exists but nothing references it. The library folder is
+        // visible in the user's file browser, so an orphan is something they
+        // would actually see — it goes with the failed record.
+        await _store.delete(libraryPath.valueOrNull!);
       }
 
       return saved;
     });
+  }
+
+  /// A library path for [title] in [folders] that nothing already occupies.
+  Future<Result<LibraryPath>> _availablePathFor(
+    String title,
+    List<String> folders,
+  ) async {
+    final existing = await _store.list(folders);
+    // Propagated, not defaulted to empty: without the listing there is no way
+    // to know whether the name is free, and writing anyway would silently
+    // overwrite a document the user still has.
+    if (existing case Failed(:final failure)) {
+      return Result<LibraryPath>.failure(failure);
+    }
+
+    final taken = <String>{
+      for (final entry in existing.valueOrNull!)
+        if (!entry.isFolder) entry.name,
+    };
+
+    final desired = LibraryPath.pdfFileName(LibraryPath.sanitiseName(title));
+
+    try {
+      return Result<LibraryPath>.success(
+        LibraryPath.inFolder(folders, LibraryPath.deduplicate(desired, taken)),
+      );
+    } on InvalidLibraryPath catch (error) {
+      return Result<LibraryPath>.failure(
+        Failure.validation(
+          issue: ValidationIssue.illegalName,
+          debugDetail: '$error',
+        ),
+      );
+    }
   }
 }
 

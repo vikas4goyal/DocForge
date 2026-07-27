@@ -102,7 +102,7 @@ Widget _capture(ScanCaptureState state) {
     child: ScanCaptureScreen(
       previewBuilder: _previewPlaceholder,
       onFinished: () {},
-    onPageCaptured: (_, _) async {},
+      onPageCaptured: (_, _) async {},
       onCancelled: () {},
       onOpenSettings: () {},
       onImportInstead: () {},

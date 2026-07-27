@@ -6,6 +6,7 @@ import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
@@ -47,6 +48,7 @@ void main() {
       SequentialIdGenerator(prefix: 'doc'),
       (id) => '/documents/${id.value}.pdf',
       (path) async {},
+      InMemoryPublicFileStore(),
     ),
     GenerateDocumentName(
       FixedClock(DateTime(2026, 3, 14, 9, 30)),

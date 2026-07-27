@@ -1,5 +1,6 @@
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/contracts/models/recognised_text.dart';
 import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
@@ -200,7 +201,7 @@ void main() {
       updatedAt: _fixedTime,
       pageCount: 3,
       sizeInBytes: 1024,
-      filePath: '/documents/doc-1/document.pdf',
+      libraryPath: LibraryPath.parse('document.pdf'),
     );
 
     test('round-trips through JSON', () {

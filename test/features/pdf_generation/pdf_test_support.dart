@@ -4,6 +4,7 @@ library;
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
@@ -125,7 +126,7 @@ class StubDocumentReader implements DocumentReader {
           updatedAt: DateTime.utc(2026),
           pageCount: 1,
           sizeInBytes: 1024,
-          filePath: '/existing-$index.pdf',
+          libraryPath: LibraryPath.parse('Existing $index.pdf'),
         ),
     ]);
   }

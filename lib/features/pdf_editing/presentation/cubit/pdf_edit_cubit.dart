@@ -8,6 +8,7 @@ library;
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_forge/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
 import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
 import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
@@ -71,11 +72,12 @@ class PdfEditUseCases {
 /// Drives the PDF editor for one document.
 class PdfEditCubit extends Cubit<PdfEditState> {
   /// Creates the Cubit for [_documentId] over [_useCases].
-  PdfEditCubit(this._documentId, this._useCases)
+  PdfEditCubit(this._documentId, this._useCases, this._files)
     : super(const PdfEditState.initial());
 
   final DocumentId _documentId;
   final PdfEditUseCases _useCases;
+  final DocumentFileResolver _files;
 
   /// Loads the document and its metadata.
   Future<void> load() async {
@@ -303,10 +305,18 @@ class PdfEditCubit extends Cubit<PdfEditState> {
     )).valueOrNull;
     if (isClosed) return;
 
+    // Re-resolved on every refresh, not only on load: an in-place edit replaces
+    // the file, and on Android the previous cache copy is of the old bytes.
+    final filePath = document == null
+        ? null
+        : (await _files.pathFor(document)).valueOrNull;
+    if (isClosed) return;
+
     emit(
       state.copyWith(
         status: PdfEditStatus.ready,
         document: document,
+        filePath: filePath,
         metadata: read,
         compression: compression,
         selection: clearSelection ? const {} : null,

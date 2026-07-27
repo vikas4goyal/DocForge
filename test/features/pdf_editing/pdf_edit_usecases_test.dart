@@ -12,10 +12,12 @@ import 'dart:io';
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_forge/core/storage/storage_keys.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
@@ -86,11 +88,26 @@ void main() {
 
   const id = DocumentId('a');
 
+  late FilesystemPublicFileStore store;
+
   setUp(() {
     temporary = Directory.systemTemp.createTempSync('pdf_edit');
     editor = FakePdfEditor();
     secrets = InMemorySecureStore();
+    // A real store over a temporary directory rather than a fake: these tests
+    // assert on the bytes the operations leave behind, so the publish step has
+    // to actually write them.
+    store = FilesystemPublicFileStore(temporary);
+    store.initialise();
   });
+
+  /// Where the library holds [document]'s file.
+  ///
+  /// The record carries a library-relative address, not a device path, so a
+  /// test that wants to read the bytes resolves it the same way the store
+  /// would.
+  String pathOf(Document document) =>
+      '${temporary.path}/DocForge/${document.relativePath}';
 
   tearDown(() {
     if (temporary.existsSync()) temporary.deleteSync(recursive: true);
@@ -104,7 +121,9 @@ void main() {
     String? password,
     int padding = 0,
   }) {
-    final path = '${temporary.path}/$documentId.pdf';
+    final libraryPath = LibraryPath.parse('$title.pdf');
+    final path = '${temporary.path}/DocForge/${libraryPath.relative}';
+    Directory(path).parent.createSync(recursive: true);
     final file = writeFakePdf(
       path,
       pageCount: pageCount,
@@ -119,7 +138,7 @@ void main() {
       updatedAt: DateTime.utc(2026, 3),
       pageCount: pageCount,
       sizeInBytes: file.lengthSync(),
-      filePath: path,
+      libraryPath: libraryPath,
       isProtected: password != null,
     );
   }
@@ -142,7 +161,9 @@ void main() {
         (path, password) => active.pageCountOf(path, password: password),
       ),
       secrets: secrets,
-      destination: (newId) => '${temporary.path}/${newId.value}.pdf',
+      store: store,
+      workingDirectory: Directory('${temporary.path}/work')
+        ..createSync(recursive: true),
       clock: FixedClock(DateTime.utc(2026, 6, 1, 12)),
       ids: SequentialIdGenerator(),
     );
@@ -156,7 +177,7 @@ void main() {
 
       final updated = (result as Success<Document>).value;
       expect(updated.pageCount, 4);
-      expect(fakePdfPages(document.filePath)[1], contains('rot:90'));
+      expect(fakePdfPages(pathOf(document))[1], contains('rot:90'));
     });
 
     test('refreshes the modified date and the file size', () async {
@@ -167,12 +188,12 @@ void main() {
       final updated = (result as Success<Document>).value;
       expect(updated.updatedAt, DateTime.utc(2026, 6, 1, 12));
       expect(updated.createdAt, document.createdAt);
-      expect(updated.sizeInBytes, File(document.filePath).lengthSync());
+      expect(updated.sizeInBytes, File(pathOf(document)).lengthSync());
     });
 
     test('leaves the document unchanged when the engine fails', () async {
       final document = given();
-      final before = File(document.filePath).readAsStringSync();
+      final before = File(pathOf(document)).readAsStringSync();
 
       final result = await RotatePage(
         contextFor([
@@ -181,7 +202,7 @@ void main() {
       )(id, 0);
 
       expect(result, isA<Failed<Document>>());
-      expect(File(document.filePath).readAsStringSync(), before);
+      expect(File(pathOf(document)).readAsStringSync(), before);
     });
 
     test('fails for a document that does not exist', () async {
@@ -199,18 +220,18 @@ void main() {
 
       final updated = (result as Success<Document>).value;
       expect(updated.pageCount, 2);
-      expect(fakePdfPages(document.filePath), ['page:0', 'page:3']);
+      expect(fakePdfPages(pathOf(document)), ['page:0', 'page:3']);
     });
 
     test('refuses to delete the only page', () async {
       final document = given(pageCount: 1);
-      final before = File(document.filePath).readAsStringSync();
+      final before = File(pathOf(document)).readAsStringSync();
 
       final result = await DeletePages(contextFor([document]))(id, {0});
 
       expect((result as Failed<Document>).failure, isA<ValidationFailure>());
       // Refused before anything was written, so there is nothing to roll back.
-      expect(File(document.filePath).readAsStringSync(), before);
+      expect(File(pathOf(document)).readAsStringSync(), before);
       expect(editor.operations, isEmpty);
     });
 
@@ -228,7 +249,7 @@ void main() {
       final result = await DeletePages(contextFor([document]))(id, {0});
 
       final updated = (result as Success<Document>).value;
-      expect(updated.sizeInBytes, File(document.filePath).lengthSync());
+      expect(updated.sizeInBytes, File(pathOf(document)).lengthSync());
       expect(updated.sizeInBytes, lessThan(document.sizeInBytes));
     });
   });
@@ -241,7 +262,7 @@ void main() {
 
       final updated = (result as Success<Document>).value;
       expect(updated.pageCount, 4);
-      expect(fakePdfPages(document.filePath), [
+      expect(fakePdfPages(pathOf(document)), [
         'page:0',
         'page:1',
         'page:1',
@@ -267,16 +288,16 @@ void main() {
 
       final extracted = (result as Success<Document>).value;
       expect(extracted.pageCount, 2);
-      expect(fakePdfPages(extracted.filePath), ['page:0', 'page:2']);
+      expect(fakePdfPages(pathOf(extracted)), ['page:0', 'page:2']);
     });
 
     test('leaves the source document unchanged', () async {
       final document = given();
-      final before = File(document.filePath).readAsStringSync();
+      final before = File(pathOf(document)).readAsStringSync();
 
       await ExtractPages(contextFor([document]))(id, {1});
 
-      expect(File(document.filePath).readAsStringSync(), before);
+      expect(File(pathOf(document)).readAsStringSync(), before);
       expect(library.documents[id]!.pageCount, 4);
     });
 
@@ -287,7 +308,7 @@ void main() {
       final result = await ExtractPages(contextFor([document]))(id, {3, 1, 2});
 
       final extracted = (result as Success<Document>).value;
-      expect(fakePdfPages(extracted.filePath), ['page:1', 'page:2', 'page:3']);
+      expect(fakePdfPages(pathOf(extracted)), ['page:1', 'page:2', 'page:3']);
     });
 
     test('keeps the source document’s folder', () async {
@@ -338,22 +359,22 @@ void main() {
       final merged = (result as Success<Document>).value;
       expect(merged.pageCount, 5);
       // Second first, because that is the order the user put them in.
-      expect(fakePdfPages(merged.filePath).first, 'page:0');
-      expect(fakePdfPages(merged.filePath), hasLength(5));
+      expect(fakePdfPages(pathOf(merged)).first, 'page:0');
+      expect(fakePdfPages(pathOf(merged)), hasLength(5));
     });
 
     test('leaves every source unchanged', () async {
       final first = given(pageCount: 2);
       final second = given(documentId: 'b', pageCount: 2);
       final before = [
-        File(first.filePath).readAsStringSync(),
-        File(second.filePath).readAsStringSync(),
+        File(pathOf(first)).readAsStringSync(),
+        File(pathOf(second)).readAsStringSync(),
       ];
 
       await MergeDocuments(contextFor([first, second]))([first.id, second.id]);
 
-      expect(File(first.filePath).readAsStringSync(), before.first);
-      expect(File(second.filePath).readAsStringSync(), before.last);
+      expect(File(pathOf(first)).readAsStringSync(), before.first);
+      expect(File(pathOf(second)).readAsStringSync(), before.last);
     });
 
     test('refuses fewer than two documents', () async {
@@ -388,18 +409,18 @@ void main() {
 
       final (first, second) = (result as Success<(Document, Document)>).value;
       expect(
-        [...fakePdfPages(first.filePath), ...fakePdfPages(second.filePath)],
+        [...fakePdfPages(pathOf(first)), ...fakePdfPages(pathOf(second))],
         ['page:0', 'page:1', 'page:2', 'page:3', 'page:4'],
       );
     });
 
     test('leaves the original document alone', () async {
       final document = given();
-      final before = File(document.filePath).readAsStringSync();
+      final before = File(pathOf(document)).readAsStringSync();
 
       await SplitDocument(contextFor([document]))(id, afterPage: 2);
 
-      expect(File(document.filePath).readAsStringSync(), before);
+      expect(File(pathOf(document)).readAsStringSync(), before);
       expect(library.documents[id]!.pageCount, 4);
     });
 
@@ -445,20 +466,20 @@ void main() {
       // A rewrite can legitimately come out larger; the spec requires the
       // original to be kept and the user told.
       final document = given(pageCount: 2);
-      final before = File(document.filePath).readAsStringSync();
+      final before = File(pathOf(document)).readAsStringSync();
       final result = await CompressDocument(contextFor([document]))(id);
 
       final outcome = (result as Success<CompressionOutcome>).value;
       expect(outcome.wasKept, isFalse);
       expect(outcome.message, contains('already as small'));
-      expect(File(document.filePath).readAsStringSync(), before);
+      expect(File(pathOf(document)).readAsStringSync(), before);
     });
 
     test('leaves no candidate file behind when nothing was kept', () async {
       final document = given(pageCount: 2);
       await CompressDocument(contextFor([document]))(id);
 
-      expect(File('${document.filePath}.compressed').existsSync(), isFalse);
+      expect(File('${pathOf(document)}.compressed').existsSync(), isFalse);
     });
 
     test('keeps the page count unchanged', () async {
@@ -474,7 +495,7 @@ void main() {
 
     test('leaves the document unchanged when the engine fails', () async {
       final document = given();
-      final before = File(document.filePath).readAsStringSync();
+      final before = File(pathOf(document)).readAsStringSync();
 
       final result = await CompressDocument(
         contextFor([
@@ -483,7 +504,7 @@ void main() {
       )(id);
 
       expect(result, isA<Failed<CompressionOutcome>>());
-      expect(File(document.filePath).readAsStringSync(), before);
+      expect(File(pathOf(document)).readAsStringSync(), before);
     });
   });
 
@@ -494,7 +515,7 @@ void main() {
       await WatermarkDocument(contextFor([document]))(id, 'DRAFT');
 
       expect(
-        fakePdfPages(document.filePath),
+        fakePdfPages(pathOf(document)),
         everyElement(contains('wm:DRAFT')),
       );
     });
@@ -504,7 +525,7 @@ void main() {
 
       await WatermarkDocument(contextFor([document]))(id, '  DRAFT  ');
 
-      expect(fakePdfPages(document.filePath).single, endsWith('wm:DRAFT'));
+      expect(fakePdfPages(pathOf(document)).single, endsWith('wm:DRAFT'));
     });
 
     test('refuses a blank watermark', () async {
@@ -538,7 +559,7 @@ void main() {
       );
 
       expect((result as Success<Document>).value.isProtected, isTrue);
-      expect(fakePdfPassword(document.filePath), 'hunter2');
+      expect(fakePdfPassword(pathOf(document)), 'hunter2');
     });
 
     test('stores the password in secure storage only', () async {
@@ -606,7 +627,7 @@ void main() {
       );
 
       expect((result as Success<Document>).value.isProtected, isFalse);
-      expect(fakePdfPassword(document.filePath), isNull);
+      expect(fakePdfPassword(pathOf(document)), isNull);
     });
 
     test(
@@ -625,7 +646,7 @@ void main() {
     test('an incorrect password changes nothing at all', () async {
       final document = given(pageCount: 2, password: 'hunter2');
       await secrets.write(SecureStorageKeys.pdfPassword('a'), 'hunter2');
-      final before = File(document.filePath).readAsStringSync();
+      final before = File(pathOf(document)).readAsStringSync();
 
       final result = await RemoveDocumentPassword(contextFor([document]))(
         id,
@@ -633,7 +654,7 @@ void main() {
       );
 
       expect((result as Failed<Document>).failure, isA<AuthFailure>());
-      expect(File(document.filePath).readAsStringSync(), before);
+      expect(File(pathOf(document)).readAsStringSync(), before);
       expect(library.documents[id]!.isProtected, isTrue);
       // And the stored secret survives, so the user can try again.
       final stored = await secrets.read(SecureStorageKeys.pdfPassword('a'));
@@ -653,12 +674,12 @@ void main() {
 
     test('an edit fails cleanly when the stored password is missing', () async {
       final document = given(pageCount: 3, password: 'hunter2');
-      final before = File(document.filePath).readAsStringSync();
+      final before = File(pathOf(document)).readAsStringSync();
 
       final result = await RotatePage(contextFor([document]))(id, 0);
 
       expect((result as Failed<Document>).failure, isA<AuthFailure>());
-      expect(File(document.filePath).readAsStringSync(), before);
+      expect(File(pathOf(document)).readAsStringSync(), before);
     });
   });
 

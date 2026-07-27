@@ -17,17 +17,24 @@ import 'dart:io';
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_forge/core/storage/storage_keys.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
 import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
 import 'package:doc_forge/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
 
-/// Decides where a newly derived document's file is written.
-typedef DerivedPdfDestination = String Function(DocumentId id);
+/// Produces a PDF at [destinationPath] from the file at [sourcePath].
+///
+/// Two paths rather than one because a document is no longer addressed by a
+/// device path: the source is materialised from the library on demand, and on
+/// Android that is a cache copy whose location the use case cannot predict.
+typedef PdfEditProducer =
+    Future<Result<void>> Function(String sourcePath, String destinationPath);
 
 /// The collaborators every editing use case needs.
 ///
@@ -42,7 +49,8 @@ class PdfEditContext {
     required this.editor,
     required this.atomic,
     required this.secrets,
-    required this.destination,
+    required this.store,
+    required this.workingDirectory,
     required this.clock,
     required this.ids,
   });
@@ -62,8 +70,15 @@ class PdfEditContext {
   /// Where a document's password lives — and the only place it ever does.
   final SecureStore secrets;
 
-  /// Where a newly derived document's file goes.
-  final DerivedPdfDestination destination;
+  /// The user-visible library every edit reads from and writes back to.
+  final PublicFileStore store;
+
+  /// Where an edit's working file is written before it is published.
+  ///
+  /// Private cache, not the library folder: a half-written PDF must never be
+  /// visible to the user's file browser, and on Android the library is not a
+  /// directory a file can be written into by path at all.
+  final Directory workingDirectory;
 
   /// The clock supplying modified dates.
   final Clock clock;
@@ -89,6 +104,37 @@ abstract class PdfEditUseCase {
   Future<Result<Document>> loadDocument(DocumentId id) =>
       context.documents.findById(id);
 
+  /// Returns a readable path for [document]'s current file.
+  ///
+  /// The file lives in the user-visible library, which on Android is not
+  /// reachable by path, so it is materialised into the cache first. Callers
+  /// release it through [releaseSource] once the edit is done.
+  Future<Result<String>> sourcePathFor(Document document) =>
+      context.store.materialise(document.libraryPath);
+
+  /// Releases a path returned by [sourcePathFor].
+  Future<void> releaseSource(Document document) async {
+    await context.store.releaseMaterialised(document.libraryPath);
+  }
+
+  /// A private working path an edit can write to before publishing.
+  String workingPathFor(DocumentId id) =>
+      '${context.workingDirectory.path}/${id.value}.edit.pdf';
+
+  /// Deletes a working file, ignoring a failure to do so.
+  ///
+  /// Best-effort: the file is in the cache, which the operating system
+  /// reclaims anyway, and reporting a cleanup failure would replace the real
+  /// reason an operation failed.
+  void discardWorkingFile(String path) {
+    try {
+      final file = File(path);
+      if (file.existsSync()) file.deleteSync();
+    } on Object {
+      // Intentionally ignored; see above.
+    }
+  }
+
   /// Reads the stored password for [document], if it has one.
   ///
   /// Only ever from secure storage, and the value is used and dropped — it is
@@ -113,23 +159,46 @@ abstract class PdfEditUseCase {
   /// the source's password precisely when the operation changed it.
   Future<Result<Document>> replaceInPlace(
     Document document,
-    PdfProducer produce, {
+    PdfEditProducer produce, {
     int? expectedPageCount,
     bool? isProtected,
     String? verifyPassword,
   }) async {
+    final source = await sourcePathFor(document);
+    if (source case Failed(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
+
+    final working = workingPathFor(document.id);
+
     final written = await context.atomic.write(
-      document.filePath,
-      produce,
+      working,
+      (destination) => produce(source.valueOrNull!, destination),
       expectedPageCount: expectedPageCount,
       verifyPassword: verifyPassword,
     );
 
     if (written case Failed(:final failure)) {
+      discardWorkingFile(working);
       return Result<Document>.failure(failure);
     }
 
     final result = written.valueOrNull!;
+
+    // Published only after the working file has been written *and* verified,
+    // so the file the user can see in their file browser is never a partial
+    // one — the same guarantee the atomic rename gave when the library was a
+    // private directory.
+    final published = await context.store.writeFile(
+      document.libraryPath,
+      result.filePath,
+    );
+    discardWorkingFile(working);
+    await releaseSource(document);
+
+    if (published case Failed(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
 
     return context.writer.updateMetadata(
       document.copyWith(
@@ -148,27 +217,48 @@ abstract class PdfEditUseCase {
   /// removed, because without a record it is unreachable.
   Future<Result<Document>> deriveDocument({
     required String title,
-    required PdfProducer produce,
+    required Future<Result<void>> Function(String destinationPath) produce,
     int? expectedPageCount,
     FolderId? folderId,
+    List<String> folders = const [],
     String? verifyPassword,
   }) async {
     final id = DocumentId(context.ids.generate());
-    final path = context.destination(id);
+    final working = workingPathFor(id);
 
     final written = await context.atomic.write(
-      path,
+      working,
       produce,
       expectedPageCount: expectedPageCount,
       verifyPassword: verifyPassword,
     );
 
     if (written case Failed(:final failure)) {
+      discardWorkingFile(working);
       return Result<Document>.failure(failure);
     }
 
     final result = written.valueOrNull!;
     final now = context.clock.now();
+
+    // The derived document lands beside its source in the library, under a
+    // name taken from its title, de-duplicated against what is already there
+    // so a second extract does not overwrite the first.
+    final libraryPath = await _availablePathFor(title, folders);
+    if (libraryPath case Failed(:final failure)) {
+      discardWorkingFile(working);
+      return Result<Document>.failure(failure);
+    }
+
+    final published = await context.store.writeFile(
+      libraryPath.valueOrNull!,
+      result.filePath,
+    );
+    discardWorkingFile(working);
+
+    if (published case Failed(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
 
     final saved = await context.writer.save(
       Document(
@@ -178,19 +268,54 @@ abstract class PdfEditUseCase {
         updatedAt: now,
         pageCount: result.pageCount,
         sizeInBytes: result.sizeInBytes,
-        filePath: result.filePath,
+        libraryPath: libraryPath.valueOrNull!,
         folderId: folderId,
       ),
       const [],
     );
 
     if (saved case Failed(:final failure)) {
-      final orphan = File(result.filePath);
-      if (orphan.existsSync()) orphan.deleteSync();
+      // Without a record the file is unreachable from the app but *visible* in
+      // the user's file browser, which is worse than not writing it at all.
+      await context.store.delete(libraryPath.valueOrNull!);
       return Result<Document>.failure(failure);
     }
 
     return saved;
+  }
+
+  /// A library path for [title] in [folders] that nothing already occupies.
+  Future<Result<LibraryPath>> _availablePathFor(
+    String title,
+    List<String> folders,
+  ) async {
+    final existing = await context.store.list(folders);
+    // Propagated, not defaulted to empty: without the listing there is no way
+    // to know whether the name is free, and writing anyway would silently
+    // overwrite a document the user still has.
+    if (existing case Failed(:final failure)) {
+      return Result<LibraryPath>.failure(failure);
+    }
+
+    final taken = <String>{
+      for (final entry in existing.valueOrNull!)
+        if (!entry.isFolder) entry.name,
+    };
+
+    final desired = LibraryPath.pdfFileName(LibraryPath.sanitiseName(title));
+
+    try {
+      return Result<LibraryPath>.success(
+        LibraryPath.inFolder(folders, LibraryPath.deduplicate(desired, taken)),
+      );
+    } on InvalidLibraryPath catch (error) {
+      return Result<LibraryPath>.failure(
+        Failure.validation(
+          issue: ValidationIssue.illegalName,
+          debugDetail: '$error',
+        ),
+      );
+    }
   }
 }
 
@@ -213,8 +338,8 @@ class RotatePage extends PdfEditUseCase {
 
     return replaceInPlace(
       document,
-      (destination) => context.editor.rotatePage(
-        document.filePath,
+      (source, destination) => context.editor.rotatePage(
+        source,
         destination,
         page: page,
         degrees: 90,
@@ -254,8 +379,8 @@ class DeletePages extends PdfEditUseCase {
 
     return replaceInPlace(
       document,
-      (destination) => context.editor.writePages(
-        document.filePath,
+      (source, destination) => context.editor.writePages(
+        source,
         destination,
         remaining,
         password: password,
@@ -291,8 +416,8 @@ class DuplicatePage extends PdfEditUseCase {
 
     return replaceInPlace(
       document,
-      (destination) => context.editor.writePages(
-        document.filePath,
+      (source, destination) => context.editor.writePages(
+        source,
         destination,
         pages,
         password: password,
@@ -325,20 +450,29 @@ class ExtractPages extends PdfEditUseCase {
     final ordered = PdfEditRules.orderedSelection(pages);
     final password = await passwordFor(document);
 
-    return deriveDocument(
+    final source = await sourcePathFor(document);
+    if (source case Failed(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
+
+    final derived = await deriveDocument(
       title: PdfEditRules.extractedTitle(document.title, ordered.length),
       folderId: document.folderId,
+      folders: document.libraryPath.folders,
       expectedPageCount: ordered.length,
       // An extracted document inherits its source's encryption, so verifying
       // it needs the same password.
       verifyPassword: password,
       produce: (destination) => context.editor.writePages(
-        document.filePath,
+        source.valueOrNull!,
         destination,
         ordered,
         password: password,
       ),
     );
+
+    await releaseSource(document);
+    return derived;
   }
 }
 
@@ -371,14 +505,33 @@ class MergeDocuments extends PdfEditUseCase {
 
     final expected = documents.fold(0, (sum, d) => sum + d.pageCount);
 
-    return deriveDocument(
+    // Every source has to be readable at once, so all of them are materialised
+    // before the merge and all released after it.
+    final sources = <String>[];
+    for (final document in documents) {
+      final resolved = await sourcePathFor(document);
+      if (resolved case Failed(:final failure)) {
+        for (final done in documents) {
+          await releaseSource(done);
+        }
+        return Result<Document>.failure(failure);
+      }
+      sources.add(resolved.valueOrNull!);
+    }
+
+    final derived = await deriveDocument(
       title: PdfEditRules.mergedTitle(documents),
       folderId: documents.first.folderId,
+      folders: documents.first.libraryPath.folders,
       expectedPageCount: expected,
-      produce: (destination) => context.editor.merge([
-        for (final document in documents) document.filePath,
-      ], destination),
+      produce: (destination) => context.editor.merge(sources, destination),
     );
+
+    for (final document in documents) {
+      await releaseSource(document);
+    }
+
+    return derived;
   }
 }
 
@@ -415,34 +568,45 @@ class SplitDocument extends PdfEditUseCase {
     final titles = PdfEditRules.splitTitles(document.title);
     final password = await passwordFor(document);
 
+    final source = await sourcePathFor(document);
+    if (source case Failed(:final failure)) {
+      return Result<(Document, Document)>.failure(failure);
+    }
+    final sourcePath = source.valueOrNull!;
+
     final first = await deriveDocument(
       title: titles.first,
       folderId: document.folderId,
+      folders: document.libraryPath.folders,
       expectedPageCount: ranges.first.length,
       verifyPassword: password,
       produce: (destination) => context.editor.writePages(
-        document.filePath,
+        sourcePath,
         destination,
         ranges.first,
         password: password,
       ),
     );
     if (first case Failed(:final failure)) {
+      await releaseSource(document);
       return Result<(Document, Document)>.failure(failure);
     }
 
     final second = await deriveDocument(
       title: titles.second,
       folderId: document.folderId,
+      folders: document.libraryPath.folders,
       expectedPageCount: ranges.second.length,
       verifyPassword: password,
       produce: (destination) => context.editor.writePages(
-        document.filePath,
+        sourcePath,
         destination,
         ranges.second,
         password: password,
       ),
     );
+
+    await releaseSource(document);
 
     if (second case Failed(:final failure)) {
       // The first half is removed rather than left as a document the user did
@@ -458,16 +622,14 @@ class SplitDocument extends PdfEditUseCase {
   }
 
   /// Removes a half that was created before the other one failed.
+  ///
+  /// Deleted from the library, not merely unrecorded: the folder is visible in
+  /// the user's file browser now, so an orphaned file is something they would
+  /// actually see.
   Future<void> _discard(Document document) async {
-    final file = File(document.filePath);
-    if (file.existsSync()) {
-      try {
-        file.deleteSync();
-      } on Object {
-        // Best-effort; the record is what makes it visible, and reporting a
-        // cleanup failure would replace the real reason for the failure.
-      }
-    }
+    // Best-effort; reporting a cleanup failure would replace the real reason
+    // for the failure the user is being shown.
+    await context.store.delete(document.libraryPath);
   }
 }
 
@@ -520,9 +682,17 @@ class CompressDocument extends PdfEditUseCase {
     final document = found.valueOrNull!;
     final password = await passwordFor(document);
 
-    final candidatePath = '${document.filePath}.compressed';
+    final source = await sourcePathFor(document);
+    if (source case Failed(:final failure)) {
+      return Result<CompressionOutcome>.failure(failure);
+    }
+
+    // Beside the materialised source in the cache, never in the library: a
+    // candidate that turns out larger is thrown away, and the user must never
+    // see it appear in their folder in the meantime.
+    final candidatePath = '${source.valueOrNull!}.compressed';
     final produced = await context.editor.compress(
-      document.filePath,
+      source.valueOrNull!,
       candidatePath,
       password: password,
     );
@@ -558,7 +728,7 @@ class CompressDocument extends PdfEditUseCase {
       );
     }
 
-    final replaced = await replaceInPlace(document, (destination) async {
+    final replaced = await replaceInPlace(document, (_, destination) async {
       candidate.renameSync(destination);
       return const Result<void>.success(null);
     }, expectedPageCount: document.pageCount);
@@ -601,8 +771,8 @@ class WatermarkDocument extends PdfEditUseCase {
 
     return replaceInPlace(
       document,
-      (destination) => context.editor.watermark(
-        document.filePath,
+      (source, destination) => context.editor.watermark(
+        source,
         destination,
         text: text.trim(),
         password: password,
@@ -639,11 +809,8 @@ class ProtectDocument extends PdfEditUseCase {
 
     final replaced = await replaceInPlace(
       document,
-      (destination) => context.editor.protect(
-        document.filePath,
-        destination,
-        password: password,
-      ),
+      (source, destination) =>
+          context.editor.protect(source, destination, password: password),
       expectedPageCount: document.pageCount,
       isProtected: true,
       // The produced file needs the *new* password, which the source did not
@@ -689,8 +856,8 @@ class RemoveDocumentPassword extends PdfEditUseCase {
 
     final replaced = await replaceInPlace(
       document,
-      (destination) => context.editor.removePassword(
-        document.filePath,
+      (source, destination) => context.editor.removePassword(
+        source,
         destination,
         currentPassword: currentPassword,
       ),

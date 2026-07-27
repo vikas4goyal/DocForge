@@ -15,10 +15,12 @@ import 'package:doc_forge/app/library_module.dart';
 import 'package:doc_forge/app/pdf_editing_module.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_forge/core/storage/storage_keys.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
@@ -38,6 +40,7 @@ void main() {
   late Directory root;
   late Directory documents;
   late Isar isar;
+  late FilesystemPublicFileStore publicStore;
   late LibraryModule library;
   late InMemorySecureStore secrets;
 
@@ -59,9 +62,13 @@ void main() {
       OcrTextEntitySchema,
     ], directory: root.path);
 
+    publicStore = FilesystemPublicFileStore(documents);
+    await publicStore.initialise();
+
     library = buildLibraryModuleOver(
       isar: isar,
       documentsDirectory: documents,
+      store: publicStore,
       clock: clock,
       ids: SequentialIdGenerator(prefix: 'doc'),
       secureStorage: secrets,
@@ -85,7 +92,7 @@ void main() {
         final importing = buildImportModule(
           renderer: const PdfrxRenderer(),
           documentWriter: library.documentWriter,
-          documentsDirectory: documents,
+          store: publicStore,
           cacheDirectory: root,
           clock: clock,
           ids: SequentialIdGenerator(prefix: 'imported'),
@@ -105,8 +112,9 @@ void main() {
 
         expect(imported.title, 'Statement');
         expect(imported.pageCount, greaterThan(0));
-        // Copied into app-private storage, not referenced where it sat.
-        expect(imported.filePath, startsWith(documents.path));
+        // Copied into the library, not referenced where it sat: the source
+        // file must survive untouched.
+        expect(imported.relativePath, 'Statement.pdf');
         expect(File(source).existsSync(), isTrue);
 
         // And the library can find it, which is what makes it a document rather
@@ -123,7 +131,7 @@ void main() {
       final importing = buildImportModule(
         renderer: const PdfrxRenderer(),
         documentWriter: library.documentWriter,
-        documentsDirectory: documents,
+        store: publicStore,
         cacheDirectory: root,
         clock: clock,
         ids: SequentialIdGenerator(prefix: 'imported'),
@@ -146,7 +154,9 @@ void main() {
     test('an edit updates the record the library renders from', () async {
       // The real engine cannot load here, so the fake supplies page semantics.
       // What this proves is the round trip: library → editor → library.
-      final path = '${documents.path}/editable.pdf';
+      // Written into the library folder, which is where a document lives now.
+      final path = '${documents.path}/DocForge/editable.pdf';
+      Directory(path).parent.createSync(recursive: true);
       writeFakePdf(path, pageCount: 4);
 
       final saved = await library.documentWriter.save(
@@ -157,7 +167,7 @@ void main() {
           updatedAt: DateTime.utc(2026, 3),
           pageCount: 4,
           sizeInBytes: File(path).lengthSync(),
-          filePath: path,
+          libraryPath: LibraryPath.parse('editable.pdf'),
         ),
         const [],
       );
@@ -167,7 +177,8 @@ void main() {
         documentReader: library.documentReader,
         documentWriter: library.documentWriter,
         secureStorage: secrets,
-        documentsDirectory: documents,
+        store: publicStore,
+        workingDirectory: documents,
         clock: FixedClock(DateTime.utc(2026, 6)),
         ids: SequentialIdGenerator(prefix: 'derived'),
         editor: FakePdfEditor(),
@@ -193,7 +204,9 @@ void main() {
     });
 
     test('a failed edit leaves the stored document untouched', () async {
-      final path = '${documents.path}/editable.pdf';
+      // Written into the library folder, which is where a document lives now.
+      final path = '${documents.path}/DocForge/editable.pdf';
+      Directory(path).parent.createSync(recursive: true);
       writeFakePdf(path, pageCount: 4);
       final before = File(path).readAsStringSync();
 
@@ -205,7 +218,7 @@ void main() {
           updatedAt: DateTime.utc(2026, 3),
           pageCount: 4,
           sizeInBytes: File(path).lengthSync(),
-          filePath: path,
+          libraryPath: LibraryPath.parse('editable.pdf'),
         ),
         const [],
       );
@@ -214,7 +227,8 @@ void main() {
         documentReader: library.documentReader,
         documentWriter: library.documentWriter,
         secureStorage: secrets,
-        documentsDirectory: documents,
+        store: publicStore,
+        workingDirectory: documents,
         clock: clock,
         ids: SequentialIdGenerator(prefix: 'derived'),
         editor: FakePdfEditor(failWith: const Failure.corruptFile()),
@@ -304,8 +318,10 @@ void main() {
     );
 
     test('a purged document takes its password with it', () async {
-      final path = '${documents.path}/protected.pdf';
-      File(path).writeAsStringSync('%PDF');
+      final path = '${documents.path}/DocForge/protected.pdf';
+      File(path)
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('%PDF');
 
       await library.documentWriter.save(
         Document(
@@ -315,7 +331,7 @@ void main() {
           updatedAt: DateTime.utc(2026, 3),
           pageCount: 1,
           sizeInBytes: 4,
-          filePath: path,
+          libraryPath: LibraryPath.parse('protected.pdf'),
           isProtected: true,
         ),
         const [],

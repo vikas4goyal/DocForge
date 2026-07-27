@@ -13,6 +13,7 @@ import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_import/application/usecases/import_usecases.dart';
 import 'package:doc_forge/features/document_import/domain/import_rules.dart';
@@ -149,6 +150,7 @@ void main() {
           FakePdfInspector(pageCount: 2),
           writer,
           (id) => '${temporary.path}/documents/${id.value}.pdf',
+          InMemoryPublicFileStore(),
           FixedClock(DateTime.utc(2026, 3, 14)),
           SequentialIdGenerator(),
         ),

@@ -576,10 +576,7 @@ void main() {
 
       // A screen-reader user moving through a long list must always know which
       // page they are about to change.
-      expect(
-        find.bySemanticsLabel('Crop and rotate page 1'),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsLabel('Crop and rotate page 1'), findsOneWidget);
       expect(find.bySemanticsLabel('Enhance page 1'), findsOneWidget);
       expect(find.bySemanticsLabel('Delete page 2'), findsOneWidget);
 

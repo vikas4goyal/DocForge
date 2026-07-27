@@ -6,13 +6,18 @@
 @Tags(['golden'])
 library;
 
+import 'dart:io';
+
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_forge/core/previews/fakes/fake_document_file_resolver.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
@@ -65,7 +70,12 @@ class _Inert implements DocumentReader, DocumentWriter {
 
 /// A Cubit frozen at a chosen state.
 class _SeededCubit extends PdfEditCubit {
-  _SeededCubit(this._seeded) : super(const DocumentId('golden'), _useCases());
+  _SeededCubit(this._seeded)
+    : super(
+        const DocumentId('golden'),
+        _useCases(),
+        const FakeDocumentFileResolver(),
+      );
 
   static PdfEditUseCases _useCases() {
     final editor = FakePdfEditor();
@@ -78,7 +88,8 @@ class _SeededCubit extends PdfEditCubit {
         (path, password) => editor.pageCountOf(path, password: password),
       ),
       secrets: InMemorySecureStore(),
-      destination: (id) => '/golden/${id.value}.pdf',
+      store: InMemoryPublicFileStore(),
+      workingDirectory: Directory.systemTemp,
       clock: FixedClock(DateTime.utc(2026, 3, 14)),
       ids: SequentialIdGenerator(),
     );
@@ -111,7 +122,7 @@ Document _document({int pageCount = 6}) => Document(
   updatedAt: DateTime.utc(2026, 4),
   pageCount: pageCount,
   sizeInBytes: 1_884_160,
-  filePath: '/golden/a.pdf',
+  libraryPath: LibraryPath.parse('a.pdf'),
 );
 
 PdfMetadata _metadata({int pageCount = 6}) => PdfMetadata(

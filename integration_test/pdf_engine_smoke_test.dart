@@ -71,9 +71,8 @@ void main() {
     final pdf = Pdf();
     addTearDown(pdf.dispose);
 
-    final file = File(
-      '${Directory.systemTemp.path}/relink_probe.pdf',
-    )..writeAsBytesSync(minimalPdf());
+    final file = File('${Directory.systemTemp.path}/relink_probe.pdf')
+      ..writeAsBytesSync(minimalPdf());
     addTearDown(() {
       if (file.existsSync()) file.deleteSync();
     });

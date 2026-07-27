@@ -13,9 +13,11 @@ import 'dart:io';
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
+import 'package:doc_forge/core/previews/fakes/fake_document_file_resolver.dart';
 import 'package:doc_forge/features/document_sharing/application/usecases/sharing_usecases.dart';
 import 'package:doc_forge/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -51,6 +53,13 @@ class _Reader implements DocumentReader {
       Result<List<DocumentPage>>.success(pages);
 }
 
+/// Resolves every test document to a fixed path.
+///
+/// These tests drive the sheet and the Cubit, not the bytes: what matters is
+/// that print and export are reached, which a resolver that cannot fail keeps
+/// from being obscured by storage setup.
+const testFiles = FakeDocumentFileResolver();
+
 void main() {
   late Directory temporary;
 
@@ -75,7 +84,7 @@ void main() {
       updatedAt: DateTime.utc(2026, 3, 14),
       pageCount: 1,
       sizeInBytes: 4,
-      filePath: '${temporary.path}/a.pdf',
+      libraryPath: LibraryPath.parse('a.pdf'),
     );
 
     final reader = _Reader(document, [
@@ -88,7 +97,7 @@ void main() {
     ]);
     final share = FakeShareRepository();
 
-    await ShareDocumentPdf(reader, share)(id);
+    await ShareDocumentPdf(reader, share, testFiles)(id);
 
     await SharePageImages(
       reader,

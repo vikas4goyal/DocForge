@@ -18,6 +18,7 @@ import 'package:doc_forge/core/previews/fakes/fake_cubit.dart';
 import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
 import 'package:doc_forge/core/previews/preview_scaffold.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
@@ -173,6 +174,7 @@ const _documents = _InertDocuments();
 const _folders = _InertFolders();
 const _pages = _InertPages();
 const _files = _InertFiles();
+final _store = InMemoryPublicFileStore();
 final _secure = InMemorySecureStore();
 
 // ---------------------------------------------------------------------------
@@ -215,8 +217,8 @@ class _PreviewDetailCubit extends DocumentDetailCubit
         ToggleFavourite(_documents, _clock),
         ArchiveDocument(_documents, _clock),
         RestoreDocument(_documents, _clock),
-        DuplicateDocument(_documents, _pages, _files, _clock, _ids),
-        PurgeDocument(_documents, _pages, _files, _secure),
+        DuplicateDocument(_documents, _pages, _store, _clock, _ids),
+        PurgeDocument(_documents, _pages, _store, _files, _secure),
       ) {
     seed(state);
   }
@@ -236,7 +238,7 @@ class _PreviewFolderCubit extends FolderCubit with SeededCubit<FolderState> {
           _folders,
           _documents,
           MoveDocument(_documents, _clock),
-          PurgeDocument(_documents, _pages, _files, _secure),
+          PurgeDocument(_documents, _pages, _store, _files, _secure),
         ),
       ) {
     seed(state);

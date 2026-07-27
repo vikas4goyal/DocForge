@@ -8,6 +8,7 @@ library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/features/document_search/domain/search_query.dart';
@@ -31,7 +32,7 @@ Document _document(String id, String title) => Document(
   updatedAt: DateTime.utc(2026, 3, 14),
   pageCount: 4,
   sizeInBytes: 184_320,
-  filePath: '/golden/$id.pdf',
+  libraryPath: LibraryPath.parse('$id.pdf'),
 );
 
 List<SearchResult> _results(int count) => [

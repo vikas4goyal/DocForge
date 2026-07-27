@@ -102,6 +102,7 @@ class ViewerCubit extends Cubit<ViewerState> {
       state.copyWith(
         status: ViewerStatus.ready,
         document: viewable.document,
+        filePath: viewable.filePath,
         pageCount: viewable.pageCount,
         password: viewable.password,
         page: ViewerRules.clampPage(state.page, pageCount: viewable.pageCount),

@@ -28,6 +28,7 @@ class ViewerState extends Equatable {
     required this.status,
     required this.page,
     this.document,
+    this.filePath,
     this.pageCount = 0,
     this.password,
     this.recognisedText = '',
@@ -46,6 +47,13 @@ class ViewerState extends Equatable {
 
   /// The document's metadata, once it is open.
   final Document? document;
+
+  /// A readable device path for the open file.
+  ///
+  /// Resolved when the document was opened rather than taken from the record:
+  /// [Document.libraryPath] is an address, and on Android the readable path is
+  /// a cache copy that exists only while the document is open.
+  final String? filePath;
 
   /// How many pages the file contains.
   final int pageCount;
@@ -94,6 +102,7 @@ class ViewerState extends Equatable {
     ViewerStatus? status,
     int? page,
     Document? document,
+    String? filePath,
     int? pageCount,
     String? password,
     String? recognisedText,
@@ -103,6 +112,7 @@ class ViewerState extends Equatable {
     status: status ?? this.status,
     page: page ?? this.page,
     document: document ?? this.document,
+    filePath: filePath ?? this.filePath,
     pageCount: pageCount ?? this.pageCount,
     password: password ?? this.password,
     recognisedText: recognisedText ?? this.recognisedText,
@@ -115,6 +125,7 @@ class ViewerState extends Equatable {
     status,
     page,
     document,
+    filePath,
     pageCount,
     password,
     recognisedText,

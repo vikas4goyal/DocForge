@@ -9,6 +9,7 @@ library;
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/contracts/models/recognised_text.dart';
 import 'package:doc_forge/core/failures/failure.dart';
@@ -16,6 +17,8 @@ import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/previews/fakes/fake_cubit.dart';
 import 'package:doc_forge/core/previews/preview_scaffold.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/features/document_viewer/application/usecases/viewer_usecases.dart';
 import 'package:doc_forge/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
 import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_cubit.dart';
@@ -35,7 +38,7 @@ final _document = Document(
   updatedAt: DateTime.utc(2026, 3, 14),
   pageCount: 12,
   sizeInBytes: 482_310,
-  filePath: '/preview/invoice.pdf',
+  libraryPath: LibraryPath.parse('Invoice 2026.pdf'),
 );
 
 /// Stands in for the page-rendering surface.
@@ -117,6 +120,7 @@ class _PreviewViewerCubit extends ViewerCubit with SeededCubit<ViewerState> {
           const _InertDocuments(),
           FakePdfRenderer(pageCount: 12),
           const _InertSecrets(),
+          PublicStoreDocumentFileResolver(InMemoryPublicFileStore()),
         ),
         const RememberDocumentPassword(_InertSecrets()),
         const LoadViewerText(_InertText()),

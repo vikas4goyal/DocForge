@@ -12,13 +12,13 @@
 
 ## 2. Private/public split and migration
 
-- [ ] 2.1 Move thumbnails to a derived cache and creation-session images to the cache directory in `buildLibraryModule` / `buildScanningModule`, so `Documents/` will hold only `DocForge/` (design D4)
-- [ ] 2.2 Add `folderPath` and `fileName` to `DocumentEntity` and `relativePath` to `FolderEntity`; regenerate Isar and Freezed sources
-- [ ] 2.3 Serialization-test the changed entities: round-trip including nested folder paths and the protected flag
-- [ ] 2.4 Implement the layout-1 → layout-2 migration: copy, verify size and page count, rewrite the entity, then delete the old directory; drop entries whose source file is missing
-- [ ] 2.5 Unit-test the migration: happy path, missing source, duplicate resulting names, and resumption after interruption
-- [ ] 2.6 Turn existing `FolderEntity` records into real directories during migration, sanitising names, and copy their documents into them
-- [ ] 2.7 Set `UIFileSharingEnabled` to true and `LSSupportsOpeningDocumentsInPlace` to true in `ios/Runner/Info.plist`, with a comment stating what the latter does and does not mean
+- [x] 2.1 Resolve the library over Application Support and publish PDFs through `PublicFileStore`, so iOS `Documents/` holds only `DocForge/` (design D4); `Document` now carries a `LibraryPath` and consumers resolve bytes through `DocumentFileResolver`
+- [x] 2.2 Add `folderPath` and `fileName` to `DocumentEntity` and `relativePath` to `FolderEntity`; regenerate Isar and Freezed sources
+- [x] 2.3 Serialization-test the changed entities: round-trip including nested folder paths and the protected flag
+- [x] 2.4 Implement the layout-1 → layout-2 migration: copy, verify size and page count, rewrite the entity, then delete the old directory; drop entries whose source file is missing
+- [x] 2.5 Unit-test the migration: happy path, missing source, duplicate resulting names, and resumption after interruption
+- [x] 2.6 Turn existing `FolderEntity` records into real directories during migration, sanitising names, and copy their documents into them
+- [x] 2.7 Set `UIFileSharingEnabled` to true and `LSSupportsOpeningDocumentsInPlace` to true in `ios/Runner/Info.plist`, with a comment stating what the latter does and does not mean
 - [ ] 2.8 Verify on a device that `Documents/` contains only `DocForge/` after migration, and that the folder appears in the iOS Files app
 
 ## 3. Reconciliation and temporary-file lifecycle

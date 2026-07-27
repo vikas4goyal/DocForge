@@ -22,63 +22,68 @@ const DocumentEntitySchema = CollectionSchema(
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'filePath': PropertySchema(
+    r'fileName': PropertySchema(
       id: 1,
-      name: r'filePath',
+      name: r'fileName',
+      type: IsarType.string,
+    ),
+    r'folderPath': PropertySchema(
+      id: 2,
+      name: r'folderPath',
       type: IsarType.string,
     ),
     r'folderUuid': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'folderUuid',
       type: IsarType.string,
     ),
     r'hasRecognisedText': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'hasRecognisedText',
       type: IsarType.bool,
     ),
     r'isArchived': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'isArchived',
       type: IsarType.bool,
     ),
     r'isFavourite': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'isFavourite',
       type: IsarType.bool,
     ),
     r'isProtected': PropertySchema(
-      id: 6,
+      id: 7,
       name: r'isProtected',
       type: IsarType.bool,
     ),
     r'pageCount': PropertySchema(
-      id: 7,
+      id: 8,
       name: r'pageCount',
       type: IsarType.long,
     ),
     r'schemaVersion': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'schemaVersion',
       type: IsarType.long,
     ),
     r'sizeInBytes': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'sizeInBytes',
       type: IsarType.long,
     ),
-    r'title': PropertySchema(id: 10, name: r'title', type: IsarType.string),
+    r'title': PropertySchema(id: 11, name: r'title', type: IsarType.string),
     r'titleWords': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'titleWords',
       type: IsarType.stringList,
     ),
     r'updatedAt': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
-    r'uuid': PropertySchema(id: 13, name: r'uuid', type: IsarType.string),
+    r'uuid': PropertySchema(id: 14, name: r'uuid', type: IsarType.string),
   },
 
   estimateSize: _documentEntityEstimateSize,
@@ -168,7 +173,8 @@ int _documentEntityEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
-  bytesCount += 3 + object.filePath.length * 3;
+  bytesCount += 3 + object.fileName.length * 3;
+  bytesCount += 3 + object.folderPath.length * 3;
   {
     final value = object.folderUuid;
     if (value != null) {
@@ -194,19 +200,20 @@ void _documentEntitySerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDateTime(offsets[0], object.createdAt);
-  writer.writeString(offsets[1], object.filePath);
-  writer.writeString(offsets[2], object.folderUuid);
-  writer.writeBool(offsets[3], object.hasRecognisedText);
-  writer.writeBool(offsets[4], object.isArchived);
-  writer.writeBool(offsets[5], object.isFavourite);
-  writer.writeBool(offsets[6], object.isProtected);
-  writer.writeLong(offsets[7], object.pageCount);
-  writer.writeLong(offsets[8], object.schemaVersion);
-  writer.writeLong(offsets[9], object.sizeInBytes);
-  writer.writeString(offsets[10], object.title);
-  writer.writeStringList(offsets[11], object.titleWords);
-  writer.writeDateTime(offsets[12], object.updatedAt);
-  writer.writeString(offsets[13], object.uuid);
+  writer.writeString(offsets[1], object.fileName);
+  writer.writeString(offsets[2], object.folderPath);
+  writer.writeString(offsets[3], object.folderUuid);
+  writer.writeBool(offsets[4], object.hasRecognisedText);
+  writer.writeBool(offsets[5], object.isArchived);
+  writer.writeBool(offsets[6], object.isFavourite);
+  writer.writeBool(offsets[7], object.isProtected);
+  writer.writeLong(offsets[8], object.pageCount);
+  writer.writeLong(offsets[9], object.schemaVersion);
+  writer.writeLong(offsets[10], object.sizeInBytes);
+  writer.writeString(offsets[11], object.title);
+  writer.writeStringList(offsets[12], object.titleWords);
+  writer.writeDateTime(offsets[13], object.updatedAt);
+  writer.writeString(offsets[14], object.uuid);
 }
 
 DocumentEntity _documentEntityDeserialize(
@@ -217,20 +224,21 @@ DocumentEntity _documentEntityDeserialize(
 ) {
   final object = DocumentEntity();
   object.createdAt = reader.readDateTime(offsets[0]);
-  object.filePath = reader.readString(offsets[1]);
-  object.folderUuid = reader.readStringOrNull(offsets[2]);
-  object.hasRecognisedText = reader.readBool(offsets[3]);
+  object.fileName = reader.readString(offsets[1]);
+  object.folderPath = reader.readString(offsets[2]);
+  object.folderUuid = reader.readStringOrNull(offsets[3]);
+  object.hasRecognisedText = reader.readBool(offsets[4]);
   object.id = id;
-  object.isArchived = reader.readBool(offsets[4]);
-  object.isFavourite = reader.readBool(offsets[5]);
-  object.isProtected = reader.readBool(offsets[6]);
-  object.pageCount = reader.readLong(offsets[7]);
-  object.schemaVersion = reader.readLong(offsets[8]);
-  object.sizeInBytes = reader.readLong(offsets[9]);
-  object.title = reader.readString(offsets[10]);
-  object.titleWords = reader.readStringList(offsets[11]) ?? [];
-  object.updatedAt = reader.readDateTime(offsets[12]);
-  object.uuid = reader.readString(offsets[13]);
+  object.isArchived = reader.readBool(offsets[5]);
+  object.isFavourite = reader.readBool(offsets[6]);
+  object.isProtected = reader.readBool(offsets[7]);
+  object.pageCount = reader.readLong(offsets[8]);
+  object.schemaVersion = reader.readLong(offsets[9]);
+  object.sizeInBytes = reader.readLong(offsets[10]);
+  object.title = reader.readString(offsets[11]);
+  object.titleWords = reader.readStringList(offsets[12]) ?? [];
+  object.updatedAt = reader.readDateTime(offsets[13]);
+  object.uuid = reader.readString(offsets[14]);
   return object;
 }
 
@@ -246,9 +254,9 @@ P _documentEntityDeserializeProp<P>(
     case 1:
       return (reader.readString(offset)) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 3:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (reader.readBool(offset)) as P;
     case 5:
@@ -256,18 +264,20 @@ P _documentEntityDeserializeProp<P>(
     case 6:
       return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readLong(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 8:
       return (reader.readLong(offset)) as P;
     case 9:
       return (reader.readLong(offset)) as P;
     case 10:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 11:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readString(offset)) as P;
     case 12:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 13:
+      return (reader.readDateTime(offset)) as P;
+    case 14:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -951,11 +961,11 @@ extension DocumentEntityQueryFilter
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
-  filePathEqualTo(String value, {bool caseSensitive = true}) {
+  fileNameEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.equalTo(
-          property: r'filePath',
+          property: r'fileName',
           value: value,
           caseSensitive: caseSensitive,
         ),
@@ -964,7 +974,7 @@ extension DocumentEntityQueryFilter
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
-  filePathGreaterThan(
+  fileNameGreaterThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -973,7 +983,7 @@ extension DocumentEntityQueryFilter
       return query.addFilterCondition(
         FilterCondition.greaterThan(
           include: include,
-          property: r'filePath',
+          property: r'fileName',
           value: value,
           caseSensitive: caseSensitive,
         ),
@@ -982,7 +992,7 @@ extension DocumentEntityQueryFilter
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
-  filePathLessThan(
+  fileNameLessThan(
     String value, {
     bool include = false,
     bool caseSensitive = true,
@@ -991,7 +1001,7 @@ extension DocumentEntityQueryFilter
       return query.addFilterCondition(
         FilterCondition.lessThan(
           include: include,
-          property: r'filePath',
+          property: r'fileName',
           value: value,
           caseSensitive: caseSensitive,
         ),
@@ -1000,7 +1010,7 @@ extension DocumentEntityQueryFilter
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
-  filePathBetween(
+  fileNameBetween(
     String lower,
     String upper, {
     bool includeLower = true,
@@ -1010,7 +1020,7 @@ extension DocumentEntityQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.between(
-          property: r'filePath',
+          property: r'fileName',
           lower: lower,
           includeLower: includeLower,
           upper: upper,
@@ -1022,11 +1032,11 @@ extension DocumentEntityQueryFilter
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
-  filePathStartsWith(String value, {bool caseSensitive = true}) {
+  fileNameStartsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.startsWith(
-          property: r'filePath',
+          property: r'fileName',
           value: value,
           caseSensitive: caseSensitive,
         ),
@@ -1035,11 +1045,11 @@ extension DocumentEntityQueryFilter
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
-  filePathEndsWith(String value, {bool caseSensitive = true}) {
+  fileNameEndsWith(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.endsWith(
-          property: r'filePath',
+          property: r'fileName',
           value: value,
           caseSensitive: caseSensitive,
         ),
@@ -1048,11 +1058,11 @@ extension DocumentEntityQueryFilter
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
-  filePathContains(String value, {bool caseSensitive = true}) {
+  fileNameContains(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.contains(
-          property: r'filePath',
+          property: r'fileName',
           value: value,
           caseSensitive: caseSensitive,
         ),
@@ -1061,11 +1071,11 @@ extension DocumentEntityQueryFilter
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
-  filePathMatches(String pattern, {bool caseSensitive = true}) {
+  fileNameMatches(String pattern, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.matches(
-          property: r'filePath',
+          property: r'fileName',
           wildcard: pattern,
           caseSensitive: caseSensitive,
         ),
@@ -1074,19 +1084,160 @@ extension DocumentEntityQueryFilter
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
-  filePathIsEmpty() {
+  fileNameIsEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'filePath', value: ''),
+        FilterCondition.equalTo(property: r'fileName', value: ''),
       );
     });
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
-  filePathIsNotEmpty() {
+  fileNameIsNotEmpty() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
-        FilterCondition.greaterThan(property: r'filePath', value: ''),
+        FilterCondition.greaterThan(property: r'fileName', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  folderPathEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'folderPath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  folderPathGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'folderPath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  folderPathLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'folderPath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  folderPathBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'folderPath',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  folderPathStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'folderPath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  folderPathEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'folderPath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  folderPathContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'folderPath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  folderPathMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'folderPath',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  folderPathIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'folderPath', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  folderPathIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'folderPath', value: ''),
       );
     });
   }
@@ -2059,16 +2210,30 @@ extension DocumentEntityQuerySortBy
     });
   }
 
-  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy> sortByFilePath() {
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy> sortByFileName() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'filePath', Sort.asc);
+      return query.addSortBy(r'fileName', Sort.asc);
     });
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
-  sortByFilePathDesc() {
+  sortByFileNameDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'filePath', Sort.desc);
+      return query.addSortBy(r'fileName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  sortByFolderPath() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'folderPath', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  sortByFolderPathDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'folderPath', Sort.desc);
     });
   }
 
@@ -2236,16 +2401,30 @@ extension DocumentEntityQuerySortThenBy
     });
   }
 
-  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy> thenByFilePath() {
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy> thenByFileName() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'filePath', Sort.asc);
+      return query.addSortBy(r'fileName', Sort.asc);
     });
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
-  thenByFilePathDesc() {
+  thenByFileNameDesc() {
     return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'filePath', Sort.desc);
+      return query.addSortBy(r'fileName', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  thenByFolderPath() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'folderPath', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  thenByFolderPathDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'folderPath', Sort.desc);
     });
   }
 
@@ -2419,11 +2598,19 @@ extension DocumentEntityQueryWhereDistinct
     });
   }
 
-  QueryBuilder<DocumentEntity, DocumentEntity, QDistinct> distinctByFilePath({
+  QueryBuilder<DocumentEntity, DocumentEntity, QDistinct> distinctByFileName({
     bool caseSensitive = true,
   }) {
     return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'filePath', caseSensitive: caseSensitive);
+      return query.addDistinctBy(r'fileName', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QDistinct> distinctByFolderPath({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'folderPath', caseSensitive: caseSensitive);
     });
   }
 
@@ -2529,9 +2716,15 @@ extension DocumentEntityQueryProperty
     });
   }
 
-  QueryBuilder<DocumentEntity, String, QQueryOperations> filePathProperty() {
+  QueryBuilder<DocumentEntity, String, QQueryOperations> fileNameProperty() {
     return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'filePath');
+      return query.addPropertyName(r'fileName');
+    });
+  }
+
+  QueryBuilder<DocumentEntity, String, QQueryOperations> folderPathProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'folderPath');
     });
   }
 
@@ -2627,12 +2820,17 @@ const FolderEntitySchema = CollectionSchema(
       type: IsarType.dateTime,
     ),
     r'name': PropertySchema(id: 1, name: r'name', type: IsarType.string),
-    r'schemaVersion': PropertySchema(
+    r'relativePath': PropertySchema(
       id: 2,
+      name: r'relativePath',
+      type: IsarType.string,
+    ),
+    r'schemaVersion': PropertySchema(
+      id: 3,
       name: r'schemaVersion',
       type: IsarType.long,
     ),
-    r'uuid': PropertySchema(id: 3, name: r'uuid', type: IsarType.string),
+    r'uuid': PropertySchema(id: 4, name: r'uuid', type: IsarType.string),
   },
 
   estimateSize: _folderEntityEstimateSize,
@@ -2684,6 +2882,7 @@ int _folderEntityEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.name.length * 3;
+  bytesCount += 3 + object.relativePath.length * 3;
   bytesCount += 3 + object.uuid.length * 3;
   return bytesCount;
 }
@@ -2696,8 +2895,9 @@ void _folderEntitySerialize(
 ) {
   writer.writeDateTime(offsets[0], object.createdAt);
   writer.writeString(offsets[1], object.name);
-  writer.writeLong(offsets[2], object.schemaVersion);
-  writer.writeString(offsets[3], object.uuid);
+  writer.writeString(offsets[2], object.relativePath);
+  writer.writeLong(offsets[3], object.schemaVersion);
+  writer.writeString(offsets[4], object.uuid);
 }
 
 FolderEntity _folderEntityDeserialize(
@@ -2710,8 +2910,9 @@ FolderEntity _folderEntityDeserialize(
   object.createdAt = reader.readDateTime(offsets[0]);
   object.id = id;
   object.name = reader.readString(offsets[1]);
-  object.schemaVersion = reader.readLong(offsets[2]);
-  object.uuid = reader.readString(offsets[3]);
+  object.relativePath = reader.readString(offsets[2]);
+  object.schemaVersion = reader.readLong(offsets[3]);
+  object.uuid = reader.readString(offsets[4]);
   return object;
 }
 
@@ -2727,8 +2928,10 @@ P _folderEntityDeserializeProp<P>(
     case 1:
       return (reader.readString(offset)) as P;
     case 2:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 3:
+      return (reader.readLong(offset)) as P;
+    case 4:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -3262,6 +3465,147 @@ extension FolderEntityQueryFilter
   }
 
   QueryBuilder<FolderEntity, FolderEntity, QAfterFilterCondition>
+  relativePathEqualTo(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'relativePath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<FolderEntity, FolderEntity, QAfterFilterCondition>
+  relativePathGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'relativePath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<FolderEntity, FolderEntity, QAfterFilterCondition>
+  relativePathLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'relativePath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<FolderEntity, FolderEntity, QAfterFilterCondition>
+  relativePathBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'relativePath',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<FolderEntity, FolderEntity, QAfterFilterCondition>
+  relativePathStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'relativePath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<FolderEntity, FolderEntity, QAfterFilterCondition>
+  relativePathEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'relativePath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<FolderEntity, FolderEntity, QAfterFilterCondition>
+  relativePathContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'relativePath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<FolderEntity, FolderEntity, QAfterFilterCondition>
+  relativePathMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'relativePath',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<FolderEntity, FolderEntity, QAfterFilterCondition>
+  relativePathIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'relativePath', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<FolderEntity, FolderEntity, QAfterFilterCondition>
+  relativePathIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'relativePath', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<FolderEntity, FolderEntity, QAfterFilterCondition>
   schemaVersionEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -3496,6 +3840,19 @@ extension FolderEntityQuerySortBy
     });
   }
 
+  QueryBuilder<FolderEntity, FolderEntity, QAfterSortBy> sortByRelativePath() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'relativePath', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FolderEntity, FolderEntity, QAfterSortBy>
+  sortByRelativePathDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'relativePath', Sort.desc);
+    });
+  }
+
   QueryBuilder<FolderEntity, FolderEntity, QAfterSortBy> sortBySchemaVersion() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'schemaVersion', Sort.asc);
@@ -3560,6 +3917,19 @@ extension FolderEntityQuerySortThenBy
     });
   }
 
+  QueryBuilder<FolderEntity, FolderEntity, QAfterSortBy> thenByRelativePath() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'relativePath', Sort.asc);
+    });
+  }
+
+  QueryBuilder<FolderEntity, FolderEntity, QAfterSortBy>
+  thenByRelativePathDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'relativePath', Sort.desc);
+    });
+  }
+
   QueryBuilder<FolderEntity, FolderEntity, QAfterSortBy> thenBySchemaVersion() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'schemaVersion', Sort.asc);
@@ -3602,6 +3972,14 @@ extension FolderEntityQueryWhereDistinct
     });
   }
 
+  QueryBuilder<FolderEntity, FolderEntity, QDistinct> distinctByRelativePath({
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'relativePath', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<FolderEntity, FolderEntity, QDistinct>
   distinctBySchemaVersion() {
     return QueryBuilder.apply(this, (query) {
@@ -3635,6 +4013,12 @@ extension FolderEntityQueryProperty
   QueryBuilder<FolderEntity, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
+    });
+  }
+
+  QueryBuilder<FolderEntity, String, QQueryOperations> relativePathProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'relativePath');
     });
   }
 

@@ -12,6 +12,7 @@ import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/isolates/cancellation.dart';
+import 'package:doc_forge/core/previews/fakes/fake_document_file_resolver.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/features/document_sharing/application/usecases/sharing_usecases.dart';
 import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
@@ -78,7 +79,7 @@ class _StubCubit extends ShareCubit {
   _StubCubit(this._seeded)
     : super(
         const DocumentId('a'),
-        ShareDocumentPdf(_reader, _share),
+        ShareDocumentPdf(_reader, _share, testFiles),
         SharePageImages(
           _reader,
           _share,
@@ -87,8 +88,8 @@ class _StubCubit extends ShareCubit {
           _neverRendered,
         ),
         ShareExtractedText(_reader, _text, _share),
-        PrintDocument(_reader, _printer),
-        ExportDocument(_reader, _picker),
+        PrintDocument(_reader, _printer, testFiles),
+        ExportDocument(_reader, _picker, testFiles),
       );
 
   final ShareState _seeded;
@@ -120,6 +121,13 @@ class _StubCubit extends ShareCubit {
   @override
   void dismissError() => calls.add('dismiss');
 }
+
+/// Resolves every test document to a fixed path.
+///
+/// These tests drive the sheet and the Cubit, not the bytes: what matters is
+/// that print and export are reached, which a resolver that cannot fail keeps
+/// from being obscured by storage setup.
+const testFiles = FakeDocumentFileResolver();
 
 void main() {
   Future<_StubCubit> pump(

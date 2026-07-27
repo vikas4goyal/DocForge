@@ -12,6 +12,7 @@ import 'dart:io';
 
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
@@ -20,6 +21,7 @@ import 'package:doc_forge/features/document_library/domain/repositories/document
 import 'package:doc_forge/features/document_library/infrastructure/datasource/document_file_store.dart';
 import 'package:doc_forge/features/document_library/infrastructure/document_title_index.dart';
 import 'package:doc_forge/features/document_library/infrastructure/library_contracts_impl.dart';
+import 'package:doc_forge/features/document_library/infrastructure/library_storage_migration.dart';
 import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:doc_forge/features/document_library/infrastructure/repositories/isar_library_repositories.dart';
 import 'package:doc_forge/features/document_search/domain/repositories/search_repository.dart';
@@ -141,16 +143,15 @@ class LibraryModule {
 /// and injected downwards, so no repository performs an ambient path lookup or
 /// opens its own database connection.
 Future<LibraryModule> buildLibraryModule({
+  required PublicFileStore store,
   required Clock clock,
   required IdGenerator ids,
   required SecureStore secureStorage,
 }) async {
-  // Two independent platform lookups on the startup path, so they are resolved
-  // together rather than one after the other.
-  final (supportDirectory, documentsDirectory) = await (
-    getApplicationSupportDirectory(),
-    getApplicationDocumentsDirectory(),
-  ).wait;
+  // Application Support, not Documents: on iOS the Documents container is now
+  // exposed to the Files app, so the database and the derived caches have to
+  // live somewhere the user never sees (`design.md` D4).
+  final supportDirectory = await getApplicationSupportDirectory();
 
   final isar = await Isar.open([
     DocumentEntitySchema,
@@ -162,9 +163,19 @@ Future<LibraryModule> buildLibraryModule({
     OcrTextEntitySchema,
   ], directory: supportDirectory.path);
 
+  // Before anything reads a document: layout-1 records address a private path
+  // that no longer exists, so a screen built over an unmigrated library would
+  // show documents it cannot open (`design.md` migration plan).
+  await LibraryStorageMigration(
+    isar: isar,
+    store: store,
+    legacyDocumentsDirectory: await getApplicationDocumentsDirectory(),
+  ).run();
+
   return buildLibraryModuleOver(
     isar: isar,
-    documentsDirectory: documentsDirectory,
+    documentsDirectory: supportDirectory,
+    store: store,
     clock: clock,
     ids: ids,
     secureStorage: secureStorage,
@@ -179,6 +190,7 @@ Future<LibraryModule> buildLibraryModule({
 LibraryModule buildLibraryModuleOver({
   required Isar isar,
   required Directory documentsDirectory,
+  required PublicFileStore store,
   required Clock clock,
   required IdGenerator ids,
   required SecureStore secureStorage,
@@ -186,11 +198,13 @@ LibraryModule buildLibraryModuleOver({
   final documents = IsarDocumentRepository(isar);
   final folders = IsarFolderRepository(isar);
   final pages = IsarPageRepository(isar);
-  final DocumentFileStore files = LocalDocumentFileStore(documentsDirectory);
+  // Narrowed to derived data: the PDFs themselves live in `store`, and this
+  // holds only the thumbnails rendered from them (`design.md` D4a).
+  final DocumentFileStore derived = LocalDocumentFileStore(documentsDirectory);
 
   final move = MoveDocument(documents, clock);
-  final purge = PurgeDocument(documents, pages, files, secureStorage);
-  final storageSummary = ComputeStorageSummary(documents, files);
+  final purge = PurgeDocument(documents, pages, store, derived, secureStorage);
+  final storageSummary = ComputeStorageSummary(documents, store);
 
   return LibraryModule(
     search: IndexedSearchRepository(
@@ -208,7 +222,7 @@ LibraryModule buildLibraryModuleOver({
     toggleFavourite: ToggleFavourite(documents, clock),
     archiveDocument: ArchiveDocument(documents, clock),
     restoreDocument: RestoreDocument(documents, clock),
-    duplicateDocument: DuplicateDocument(documents, pages, files, clock, ids),
+    duplicateDocument: DuplicateDocument(documents, pages, store, clock, ids),
     purgeDocument: purge,
     loadFolders: LoadFolders(folders),
     createFolder: CreateFolder(folders, clock, ids),

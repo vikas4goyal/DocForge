@@ -11,12 +11,15 @@ import 'dart:io';
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/contracts/models/recognised_text.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/isolates/cancellation.dart';
+import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_forge/features/document_sharing/application/usecases/sharing_usecases.dart';
 import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
 import 'package:doc_forge/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
@@ -78,9 +81,16 @@ class _Text implements OcrTextSource {
 void main() {
   const id = DocumentId('a');
   late Directory temporary;
+  late FilesystemPublicFileStore store;
+  late DocumentFileResolver testFiles;
 
   setUp(() {
     temporary = Directory.systemTemp.createTempSync('share_test');
+    // A real store over a temporary directory: these tests assert on the bytes
+    // that reach the share sheet, so resolution has to produce a real file.
+    store = FilesystemPublicFileStore(temporary);
+    store.initialise();
+    testFiles = PublicStoreDocumentFileResolver(store);
   });
 
   tearDown(() {
@@ -99,14 +109,16 @@ void main() {
     updatedAt: DateTime.utc(2026, 3, 14),
     pageCount: 2,
     sizeInBytes: 1024,
-    filePath: filePath ?? '${temporary.path}/a.pdf',
+    libraryPath: LibraryPath.parse(filePath ?? 'a.pdf'),
     isProtected: isProtected,
     hasRecognisedText: hasRecognisedText,
   );
 
-  /// Writes a stand-in PDF so the existence checks pass.
+  /// Writes a stand-in PDF into the library so resolution finds one.
   File writeStoredPdf({String contents = '%PDF-1.7 protected bytes'}) {
-    final file = File('${temporary.path}/a.pdf')..writeAsStringSync(contents);
+    final file = File('${temporary.path}/DocForge/a.pdf')
+      ..parent.createSync(recursive: true)
+      ..writeAsStringSync(contents);
     return file;
   }
 
@@ -122,9 +134,11 @@ void main() {
       final stored = writeStoredPdf();
       final share = FakeShareRepository();
 
-      final result = await ShareDocumentPdf(_Reader(document: doc()), share)(
-        id,
-      );
+      final result = await ShareDocumentPdf(
+        _Reader(document: doc()),
+        share,
+        testFiles,
+      )(id);
 
       expect(result, isA<Success<void>>());
       expect(share.shared.single.filePaths, [stored.path]);
@@ -138,9 +152,11 @@ void main() {
       final stored = writeStoredPdf();
       final share = FakeShareRepository();
 
-      await ShareDocumentPdf(_Reader(document: doc(isProtected: true)), share)(
-        id,
-      );
+      await ShareDocumentPdf(
+        _Reader(document: doc(isProtected: true)),
+        share,
+        testFiles,
+      )(id);
 
       final payload = share.shared.single;
       expect(payload.filePaths, [stored.path]);
@@ -153,8 +169,9 @@ void main() {
       final share = FakeShareRepository();
 
       final result = await ShareDocumentPdf(
-        _Reader(document: doc(filePath: '${temporary.path}/gone.pdf')),
+        _Reader(document: doc(filePath: 'gone.pdf')),
         share,
+        testFiles,
       )(id);
 
       expect(result, isA<Failed<void>>());
@@ -167,6 +184,7 @@ void main() {
       final result = await ShareDocumentPdf(
         _Reader(failure: const Failure.storage()),
         share,
+        testFiles,
       )(id);
 
       expect(result, isA<Failed<void>>());
@@ -375,11 +393,13 @@ void main() {
 
   group('PrintDocument', () {
     test('submits the stored file under the sanitised title', () async {
+      writeStoredPdf();
       final printer = FakePrintRepository();
 
       final result = await PrintDocument(
         _Reader(document: doc(title: 'Invoice/2026')),
         printer,
+        testFiles,
       )(id);
 
       expect(result, isA<Success<bool>>());
@@ -387,11 +407,13 @@ void main() {
     });
 
     test('reports a dismissed dialogue as a successful false', () async {
+      writeStoredPdf();
       // The spec requires no message and no change when the user cancels, which
       // an error result could not express.
       final result = await PrintDocument(
         _Reader(document: doc()),
         FakePrintRepository(submitted: false),
+        testFiles,
       )(id);
 
       expect((result as Success<bool>).value, isFalse);
@@ -401,6 +423,7 @@ void main() {
       final result = await PrintDocument(
         _Reader(document: doc()),
         FakePrintRepository(failure: const Failure.export()),
+        testFiles,
       )(id);
 
       expect(result, isA<Failed<bool>>());
@@ -415,6 +438,7 @@ void main() {
       final result = await ExportDocument(
         _Reader(document: doc()),
         FakeExportDestinationPicker(destination: destination),
+        testFiles,
       )(id);
 
       expect((result as Success<String?>).value, destination);
@@ -429,6 +453,7 @@ void main() {
         FakeExportDestinationPicker(
           destination: '${temporary.path}/exported.pdf',
         ),
+        testFiles,
       )(id);
 
       expect(stored.existsSync(), isTrue);
@@ -440,7 +465,11 @@ void main() {
         destination: '${temporary.path}/exported.pdf',
       );
 
-      await ExportDocument(_Reader(document: doc(title: 'a/b')), picker)(id);
+      await ExportDocument(
+        _Reader(document: doc(title: 'a/b')),
+        picker,
+        testFiles,
+      )(id);
 
       expect(picker.suggestions.single, 'a b.pdf');
     });
@@ -451,6 +480,7 @@ void main() {
       final result = await ExportDocument(
         _Reader(document: doc()),
         FakeExportDestinationPicker(),
+        testFiles,
       )(id);
 
       expect((result as Success<String?>).value, isNull);
@@ -469,6 +499,7 @@ void main() {
         final result = await ExportDocument(
           _Reader(document: doc()),
           FakeExportDestinationPicker(destination: destination),
+          testFiles,
         )(id);
 
         expect(result, isA<Failed<String?>>());
@@ -479,8 +510,9 @@ void main() {
 
     test('fails when the stored file is missing', () async {
       final result = await ExportDocument(
-        _Reader(document: doc(filePath: '${temporary.path}/gone.pdf')),
+        _Reader(document: doc(filePath: 'gone.pdf')),
         FakeExportDestinationPicker(destination: '${temporary.path}/x.pdf'),
+        testFiles,
       )(id);
 
       expect(result, isA<Failed<String?>>());
@@ -492,6 +524,7 @@ void main() {
       final result = await ExportDocument(
         _Reader(document: doc()),
         FakeExportDestinationPicker(failure: const Failure.export()),
+        testFiles,
       )(id);
 
       expect(result, isA<Failed<String?>>());

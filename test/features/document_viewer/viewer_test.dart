@@ -4,6 +4,7 @@ library;
 import 'package:bloc_test/bloc_test.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/recognised_text.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
@@ -456,7 +457,7 @@ Document viewerDocument() => Document(
   updatedAt: DateTime.utc(2026, 3, 14),
   pageCount: 3,
   sizeInBytes: 40960,
-  filePath: '/documents/doc-1.pdf',
+  libraryPath: LibraryPath.parse('doc-1.pdf'),
 );
 
 /// A recognised-text fixture.

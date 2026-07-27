@@ -8,6 +8,7 @@ import 'dart:io';
 
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
+import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_forge/features/document_sharing/application/usecases/sharing_usecases.dart';
 import 'package:doc_forge/features/document_sharing/domain/repositories/share_repository.dart';
 import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
@@ -62,6 +63,7 @@ class SharingModule {
 SharingModule buildSharingModule({
   required DocumentReader documentReader,
   required OcrTextSource ocrTextSource,
+  required DocumentFileResolver documentFiles,
   required Directory cacheDirectory,
   BackgroundWorker worker = const IsolateBackgroundWorker(),
   ShareRepository share = const SystemShareRepository(),
@@ -79,7 +81,7 @@ SharingModule buildSharingModule({
   return SharingModule(
     documentReader: documentReader,
     ocrTextSource: ocrTextSource,
-    sharePdf: ShareDocumentPdf(documentReader, share),
+    sharePdf: ShareDocumentPdf(documentReader, share, documentFiles),
     shareImages: SharePageImages(
       documentReader,
       share,
@@ -88,7 +90,7 @@ SharingModule buildSharingModule({
       renderSharePageJob,
     ),
     shareText: ShareExtractedText(documentReader, ocrTextSource, share),
-    printDocument: PrintDocument(documentReader, printer),
-    export: ExportDocument(documentReader, picker),
+    printDocument: PrintDocument(documentReader, printer, documentFiles),
+    export: ExportDocument(documentReader, picker, documentFiles),
   );
 }

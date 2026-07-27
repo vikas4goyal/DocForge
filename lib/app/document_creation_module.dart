@@ -11,6 +11,7 @@ import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/contracts/models/recognised_text.dart';
+import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
 import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
@@ -23,8 +24,6 @@ import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:doc_forge/features/pdf_generation/domain/repositories/pdf_repository.dart';
 import 'package:doc_forge/features/pdf_generation/infrastructure/pdf_composer.dart';
 import 'package:isar_community/isar.dart';
-
-
 
 /// Everything OCR and PDF generation need, built once.
 class DocumentCreationModule {
@@ -74,7 +73,7 @@ class DocumentCreationModule {
 /// working unchanged.
 OcrScript _defaultScript() => OcrScript.defaultScript;
 
-/// Builds the graph over an already-open [isar] and [documentsDirectory].
+/// Builds the graph over an already-open [isar] and [publicStore].
 ///
 /// [composer] and [recogniser] default to the real implementations and are
 /// injectable so an integration test can substitute an inline composer and a
@@ -82,7 +81,8 @@ OcrScript _defaultScript() => OcrScript.defaultScript;
 /// which settings configures.
 DocumentCreationModule buildDocumentCreationModule({
   required Isar isar,
-  required Directory documentsDirectory,
+  required Directory workingDirectory,
+  required PublicFileStore publicStore,
   required Clock clock,
   required IdGenerator ids,
   required DocumentReader documentReader,
@@ -140,7 +140,9 @@ DocumentCreationModule buildDocumentCreationModule({
     documentWriter,
     clock,
     ids,
-    (id) => '${documentsDirectory.path}/${id.value}.pdf',
+    // Composed into the private working directory, then published into the
+    // user-visible library by the use case itself.
+    (id) => '${workingDirectory.path}/${id.value}.pdf',
     // Deleting an orphan must not itself fail the save: the record is already
     // gone, and a file that could not be removed is a smaller problem than an
     // error the user cannot act on.
@@ -154,6 +156,7 @@ DocumentCreationModule buildDocumentCreationModule({
         }
       }
     },
+    publicStore,
   );
 
   final generateName = GenerateDocumentName(clock, documentReader);

@@ -112,8 +112,10 @@ class EnhancementCubit extends Cubit<EnhancementState> {
   );
 
   /// Sets the sharpening amount and re-renders the preview.
-  Future<void> setSharpen(double value) =>
-      _updateSettings(state.settings.copyWith(sharpen: value), adjustment: #sharpen);
+  Future<void> setSharpen(double value) => _updateSettings(
+    state.settings.copyWith(sharpen: value),
+    adjustment: #sharpen,
+  );
 
   /// Turns shadow removal on or off and re-renders the preview.
   Future<void> setShadowRemoval({required bool enabled}) => _updateSettings(

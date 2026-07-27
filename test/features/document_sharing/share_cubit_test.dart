@@ -12,11 +12,13 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/contracts/models/recognised_text.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
+import 'package:doc_forge/core/previews/fakes/fake_document_file_resolver.dart';
 import 'package:doc_forge/features/document_sharing/application/usecases/sharing_usecases.dart';
 import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
 import 'package:doc_forge/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
@@ -65,8 +67,16 @@ class _Text implements OcrTextSource {
 void main() {
   const id = DocumentId('a');
   late Directory temporary;
+  late FakeDocumentFileResolver testFiles;
 
-  setUp(() => temporary = Directory.systemTemp.createTempSync('share_cubit'));
+  setUp(() {
+    temporary = Directory.systemTemp.createTempSync('share_cubit');
+    // Export copies the resolved file, so it has to be a real one; print and
+    // share only pass the path along and would be happy with anything.
+    final stored = File('${temporary.path}/stored.pdf')
+      ..writeAsStringSync('%PDF-1.7');
+    testFiles = FakeDocumentFileResolver(path: stored.path);
+  });
   tearDown(() {
     if (temporary.existsSync()) temporary.deleteSync(recursive: true);
   });
@@ -78,7 +88,7 @@ void main() {
     updatedAt: DateTime.utc(2026, 3, 14),
     pageCount: 2,
     sizeInBytes: 1024,
-    filePath: '${temporary.path}/a.pdf',
+    libraryPath: LibraryPath.parse('a.pdf'),
     hasRecognisedText: hasRecognisedText,
   );
 
@@ -115,7 +125,7 @@ void main() {
 
     return ShareCubit(
       id,
-      ShareDocumentPdf(reader, sharing),
+      ShareDocumentPdf(reader, sharing, testFiles),
       SharePageImages(
         reader,
         sharing,
@@ -124,8 +134,12 @@ void main() {
         job ?? renderJob,
       ),
       ShareExtractedText(reader, _Text(text), sharing),
-      PrintDocument(reader, printer ?? FakePrintRepository()),
-      ExportDocument(reader, picker ?? FakeExportDestinationPicker()),
+      PrintDocument(reader, printer ?? FakePrintRepository(), testFiles),
+      ExportDocument(
+        reader,
+        picker ?? FakeExportDestinationPicker(),
+        testFiles,
+      ),
       initial: ShareState.initial(
         title: 'Invoice',
         pageCount: 2,

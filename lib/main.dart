@@ -6,6 +6,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:doc_forge/app/app.dart';
 import 'package:doc_forge/app/app_dependencies.dart';
@@ -25,6 +26,8 @@ import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_forge/core/failures/failure_messages.dart';
 import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_forge/core/storage/public_storage/public_storage_factory.dart';
 import 'package:doc_forge/core/theme/theme_mode_controller.dart';
 import 'package:doc_forge/core/widgets/app_state_views.dart';
 import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
@@ -81,10 +84,27 @@ Future<void> main() async {
   // Awaited together rather than one after another: neither needs the other,
   // and everything here happens before the first frame, so each avoidable
   // round trip is time the user spends looking at a blank screen.
-  final (dependencies, cacheDirectory) = await (
+  final (dependencies, cacheDirectory, documentsDirectory) = await (
     buildAppDependencies(),
     getApplicationCacheDirectory(),
+    getApplicationDocumentsDirectory(),
   ).wait;
+
+  // The user-visible library folder, and the only place a finished PDF is
+  // written. Built before anything else that touches documents, because every
+  // one of them addresses files through it (`design.md` D2).
+  final publicStore = buildPublicFileStore(
+    documentsDirectory: documentsDirectory,
+    cacheDirectory: cacheDirectory,
+  );
+  await publicStore.initialise();
+
+  // Private scratch space for half-built PDFs. Never the library folder: a
+  // partial file there would be visible in the user's file browser.
+  final workingDirectory = Directory('${cacheDirectory.path}/working')
+    ..createSync(recursive: true);
+
+  final documentFiles = PublicStoreDocumentFileResolver(publicStore);
 
   final scanning = buildScanningModule(
     directory: cacheDirectory,
@@ -94,6 +114,7 @@ Future<void> main() async {
   );
 
   final library = await buildLibraryModule(
+    store: publicStore,
     clock: dependencies.clock,
     ids: dependencies.idGenerator,
     secureStorage: dependencies.secureStorage,
@@ -131,7 +152,8 @@ Future<void> main() async {
 
   final creation = buildDocumentCreationModule(
     isar: library.isar,
-    documentsDirectory: library.documentsDirectory,
+    workingDirectory: workingDirectory,
+    publicStore: publicStore,
     clock: dependencies.clock,
     ids: dependencies.idGenerator,
     documentReader: library.documentReader,
@@ -145,7 +167,7 @@ Future<void> main() async {
   final importing = buildImportModule(
     renderer: const PdfrxRenderer(),
     documentWriter: library.documentWriter,
-    documentsDirectory: library.documentsDirectory,
+    store: publicStore,
     cacheDirectory: cacheDirectory,
     clock: dependencies.clock,
     ids: dependencies.idGenerator,
@@ -156,7 +178,8 @@ Future<void> main() async {
     documentReader: library.documentReader,
     documentWriter: library.documentWriter,
     secureStorage: dependencies.secureStorage,
-    documentsDirectory: library.documentsDirectory,
+    store: publicStore,
+    workingDirectory: workingDirectory,
     clock: dependencies.clock,
     ids: dependencies.idGenerator,
   );
@@ -164,6 +187,7 @@ Future<void> main() async {
   final sharing = buildSharingModule(
     documentReader: library.documentReader,
     ocrTextSource: creation.ocrTextSource,
+    documentFiles: documentFiles,
     cacheDirectory: cacheDirectory,
     worker: dependencies.worker,
   );
@@ -205,6 +229,7 @@ Future<void> main() async {
       sharing,
       importing,
       editing,
+      documentFiles,
       settings,
       currentSettings,
       themeMode,
@@ -239,6 +264,7 @@ AppScreens _screens(
   SharingModule sharing,
   ImportModule importing,
   PdfEditingModule editing,
+  DocumentFileResolver documentFiles,
   SettingsModule settings,
   ValueNotifier<AppSettings> currentSettings,
   ThemeModeController themeMode,
@@ -369,6 +395,7 @@ AppScreens _screens(
           library.documentReader,
           const PdfrxRenderer(),
           dependencies.secureStorage,
+          documentFiles,
         ),
         RememberDocumentPassword(dependencies.secureStorage),
         LoadViewerText(creation.ocrTextSource),
@@ -397,7 +424,7 @@ AppScreens _screens(
         // sheet: the viewer's print control names the action exactly, and an
         // intermediate sheet asking "print?" would be a step with one option.
         onPrint: () => _print(context, sharing, id),
-        onEdit: () => _openEditor(context, editing, id),
+        onEdit: () => _openEditor(context, editing, documentFiles, id),
       ),
     ),
     documentDetail: (context, id) => BlocProvider(
@@ -539,18 +566,15 @@ AppScreens _screens(
 Future<void> _openEditor(
   BuildContext context,
   PdfEditingModule editing,
+  DocumentFileResolver documentFiles,
   DocumentId id,
 ) => Navigator.of(context).push<void>(
   MaterialPageRoute(
     builder: (routeContext) => BlocProvider(
-      create: (_) => PdfEditCubit(id, editing.useCases)..load(),
+      create: (_) => PdfEditCubit(id, editing.useCases, documentFiles)..load(),
       child: Builder(
         builder: (screenContext) {
-          final path = screenContext
-              .watch<PdfEditCubit>()
-              .state
-              .document
-              ?.filePath;
+          final path = screenContext.watch<PdfEditCubit>().state.filePath;
 
           return PdfEditScreen(
             // The real thumbnail is a rendered PDF page. Supplied here rather

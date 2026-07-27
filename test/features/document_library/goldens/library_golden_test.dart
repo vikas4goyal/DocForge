@@ -8,8 +8,10 @@ library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
@@ -41,7 +43,7 @@ Document _document(int index) => Document(
   updatedAt: DateTime.utc(2026, 3, 14),
   pageCount: 4,
   sizeInBytes: 184_320,
-  filePath: '/golden/$index.pdf',
+  libraryPath: LibraryPath.parse('$index.pdf'),
 );
 
 Folder _folder(int index) => Folder(
@@ -94,7 +96,13 @@ class _SeededFolderCubit extends FolderCubit {
           _folders,
           _documents,
           MoveDocument(_documents, _clock),
-          PurgeDocument(_documents, _pages, _files, InMemorySecureStore()),
+          PurgeDocument(
+            _documents,
+            _pages,
+            InMemoryPublicFileStore(),
+            _files,
+            InMemorySecureStore(),
+          ),
         ),
       );
 

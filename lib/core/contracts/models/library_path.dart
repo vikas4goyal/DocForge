@@ -108,6 +108,17 @@ final class LibraryPath {
     );
   }
 
+  /// Creates a path from its JSON string form.
+  ///
+  /// Written out by hand rather than generated, for the same reason the typed
+  /// ids are: a wrapper serialised by json_serializable nests as
+  /// `{"relative": "..."}`, where the stored form wants to be a plain string
+  /// that reads the same in the database, in a log and on the wire.
+  factory LibraryPath.fromJson(String json) => LibraryPath.parse(json);
+
+  /// Returns [relative] so the path serialises as a plain JSON string.
+  String toJson() => relative;
+
   /// The separator between segments of a library path.
   ///
   /// Always `/`, on every platform. A library path is a portable address, not

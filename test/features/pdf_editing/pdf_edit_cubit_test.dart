@@ -11,10 +11,13 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_forge/core/previews/fakes/fake_document_file_resolver.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_forge/core/storage/storage_keys.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
@@ -88,7 +91,8 @@ void main() {
     String? password,
     int padding = 0,
   }) {
-    final path = '${temporary.path}/$documentId.pdf';
+    final path = '${temporary.path}/DocForge/$documentId.pdf';
+    Directory(path).parent.createSync(recursive: true);
     final file = writeFakePdf(
       path,
       pageCount: pageCount,
@@ -98,12 +102,12 @@ void main() {
 
     return Document(
       id: DocumentId(documentId),
+      libraryPath: LibraryPath.parse('$documentId.pdf'),
       title: 'Invoice',
       createdAt: DateTime.utc(2026, 3),
       updatedAt: DateTime.utc(2026, 3),
       pageCount: pageCount,
       sizeInBytes: file.lengthSync(),
-      filePath: path,
       isProtected: password != null,
     );
   }
@@ -122,7 +126,8 @@ void main() {
         (path, password) => editor.pageCountOf(path, password: password),
       ),
       secrets: secrets,
-      destination: (newId) => '${temporary.path}/${newId.value}.pdf',
+      store: FilesystemPublicFileStore(temporary),
+      workingDirectory: Directory.systemTemp,
       clock: FixedClock(DateTime.utc(2026, 6)),
       ids: SequentialIdGenerator(),
     );
@@ -142,6 +147,7 @@ void main() {
         removePassword: RemoveDocumentPassword(context),
         metadata: ReadPdfMetadata(context),
       ),
+      const FakeDocumentFileResolver(),
     );
   }
 

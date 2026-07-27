@@ -243,7 +243,7 @@ class _Document extends StatelessWidget {
 
     final surface = surfaceBuilder(
       context,
-      filePath: document.filePath,
+      filePath: state.filePath ?? '',
       password: state.password,
       page: state.page,
       onPageChanged: cubit.pageChanged,

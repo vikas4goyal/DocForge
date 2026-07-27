@@ -3,6 +3,7 @@ library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/features/document_search/domain/search_query.dart';
@@ -21,7 +22,7 @@ Document doc(String id, {String title = 'Untitled'}) => Document(
   updatedAt: DateTime.utc(2026, 3, 14),
   pageCount: 2,
   sizeInBytes: 20480,
-  filePath: '/documents/$id.pdf',
+  libraryPath: LibraryPath.parse('$id.pdf'),
 );
 
 Folder folder(String id, String name) =>

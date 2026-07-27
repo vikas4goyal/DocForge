@@ -18,8 +18,10 @@ import 'dart:io';
 import 'package:doc_forge/app/library_module.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
@@ -39,6 +41,7 @@ const _interactiveBudget = Duration(milliseconds: 900);
 void main() {
   late Directory root;
   late Isar isar;
+  late FilesystemPublicFileStore publicStore;
   late LibraryModule library;
 
   final clock = FixedClock(DateTime.utc(2026, 3, 14, 9, 30));
@@ -58,9 +61,13 @@ void main() {
       OcrTextEntitySchema,
     ], directory: root.path);
 
+    publicStore = FilesystemPublicFileStore(documents);
+    await publicStore.initialise();
+
     library = buildLibraryModuleOver(
       isar: isar,
       documentsDirectory: documents,
+      store: publicStore,
       clock: clock,
       ids: SequentialIdGenerator(prefix: 'doc'),
       secureStorage: InMemorySecureStore(),
@@ -89,7 +96,7 @@ void main() {
               ).add(Duration(minutes: index)),
               pageCount: 4,
               sizeInBytes: 184_320,
-              filePath: '/documents/doc-$index.pdf',
+              libraryPath: LibraryPath.parse('doc-$index.pdf'),
             ),
           ),
       ]);

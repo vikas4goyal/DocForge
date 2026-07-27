@@ -17,6 +17,8 @@ import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/isolates/cancellation.dart';
 import 'package:doc_forge/core/previews/preview_scaffold.dart';
+import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/features/document_sharing/application/usecases/sharing_usecases.dart';
 import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
 import 'package:doc_forge/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
@@ -63,6 +65,9 @@ class _PreviewText implements OcrTextSource {
       const Result<String>.success('');
 }
 
+/// Resolves preview documents to a fixed, machine-independent path.
+final _files = PublicStoreDocumentFileResolver(InMemoryPublicFileStore());
+
 /// A Cubit frozen at [_seeded].
 ///
 /// Every action is overridden to do nothing: a preview that opened the system
@@ -71,7 +76,7 @@ class _PreviewShareCubit extends ShareCubit {
   _PreviewShareCubit(this._seeded)
     : super(
         const DocumentId('preview'),
-        ShareDocumentPdf(const _PreviewReader(), FakeShareRepository()),
+        ShareDocumentPdf(const _PreviewReader(), FakeShareRepository(), _files),
         SharePageImages(
           const _PreviewReader(),
           FakeShareRepository(),
@@ -84,8 +89,12 @@ class _PreviewShareCubit extends ShareCubit {
           const _PreviewText(),
           FakeShareRepository(),
         ),
-        PrintDocument(const _PreviewReader(), FakePrintRepository()),
-        ExportDocument(const _PreviewReader(), FakeExportDestinationPicker()),
+        PrintDocument(const _PreviewReader(), FakePrintRepository(), _files),
+        ExportDocument(
+          const _PreviewReader(),
+          FakeExportDestinationPicker(),
+          _files,
+        ),
       );
 
   final ShareState _seeded;

@@ -6,6 +6,7 @@ library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/previews/preview_scaffold.dart';
 import 'package:doc_forge/features/document_search/domain/search_query.dart';
@@ -25,7 +26,7 @@ Document _document(String id, String title) => Document(
   updatedAt: DateTime.utc(2026, 3, 14),
   pageCount: 4,
   sizeInBytes: 184_320,
-  filePath: '/preview/$id.pdf',
+  libraryPath: LibraryPath.parse('$title.pdf'),
 );
 
 /// The folders the filter offers.
