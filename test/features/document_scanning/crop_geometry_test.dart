@@ -4,83 +4,125 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('rotateQuad', () {
-    const size = Size(1000, 2000);
+  const available = Rect.fromLTWH(20, 20, 360, 640);
+  const portrait = Size(3000, 4000);
 
-    test('keeps the selection inside the page', () {
-      const quad = PageQuad(
-        topLeft: NormalisedPoint(x: 0.05, y: 0.05),
-        topRight: NormalisedPoint(x: 0.95, y: 0.05),
-        bottomRight: NormalisedPoint(x: 0.95, y: 0.95),
-        bottomLeft: NormalisedPoint(x: 0.05, y: 0.95),
+  group('PageTransform.fit', () {
+    test('never enlarges a page that already fits', () {
+      final transform = PageTransform.fit(
+        imageSize: const Size(100, 120),
+        available: available,
+        degrees: 0,
       );
 
-      for (final degrees in [5.0, 30.0, 90.0, 175.0, -45.0]) {
-        final turned = rotateQuad(quad, degrees, size);
-        for (final corner in turned.corners) {
+      // Scaling a small capture up would only turn it into blur.
+      expect(transform.scale, 1.0);
+    });
+
+    test('keeps the page inside the area at every rotation', () {
+      for (final degrees in [0.0, 15.0, 45.0, 90.0, 137.0, -60.0]) {
+        final transform = PageTransform.fit(
+          imageSize: portrait,
+          available: available,
+          degrees: degrees,
+        );
+
+        // Every corner of the page, once turned, must still be inside — a page
+        // measured unrotated would have its corners cut off as it turned.
+        for (final corner in const [
+          NormalisedPoint(x: 0, y: 0),
+          NormalisedPoint(x: 1, y: 0),
+          NormalisedPoint(x: 1, y: 1),
+          NormalisedPoint(x: 0, y: 1),
+        ]) {
+          final point = transform.toScreen(corner);
           expect(
-            corner.isWithinBounds,
+            available.inflate(0.5).contains(point),
             isTrue,
-            reason: 'corner left the page at $degrees degrees',
+            reason: 'corner escaped at $degrees degrees',
           );
         }
       }
     });
+  });
 
-    test('a full turn returns the shape it started from', () {
-      const quad = PageQuad(
-        topLeft: NormalisedPoint(x: 0.2, y: 0.2),
-        topRight: NormalisedPoint(x: 0.8, y: 0.25),
-        bottomRight: NormalisedPoint(x: 0.75, y: 0.8),
-        bottomLeft: NormalisedPoint(x: 0.25, y: 0.75),
-      );
+  group('screen and page coordinates', () {
+    test('round-trip unchanged, rotated or not', () {
+      const points = [
+        NormalisedPoint(x: 0.25, y: 0.4),
+        NormalisedPoint(x: 0.5, y: 0.5),
+        NormalisedPoint(x: 0.9, y: 0.15),
+      ];
 
-      final turned = rotateQuad(quad, 360, size);
+      for (final degrees in [0.0, 30.0, -45.0, 180.0]) {
+        final transform = PageTransform.fit(
+          imageSize: portrait,
+          available: available,
+          degrees: degrees,
+        );
 
-      for (var i = 0; i < 4; i++) {
-        expect(turned.corners[i].x, closeTo(quad.corners[i].x, 0.001));
-        expect(turned.corners[i].y, closeTo(quad.corners[i].y, 0.001));
+        for (final point in points) {
+          final returned = transform.toPage(transform.toScreen(point));
+          expect(returned.x, closeTo(point.x, 0.001));
+          expect(returned.y, closeTo(point.y, 0.001));
+        }
       }
     });
 
-    test('does not deform a square selection', () {
-      const quad = PageQuad(
-        topLeft: NormalisedPoint(x: 0.3, y: 0.4),
-        topRight: NormalisedPoint(x: 0.7, y: 0.4),
-        bottomRight: NormalisedPoint(x: 0.7, y: 0.6),
-        bottomLeft: NormalisedPoint(x: 0.3, y: 0.6),
+    test('a corner dragged on screen lands where the page is, not where the '
+        'canvas is', () {
+      final upright = PageTransform.fit(
+        imageSize: portrait,
+        available: available,
+        degrees: 0,
+      );
+      final turned = PageTransform.fit(
+        imageSize: portrait,
+        available: available,
+        degrees: 90,
       );
 
-      final turned = rotateQuad(quad, 90, size);
-
-      double edge(NormalisedPoint a, NormalisedPoint b) {
-        final dx = (a.x - b.x) * size.width;
-        final dy = (a.y - b.y) * size.height;
-        return dx * dx + dy * dy;
-      }
-
-      // Opposite edges stay equal: the shape is turned, not skewed.
+      // The same page point is drawn somewhere else once the page is turned.
+      // Anything mapping through the canvas rather than the page would put the
+      // selection on top of pixels the user is not looking at.
+      const topLeft = NormalisedPoint(x: 0, y: 0);
       expect(
-        edge(turned.topLeft, turned.topRight),
-        closeTo(edge(turned.bottomLeft, turned.bottomRight), 1),
+        (upright.toScreen(topLeft) - turned.toScreen(topLeft)).distance,
+        greaterThan(1),
       );
+    });
+
+    test('a point outside the page is pulled back onto it', () {
+      final transform = PageTransform.fit(
+        imageSize: portrait,
+        available: available,
+        degrees: 0,
+      );
+
+      final outside = transform.toPage(const Offset(-500, -500));
+
+      // A selection corner off the page would describe pixels that do not
+      // exist, which the correction would then have to guess at.
+      expect(outside.isWithinBounds, isTrue);
     });
   });
 
-  group('flips', () {
+  group('replaceCorner', () {
     const quad = PageQuad(
-      topLeft: NormalisedPoint(x: 0.1, y: 0.2),
-      topRight: NormalisedPoint(x: 0.9, y: 0.2),
-      bottomRight: NormalisedPoint(x: 0.9, y: 0.8),
-      bottomLeft: NormalisedPoint(x: 0.1, y: 0.8),
+      topLeft: NormalisedPoint(x: 0.1, y: 0.1),
+      topRight: NormalisedPoint(x: 0.9, y: 0.1),
+      bottomRight: NormalisedPoint(x: 0.9, y: 0.9),
+      bottomLeft: NormalisedPoint(x: 0.1, y: 0.9),
     );
 
-    test('flipping horizontally twice is the original', () {
-      expect(flipQuadHorizontally(flipQuadHorizontally(quad)), quad);
-    });
+    test('moves only the corner it names', () {
+      const moved = NormalisedPoint(x: 0.4, y: 0.3);
+      final next = replaceCorner(quad, 1, moved);
 
-    test('flipping vertically twice is the original', () {
-      expect(flipQuadVertically(flipQuadVertically(quad)), quad);
+      expect(next.topRight, moved);
+      expect(next.topLeft, quad.topLeft);
+      expect(next.bottomRight, quad.bottomRight);
+      expect(next.bottomLeft, quad.bottomLeft);
     });
   });
 }

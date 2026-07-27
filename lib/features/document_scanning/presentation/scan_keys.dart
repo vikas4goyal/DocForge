@@ -75,9 +75,6 @@ abstract final class ScanKeys {
   /// A page row in the review list, keyed by page identifier.
   static Key pageItem(String pageId) => Key('scan_page_item_$pageId');
 
-  /// The rotate control on a page row.
-  static const pageRotateButton = Key('scan_page_rotate_button');
-
   /// The delete control on a page row.
   static const pageDeleteButton = Key('scan_page_delete_button');
 
@@ -99,9 +96,4 @@ abstract final class ScanKeys {
   /// The handle dragged in a circle to turn the selection.
   static const cropRotateHandle = Key('scan_crop_rotate_handle');
 
-  /// Mirrors the selection left-to-right.
-  static const cropFlipHorizontalButton = Key('scan_crop_flip_horizontal');
-
-  /// Mirrors the selection top-to-bottom.
-  static const cropFlipVerticalButton = Key('scan_crop_flip_vertical');
 }
