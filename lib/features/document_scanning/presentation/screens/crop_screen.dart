@@ -14,7 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Lets the user adjust a page's edges before correction is applied.
-class CropScreen extends StatelessWidget {
+class CropScreen extends StatefulWidget {
   /// Creates the crop screen.
   const CropScreen({
     required this.destinationPath,
@@ -33,6 +33,13 @@ class CropScreen extends StatelessWidget {
   final VoidCallback onCancelled;
 
   @override
+  State<CropScreen> createState() => _CropScreenState();
+}
+
+class _CropScreenState extends State<CropScreen> {
+  Size? _imageSize;
+
+  @override
   Widget build(BuildContext context) {
     return BlocConsumer<CropCubit, CropState>(
       listenWhen: (previous, current) =>
@@ -47,7 +54,7 @@ class CropScreen extends StatelessWidget {
           leading: IconButton(
             key: const Key('scan_crop_cancel_button'),
             tooltip: 'Cancel cropping',
-            onPressed: onCancelled,
+            onPressed: widget.onCancelled,
             icon: const Icon(Icons.close),
           ),
           actions: [
@@ -70,11 +77,27 @@ class CropScreen extends StatelessWidget {
             // which is what it takes to get a whole fingertip beside a corner.
             Positioned.fill(
               child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 28,
-                  vertical: 20,
+                // Room below for the rotate handle, which hangs off the bottom
+                // edge: without it a page that fills the canvas vertically
+                // would push the handle off-screen exactly when the selection
+                // is largest. The page is laid out inside what is left, so the
+                // handle is always reachable.
+                padding: const EdgeInsets.fromLTRB(
+                  28,
+                  20,
+                  28,
+                  _rotateHandleReach + AppTheme.minimumTouchTarget / 2,
                 ),
-                child: _CropCanvas(state: state),
+                child: _CropCanvas(
+                  state: state,
+                  onImageSize: (size) {
+                    if (_imageSize == size) return;
+                    // Set outside the build it was reported from.
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) setState(() => _imageSize = size);
+                    });
+                  },
+                ),
               ),
             ),
             if (state.isWorking)
@@ -89,17 +112,24 @@ class CropScreen extends StatelessWidget {
         bottomNavigationBar: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: FilledButton(
-              key: ScanKeys.cropConfirmButton,
-              onPressed: state.isWorking
-                  ? null
-                  : () async {
-                      final page = await context.read<CropCubit>().confirm(
-                        destinationPath: destinationPath,
-                      );
-                      if (page != null) onCropped(page);
-                    },
-              child: const Text('Apply crop'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _FlipControls(enabled: !state.isWorking, quad: state.quad),
+                const SizedBox(height: 12),
+                FilledButton(
+                  key: ScanKeys.cropConfirmButton,
+                  onPressed: state.isWorking
+                      ? null
+                      : () async {
+                          final page = await context.read<CropCubit>().confirm(
+                            destinationPath: widget.destinationPath,
+                          );
+                          if (page != null) widget.onCropped(page);
+                        },
+                  child: const Text('Apply crop'),
+                ),
+              ],
             ),
           ),
         ),
@@ -118,9 +148,15 @@ class CropScreen extends StatelessWidget {
 /// through the displayed rectangle needs the image's intrinsic size, which is
 /// only known once it has been decoded.
 class _CropCanvas extends StatefulWidget {
-  const _CropCanvas({required this.state});
+  const _CropCanvas({required this.state, required this.onImageSize});
 
   final CropState state;
+
+  /// Reports the page's pixel size once it is known.
+  ///
+  /// The rotation dial needs it: turning a quad in normalised space would
+  /// stretch it, because the two axes are not the same number of pixels.
+  final ValueChanged<Size> onImageSize;
 
   @override
   State<_CropCanvas> createState() => _CropCanvasState();
@@ -180,12 +216,12 @@ class _CropCanvasState extends State<_CropCanvas> {
     final listener = ImageStreamListener(
       (info, _) {
         if (!mounted) return;
-        setState(
-          () => _imageSize = Size(
-            info.image.width.toDouble(),
-            info.image.height.toDouble(),
-          ),
+        final size = Size(
+          info.image.width.toDouble(),
+          info.image.height.toDouble(),
         );
+        setState(() => _imageSize = size);
+        widget.onImageSize(size);
       },
       // An unreadable page still gets a usable overlay: the fallback below
       // treats the whole canvas as the image, which is the old behaviour.
@@ -252,6 +288,11 @@ class _CropCanvasState extends State<_CropCanvas> {
                 enabled: !widget.state.isWorking,
                 onDragPoint: _setDragPoint,
               ),
+            _RotateHandle(
+              quad: widget.state.quad,
+              imageRect: imageRect,
+              enabled: !widget.state.isWorking,
+            ),
             if (_dragPoint != null)
               _CornerMagnifier(focus: _dragPoint!, canvas: canvas),
           ],
@@ -312,6 +353,309 @@ class _CornerMagnifier extends StatelessWidget {
       ),
     );
   }
+}
+
+/// How far the rotate handle hangs below the quad's bottom edge, in pixels.
+const _rotateHandleReach = 56.0;
+
+/// Where the rotate handle sits for [quad], in canvas coordinates.
+///
+/// Hung off the bottom edge along its outward normal, so it follows the shape
+/// as it is dragged and turned instead of floating at a fixed point.
+Offset rotateHandlePosition(PageQuad quad, Rect imageRect) {
+  final left = _toCanvas(quad.bottomLeft, imageRect);
+  final right = _toCanvas(quad.bottomRight, imageRect);
+  final midpoint = Offset.lerp(left, right, 0.5)!;
+
+  final edge = right - left;
+  final length = edge.distance;
+  if (length == 0) return midpoint + const Offset(0, _rotateHandleReach);
+
+  // Normal pointing away from the quad's centre.
+  final normal = Offset(-edge.dy, edge.dx) / length;
+  final centre =
+      [
+        _toCanvas(quad.topLeft, imageRect),
+        _toCanvas(quad.topRight, imageRect),
+        right,
+        left,
+      ].reduce((a, b) => a + b) /
+      4;
+
+  final outward = midpoint - centre;
+  final sign = (normal.dx * outward.dx + normal.dy * outward.dy) < 0
+      ? -1.0
+      : 1.0;
+
+  return midpoint + normal * sign * _rotateHandleReach;
+}
+
+/// The free-rotation handle, dragged in a circle to turn the selection.
+///
+/// Turning the selection turns the result: the correction maps these corners
+/// onto an upright rectangle, so a quad dragged square onto a tilted page comes
+/// out straight. That is also why there is no separate "rotate the image" step
+/// — there is only one resampling pass, and no blank corners to fill.
+class _RotateHandle extends StatefulWidget {
+  const _RotateHandle({
+    required this.quad,
+    required this.imageRect,
+    required this.enabled,
+  });
+
+  final PageQuad quad;
+  final Rect imageRect;
+  final bool enabled;
+
+  @override
+  State<_RotateHandle> createState() => _RotateHandleState();
+}
+
+class _RotateHandleState extends State<_RotateHandle> {
+  /// The quad as it was when this drag began.
+  ///
+  /// Every update is measured against it, so the page follows the finger
+  /// instead of compounding its own rotation and spinning away.
+  PageQuad? _base;
+  Offset _pointer = Offset.zero;
+  double _startAngle = 0;
+
+  Offset get _centre {
+    final corners = [
+      for (final corner in widget.quad.corners)
+        _toCanvas(corner, widget.imageRect),
+    ];
+    return corners.reduce((a, b) => a + b) / 4;
+  }
+
+  Size? get _imageSize {
+    final rect = widget.imageRect;
+    return rect.isEmpty ? null : rect.size;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final position = rotateHandlePosition(widget.quad, widget.imageRect);
+
+    return Positioned(
+      left: position.dx - AppTheme.minimumTouchTarget / 2,
+      top: position.dy - AppTheme.minimumTouchTarget / 2,
+      child: Semantics(
+        label: 'Rotate page',
+        child: ExcludeSemantics(
+          child: GestureDetector(
+            key: ScanKeys.cropRotateHandle,
+            onPanStart: widget.enabled ? (_) => _start(position) : null,
+            onPanUpdate: widget.enabled ? _update : null,
+            onPanEnd: widget.enabled ? (_) => _end() : null,
+            onPanCancel: widget.enabled ? _end : null,
+            child: SizedBox(
+              width: AppTheme.minimumTouchTarget,
+              height: AppTheme.minimumTouchTarget,
+              child: Center(
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Theme.of(context).colorScheme.primary,
+                    border: Border.all(color: Colors.white, width: 2),
+                  ),
+                  child: const Icon(
+                    Icons.rotate_right,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _start(Offset position) {
+    _base = widget.quad;
+    _pointer = position;
+    _startAngle = _angleTo(position);
+  }
+
+  void _update(DragUpdateDetails details) {
+    final base = _base;
+    final size = _imageSize;
+    if (base == null || size == null) return;
+
+    _pointer += details.delta;
+
+    // Measured in canvas space but applied in image space, so the turn matches
+    // the finger even though the page is letterboxed inside the canvas.
+    final degrees = (_angleTo(_pointer) - _startAngle) * 180 / math.pi;
+
+    context.read<CropCubit>().adjust(
+      rotateQuad(base, degrees, widget.imageRect.size),
+    );
+  }
+
+  void _end() => _base = null;
+
+  double _angleTo(Offset point) {
+    final delta = point - _centre;
+    return math.atan2(delta.dy, delta.dx);
+  }
+}
+
+/// Mirror controls.
+///
+/// Separate from the rotate handle because turning past half a turn is a
+/// mirror, not a rotation — a page dragged all the way round comes back to
+/// where it started, so "flipped" is a state the handle can never reach.
+class _FlipControls extends StatelessWidget {
+  const _FlipControls({required this.enabled, required this.quad});
+
+  final bool enabled;
+  final PageQuad quad;
+
+  @override
+  Widget build(BuildContext context) {
+    final cubit = context.read<CropCubit>();
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        TextButton.icon(
+          key: ScanKeys.cropFlipHorizontalButton,
+          onPressed: enabled
+              ? () => cubit.adjust(flipQuadHorizontally(quad))
+              : null,
+          icon: const Icon(Icons.flip),
+          label: const Text('Flip H'),
+        ),
+        const SizedBox(width: 8),
+        TextButton.icon(
+          key: ScanKeys.cropFlipVerticalButton,
+          onPressed: enabled
+              ? () => cubit.adjust(flipQuadVertically(quad))
+              : null,
+          icon: const RotatedBox(quarterTurns: 1, child: Icon(Icons.flip)),
+          label: const Text('Flip V'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Returns [quad] mirrored left-to-right.
+///
+/// Swapping the corners rather than the pixels: the correction maps these four
+/// points onto the output rectangle, so exchanging the left pair with the right
+/// pair produces a mirrored page for free.
+PageQuad flipQuadHorizontally(PageQuad quad) => PageQuad(
+  topLeft: quad.topRight,
+  topRight: quad.topLeft,
+  bottomRight: quad.bottomLeft,
+  bottomLeft: quad.bottomRight,
+);
+
+/// Returns [quad] mirrored top-to-bottom.
+PageQuad flipQuadVertically(PageQuad quad) => PageQuad(
+  topLeft: quad.bottomLeft,
+  topRight: quad.bottomRight,
+  bottomRight: quad.topRight,
+  bottomLeft: quad.topLeft,
+);
+
+/// Returns [quad] turned [degrees] clockwise about its own centre.
+///
+/// Rotating the selection rather than the image is what makes free-form
+/// straightening cheap: the perspective transform already maps these four
+/// corners onto a rectangle, so a quad turned to sit square on a tilted page
+/// produces an upright result. The alternative — rotating the pixels — would
+/// mean a second resampling pass and corners with nothing in them.
+///
+/// The rotation is done in pixel space. Normalised axes are both 0..1 while the
+/// page is not square, so turning the points there would stretch the quad by
+/// the aspect ratio.
+PageQuad rotateQuad(PageQuad quad, double degrees, Size imageSize) {
+  if (degrees == 0 || imageSize.isEmpty) return quad;
+
+  final radians = degrees * math.pi / 180;
+  final cos = math.cos(radians);
+  final sin = math.sin(radians);
+
+  final points = [
+    for (final corner in quad.corners)
+      Offset(corner.x * imageSize.width, corner.y * imageSize.height),
+  ];
+
+  final centre = points.reduce((a, b) => a + b) / points.length.toDouble();
+
+  NormalisedPoint turned(Offset point) {
+    final dx = point.dx - centre.dx;
+    final dy = point.dy - centre.dy;
+
+    return NormalisedPoint(
+      x: (centre.dx + dx * cos - dy * sin) / imageSize.width,
+      y: (centre.dy + dx * sin + dy * cos) / imageSize.height,
+    );
+  }
+
+  return shrinkQuadToFit(
+    PageQuad(
+      topLeft: turned(points[0]),
+      topRight: turned(points[1]),
+      bottomRight: turned(points[2]),
+      bottomLeft: turned(points[3]),
+    ),
+  );
+}
+
+/// Returns [quad] scaled about its centre until it lies inside the page.
+///
+/// Scaled rather than clamped. Clamping each corner independently would drag
+/// the overhanging ones along the edges and leave a different shape than the
+/// one being turned — the selection would visibly deform as it rotated.
+/// Shrinking keeps it the same shape, just smaller, so the crop is never larger
+/// than the image it comes from.
+PageQuad shrinkQuadToFit(PageQuad quad) {
+  final corners = quad.corners;
+  final centre = Offset(
+    corners.map((c) => c.x).reduce((a, b) => a + b) / corners.length,
+    corners.map((c) => c.y).reduce((a, b) => a + b) / corners.length,
+  );
+
+  var scale = 1.0;
+
+  /// The largest factor keeping [value] within 0..1 when scaled about [origin].
+  void limit(double value, double origin) {
+    final delta = value - origin;
+    if (delta > 0) {
+      scale = math.min(scale, (1 - origin) / delta);
+    } else if (delta < 0) {
+      scale = math.min(scale, origin / -delta);
+    }
+  }
+
+  for (final corner in corners) {
+    limit(corner.x, centre.dx);
+    limit(corner.y, centre.dy);
+  }
+
+  // Already inside, or the centre itself is out of bounds and there is no
+  // scaling that helps — leave it be rather than collapse it to a point.
+  if (scale >= 1 || scale <= 0) return quad;
+
+  NormalisedPoint scaled(NormalisedPoint point) => NormalisedPoint(
+    x: (centre.dx + (point.x - centre.dx) * scale).clamp(0.0, 1.0),
+    y: (centre.dy + (point.y - centre.dy) * scale).clamp(0.0, 1.0),
+  );
+
+  return PageQuad(
+    topLeft: scaled(quad.topLeft),
+    topRight: scaled(quad.topRight),
+    bottomRight: scaled(quad.bottomRight),
+    bottomLeft: scaled(quad.bottomLeft),
+  );
 }
 
 /// Maps a normalised page point into canvas coordinates.
@@ -376,6 +720,17 @@ class _QuadPainter extends CustomPainter {
       );
 
     _paintThirds(canvas, points);
+
+    // The stem connecting the rotate handle to the edge it hangs from, so the
+    // handle reads as part of the shape rather than as something floating
+    // beside it.
+    canvas.drawLine(
+      Offset.lerp(points[3], points[2], 0.5)!,
+      rotateHandlePosition(quad, imageRect),
+      Paint()
+        ..strokeWidth = 2
+        ..color = colour,
+    );
   }
 
   /// Draws thirds guides inside the quad.

@@ -92,4 +92,13 @@ abstract final class ScanKeys {
   /// Dragging one moves the whole edge, which is how a page is squared up
   /// against a margin without chasing both of its corners.
   static Key cropEdgeHandle(int edge) => Key('scan_crop_edge_handle_$edge');
+
+  /// The handle dragged in a circle to turn the selection.
+  static const cropRotateHandle = Key('scan_crop_rotate_handle');
+
+  /// Mirrors the selection left-to-right.
+  static const cropFlipHorizontalButton = Key('scan_crop_flip_horizontal');
+
+  /// Mirrors the selection top-to-bottom.
+  static const cropFlipVerticalButton = Key('scan_crop_flip_vertical');
 }
