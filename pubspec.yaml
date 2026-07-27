@@ -33,7 +33,7 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^1.0.9
   flutter_bloc: ^9.1.1
   equatable: ^2.1.0
   bloc_concurrency: ^0.3.0
@@ -54,19 +54,38 @@ dependencies:
   permission_handler: ^12.0.3
   local_auth: ^3.0.2
   image_picker: ^1.2.3
+  # Pinned <11: file_picker 11 skips the Kotlin Gradle Plugin on AGP 9 and
+  # relies on built-in Kotlin, which we cannot enable — google_mlkit_commons
+  # 0.12.0 and google_mlkit_text_recognition 0.16.0 (both latest) still
+  # `apply plugin: "kotlin-android"`, and AGP 9 fails the build if any module
+  # does that while android.builtInKotlin=true. Revisit when ML Kit migrates.
+  # NOTE: staying on 10.x forgoes the CWE-22 path-traversal fix in 11.0.2.
   file_picker: ^10.0.0
+  # Pinned <13.1.0: share_plus 13.1.0+ needs win32 ^6.0.1, but every
+  # file_picker below 12.0.0-beta.1 needs win32 ^5.9.0.
   share_plus: ^12.0.2
   path_provider: ^2.1.6
   intl: ^0.20.3
   uuid: ^4.6.0
   collection: ^1.19.1
   receive_sharing_intent: ^1.9.0
-  pdf_manipulator: ^4.0.0
+  # Vendored fork of pdf_manipulator 4.0.0 — upstream ships no iOS dynamic
+  # binary, so iOS builds otherwise require a Rust toolchain everywhere.
+  # See third_party/pdf_manipulator/LOCAL_PATCH.md. Restore the line below
+  # once upstream publishes ios-*-libpdf_oxide.dylib:
+  #   pdf_manipulator: ^4.0.0
+  pdf_manipulator:
+    path: third_party/pdf_manipulator
+  # Pinned: the Flutter SDK's flutter_test pins meta to exactly 1.18.0.
   meta: ^1.18.0
+  # Pinned <2.1.0+1: dartcv4 2.1.0+1+ needs hooks ^1.0.0, but
+  # pdf_manipulator 4.0.0 needs hooks ^2.0.2.
   dartcv4: ^1.1.8
   stream_transform: ^2.1.1
 dev_dependencies:
   flutter_test:
+    sdk: flutter
+  integration_test:
     sdk: flutter
 
   # The "flutter_lints" package below contains a set of recommended lints to
@@ -75,6 +94,8 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  # Pinned <2.15.2: build_runner 2.15.2+ needs analyzer >=13.3.0, but
+  # isar_community_generator 3.3.2 (latest) pins analyzer <11.
   build_runner: ^2.15.1
   freezed: ^3.2.5
   json_serializable: ^6.14.0
