@@ -107,6 +107,47 @@ void main() {
     });
   });
 
+  group('holding the selection still while the page turns', () {
+    test('re-reading its screen corners through the new placement keeps it '
+        'where it was', () {
+      const quad = PageQuad(
+        topLeft: NormalisedPoint(x: 0.2, y: 0.2),
+        topRight: NormalisedPoint(x: 0.8, y: 0.2),
+        bottomRight: NormalisedPoint(x: 0.8, y: 0.8),
+        bottomLeft: NormalisedPoint(x: 0.2, y: 0.8),
+      );
+
+      final before = PageTransform.fit(
+        imageSize: portrait,
+        available: available,
+        degrees: 0,
+      );
+      final after = PageTransform.fit(
+        imageSize: portrait,
+        available: available,
+        degrees: 20,
+      );
+
+      final held = [for (final c in quad.corners) before.toScreen(c)];
+      final rewritten = [
+        for (final point in held) after.toPage(point, clamp: false),
+      ];
+
+      // The selection belongs to the canvas, so turning the page must not move
+      // it. Mapping the same page coordinates through the new placement instead
+      // would swing the box around with the image — which is the bug.
+      for (var i = 0; i < 4; i++) {
+        final returned = after.toScreen(rewritten[i]);
+        expect(returned.dx, closeTo(held[i].dx, 0.5));
+        expect(returned.dy, closeTo(held[i].dy, 0.5));
+      }
+
+      // And it now describes a different part of the page, because a different
+      // part of the page is under it.
+      expect(rewritten[0].x, isNot(closeTo(quad.topLeft.x, 0.01)));
+    });
+  });
+
   group('replaceCorner', () {
     const quad = PageQuad(
       topLeft: NormalisedPoint(x: 0.1, y: 0.1),

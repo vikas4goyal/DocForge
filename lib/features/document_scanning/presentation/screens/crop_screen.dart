@@ -115,9 +115,14 @@ class PageTransform {
 
   /// Converts a canvas point back onto the page.
   ///
-  /// Clamped to the page: a selection corner outside it would describe pixels
-  /// that do not exist, which the correction would then have to guess at.
-  NormalisedPoint toPage(Offset point) {
+  /// [clamp] keeps the result on the page, which is what a corner being dragged
+  /// wants: a corner pulled past the edge would describe pixels that do not
+  /// exist. Turning the page wants the opposite — the selection belongs to the
+  /// canvas and must keep its shape, so a corner the page has swung out from
+  /// under is left where it is rather than dragged inward, which would deform
+  /// the box as it turned. The correction samples the nearest edge for anything
+  /// outside, so the overhang is a smeared border rather than a failure.
+  NormalisedPoint toPage(Offset point, {bool clamp = true}) {
     final delta = point - centre;
     final cos = math.cos(-radians);
     final sin = math.sin(-radians);
@@ -125,9 +130,12 @@ class PageTransform {
     final dx = delta.dx * cos - delta.dy * sin;
     final dy = delta.dx * sin + delta.dy * cos;
 
+    final x = dx / (imageSize.width * scale) + 0.5;
+    final y = dy / (imageSize.height * scale) + 0.5;
+
     return NormalisedPoint(
-      x: (dx / (imageSize.width * scale) + 0.5).clamp(0.0, 1.0),
-      y: (dy / (imageSize.height * scale) + 0.5).clamp(0.0, 1.0),
+      x: clamp ? x.clamp(0.0, 1.0) : x,
+      y: clamp ? y.clamp(0.0, 1.0) : y,
     );
   }
 }
@@ -156,6 +164,61 @@ class CropScreen extends StatefulWidget {
 }
 
 class _CropScreenState extends State<CropScreen> {
+  /// How far the page has been turned, in degrees.
+  ///
+  /// A view concern only. The selection is stored against the unrotated
+  /// capture, so what leaves this screen is the document's outline in the
+  /// capture's own coordinates — which is what the correction expects.
+  double _rotation = 0;
+
+  /// The area the page is laid out in, reported by the canvas.
+  Rect? _available;
+
+  /// The page's pixel size, once decoded.
+  Size? _imageSize;
+
+  /// Turns the page while leaving the selection where it is on screen.
+  ///
+  /// The selection belongs to the canvas, not to the page: turning the page
+  /// under a frame that stays put is what makes straightening feel like
+  /// straightening. Because the selection is *stored* against the page, holding
+  /// it still on screen means rewriting it — its screen corners are read
+  /// through the old placement and written back through the new one, which also
+  /// absorbs the rescale that comes with turning.
+  void _rotate(BuildContext context, double degrees) {
+    final available = _available;
+    final imageSize = _imageSize;
+
+    if (available == null || imageSize == null) {
+      setState(() => _rotation = degrees);
+      return;
+    }
+
+    final before = PageTransform.fit(
+      imageSize: imageSize,
+      available: available,
+      degrees: _rotation,
+    );
+    final after = PageTransform.fit(
+      imageSize: imageSize,
+      available: available,
+      degrees: degrees,
+    );
+
+    final quad = context.read<CropCubit>().state.quad;
+    final held = [for (final corner in quad.corners) before.toScreen(corner)];
+
+    setState(() => _rotation = degrees);
+    context.read<CropCubit>().adjust(
+      PageQuad(
+        topLeft: after.toPage(held[0], clamp: false),
+        topRight: after.toPage(held[1], clamp: false),
+        bottomRight: after.toPage(held[2], clamp: false),
+        bottomLeft: after.toPage(held[3], clamp: false),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<CropCubit, CropState>(
@@ -186,7 +249,23 @@ class _CropScreenState extends State<CropScreen> {
         ),
         body: Stack(
           children: [
-            Positioned.fill(child: _CropCanvas(state: state)),
+            Positioned.fill(
+              child: _CropCanvas(
+                state: state,
+                rotation: _rotation,
+                onLayout: (available, imageSize) {
+                  if (_available == available && _imageSize == imageSize) return;
+                  // Reported from a build, so applied after it.
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    setState(() {
+                      _available = available;
+                      _imageSize = imageSize;
+                    });
+                  });
+                },
+              ),
+            ),
             if (state.isWorking)
               const Positioned.fill(
                 child: ColoredBox(
@@ -199,8 +278,17 @@ class _CropScreenState extends State<CropScreen> {
         bottomNavigationBar: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: FilledButton(
-              key: ScanKeys.cropConfirmButton,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _RotationSlider(
+                  degrees: _rotation,
+                  enabled: !state.isWorking,
+                  onChanged: (value) => _rotate(context, value),
+                ),
+                const SizedBox(height: 8),
+                FilledButton(
+                  key: ScanKeys.cropConfirmButton,
               onPressed: state.isWorking
                   ? null
                   : () async {
@@ -209,7 +297,9 @@ class _CropScreenState extends State<CropScreen> {
                       );
                       if (page != null) widget.onCropped(page);
                     },
-              child: const Text('Apply crop'),
+                  child: const Text('Apply crop'),
+                ),
+              ],
             ),
           ),
         ),
@@ -218,11 +308,86 @@ class _CropScreenState extends State<CropScreen> {
   }
 }
 
+/// Free-form rotation for the page beneath the selection.
+///
+/// A slider rather than a handle dragged in a circle: straightening a scan is
+/// usually a correction of a few degrees, and a degree is a couple of pixels of
+/// travel on a handle but a comfortable movement on a track. The reading is
+/// shown because "about right" is not the same as square.
+///
+/// Runs both ways from zero. A page can be off in either direction, and forcing
+/// a counter-clockwise correction to be entered as 350-odd degrees would make
+/// the common case the awkward one.
+class _RotationSlider extends StatelessWidget {
+  const _RotationSlider({
+    required this.degrees,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final double degrees;
+  final bool enabled;
+  final ValueChanged<double> onChanged;
+
+  static const _range = 180.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        IconButton(
+          key: ScanKeys.cropRotationReset,
+          tooltip: 'Straighten',
+          onPressed: enabled && degrees != 0 ? () => onChanged(0) : null,
+          icon: const Icon(Icons.settings_backup_restore),
+        ),
+        Expanded(
+          child: Semantics(
+            label: 'Rotate page',
+            value: '${degrees.round()} degrees',
+            child: Slider(
+              key: ScanKeys.cropRotationSlider,
+              value: degrees.clamp(-_range, _range),
+              min: -_range,
+              max: _range,
+              label: '${degrees.round()}°',
+              onChanged: enabled ? onChanged : null,
+            ),
+          ),
+        ),
+        SizedBox(
+          width: 44,
+          child: Text(
+            '${degrees.round()}°',
+            textAlign: TextAlign.end,
+            style: Theme.of(context).textTheme.labelMedium,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 /// The page, its selection, and the handles that move both.
 class _CropCanvas extends StatefulWidget {
-  const _CropCanvas({required this.state});
+  const _CropCanvas({
+    required this.state,
+    required this.rotation,
+    required this.onLayout,
+  });
 
   final CropState state;
+
+  /// How far the page is turned. Owned by the screen, which also holds the
+  /// slider that changes it.
+  final double rotation;
+
+  /// Reports the area the page was laid out in, and its pixel size.
+  ///
+  /// The screen needs both to keep the selection still while the page turns:
+  /// it reads the selection's screen position through the old placement and
+  /// writes it back through the new one.
+  final void Function(Rect available, Size? imageSize) onLayout;
 
   @override
   State<_CropCanvas> createState() => _CropCanvasState();
@@ -233,13 +398,6 @@ class _CropCanvasState extends State<_CropCanvas> {
   ImageStream? _stream;
   ImageStreamListener? _listener;
   Size? _imageSize;
-
-  /// How far the page has been turned, in degrees.
-  ///
-  /// A view concern only. The selection is stored against the unrotated page,
-  /// so leaving this screen carries the document's outline in the capture's own
-  /// coordinates — exactly what the correction expects.
-  double _rotation = 0;
 
   /// Where the finger is while a handle is being dragged, in canvas space.
   ///
@@ -329,12 +487,14 @@ class _CropCanvasState extends State<_CropCanvas> {
       builder: (context, constraints) {
         final canvas = Size(constraints.maxWidth, constraints.maxHeight);
         final available = _available(canvas);
+        widget.onLayout(available, _imageSize);
+
         final transform = PageTransform.fit(
           // A square stand-in until the real size arrives, so the overlay is
           // never missing — only briefly less accurate.
           imageSize: _imageSize ?? const Size(1000, 1000),
           available: available,
-          degrees: _rotation,
+          degrees: widget.rotation,
         );
 
         final provider = _provider;
@@ -368,21 +528,6 @@ class _CropCanvasState extends State<_CropCanvas> {
                 enabled: enabled,
                 onDragPoint: _setDragPoint,
               ),
-            _RotateHandle(
-              centre: transform.centre,
-              position: Offset(
-                transform.centre.dx,
-                math.min(
-                  transform.centre.dy +
-                      transform.rotatedSize.height / 2 +
-                      _rotateHandleReach / 2,
-                  canvas.height - AppTheme.minimumTouchTarget / 2,
-                ),
-              ),
-              rotation: _rotation,
-              enabled: enabled,
-              onChanged: (degrees) => setState(() => _rotation = degrees),
-            ),
             if (_dragPoint != null)
               _CornerMagnifier(focus: _dragPoint!, canvas: canvas),
           ],
@@ -465,102 +610,6 @@ class _CornerMagnifier extends StatelessWidget {
         ),
       ),
     );
-  }
-}
-
-/// Turns the page beneath the selection.
-///
-/// Sits at a fixed point below the page rather than hanging off the selection:
-/// it turns the page, not the box, so attaching it to an edge that does not move
-/// would say the opposite. A full turn is available, which is why there are no
-/// separate flip controls — every mirrored-looking orientation is reachable by
-/// continuing to turn.
-class _RotateHandle extends StatefulWidget {
-  const _RotateHandle({
-    required this.centre,
-    required this.position,
-    required this.rotation,
-    required this.enabled,
-    required this.onChanged,
-  });
-
-  /// The point the page turns about, in canvas coordinates.
-  final Offset centre;
-
-  /// Where the handle is drawn.
-  final Offset position;
-
-  final double rotation;
-  final bool enabled;
-  final ValueChanged<double> onChanged;
-
-  @override
-  State<_RotateHandle> createState() => _RotateHandleState();
-}
-
-class _RotateHandleState extends State<_RotateHandle> {
-  /// The rotation and pointer angle this drag began from.
-  ///
-  /// Each update is measured against them so the page follows the finger rather
-  /// than compounding its own rotation and spinning away.
-  double _startRotation = 0;
-  double _startAngle = 0;
-  Offset _pointer = Offset.zero;
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      left: widget.position.dx - AppTheme.minimumTouchTarget / 2,
-      top: widget.position.dy - AppTheme.minimumTouchTarget / 2,
-      child: Semantics(
-        label: 'Rotate page',
-        value: '${widget.rotation.round()} degrees',
-        child: ExcludeSemantics(
-          child: GestureDetector(
-            key: ScanKeys.cropRotateHandle,
-            onPanStart: widget.enabled ? (_) => _start() : null,
-            onPanUpdate: widget.enabled ? _update : null,
-            child: SizedBox(
-              width: AppTheme.minimumTouchTarget,
-              height: AppTheme.minimumTouchTarget,
-              child: Center(
-                child: Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Theme.of(context).colorScheme.primary,
-                    border: Border.all(color: Colors.white, width: 2),
-                  ),
-                  child: const Icon(
-                    Icons.rotate_right,
-                    size: 20,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _start() {
-    _startRotation = widget.rotation;
-    _pointer = widget.position;
-    _startAngle = _angleTo(widget.position);
-  }
-
-  void _update(DragUpdateDetails details) {
-    _pointer += details.delta;
-    final swept = (_angleTo(_pointer) - _startAngle) * 180 / math.pi;
-    widget.onChanged(_startRotation + swept);
-  }
-
-  double _angleTo(Offset point) {
-    final delta = point - widget.centre;
-    return math.atan2(delta.dy, delta.dx);
   }
 }
 
