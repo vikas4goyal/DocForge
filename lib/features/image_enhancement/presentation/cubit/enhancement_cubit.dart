@@ -7,6 +7,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/result.dart';
@@ -15,6 +16,7 @@ import 'package:doc_forge/core/isolates/cancellation.dart';
 import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
 import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
+import 'package:flutter/painting.dart' show FileImage;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Names the file an enhancement result is written to.
@@ -66,37 +68,84 @@ class EnhancementCubit extends Cubit<EnhancementState> {
   /// adjustment still feels immediate.
   static const _previewDebounceDelay = Duration(milliseconds: 120);
 
+  /// Which control produced the most recent adjustment.
+  ///
+  /// Consecutive changes from the same control are one undo step: dragging the
+  /// brightness slider is a single decision, however many values it passed
+  /// through on the way. Moving to a different control ends the step.
+  Object? _openAdjustment;
+
   /// Selects [filter] and re-renders the preview.
-  Future<void> selectFilter(EnhancementFilter filter) =>
-      _updateSettings(state.settings.copyWith(filter: filter));
+  Future<void> selectFilter(EnhancementFilter filter) => _updateSettings(
+    state.settings.copyWith(filter: filter),
+    // Keyed by the chosen filter, not by "the filter control": picking
+    // grayscale after black and white is two decisions, and undo has to step
+    // back through both.
+    adjustment: (#filter, filter),
+  );
 
   /// Sets the brightness offset and re-renders the preview.
-  Future<void> setBrightness(double value) =>
-      _updateSettings(state.settings.copyWith(brightness: value));
+  Future<void> setBrightness(double value) => _updateSettings(
+    state.settings.copyWith(brightness: value),
+    adjustment: #brightness,
+  );
 
   /// Sets the contrast offset and re-renders the preview.
-  Future<void> setContrast(double value) =>
-      _updateSettings(state.settings.copyWith(contrast: value));
+  Future<void> setContrast(double value) => _updateSettings(
+    state.settings.copyWith(contrast: value),
+    adjustment: #contrast,
+  );
 
   /// Sets the sharpening amount and re-renders the preview.
   Future<void> setSharpen(double value) =>
-      _updateSettings(state.settings.copyWith(sharpen: value));
+      _updateSettings(state.settings.copyWith(sharpen: value), adjustment: #sharpen);
 
   /// Turns shadow removal on or off and re-renders the preview.
-  Future<void> setShadowRemoval({required bool enabled}) =>
-      _updateSettings(state.settings.copyWith(shadowRemoval: enabled));
+  Future<void> setShadowRemoval({required bool enabled}) => _updateSettings(
+    state.settings.copyWith(shadowRemoval: enabled),
+    adjustment: (#shadowRemoval, enabled),
+  );
+
+  /// Steps back through one adjustment.
+  ///
+  /// Distinct from [reset], which returns to the defaults in one go. Undo walks
+  /// the decisions the user actually made — auto enhance, then black and white,
+  /// then a brightness change — one click at a time.
+  Future<void> undo() async {
+    if (!state.canUndo) return;
+
+    final history = [...state.history];
+    final previous = history.removeLast();
+
+    // The step is closed, so the next adjustment starts a new one rather than
+    // coalescing into the one just undone.
+    _openAdjustment = null;
+
+    emit(state.copyWith(settings: previous, history: history));
+    await _renderPreview(previous);
+  }
 
   /// Returns every setting to its default and shows the unmodified page.
   ///
   /// No preview is rendered: the default settings are the captured page, and
   /// the file for it already exists.
-  void reset() => emit(
-    state.copyWith(
-      status: EnhancementStatus.ready,
-      settings: EnhancementSettings.none,
-      previewPath: state.page?.imagePath,
-    ),
-  );
+  void reset() {
+    // Recorded like any other adjustment, so a reset pressed by mistake does
+    // not cost the user everything they had set up.
+    final history = state.hasChanges
+        ? [...state.history, state.settings]
+        : state.history;
+    _openAdjustment = null;
+
+    emit(
+      state.copyWith(
+        status: EnhancementStatus.ready,
+        settings: EnhancementSettings.none,
+        history: history,
+        previewPath: state.page?.imagePath,
+      ),
+    );
+  }
 
   /// Re-renders the preview after a failure.
   Future<void> retry() => _renderPreview(state.settings);
@@ -184,10 +233,22 @@ class EnhancementCubit extends Cubit<EnhancementState> {
   void cancelApplyToAll() => _batchToken?.cancel();
 
   /// Applies [settings] and renders a preview of them.
-  Future<void> _updateSettings(EnhancementSettings settings) async {
+  Future<void> _updateSettings(
+    EnhancementSettings settings, {
+    required Object adjustment,
+  }) async {
+    // A new step records where it started; continuing an open one does not, so
+    // a drag leaves a single entry rather than one per frame.
+    final startsNewStep = adjustment != _openAdjustment;
+    _openAdjustment = adjustment;
+
+    final history = startsNewStep
+        ? [...state.history, state.settings]
+        : state.history;
+
     // The settings themselves are emitted at once, so every control stays
     // attached to the finger; only the expensive render is deferred.
-    emit(state.copyWith(settings: settings));
+    emit(state.copyWith(settings: settings, history: history));
 
     _previewDebounce?.cancel();
     _previewDebounce = Timer(_previewDebounceDelay, () {
@@ -213,6 +274,15 @@ class EnhancementCubit extends Cubit<EnhancementState> {
     // A superseded preview is dropped rather than emitted. Its result describes
     // settings the user has already moved past.
     if (generation != _previewGeneration || isClosed) return;
+
+    // Every preview is written to the same path, and Flutter's image cache is
+    // keyed by path — not by the bytes at it. Without evicting, the first
+    // preview decoded is the one shown for the rest of the session: choosing
+    // black and white or grayscale changed the file but not the picture.
+    if (result case Success(:final value)) {
+      await FileImage(File(value)).evict();
+      if (generation != _previewGeneration || isClosed) return;
+    }
 
     emit(switch (result) {
       Success(:final value) => state.copyWith(

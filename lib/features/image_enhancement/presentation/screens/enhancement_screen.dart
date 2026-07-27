@@ -214,6 +214,18 @@ class _Actions extends StatelessWidget {
       children: [
         Expanded(
           child: OutlinedButton.icon(
+            key: EnhanceKeys.undoButton,
+            // Steps back one adjustment, where Reset beside it clears them all.
+            // Both are offered because "that last change was wrong" and "start
+            // again" are different intentions, and only one of them was served.
+            onPressed: state.canUndo ? cubit.undo : null,
+            icon: const Icon(Icons.undo),
+            label: const Text('Undo'),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: OutlinedButton.icon(
             key: EnhanceKeys.resetButton,
             onPressed: state.hasChanges ? cubit.reset : null,
             icon: const Icon(Icons.restart_alt),

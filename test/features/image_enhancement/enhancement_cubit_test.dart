@@ -20,6 +20,10 @@ import 'enhancement_test_support.dart';
 const previewDebounceWait = Duration(milliseconds: 200);
 
 void main() {
+  // The Cubit evicts each rendered preview from Flutter's image cache, which
+  // is keyed by path rather than by contents, so a binding has to exist.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   const magic = EnhancementSettings(filter: EnhancementFilter.magicColour);
 
   setUp(resetJobRecording);
@@ -189,6 +193,90 @@ void main() {
         expect(recordedRequests.last.settings.brightness, 0.25);
       },
     );
+  });
+
+  group('undo', () {
+    test('steps back through one adjustment at a time', () async {
+      final cubit = build();
+
+      await cubit.selectFilter(EnhancementFilter.autoEnhance);
+      await cubit.selectFilter(EnhancementFilter.blackAndWhite);
+      await cubit.setBrightness(0.4);
+
+      expect(cubit.state.settings.filter, EnhancementFilter.blackAndWhite);
+      expect(cubit.state.settings.brightness, 0.4);
+
+      // Back past the brightness change only: the filter it was applied over
+      // must survive, or undo would be a reset that took three clicks.
+      await cubit.undo();
+      expect(cubit.state.settings.brightness, 0);
+      expect(cubit.state.settings.filter, EnhancementFilter.blackAndWhite);
+
+      await cubit.undo();
+      expect(cubit.state.settings.filter, EnhancementFilter.autoEnhance);
+
+      await cubit.undo();
+      expect(cubit.state.settings, EnhancementSettings.none);
+      expect(cubit.state.canUndo, isFalse);
+
+      await cubit.close();
+    });
+
+    test('a drag is one step, not one per value', () async {
+      final cubit = build();
+
+      // What a finger moving across the slider produces.
+      await cubit.setBrightness(0.1);
+      await cubit.setBrightness(0.2);
+      await cubit.setBrightness(0.3);
+
+      await cubit.undo();
+
+      expect(cubit.state.settings.brightness, 0);
+      expect(cubit.state.canUndo, isFalse);
+
+      await cubit.close();
+    });
+
+    test('moving to another control ends the step', () async {
+      final cubit = build();
+
+      await cubit.setBrightness(0.3);
+      await cubit.setContrast(0.2);
+
+      await cubit.undo();
+
+      // Only the contrast change is undone; the brightness before it stands.
+      expect(cubit.state.settings.contrast, 0);
+      expect(cubit.state.settings.brightness, 0.3);
+
+      await cubit.close();
+    });
+
+    test('a reset can itself be undone', () async {
+      final cubit = build();
+
+      await cubit.selectFilter(EnhancementFilter.magicColour);
+      cubit.reset();
+      expect(cubit.state.settings, EnhancementSettings.none);
+
+      await cubit.undo();
+
+      expect(cubit.state.settings.filter, EnhancementFilter.magicColour);
+
+      await cubit.close();
+    });
+
+    test('there is nothing to undo before anything is adjusted', () async {
+      final cubit = build();
+
+      expect(cubit.state.canUndo, isFalse);
+      await cubit.undo();
+
+      expect(cubit.state.settings, EnhancementSettings.none);
+
+      await cubit.close();
+    });
   });
 
   group('reset', () {

@@ -30,6 +30,7 @@ class EnhancementState extends Equatable {
     required this.pages,
     required this.index,
     required this.settings,
+    this.history = const [],
     this.previewPath,
     this.progress,
     this.failure,
@@ -64,6 +65,20 @@ class EnhancementState extends Equatable {
   /// Held separately from the page's stored settings so leaving the screen
   /// without saving leaves the page untouched, which the spec requires.
   final EnhancementSettings settings;
+
+  /// Settings as they were before each adjustment, oldest first.
+  ///
+  /// One entry per adjustment the user would think of as a step: choosing a
+  /// filter, or moving a slider until they move on to something else. A drag
+  /// contributes a single entry rather than one per frame, because undo has to
+  /// step back through decisions, not through pixels.
+  ///
+  /// Distinct from reset, which returns to the defaults in one go and is itself
+  /// recorded here, so it can be undone like anything else.
+  final List<EnhancementSettings> history;
+
+  /// Whether there is an adjustment to step back through.
+  bool get canUndo => history.isNotEmpty;
 
   /// Path to the rendered preview, once one exists.
   ///
@@ -115,6 +130,7 @@ class EnhancementState extends Equatable {
     List<PageRef>? pages,
     int? index,
     EnhancementSettings? settings,
+    List<EnhancementSettings>? history,
     String? previewPath,
     Progress? progress,
     Failure? failure,
@@ -123,6 +139,7 @@ class EnhancementState extends Equatable {
     pages: pages ?? this.pages,
     index: index ?? this.index,
     settings: settings ?? this.settings,
+    history: history ?? this.history,
     previewPath: previewPath ?? this.previewPath,
     progress: progress,
     failure: failure,
@@ -134,6 +151,7 @@ class EnhancementState extends Equatable {
     pages,
     index,
     settings,
+    history,
     previewPath,
     progress,
     failure,

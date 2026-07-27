@@ -41,6 +41,9 @@ abstract final class EnhanceKeys {
   /// The control that returns every setting to its default.
   static const resetButton = Key('enhance_reset_button');
 
+  /// The control that steps back through one adjustment.
+  static const undoButton = Key('enhance_undo_button');
+
   /// The control that applies the current settings to every page.
   static const applyToAllButton = Key('enhance_apply_to_all_button');
 
