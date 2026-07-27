@@ -18,10 +18,14 @@ import 'package:doc_forge/features/document_library/application/usecases/documen
 import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/document_file_store.dart';
 import 'package:doc_forge/features/document_library/infrastructure/datasource/document_file_store.dart';
+import 'package:doc_forge/features/document_library/infrastructure/document_title_index.dart';
 import 'package:doc_forge/features/document_library/infrastructure/library_contracts_impl.dart';
 import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:doc_forge/features/document_library/infrastructure/repositories/isar_library_repositories.dart';
+import 'package:doc_forge/features/document_search/domain/repositories/search_repository.dart';
+import 'package:doc_forge/features/document_search/infrastructure/repositories/indexed_search_repository.dart';
 import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
+import 'package:doc_forge/features/ocr/infrastructure/ocr_search_index.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -32,6 +36,7 @@ import 'package:path_provider/path_provider.dart';
 class LibraryModule {
   /// Creates the module over an already-built object graph.
   const LibraryModule({
+    required this.search,
     required this.isar,
     required this.documentsDirectory,
     required this.loadDocuments,
@@ -116,6 +121,13 @@ class LibraryModule {
   /// be kept consistent across a permanent deletion.
   final Isar isar;
 
+  /// Searches titles and recognised text together.
+  ///
+  /// Built here rather than in its own module because it queries the library's
+  /// database and the OCR collection in the same instance, and splitting it out
+  /// would mean handing that instance to a second builder for one repository.
+  final SearchRepository search;
+
   /// Where document files are written.
   ///
   /// Exposed for the same reason: PDF generation writes into the directory the
@@ -177,6 +189,11 @@ LibraryModule buildLibraryModuleOver({
   final storageSummary = ComputeStorageSummary(documents, files);
 
   return LibraryModule(
+    search: IndexedSearchRepository(
+      IsarDocumentTitleIndex(isar),
+      IsarOcrSearchIndex(isar),
+      LibraryDocumentReader(documents, pages),
+    ),
     isar: isar,
     documentsDirectory: documentsDirectory,
     loadDocuments: LoadDocuments(documents),

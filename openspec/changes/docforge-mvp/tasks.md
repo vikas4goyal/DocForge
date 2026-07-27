@@ -201,21 +201,21 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 11. Search
 
-- [ ] 11.1 Implement the `document-search` domain layer: query, filter and result value objects including the match snippet and its source.
-- [ ] 11.2 Implement `SearchDocuments` using indexed Isar queries over the title index and the `OcrTextEntity` word index, merging by document id.
-- [ ] 11.3 Unit-test `SearchDocuments`: title match, OCR-text match, case insensitivity, snippet generation, archived exclusion.
-- [ ] 11.4 Implement folder, creation-date and modified-date filters as indexed query clauses; unit-test each and their combination.
-- [ ] 11.5 Implement `SearchBloc` with the debounced `restartable()` event transformer, per the justification in `design.md` §3.
-- [ ] 11.6 Write `bloc_test` coverage for `SearchBloc`: incremental results, debounce collapsing rapid input, superseded-query cancellation, clear, empty, failure.
-- [ ] 11.7 Implement the search screen with the input field, clear control, filters and results list using the specified keys.
-- [ ] 11.8 Implement the `SearchResultRow` widget showing the match snippet, with keys and semantics labels.
-- [ ] 11.9 Widget-test the search screen and result row, including the initial, empty and error states.
-- [ ] 11.10 Verify search performance against a fixture library of several thousand documents with OCR text; assert the UI thread is not blocked.
-- [ ] 11.11 Add `@Preview()` entries for the search screen and its widgets across all required states, form factors and themes.
-- [ ] 11.12 Verify search accessibility, including that the result count is announced when results change.
-- [ ] 11.13 Add golden tests for the search screen in light and dark, phone and tablet.
-- [ ] 11.14 Add dartdoc to all new public APIs and inline comments on the index choices behind search.
-- [ ] 11.15 Run `dart format`, `flutter analyze`, the layering check and coverage for group 11.
+- [x] 11.1 Implement the `document-search` domain layer: query, filter and result value objects including the match snippet and its source.
+- [x] 11.2 Implement `SearchDocuments` using indexed Isar queries over the title index and the `OcrTextEntity` word index, merging by document id.
+- [x] 11.3 Unit-test `SearchDocuments`: title match, OCR-text match, case insensitivity, snippet generation, archived exclusion.
+- [x] 11.4 Implement folder, creation-date and modified-date filters as indexed query clauses; unit-test each and their combination.
+- [x] 11.5 Implement `SearchBloc` with the debounced `restartable()` event transformer, per the justification in `design.md` §3.
+- [x] 11.6 Write `bloc_test` coverage for `SearchBloc`: incremental results, debounce collapsing rapid input, superseded-query cancellation, clear, empty, failure.
+- [x] 11.7 Implement the search screen with the input field, clear control, filters and results list using the specified keys.
+- [x] 11.8 Implement the `SearchResultRow` widget showing the match snippet, with keys and semantics labels.
+- [x] 11.9 Widget-test the search screen and result row, including the initial, empty and error states.
+- [x] 11.10 Verify search performance against a fixture library of several thousand documents with OCR text; assert the UI thread is not blocked.
+- [x] 11.11 Add `@Preview()` entries for the search screen and its widgets across all required states, form factors and themes.
+- [x] 11.12 Verify search accessibility, including that the result count is announced when results change.
+- [x] 11.13 Add golden tests for the search screen in light and dark, phone and tablet.
+- [x] 11.14 Add dartdoc to all new public APIs and inline comments on the index choices behind search.
+- [x] 11.15 Run `dart format`, `flutter analyze`, the layering check and coverage for group 11.
 
 ## 12. Sharing, printing and export
 

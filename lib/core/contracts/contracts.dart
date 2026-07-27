@@ -102,6 +102,59 @@ abstract interface class PageBundleSink {
   });
 }
 
+/// Finds documents whose *title* matches a search word.
+///
+/// Implemented by `document-library`, which owns the document collection and
+/// its title index. Consumed by `document-search`, which may not read another
+/// feature's storage directly.
+abstract interface class DocumentTitleIndex {
+  /// Returns unarchived documents whose title has a word starting with [word].
+  ///
+  /// An empty [word] matches every unarchived document, which is what makes a
+  /// filter-only search — "everything in this folder last March" — work.
+  ///
+  /// Archived documents are excluded here rather than by the caller: the
+  /// archive is where a user puts things they have finished with, and the rule
+  /// belongs with the query that could otherwise surface them.
+  Future<Result<List<Document>>> documentsMatchingWord(
+    String word, {
+    int limit = 50,
+  });
+}
+
+/// One document's recognised text, as search sees it.
+class OcrIndexHit {
+  /// Creates a hit for [documentId].
+  const OcrIndexHit({required this.documentId, required this.text});
+
+  /// The document whose page matched.
+  final DocumentId documentId;
+
+  /// The page's recognised text, as it was read.
+  ///
+  /// Carried so the caller can build a snippet showing the match in context;
+  /// reassembling one from a word index is not possible.
+  ///
+  /// Original casing, deliberately. The index stores a lower-cased copy for
+  /// matching, but a snippet is shown to the user — quoting a document back at
+  /// them in lower case makes it look like something else.
+  final String text;
+}
+
+/// Finds documents whose *recognised text* matches a search word.
+///
+/// Implemented by `ocr`, which owns the text collection and its word index.
+abstract interface class OcrSearchIndex {
+  /// Returns one hit per document with a page whose text matches [word].
+  ///
+  /// Grouped by document rather than by page: a fifty-page document whose every
+  /// page matched is one result, not fifty.
+  Future<Result<List<OcrIndexHit>>> documentsMatchingWord(
+    String word, {
+    int limit = 50,
+  });
+}
+
 /// Reports how much storage the library consumes.
 ///
 /// Implemented by `document-library`. Consumed by the home shell and settings.

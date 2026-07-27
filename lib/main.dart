@@ -28,6 +28,8 @@ import 'package:doc_forge/features/document_library/presentation/screens/documen
 import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/folder_detail_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
+import 'package:doc_forge/features/document_search/presentation/bloc/search_bloc.dart';
+import 'package:doc_forge/features/document_search/presentation/screens/search_screen.dart';
 import 'package:doc_forge/features/document_viewer/application/usecases/viewer_usecases.dart';
 import 'package:doc_forge/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
 import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_cubit.dart';
@@ -285,7 +287,15 @@ AppScreens _screens(
             context.push(AppRoutes.documentDetail(documentId)),
       ),
     ),
-    search: (_) => const _Placeholder('Search'),
+    search: (context) => BlocProvider(
+      create: (_) => SearchBloc(library.search),
+      child: SearchScreen(
+        onOpenDocument: (id) => context.push(AppRoutes.documentDetail(id)),
+        // Folders are loaded lazily by the screen's own filter in a later
+        // step; an empty list simply means the filter offers "all folders".
+        folders: const [],
+      ),
+    ),
     favourites: (context) => documentList(
       context,
       title: 'Favourites',

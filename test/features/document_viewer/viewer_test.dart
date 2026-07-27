@@ -114,7 +114,10 @@ void main() {
 
       final result = await harness.open(const DocumentId('missing'));
 
-      expect((result as Failed<ViewableDocument>).failure, isA<NotFoundFailure>());
+      expect(
+        (result as Failed<ViewableDocument>).failure,
+        isA<NotFoundFailure>(),
+      );
     });
 
     test('reports a corrupt file as such', () async {
@@ -140,20 +143,23 @@ void main() {
       expect((result as Failed<ViewableDocument>).failure, isA<AuthFailure>());
     });
 
-    test('a stored password opens a protected document without asking', () async {
-      final harness = ViewerHarness(
-        renderer: FakePdfRenderer(requiredPassword: 'secret'),
-      );
-      await harness.secrets.write(
-        SecureStorageKeys.pdfPassword('doc-1'),
-        'secret',
-      );
+    test(
+      'a stored password opens a protected document without asking',
+      () async {
+        final harness = ViewerHarness(
+          renderer: FakePdfRenderer(requiredPassword: 'secret'),
+        );
+        await harness.secrets.write(
+          SecureStorageKeys.pdfPassword('doc-1'),
+          'secret',
+        );
 
-      final result = await harness.open(const DocumentId('doc-1'));
+        final result = await harness.open(const DocumentId('doc-1'));
 
-      expect(result, isA<Success<ViewableDocument>>());
-      expect((result as Success<ViewableDocument>).value.isProtected, isTrue);
-    });
+        expect(result, isA<Success<ViewableDocument>>());
+        expect((result as Success<ViewableDocument>).value.isProtected, isTrue);
+      },
+    );
 
     test('a typed password takes precedence over a stored one', () async {
       // A user retyping a password is correcting something.
@@ -208,8 +214,9 @@ void main() {
       );
 
       expect(
-        (await harness.secrets.read(SecureStorageKeys.pdfPassword('doc-1')))
-            .valueOrNull,
+        (await harness.secrets.read(
+          SecureStorageKeys.pdfPassword('doc-1'),
+        )).valueOrNull,
         'secret',
       );
       // Nothing reached preferences: the store the use case is given is the
@@ -323,8 +330,9 @@ void main() {
 
       expect(cubit.state.status, ViewerStatus.ready);
       expect(
-        (await locked.secrets.read(SecureStorageKeys.pdfPassword('doc-1')))
-            .valueOrNull,
+        (await locked.secrets.read(
+          SecureStorageKeys.pdfPassword('doc-1'),
+        )).valueOrNull,
         'secret',
       );
 
@@ -345,8 +353,9 @@ void main() {
       expect(cubit.state.document, isNull);
       // Nothing was remembered, because nothing worked.
       expect(
-        (await locked.secrets.read(SecureStorageKeys.pdfPassword('doc-1')))
-            .valueOrNull,
+        (await locked.secrets.read(
+          SecureStorageKeys.pdfPassword('doc-1'),
+        )).valueOrNull,
         isNull,
       );
 

@@ -718,3 +718,51 @@ viewer's job is to show the document.
 **Tablet width goes to a text panel, not to a bigger page.** A page scaled past
 its own resolution shows no more detail, while the recognised text is genuinely
 useful and has nowhere to live on a phone.
+
+### 26. Search
+
+**A Bloc, and the only one in the application.** Search is the single feature
+whose *event stream* needs transforming: keystrokes must be debounced so a
+five-letter word runs one query rather than five, and each new query must cancel
+the one before it so a slow result cannot land after a newer one. `restartable()`
+over a debounced stream expresses both. A Cubit has no event stream to transform
+and would need that logic hand-rolled with timers and generation counters —
+which is precisely the shape §3 says to prefer a Bloc for.
+
+Filters are *not* debounced. A filter change is one deliberate action, not a
+stream of them, and waiting a quarter of a second after a tap reads as lag.
+
+**A layering violation was found and fixed here.** The first implementation read
+the document collection and the OCR collection directly from one Isar instance —
+`document_search` importing `document_library` and `ocr`, which the layering
+check rejects. That check was right: two features' storage schemas are exactly
+the coupling `core/contracts/` exists to prevent.
+
+The fix is two contracts, each implemented by the feature that owns its
+collection: `DocumentTitleIndex` (document-library) and `OcrSearchIndex` (ocr).
+`IndexedSearchRepository` depends on both plus `DocumentReader`, and knows about
+no database at all.
+
+**A text match needs a document lookup.** A document whose *pages* mention a term
+very often has a title that does not — "Scan 2026-03-14" whose text says Acme —
+which is the entire point of searching recognised text. The first version only
+kept text hits whose documents the title index had already returned, silently
+dropping exactly that case. A test caught it. Documents already loaded by the
+title query are reused; only the rest are fetched.
+
+**Archived documents are excluded on both paths.** The title index filters them
+in its query; the OCR index has no archive flag to filter on, so the rule is
+applied where the document is known. Missing the second path would have made the
+archive leak back through text search.
+
+**Snippets are built from the original text, not the index copy.** The OCR
+collection stores a lower-cased column for matching. Quoting that back to the
+user renders their document in lower case and makes it look like something else,
+so the hit carries the text as it was read.
+
+**A document matching both ways is attributed to its title.** The title is what
+the row shows; claiming the match came from the recognised text would send the
+user looking for something already in front of them.
+
+**A failing text index degrades to title-only results.** Finding fewer documents
+is recoverable; finding none is not.
