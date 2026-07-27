@@ -125,22 +125,22 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 7. Image enhancement
 
-- [ ] 7.1 Implement the `EnhancementSettings` value object and the enhancement domain rules.
-- [ ] 7.2 Implement the filter algorithms (Original, Auto Enhance, Magic Colour, Black & White, Grayscale) as pure functions; unit-test each against fixture images.
-- [ ] 7.3 Implement brightness, contrast, sharpen and shadow removal as pure functions; unit-test each, including combination with a filter.
-- [ ] 7.4 Implement `ApplyEnhancement` running in a background isolate with progress and cancellation, using downscaled previews and full-resolution saves.
-- [ ] 7.5 Unit-test `ApplyEnhancement`, including that cancellation leaves processed pages intact.
-- [ ] 7.6 Implement `EnhancementCubit` and `EnhancementState`.
-- [ ] 7.7 Write `bloc_test` coverage for `EnhancementCubit`: filter selection, adjustments, reset, apply-to-all, progress, cancellation and failure.
-- [ ] 7.8 Implement the enhancement screen with all filter and adjustment controls using the specified keys.
-- [ ] 7.9 Implement the `FilterChip` and `AdjustmentSlider` widgets with keys and semantics labels exposing current values.
-- [ ] 7.10 Widget-test the enhancement screen and its widgets, including that leaving without saving does not modify the stored page.
-- [ ] 7.11 Add `@Preview()` entries for every enhancement widget and the enhancement screen across all required states, form factors and themes.
-- [ ] 7.12 Verify the preview stays responsive at full-resolution page sizes; add a performance test asserting the downscaled preview path.
-- [ ] 7.13 Verify enhancement accessibility, including that sliders announce their values.
-- [ ] 7.14 Add golden tests for the enhancement screen in light and dark, phone and tablet.
-- [ ] 7.15 Add dartdoc to all new public APIs and inline comments on the enhancement maths.
-- [ ] 7.16 Run `dart format`, `flutter analyze`, the layering check and coverage for group 7.
+- [x] 7.1 Implement the `EnhancementSettings` value object and the enhancement domain rules.
+- [x] 7.2 Implement the filter algorithms (Original, Auto Enhance, Magic Colour, Black & White, Grayscale) as pure functions; unit-test each against fixture images.
+- [x] 7.3 Implement brightness, contrast, sharpen and shadow removal as pure functions; unit-test each, including combination with a filter.
+- [x] 7.4 Implement `ApplyEnhancement` running in a background isolate with progress and cancellation, using downscaled previews and full-resolution saves.
+- [x] 7.5 Unit-test `ApplyEnhancement`, including that cancellation leaves processed pages intact.
+- [x] 7.6 Implement `EnhancementCubit` and `EnhancementState`.
+- [x] 7.7 Write `bloc_test` coverage for `EnhancementCubit`: filter selection, adjustments, reset, apply-to-all, progress, cancellation and failure.
+- [x] 7.8 Implement the enhancement screen with all filter and adjustment controls using the specified keys.
+- [x] 7.9 Implement the `FilterChip` and `AdjustmentSlider` widgets with keys and semantics labels exposing current values.
+- [x] 7.10 Widget-test the enhancement screen and its widgets, including that leaving without saving does not modify the stored page.
+- [x] 7.11 Add `@Preview()` entries for every enhancement widget and the enhancement screen across all required states, form factors and themes.
+- [x] 7.12 Verify the preview stays responsive at full-resolution page sizes; add a performance test asserting the downscaled preview path.
+- [x] 7.13 Verify enhancement accessibility, including that sliders announce their values.
+- [x] 7.14 Add golden tests for the enhancement screen in light and dark, phone and tablet.
+- [x] 7.15 Add dartdoc to all new public APIs and inline comments on the enhancement maths.
+- [x] 7.16 Run `dart format`, `flutter analyze`, the layering check and coverage for group 7.
 
 ## 8. OCR
 

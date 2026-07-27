@@ -1,0 +1,95 @@
+/// Use cases for image enhancement.
+library;
+
+import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_forge/core/isolates/background_worker.dart';
+import 'package:doc_forge/core/isolates/cancellation.dart';
+import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
+
+/// Applies enhancement settings to pages, off the UI thread.
+class ApplyEnhancement {
+  /// Creates the use case over its [_worker] and the [_job] it runs.
+  ///
+  /// The job is injected rather than referenced directly because the code that
+  /// moves pixels is infrastructure, and the application layer may not import
+  /// it. It must be a top-level or static function: a closure cannot be sent to
+  /// an isolate, and one capturing UI state would reintroduce exactly the
+  /// hidden coupling the architecture forbids.
+  const ApplyEnhancement(this._worker, this._job);
+
+  final BackgroundWorker _worker;
+  final IsolateJob<EnhancementRequest, String> _job;
+
+  /// Renders a downscaled preview of [settings] applied to [sourcePath].
+  ///
+  /// Runs against a downscaled copy so dragging a slider stays interactive; the
+  /// saved page is always recomputed at full resolution, so nothing the user
+  /// judged on the preview is lost.
+  Future<Result<String>> preview({
+    required String sourcePath,
+    required String destinationPath,
+    required EnhancementSettings settings,
+  }) => _worker.run(
+    _job,
+    EnhancementRequest.preview(
+      sourcePath: sourcePath,
+      destinationPath: destinationPath,
+      settings: settings,
+    ),
+  );
+
+  /// Applies [settings] to one page at full resolution.
+  Future<Result<String>> single({
+    required String sourcePath,
+    required String destinationPath,
+    required EnhancementSettings settings,
+  }) => _worker.run(
+    _job,
+    EnhancementRequest(
+      sourcePath: sourcePath,
+      destinationPath: destinationPath,
+      settings: settings,
+    ),
+  );
+
+  /// Applies each of [requests] in turn, reporting progress as it goes.
+  ///
+  /// Cancellation is checked between pages rather than during one, so a page is
+  /// either fully written or never started. Cancelling mid-batch therefore
+  /// leaves every finished page intact and no half-written file behind, which
+  /// is what the spec requires of "apply to all".
+  Stream<BatchEvent<String>> batch(
+    List<EnhancementRequest> requests, {
+    CancellationToken? token,
+  }) => _worker.runBatch(_job, requests, token: token);
+}
+
+/// Builds the requests that apply one page's settings to a whole session.
+///
+/// A separate use case from [ApplyEnhancement] because deciding *what* to
+/// enhance is a business rule — which pages are affected, where their output
+/// goes, and which pages can be skipped entirely — while [ApplyEnhancement] is
+/// only concerned with running the work.
+class PlanSessionEnhancement {
+  /// Creates the use case.
+  const PlanSessionEnhancement();
+
+  /// Returns a request per page of [pages] that needs work.
+  ///
+  /// [destinationFor] names the output file for a page. Pages whose settings
+  /// would change nothing are omitted rather than copied: re-encoding an
+  /// untouched page costs it a generation of JPEG loss and buys nothing.
+  List<EnhancementRequest> call(
+    List<PageRef> pages, {
+    required String Function(PageRef page) destinationFor,
+  }) => [
+    for (final page in pages)
+      if (EnhancementRules.requiresProcessing(page.enhancement))
+        EnhancementRequest(
+          sourcePath: page.imagePath,
+          destinationPath: destinationFor(page),
+          settings: page.enhancement,
+        ),
+  ];
+}

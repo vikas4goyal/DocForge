@@ -455,3 +455,53 @@ There is no prior release, so this is a build-out rather than a migration.
 4. **OCR language set.** Which languages ship in V1, and whether any require a downloadable model — which would need a first-use download flow and would qualify the "works entirely offline" claim for those languages specifically.
 5. **Delete semantics.** The specs require deleted documents to be recoverable until permanently removed. Whether "deleted" is a distinct state or simply the archive needs confirming; if distinct, a retention policy (indefinite, or auto-purge after N days) is a product decision.
 6. **Tablet layout ambition.** Whether tablets get a genuine two-pane master/detail layout or a responsive single-pane with a wider grid. The specs require only that the width be used well; the former is materially more work and more goldens.
+
+### 21. Corrections recorded during group 7
+
+**Shadow removal normalises against the page, not against white.** The first
+implementation divided each channel by the local illumination and scaled the
+result to full white. On a grey document that is correct; on anything saturated
+it is not. A red logo has a low luminance background through no fault of the
+lighting, so normalising it to white pushed it straight to white. Shadow
+removal now divides by the local illumination *relative to a high percentile of
+the whole page's illumination*, which makes the gain exactly one on an evenly
+lit capture — enabling the control on a good photograph is now a no-op rather
+than a brightening — and caps the gain at three stops so the deepest shadow,
+which carries the least signal, is not amplified into noise.
+
+**Sharpening adds one luminance-derived offset to all three channels.** The
+first implementation ran the unsharp mask per channel against a shared
+luminance blur, which treats a saturated region's colour as if it were detail:
+a red pixel's distance from the page's luminance is not an edge, and amplifying
+it three times pushed the colour to the extremes. The maths now returns the
+offset rather than the sharpened value, and the caller adds it to each channel
+equally. Structure is sharpened; hue is left exactly where it was.
+
+**The blur is separable and shared.** Shadow removal, adaptive thresholding and
+the unsharp mask all need the same blurred luminance map, and at the radius
+illumination separation requires — a twentieth of the page — a naive
+two-dimensional box blur is `radius²` reads per pixel, which makes a
+full-resolution page take minutes. It is computed once per enhancement as two
+one-dimensional passes over a running sum.
+
+**A page that needs no work is copied, not re-encoded.** Running the pipeline
+for identity settings would cost the capture a generation of JPEG loss for no
+visible change, so `enhancePageJob` copies the source file when the settings
+clamp to the defaults and no downscale is needed.
+
+**The enhancement Cubit counts preview generations.** Dragging a slider starts
+a render per frame and they do not finish in the order they began, so a slow
+render could land after a newer one and leave the screen showing settings the
+user had already passed through. Each request carries a generation number and a
+superseded result is dropped rather than emitted.
+
+**Keys belong to one widget only.** `AdjustmentSlider` initially carried its key
+on both itself and its inner `Slider`, which put two widgets under one key and
+made every finder for it ambiguous. The key stays on the widget the spec names.
+
+**The filter row is a lazy horizontal list.** Five filter names do not fit on a
+phone, so the row scrolls and the later chips are genuinely absent from the tree
+until scrolled to. Tests scroll to a chip and call `ensureVisible` before
+tapping — `scrollUntilVisible` stops as soon as the widget is in the tree, and a
+lazy list builds a little beyond the viewport, so a tap at that point can land
+on nothing.
