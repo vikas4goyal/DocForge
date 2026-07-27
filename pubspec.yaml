@@ -82,6 +82,14 @@ dependencies:
   # pdf_manipulator 4.0.0 needs hooks ^2.0.2.
   dartcv4: ^1.1.8
   stream_transform: ^2.1.1
+dependency_overrides:
+  # Vendored fork: upstream cannot detect which iOS permissions to compile in
+  # when the app uses Swift Package Manager, so it silently compiles none and
+  # no permission prompt is ever shown.
+  # See third_party/permission_handler_apple/LOCAL_PATCH.md.
+  permission_handler_apple:
+    path: third_party/permission_handler_apple
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -39,23 +39,5 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
-
-    # permission_handler compiles every iOS permission OUT unless its macro is
-    # defined — see PermissionHandlerEnums.h, where each one defaults to 0.
-    # Without this the camera strategy is simply absent from the binary, so a
-    # request answers without ever reaching iOS: no system prompt appears and
-    # the app never shows up under Settings with a camera toggle.
-    #
-    # Only the permissions DocForge actually asks for are enabled. Every one
-    # here needs its matching usage description in ios/Runner/Info.plist.
-    target.build_configurations.each do |config|
-      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
-        '$(inherited)',
-      ]
-      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] += [
-        'PERMISSION_CAMERA=1',
-        'PERMISSION_PHOTOS=1',
-      ]
-    end
   end
 end
