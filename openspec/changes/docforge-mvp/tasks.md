@@ -250,24 +250,24 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 14. PDF editing
 
-- [ ] 14.1 Extend `PdfRepository` with the manipulation methods and implement the atomic write-verify-replace sequence from `design.md` §12.
-- [ ] 14.2 Write repository tests proving that a failure at any point leaves the source document unchanged and removes the temporary file.
-- [ ] 14.3 Implement `RotatePage`, `DeletePage`, `ExtractPages` and `DuplicatePage`; unit-test each, including the refusal to delete the last remaining page.
-- [ ] 14.4 Implement `MergePdfs` with user-controlled ordering; unit-test ordering and that sources are unchanged.
-- [ ] 14.5 Implement `SplitPdf`; unit-test that combined output equals the original in order.
-- [ ] 14.6 Implement `CompressPdf` reporting the size change; unit-test the no-benefit path.
-- [ ] 14.7 Implement `WatermarkPdf`; unit-test that the watermark appears on every page.
-- [ ] 14.8 Implement `ProtectPdf` and `RemovePdfPassword` with passwords in secure storage only; unit-test the incorrect-password path and assert no password is written to preferences, the database or logs.
-- [ ] 14.9 Implement `ReadPdfMetadata`; unit-test the returned fields.
-- [ ] 14.10 Implement `PdfEditCubit` and `PdfEditState`; write `bloc_test` coverage for every operation plus progress, failure and cancellation.
-- [ ] 14.11 Implement the PDF editor screen, page selection, merge ordering list, watermark and password UIs with the specified keys.
-- [ ] 14.12 Widget-test the editing screens, including the disabled merge control with fewer than two documents and the watermark preview.
-- [ ] 14.13 Implement error handling for corrupt PDFs and storage-full during an edit; widget-test both.
-- [ ] 14.14 Add `@Preview()` entries for every editing widget and screen across all required states, form factors and themes.
-- [ ] 14.15 Verify editing accessibility: labelled controls, page thumbnails announcing page number and selection state.
-- [ ] 14.16 Add golden tests for the PDF editor in light and dark, phone and tablet.
-- [ ] 14.17 Add dartdoc to all new public APIs and inline comments on the atomic write-verify-replace sequence.
-- [ ] 14.18 Run `dart format`, `flutter analyze`, the layering check and coverage for group 14.
+- [x] 14.1 Extend `PdfRepository` with the manipulation methods and implement the atomic write-verify-replace sequence from `design.md` §12.
+- [x] 14.2 Write repository tests proving that a failure at any point leaves the source document unchanged and removes the temporary file.
+- [x] 14.3 Implement `RotatePage`, `DeletePage`, `ExtractPages` and `DuplicatePage`; unit-test each, including the refusal to delete the last remaining page.
+- [x] 14.4 Implement `MergePdfs` with user-controlled ordering; unit-test ordering and that sources are unchanged.
+- [x] 14.5 Implement `SplitPdf`; unit-test that combined output equals the original in order.
+- [x] 14.6 Implement `CompressPdf` reporting the size change; unit-test the no-benefit path.
+- [x] 14.7 Implement `WatermarkPdf`; unit-test that the watermark appears on every page.
+- [x] 14.8 Implement `ProtectPdf` and `RemovePdfPassword` with passwords in secure storage only; unit-test the incorrect-password path and assert no password is written to preferences, the database or logs.
+- [x] 14.9 Implement `ReadPdfMetadata`; unit-test the returned fields.
+- [x] 14.10 Implement `PdfEditCubit` and `PdfEditState`; write `bloc_test` coverage for every operation plus progress, failure and cancellation.
+- [x] 14.11 Implement the PDF editor screen, page selection, merge ordering list, watermark and password UIs with the specified keys.
+- [x] 14.12 Widget-test the editing screens, including the disabled merge control with fewer than two documents and the watermark preview.
+- [x] 14.13 Implement error handling for corrupt PDFs and storage-full during an edit; widget-test both.
+- [x] 14.14 Add `@Preview()` entries for every editing widget and screen across all required states, form factors and themes.
+- [x] 14.15 Verify editing accessibility: labelled controls, page thumbnails announcing page number and selection state.
+- [x] 14.16 Add golden tests for the PDF editor in light and dark, phone and tablet.
+- [x] 14.17 Add dartdoc to all new public APIs and inline comments on the atomic write-verify-replace sequence.
+- [x] 14.18 Run `dart format`, `flutter analyze`, the layering check and coverage for group 14.
 
 ## 15. Settings
 

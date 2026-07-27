@@ -13,6 +13,7 @@ import 'package:doc_forge/app/composition_root.dart';
 import 'package:doc_forge/app/document_creation_module.dart';
 import 'package:doc_forge/app/import_module.dart';
 import 'package:doc_forge/app/library_module.dart';
+import 'package:doc_forge/app/pdf_editing_module.dart';
 import 'package:doc_forge/app/router/app_router.dart';
 import 'package:doc_forge/app/router/app_routes.dart';
 import 'package:doc_forge/app/router/route_gates.dart';
@@ -52,6 +53,8 @@ import 'package:doc_forge/features/onboarding/application/usecases/onboarding_us
 import 'package:doc_forge/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
 import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:doc_forge/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
+import 'package:doc_forge/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
 import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -101,6 +104,15 @@ Future<void> main() async {
     worker: dependencies.worker,
   );
 
+  final editing = buildPdfEditingModule(
+    documentReader: library.documentReader,
+    documentWriter: library.documentWriter,
+    secureStorage: dependencies.secureStorage,
+    documentsDirectory: library.documentsDirectory,
+    clock: dependencies.clock,
+    ids: dependencies.idGenerator,
+  );
+
   final sharing = buildSharingModule(
     documentReader: library.documentReader,
     ocrTextSource: creation.ocrTextSource,
@@ -132,6 +144,7 @@ Future<void> main() async {
       creation,
       sharing,
       importing,
+      editing,
       onboardingRepository,
       onboardingGate,
     ),
@@ -154,6 +167,7 @@ AppScreens _screens(
   DocumentCreationModule creation,
   SharingModule sharing,
   ImportModule importing,
+  PdfEditingModule editing,
   OnboardingRepositoryImpl onboardingRepository,
   OnboardingGateImpl onboardingGate,
 ) {
@@ -297,8 +311,7 @@ AppScreens _screens(
         // sheet: the viewer's print control names the action exactly, and an
         // intermediate sheet asking "print?" would be a step with one option.
         onPrint: () => _print(context, sharing, id),
-        // Editing lands in group 14.
-        onEdit: () => _notYet(context, 'Editing'),
+        onEdit: () => _openEditor(context, editing, id),
       ),
     ),
     documentDetail: (context, id) => BlocProvider(
@@ -383,9 +396,49 @@ AppScreens _screens(
 ///
 /// Preferred to an inert control: a button that does nothing when tapped reads
 /// as a bug, where a message reads as a boundary.
-void _notYet(BuildContext context, String capability) => ScaffoldMessenger.of(
-  context,
-).showSnackBar(SnackBar(content: Text('$capability arrives in a later step.')));
+/// Opens the PDF editor for [id].
+///
+/// A nested navigator route, like the imported-page review: the editor carries
+/// selection state the router has no place holding, and it returns to the
+/// viewer the user opened it from.
+Future<void> _openEditor(
+  BuildContext context,
+  PdfEditingModule editing,
+  DocumentId id,
+) => Navigator.of(context).push<void>(
+  MaterialPageRoute(
+    builder: (routeContext) => BlocProvider(
+      create: (_) => PdfEditCubit(id, editing.useCases)..load(),
+      child: Builder(
+        builder: (screenContext) {
+          final path = screenContext
+              .watch<PdfEditCubit>()
+              .state
+              .document
+              ?.filePath;
+
+          return PdfEditScreen(
+            // The real thumbnail is a rendered PDF page. Supplied here rather
+            // than by the screen, because rendering is plugin-backed and a
+            // screen that built its own could be neither previewed nor tested.
+            thumbnailBuilder: (context, index) => path == null
+                ? const ColoredBox(color: Color(0xFFE0E0E0))
+                : PdfDocumentViewBuilder.file(
+                    path,
+                    builder: (context, document) => document == null
+                        ? const ColoredBox(color: Color(0xFFE0E0E0))
+                        : PdfPageView(
+                            document: document,
+                            pageNumber: index + 1,
+                          ),
+                  ),
+            onClose: () => Navigator.of(routeContext).pop(),
+          );
+        },
+      ),
+    ),
+  ),
+);
 
 /// Imports [paths] handed to DocForge by another application.
 ///

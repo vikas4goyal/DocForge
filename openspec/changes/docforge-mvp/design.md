@@ -886,3 +886,69 @@ on Android with `SEND`, `SEND_MULTIPLE` and `VIEW` intent filters on the
 `singleTop` launcher activity, and on iOS with `CFBundleDocumentTypes` plus
 `LSSupportsOpeningDocumentsInPlace` set to **false**, because an imported file is
 copied into app-private storage rather than edited where it sits.
+
+## 29. PDF editing (group 14)
+
+**One atomic sequence, not eleven.** `AtomicPdfWrite` is the single mechanism
+behind the spec's strongest promise — an operation either completes fully or
+leaves the source unchanged, with no partial file in storage. Write to a working
+file *beside* the destination (a rename is only atomic within a filesystem, and
+a cross-device rename silently degrades to copy-then-delete); verify it opens
+and has the expected page count; rename it onto the destination; on any failure
+delete the working file. The source is untouched before the rename, so there is
+nothing to roll back and no window in which a crash loses the document.
+
+**It lives in `application/`, and the layering check is why.** It touches
+`dart:io`, which made infrastructure look like the natural home — but that would
+have made the application layer import infrastructure, which
+`tool/check_layering.dart` forbids. The check was right: the rule exists so a use
+case cannot quietly depend on an implementation, and this is *policy*, not an
+adapter onto a storage technology.
+
+**Verification uses the password of the produced file, not the source.** Found
+by a failing test. Protecting a document produces a file that needs a password
+the source did not have; removing protection produces one that no longer needs
+the password the source did. A single `password` threaded through would fail
+verification on exactly the two operations whose purpose is to change it, so
+`verifyPassword` is a separate parameter.
+
+**The page count is verified, not assumed.** A PDF engine that fails part-way can
+leave a file that exists, has a plausible size and is unreadable — a size check
+would not catch it. Checking the *count* additionally catches an engine that
+silently dropped a page it could not re-encode.
+
+**Deleting, extracting and splitting are one repository method.** All three are
+"write a copy containing exactly these pages, in this order"; modelling them
+separately would have been three chances to get page ordering wrong.
+
+**Refusals happen before anything is written.** Deleting the last page, merging
+fewer than two documents, splitting after the final page and a blank
+watermark or password are all rejected up front, so there is nothing to roll
+back. Compression is the exception and deliberately so: a rewrite can
+legitimately come out *larger*, and that can only be known after producing the
+candidate — so it is written beside the original, measured, and discarded if it
+did not help.
+
+**Deriving operations never consume their source.** Extract, merge and split
+write new documents and leave every source alone. An unwanted result is a
+document the user can throw away rather than a change they cannot undo.
+
+**Protection order: encrypt the file, then store the secret.** The other order
+would leave a stored password for a file that is not encrypted — offered by the
+viewer and refused by the file. Removal is the mirror: the stored secret is
+deleted only once the file genuinely opens without it, so a failed decrypt never
+strands a still-encrypted document with no password anywhere.
+
+**`FakePdfEditor` uses a toy line-based format, and is deliberately not a PDF.**
+`pdf_manipulator`'s native engine does not load in the host test VM — the same
+situation as OpenCV (§22). The fake gives the page semantics of every operation
+a substrate to be verified on. Pretending to be a real PDF would invite the
+belief that these tests say something about the engine; they say the *use cases*
+handle pages correctly, which is a different and equally necessary thing.
+Compression is modelled as dropping a padding line the page count ignores, so
+"made it smaller" and "kept every page" can both be asserted.
+
+**The watermark preview is more legible than a real watermark.** At the alpha a
+real watermark uses (0.28) it fails the WCAG contrast guideline this project
+treats as mandatory. The preview exists to be *read* before the watermark is
+applied, so legibility won over fidelity at 0.55.
