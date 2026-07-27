@@ -78,10 +78,16 @@ Future<void> main() async {
   // and the Isar directory lookup are all resolved below.
   WidgetsFlutterBinding.ensureInitialized();
 
-  final dependencies = await buildAppDependencies();
+  // Awaited together rather than one after another: neither needs the other,
+  // and everything here happens before the first frame, so each avoidable
+  // round trip is time the user spends looking at a blank screen.
+  final (dependencies, cacheDirectory) = await (
+    buildAppDependencies(),
+    getApplicationCacheDirectory(),
+  ).wait;
 
   final scanning = buildScanningModule(
-    directory: await getApplicationCacheDirectory(),
+    directory: cacheDirectory,
     permissions: dependencies.permissions,
     ids: dependencies.idGenerator,
     worker: dependencies.worker,
@@ -137,7 +143,7 @@ Future<void> main() async {
     renderer: const PdfrxRenderer(),
     documentWriter: library.documentWriter,
     documentsDirectory: library.documentsDirectory,
-    cacheDirectory: await getApplicationCacheDirectory(),
+    cacheDirectory: cacheDirectory,
     clock: dependencies.clock,
     ids: dependencies.idGenerator,
     worker: dependencies.worker,
@@ -155,7 +161,7 @@ Future<void> main() async {
   final sharing = buildSharingModule(
     documentReader: library.documentReader,
     ocrTextSource: creation.ocrTextSource,
-    cacheDirectory: await getApplicationCacheDirectory(),
+    cacheDirectory: cacheDirectory,
     worker: dependencies.worker,
   );
 
@@ -168,7 +174,6 @@ Future<void> main() async {
   final onboardingGate = OnboardingGateImpl(
     IsOnboardingComplete(onboardingRepository).call,
   );
-  await onboardingGate.load();
 
   // Read before the first frame, exactly like the onboarding gate: the router's
   // redirect is synchronous, and a gate that had to guess would show a document
@@ -178,7 +183,11 @@ Future<void> main() async {
   );
   final isLockEnabled = IsAppLockEnabled(lockConfiguration);
   final lockGate = AppLockGateImpl(isLockEnabled);
-  await lockGate.load();
+
+  // One reads preferences, the other secure storage, and neither needs the
+  // other's answer — so they load concurrently. Both are still resolved before
+  // the router is built, which is what the redirects depend on.
+  await (onboardingGate.load(), lockGate.load()).wait;
 
   final router = createAppRouter(
     guard: RouteGuard(lockGate: lockGate, onboardingGate: onboardingGate),

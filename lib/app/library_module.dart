@@ -145,8 +145,12 @@ Future<LibraryModule> buildLibraryModule({
   required IdGenerator ids,
   required SecureStore secureStorage,
 }) async {
-  final supportDirectory = await getApplicationSupportDirectory();
-  final documentsDirectory = await getApplicationDocumentsDirectory();
+  // Two independent platform lookups on the startup path, so they are resolved
+  // together rather than one after the other.
+  final (supportDirectory, documentsDirectory) = await (
+    getApplicationSupportDirectory(),
+    getApplicationDocumentsDirectory(),
+  ).wait;
 
   final isar = await Isar.open([
     DocumentEntitySchema,

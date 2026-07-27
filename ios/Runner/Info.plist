@@ -4,6 +4,15 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Required by iOS before the matching system prompt can be shown. Without
+	     a usage description iOS refuses the permission outright, without ever
+	     asking the user, and rejects the app at review. -->
+	<key>NSCameraUsageDescription</key>
+	<string>DocForge uses the camera to scan documents into PDFs.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>DocForge needs access to your photos so you can turn existing images into documents.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>DocForge uses Face ID to unlock your documents.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
