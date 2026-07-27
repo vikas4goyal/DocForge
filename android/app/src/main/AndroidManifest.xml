@@ -1,4 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Writing into the user-visible Documents/DocForge folder.
+
+         API 29+ needs no permission at all: MediaStore lets an app create and
+         own files in a shared collection, which is exactly why MediaStore is
+         the route taken here rather than a direct path (see design.md D3).
+         API 28 and below predate scoped storage and reach the same folder
+         through the filesystem, which does need the legacy permission — hence
+         maxSdkVersion, so newer devices are never asked for something they do
+         not use and the Play listing does not claim broad storage access. -->
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
     <application
         android:label="doc_forge"
         android:name="${applicationName}"

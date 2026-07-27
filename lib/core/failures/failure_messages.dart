@@ -128,6 +128,12 @@ extension FailurePresentationX on Failure {
         ValidationIssue.emptyName => 'Enter a name.',
         ValidationIssue.duplicateFolderName =>
           'A folder with this name already exists.',
+        ValidationIssue.illegalName =>
+          'That name cannot be used. Avoid / \\ : * ? " < > | and leading '
+              'or trailing spaces.',
+        ValidationIssue.duplicateDocumentName =>
+          'A document with that name is already in this folder.',
+        ValidationIssue.passwordMismatch => 'The passwords do not match.',
         ValidationIssue.documentWouldHaveNoPages =>
           'A document must keep at least one page.',
       },
