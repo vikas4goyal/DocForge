@@ -195,6 +195,43 @@ void main() {
     );
   });
 
+  group('preview files', () {
+    test('each render writes to its own path', () async {
+      final cubit = build();
+
+      await cubit.selectFilter(EnhancementFilter.autoEnhance);
+      await Future<void>.delayed(previewDebounceWait);
+      await cubit.selectFilter(EnhancementFilter.blackAndWhite);
+      await Future<void>.delayed(previewDebounceWait);
+
+      final destinations = recordedRequests
+          .map((request) => request.destinationPath)
+          .toList();
+
+      // Reusing one path leaves the widget holding an already-resolved stream
+      // for an equal FileImage, so the picture never changes however many times
+      // the bytes do — which read as the filters doing nothing at all.
+      expect(destinations.toSet().length, destinations.length);
+
+      await cubit.close();
+    });
+
+    test('the superseded preview is not left behind', () async {
+      final cubit = build();
+
+      await cubit.selectFilter(EnhancementFilter.autoEnhance);
+      await Future<void>.delayed(previewDebounceWait);
+      final first = cubit.state.previewPath;
+
+      await cubit.selectFilter(EnhancementFilter.blackAndWhite);
+      await Future<void>.delayed(previewDebounceWait);
+
+      expect(cubit.state.previewPath, isNot(first));
+
+      await cubit.close();
+    });
+  });
+
   group('undo', () {
     test('steps back through one adjustment at a time', () async {
       final cubit = build();

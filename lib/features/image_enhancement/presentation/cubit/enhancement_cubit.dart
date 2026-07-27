@@ -16,7 +16,6 @@ import 'package:doc_forge/core/isolates/cancellation.dart';
 import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
 import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
-import 'package:flutter/painting.dart' show FileImage;
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Names the file an enhancement result is written to.
@@ -52,6 +51,22 @@ class EnhancementCubit extends Cubit<EnhancementState> {
   /// leave the screen showing the preview for a value the user passed through
   /// on the way, which reads as the control being broken.
   int _previewGeneration = 0;
+
+  /// The preview file currently on screen, so the next render can remove it.
+  String? _lastPreviewPath;
+
+  /// Deletes a superseded preview, ignoring a file that has already gone.
+  ///
+  /// Derived data: failing to remove one is untidy, never a reason to interrupt
+  /// what the user is doing.
+  Future<void> _discard(String path) async {
+    try {
+      final file = File(path);
+      if (file.existsSync()) await file.delete();
+    } on Object {
+      // Nothing to report: the preview it describes is no longer on screen.
+    }
+  }
 
   /// Coalesces slider movement into one render per pause.
   ///
@@ -267,7 +282,12 @@ class EnhancementCubit extends Cubit<EnhancementState> {
 
     final result = await _apply.preview(
       sourcePath: page.imagePath,
-      destinationPath: _destinationFor(page, isPreview: true),
+      // A fresh path per render. Writing every preview to the same name meant
+      // the widget kept an already-resolved stream for an unchanged FileImage —
+      // equal by path and scale — so the picture never changed however many
+      // times the bytes did. Evicting the cache is not enough on its own,
+      // because an attached stream is not re-resolved for an equal provider.
+      destinationPath: '${_destinationFor(page, isPreview: true)}.$generation',
       settings: settings,
     );
 
@@ -275,13 +295,15 @@ class EnhancementCubit extends Cubit<EnhancementState> {
     // settings the user has already moved past.
     if (generation != _previewGeneration || isClosed) return;
 
-    // Every preview is written to the same path, and Flutter's image cache is
-    // keyed by path — not by the bytes at it. Without evicting, the first
-    // preview decoded is the one shown for the rest of the session: choosing
-    // black and white or grayscale changed the file but not the picture.
+    // Each render leaves its own file, so the one it replaces is removed rather
+    // than left to accumulate for the length of the session — a slider drag
+    // would otherwise strew a preview per pause across the staging area.
     if (result case Success(:final value)) {
-      await FileImage(File(value)).evict();
-      if (generation != _previewGeneration || isClosed) return;
+      final superseded = _lastPreviewPath;
+      _lastPreviewPath = value;
+      if (superseded != null && superseded != value) {
+        unawaited(_discard(superseded));
+      }
     }
 
     emit(switch (result) {
