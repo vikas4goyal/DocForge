@@ -71,9 +71,16 @@ class LibraryDocumentWriter implements DocumentWriter {
     List<DocumentPage> pages,
   ) async {
     // The page count comes from the pages actually written rather than from
-    // whatever the caller put in the record, so the two cannot disagree.
+    // whatever the caller put in the record, so the two cannot disagree —
+    // *except* when there are no page rows at all. An imported or edited PDF
+    // has its pages inside the file rather than as records, and overriding its
+    // count to zero would leave a document the library reports as empty and
+    // the viewer renders in full.
     final saved = await _documents.save(
-      document.copyWith(pageCount: pages.length, updatedAt: _clock.now()),
+      document.copyWith(
+        pageCount: pages.isEmpty ? document.pageCount : pages.length,
+        updatedAt: _clock.now(),
+      ),
     );
 
     return saved.flatMapAsync((stored) async {

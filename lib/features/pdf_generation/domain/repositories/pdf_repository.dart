@@ -11,6 +11,7 @@ class ComposedPdf {
     required this.filePath,
     required this.sizeInBytes,
     required this.pageCount,
+    this.hasTextLayer = false,
   });
 
   /// Where the PDF was written.
@@ -26,16 +27,27 @@ class ComposedPdf {
   /// How many pages it contains.
   final int pageCount;
 
+  /// Whether an invisible text layer was written on at least one page.
+  ///
+  /// Reported by the composer because the composer is what actually writes the
+  /// layer; anyone else would be inferring it. It becomes the document's
+  /// `hasRecognisedText`, which is what decides whether "share extracted text"
+  /// is offered — so getting it from the thing that did the work is the only
+  /// version that cannot drift.
+  final bool hasTextLayer;
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is ComposedPdf &&
+          other.hasTextLayer == hasTextLayer &&
           other.filePath == filePath &&
           other.sizeInBytes == sizeInBytes &&
           other.pageCount == pageCount;
 
   @override
-  int get hashCode => Object.hash(filePath, sizeInBytes, pageCount);
+  int get hashCode =>
+      Object.hash(filePath, sizeInBytes, pageCount, hasTextLayer);
 
   @override
   String toString() =>

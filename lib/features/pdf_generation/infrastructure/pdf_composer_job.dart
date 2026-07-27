@@ -44,6 +44,9 @@ Future<ComposedPdf> composePdfJob(PdfBuildRequest request) async {
 
     return ComposedPdf(
       filePath: destination.path,
+      // True when any page carried recognised text, which is exactly when an
+      // invisible layer was written above.
+      hasTextLayer: request.pages.any((page) => page.textBlocks.isNotEmpty),
       // Measured from the file rather than from the byte list, so the figure
       // stored on the document record is what the filesystem actually reports.
       sizeInBytes: destination.lengthSync(),

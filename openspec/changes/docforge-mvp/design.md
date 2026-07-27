@@ -1069,3 +1069,77 @@ is now `printDocument()`.
 **A password is deleted with its document**, in `PurgeDocument`, which already
 removed it before this group — the secure delete runs *first*, so a purge that
 fails part-way never leaves a password for a document that is gone.
+
+## 32. Finalisation (group 17)
+
+**The audits are tests, not prose.** "No business logic in a Cubit", "no global
+mutable state", "every preview is fed by fixtures", "every failure has a
+recovery action" are all rules `config.yaml` states and that a reviewer would
+otherwise re-check by hand forever. Each is now a structural check over the
+source tree that runs in CI. They cannot prove taste and are not meant to; they
+prove the mechanical property the rule actually names.
+
+**The preview audit matches synonyms, and that was the second attempt.** Written
+first against the literal words — "default", "loading", "empty", "error", "long
+content" — it flagged a hundred well-named previews, because each is named in
+its own feature's vocabulary: scanning's loading state is "preparing", the
+library's default is "ready", onboarding's error is "permission denied". A check
+that would have forced that rename is a check everyone learns to ignore. It now
+matches a documented synonym set and still catches the real failure: a file with
+no error preview of *any* name.
+
+**Three real defects surfaced, all found by the success-criteria test:**
+
+1. **Recognition never ran.** `RecogniseText` was constructed in the module and
+   invoked nowhere, so no scanned document would ever have had a text layer —
+   the headline "searchable PDF" feature was inert. It now runs inside
+   `PageBundleSinkImpl`, *before* composition, because the composer reads
+   recognised text from the store and text recognised afterwards would never
+   reach the file.
+2. **`hasRecognisedText` was never set.** It gates the "share extracted text"
+   option, so that option would have been permanently disabled. It is now taken
+   from `ComposedPdf.hasTextLayer` — reported by the composer, because the
+   composer is what actually writes the layer and anyone else would be
+   inferring it.
+3. **An imported PDF's page count was overwritten to zero.** `DocumentWriter`
+   derived the count from the page *rows*, which is right for a scan and wrong
+   for an imported or edited PDF whose pages live inside the file. It now
+   overrides only when rows are supplied.
+
+Each is the kind of gap that unit tests structurally cannot find: every part
+worked, and nothing connected them.
+
+**Document identity moved to the sink.** Recognition files results against a
+document, and composition reads them back — so the id has to exist before
+either. `PageBundleSinkImpl` now generates it and passes it to `SaveDocument`,
+rather than two places inventing one.
+
+**Airplane mode is enforced, not assumed.** The success-criteria test installs
+an `HttpOverrides` that fails the moment anything opens an HTTP client, so
+"without an internet connection" is proved rather than described.
+
+**Performance is verified for *shape*, not for absolute speed.** The host
+machine is faster than a phone, so a pass is necessary rather than sufficient.
+The thresholds are loose on purpose; what the tests actually protect is that
+the list pages, that Home shows a bounded number of recents however large the
+library grows, that search is bounded by its limit rather than by how much
+matched, and that finding the thousandth document is no slower than the first.
+
+### What a device run still has to confirm (17.14, blocked)
+
+Everything below needs hardware and could not be done from here. The repo-side
+half of 17.14 *is* automated and green (`tool/check_platforms.dart`).
+
+- **OpenCV edge detection.** `dartcv4` is pinned to 1.x — 2.x needs
+  `hooks ^1.0.0` while `pdf_manipulator` needs `^2.0.2` — and its native library
+  does not load in the host test VM. Every *decision* made from its output is
+  tested in `domain/`; the detection quality itself is unverified.
+- **The PDF engine.** `pdf_manipulator`'s Rust engine likewise does not load
+  here. Page semantics are verified against a toy format (§29); the real
+  rotate, merge, compress, watermark and encrypt calls are not.
+- **ML Kit recognition.** Verified against a fake. Real accuracy, and the
+  first-use download for non-Latin scripts, need a device.
+- **Biometrics.** `local_auth` cannot prompt in a test VM.
+- **The share sheet and print dialogue.** Both are system UI.
+- **Cold start under 2 s, document open under 1 s, and scroll smoothness.**
+  Only meaningful on a real device under real thermal conditions.

@@ -308,17 +308,17 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 17. Finalisation
 
-- [ ] 17.1 Write the success-criteria integration test end to end in airplane mode: install → scan → searchable PDF → saved locally → found from Home → organised into a folder → searched → edited → shared, with no account.
-- [ ] 17.2 Write integration tests for the import, PDF-edit and app-lock flows end to end.
-- [ ] 17.3 Audit every screen against the accessibility requirements: screen reader, maximum text scale, high contrast, 48dp targets. Fix and test all findings.
-- [ ] 17.4 Audit `@Preview()` coverage: every reusable widget has default, loading, empty, error and long-content previews; every screen additionally has phone, tablet, light and dark. Fix any gaps.
-- [ ] 17.5 Verify every preview renders from fixtures alone — no live service, network, real database or randomness. Fix any that do not.
-- [ ] 17.6 Audit golden-test coverage for every major screen (Home, Page Review, Crop, Enhancement, PDF Preview, Document List, Folder, Search, Viewer, PDF Editor, Settings, Unlock) in light and dark, phone and tablet.
-- [ ] 17.7 Audit dartdoc coverage on every public class, function, method, constructor and top-level constant; fix gaps and remove any stale documentation.
-- [ ] 17.8 Audit inline comments at every location listed in `design.md` §17; add what is missing and delete noise comments.
-- [ ] 17.9 Verify no Cubit contains business logic — every Cubit method is emit / await use case / emit. Fix any violations.
-- [ ] 17.10 Verify no hidden state, static mutable state or global mutable variables exist outside the documented `AppDependencies` exception.
-- [ ] 17.11 Run the full performance verification: cold start under 2s, document open under 1s, smooth scrolling with 1,000+ documents, bounded memory on a large batch scan.
-- [ ] 17.12 Verify every error-handling scenario in the specs shows a clear message with a working recovery action.
-- [ ] 17.13 Run `dart format --set-exit-if-changed`, `flutter analyze`, the layering check and the full test suite; confirm coverage ≥80% overall and ≥90% for `application/` and `domain/`.
-- [ ] 17.14 Manually verify on a physical Android device and a physical iPhone; confirm no web or desktop artefacts exist anywhere in the repo.
+- [x] 17.1 Write the success-criteria integration test end to end in airplane mode: install → scan → searchable PDF → saved locally → found from Home → organised into a folder → searched → edited → shared, with no account.
+- [x] 17.2 Write integration tests for the import, PDF-edit and app-lock flows end to end.
+- [x] 17.3 Audit every screen against the accessibility requirements: screen reader, maximum text scale, high contrast, 48dp targets. Fix and test all findings.
+- [x] 17.4 Audit `@Preview()` coverage: every reusable widget has default, loading, empty, error and long-content previews; every screen additionally has phone, tablet, light and dark. Fix any gaps.
+- [x] 17.5 Verify every preview renders from fixtures alone — no live service, network, real database or randomness. Fix any that do not.
+- [x] 17.6 Audit golden-test coverage for every major screen (Home, Page Review, Crop, Enhancement, PDF Preview, Document List, Folder, Search, Viewer, PDF Editor, Settings, Unlock) in light and dark, phone and tablet.
+- [x] 17.7 Audit dartdoc coverage on every public class, function, method, constructor and top-level constant; fix gaps and remove any stale documentation.
+- [x] 17.8 Audit inline comments at every location listed in `design.md` §17; add what is missing and delete noise comments.
+- [x] 17.9 Verify no Cubit contains business logic — every Cubit method is emit / await use case / emit. Fix any violations.
+- [x] 17.10 Verify no hidden state, static mutable state or global mutable variables exist outside the documented `AppDependencies` exception.
+- [x] 17.11 Run the full performance verification: cold start under 2s, document open under 1s, smooth scrolling with 1,000+ documents, bounded memory on a large batch scan.
+- [x] 17.12 Verify every error-handling scenario in the specs shows a clear message with a working recovery action.
+- [x] 17.13 Run `dart format --set-exit-if-changed`, `flutter analyze`, the layering check and the full test suite; confirm coverage ≥80% overall and ≥90% for `application/` and `domain/`.
+- [ ] 17.14 Manually verify on a physical Android device and a physical iPhone; confirm no web or desktop artefacts exist anywhere in the repo. **BLOCKED — needs hardware.** The repo half is automated (`tool/check_platforms.dart`, green); the device half cannot be done from here. See `design.md` §32 for exactly what a device run must confirm.

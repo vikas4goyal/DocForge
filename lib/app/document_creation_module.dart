@@ -63,11 +63,19 @@ class DocumentCreationModule {
   final PageBundleSink pageBundleSink;
 }
 
+/// The recognition script used when the caller has not configured one.
+///
+/// A top-level function rather than a closure, so it can be a default argument
+/// value — which is what keeps every existing caller of the builder below
+/// working unchanged.
+OcrScript _defaultScript() => OcrScript.defaultScript;
+
 /// Builds the graph over an already-open [isar] and [documentsDirectory].
 ///
 /// [composer] and [recogniser] default to the real implementations and are
 /// injectable so an integration test can substitute an inline composer and a
-/// fake recogniser without a device.
+/// fake recogniser without a device. [script] supplies the recognition script,
+/// which settings configures.
 DocumentCreationModule buildDocumentCreationModule({
   required Isar isar,
   required Directory documentsDirectory,
@@ -78,10 +86,12 @@ DocumentCreationModule buildDocumentCreationModule({
   required NamingPattern Function() namingPattern,
   PdfComposer composer = const IsolatePdfComposer(),
   OcrRepository? recogniser,
+  OcrScript Function() script = _defaultScript,
   OcrLanguagePacks languagePacks = const BundledOcrLanguagePacks(),
 }) {
   final store = IsarOcrTextStore(isar);
   final ocr = recogniser ?? MlKitOcrRepository(clock);
+  final recognise = RecogniseText(ocr, store);
 
   Future<Map<String, RecognisedText>> textFor(List<PageId> pageIds) async {
     final result = await store.findAll(pageIds);
@@ -113,13 +123,25 @@ DocumentCreationModule buildDocumentCreationModule({
   final generateName = GenerateDocumentName(clock, documentReader);
 
   return DocumentCreationModule(
-    recogniseText: RecogniseText(ocr, store),
+    recogniseText: recognise,
     loadRecognisedText: LoadRecognisedText(store),
     forgetRecognisedText: ForgetRecognisedText(store),
     ocrTextSource: OcrTextSourceImpl(store, documentReader.pagesOf),
     languagePacks: languagePacks,
     saveDocument: save,
     generateName: generateName,
-    pageBundleSink: PageBundleSinkImpl(save, generateName, namingPattern),
+    pageBundleSink: PageBundleSinkImpl(
+      save,
+      generateName,
+      namingPattern,
+      // Drained rather than merely started: composition reads the store, so it
+      // has to happen after every page has been written, not alongside.
+      (pages, documentId) => recognise(
+        pages,
+        documentId: documentId,
+        script: script(),
+      ).drain<void>(),
+      ids,
+    ),
   );
 }
