@@ -219,18 +219,18 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 12. Sharing, printing and export
 
-- [ ] 12.1 Implement the `document-sharing` domain layer and the `ShareRepository` interface.
-- [ ] 12.2 Implement `ShareDocument`, `PrintDocument` and `ExportDocument` use cases with isolate-backed preparation, progress and cancellation.
-- [ ] 12.3 Unit-test all three use cases, including that a protected document retains protection and the password is never included.
-- [ ] 12.4 Implement page-image and extracted-text sharing; unit-test page ordering and the no-recognised-text path.
-- [ ] 12.5 Implement `ShareCubit` and `ShareState`; write `bloc_test` coverage including preparing, ready, failure and cancellation.
-- [ ] 12.6 Implement the share options UI with the specified keys and semantics labels naming what will be shared and in what format.
-- [ ] 12.7 Widget-test the share options, the cancelled-picker path and the disabled share-text control.
-- [ ] 12.8 Implement error handling for export failure, storage full, no receiving application and print failure; widget-test each, asserting no partial file remains.
-- [ ] 12.9 Add `@Preview()` entries for the share options and progress widgets across all required states, form factors and themes.
-- [ ] 12.10 Verify no network request is made while preparing content to share; add a test.
-- [ ] 12.11 Add dartdoc to all new public APIs in the sharing feature.
-- [ ] 12.12 Run `dart format`, `flutter analyze`, the layering check and coverage for group 12.
+- [x] 12.1 Implement the `document-sharing` domain layer and the `ShareRepository` interface.
+- [x] 12.2 Implement `ShareDocument`, `PrintDocument` and `ExportDocument` use cases with isolate-backed preparation, progress and cancellation.
+- [x] 12.3 Unit-test all three use cases, including that a protected document retains protection and the password is never included.
+- [x] 12.4 Implement page-image and extracted-text sharing; unit-test page ordering and the no-recognised-text path.
+- [x] 12.5 Implement `ShareCubit` and `ShareState`; write `bloc_test` coverage including preparing, ready, failure and cancellation.
+- [x] 12.6 Implement the share options UI with the specified keys and semantics labels naming what will be shared and in what format.
+- [x] 12.7 Widget-test the share options, the cancelled-picker path and the disabled share-text control.
+- [x] 12.8 Implement error handling for export failure, storage full, no receiving application and print failure; widget-test each, asserting no partial file remains.
+- [x] 12.9 Add `@Preview()` entries for the share options and progress widgets across all required states, form factors and themes.
+- [x] 12.10 Verify no network request is made while preparing content to share; add a test.
+- [x] 12.11 Add dartdoc to all new public APIs in the sharing feature.
+- [x] 12.12 Run `dart format`, `flutter analyze`, the layering check and coverage for group 12.
 
 ## 13. Import
 

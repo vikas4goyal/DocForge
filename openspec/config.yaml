@@ -199,6 +199,27 @@ context: |
   - Every implementation must be easily exercised by automated Flutter
     integration tests, end to end.
 
+  ## Tooling — Dart/Flutter MCP server
+  The `dart` MCP server is connected and is the preferred way to do Dart and
+  Flutter work that its tools cover. Use it rather than shelling out whenever
+  one of its tools fits:
+  - `analyze_files` / `lsp` — static analysis, symbol lookup, references,
+    rename. Faster and more precise than grepping for a symbol.
+  - `pub` — dependency operations (`get`, `add`, `upgrade`, `outdated`).
+  - `pub_dev_search` — check a candidate package's licence, platform support
+    and maintenance before adding it. Licence must be permissive and usable
+    commercially; Syncfusion and other commercial-licence packages are barred.
+  - `read_package_uris` / `rip_grep_packages` — read a dependency's own source
+    when its behaviour or API is unclear. Both `package:` and `package-root:`
+    URIs resolve, so examples and tests inside a package are reachable.
+  - `hot_reload` / `hot_restart` / `widget_inspector` / `get_runtime_errors` /
+    `flutter_driver_command` — driving a running app on a device or simulator,
+    which is the only way to verify the parts of this project that cannot run
+    in the host test VM (camera, OpenCV edge detection, ML Kit recognition,
+    biometrics, the share sheet and the print dialog).
+  `flutter test`, `flutter build` and the repository's own `tool/check_*.dart`
+  scripts still run through the shell; the MCP server does not replace them.
+
   ## CI
   CI must run, in order: `flutter pub get`, `dart format --set-exit-if-changed`,
   `flutter analyze`, `flutter test`, integration tests, golden tests, coverage.

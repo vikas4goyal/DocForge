@@ -14,8 +14,11 @@ import 'package:doc_forge/app/router/app_router.dart';
 import 'package:doc_forge/app/router/app_routes.dart';
 import 'package:doc_forge/app/router/route_gates.dart';
 import 'package:doc_forge/app/scanning_module.dart';
+import 'package:doc_forge/app/sharing_module.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/failures/failure_messages.dart';
+import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/theme/theme_mode_controller.dart';
 import 'package:doc_forge/core/widgets/app_state_views.dart';
 import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
@@ -30,6 +33,10 @@ import 'package:doc_forge/features/document_library/presentation/screens/folder_
 import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
 import 'package:doc_forge/features/document_search/presentation/bloc/search_bloc.dart';
 import 'package:doc_forge/features/document_search/presentation/screens/search_screen.dart';
+import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
+import 'package:doc_forge/features/document_sharing/presentation/cubit/share_cubit.dart';
+import 'package:doc_forge/features/document_sharing/presentation/cubit/share_state.dart';
+import 'package:doc_forge/features/document_sharing/presentation/screens/share_options_sheet.dart';
 import 'package:doc_forge/features/document_viewer/application/usecases/viewer_usecases.dart';
 import 'package:doc_forge/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
 import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_cubit.dart';
@@ -77,6 +84,13 @@ Future<void> main() async {
     namingPattern: () => NamingPattern.defaultPattern,
   );
 
+  final sharing = buildSharingModule(
+    documentReader: library.documentReader,
+    ocrTextSource: creation.ocrTextSource,
+    cacheDirectory: await getApplicationCacheDirectory(),
+    worker: dependencies.worker,
+  );
+
   // Onboarding owns its own gate. The flag is read once here, before the first
   // frame, so the router's synchronous redirect has an answer immediately —
   // otherwise a first-time user would see Home flash before onboarding.
@@ -99,6 +113,7 @@ Future<void> main() async {
       library,
       scanning,
       creation,
+      sharing,
       onboardingRepository,
       onboardingGate,
     ),
@@ -119,6 +134,7 @@ AppScreens _screens(
   LibraryModule library,
   ScanningModule scanning,
   DocumentCreationModule creation,
+  SharingModule sharing,
   OnboardingRepositoryImpl onboardingRepository,
   OnboardingGateImpl onboardingGate,
 ) {
@@ -234,9 +250,12 @@ AppScreens _screens(
               ),
             ),
         onBack: () => context.pop(),
-        // Sharing, printing and editing land in groups 12 and 14.
-        onShare: () => _notYet(context, 'Sharing'),
-        onPrint: () => _notYet(context, 'Printing'),
+        onShare: () => _openShareSheet(context, sharing, id),
+        // Printing goes straight to the system dialogue rather than through the
+        // sheet: the viewer's print control names the action exactly, and an
+        // intermediate sheet asking "print?" would be a step with one option.
+        onPrint: () => _print(context, sharing, id),
+        // Editing lands in group 14.
         onEdit: () => _notYet(context, 'Editing'),
       ),
     ),
@@ -325,6 +344,81 @@ AppScreens _screens(
 void _notYet(BuildContext context, String capability) => ScaffoldMessenger.of(
   context,
 ).showSnackBar(SnackBar(content: Text('$capability arrives in a later step.')));
+
+/// Opens the share options for [id] as a modal bottom sheet.
+///
+/// The document is read first so the sheet can say what it is about to share
+/// and disable the text option when there is nothing to share — both of which
+/// are decisions the sheet renders rather than makes.
+Future<void> _openShareSheet(
+  BuildContext context,
+  SharingModule sharing,
+  DocumentId id,
+) async {
+  final found = await sharing.documentReader.findById(id);
+  if (!context.mounted) return;
+
+  final document = found.valueOrNull;
+  if (document == null) {
+    _report(context, 'That document could not be opened.');
+    return;
+  }
+
+  final text = await sharing.ocrTextSource.textForDocument(id);
+  if (!context.mounted) return;
+
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) => BlocProvider(
+      create: (_) => ShareCubit(
+        id,
+        sharing.sharePdf,
+        sharing.shareImages,
+        sharing.shareText,
+        sharing.print,
+        sharing.export,
+        initial: ShareState.initial(
+          title: document.title,
+          pageCount: document.pageCount,
+          canShareText: ShareRules.canShareText(
+            document,
+            text.valueOrNull ?? '',
+          ),
+        ),
+      ),
+      child: ShareOptionsSheet(
+        // Dismissed once the system has the content: leaving the sheet up
+        // behind the share sheet would leave the user looking at options for
+        // something they have already sent.
+        onDone: (state) {
+          Navigator.of(sheetContext).pop();
+          final confirmation = state.exportConfirmation;
+          if (confirmation != null) _report(context, confirmation);
+        },
+      ),
+    ),
+  );
+}
+
+/// Prints [id], reporting a failure rather than swallowing it.
+Future<void> _print(
+  BuildContext context,
+  SharingModule sharing,
+  DocumentId id,
+) async {
+  final result = await sharing.print(id);
+  if (!context.mounted) return;
+
+  if (result case Failed(:final failure)) {
+    _report(context, failure.presentation.message);
+  }
+}
+
+/// Shows [message] in a snackbar.
+void _report(BuildContext context, String message) => ScaffoldMessenger.of(
+  context,
+).showSnackBar(SnackBar(content: Text(message)));
 
 /// A labelled stand-in for a screen that has not been built yet.
 class _Placeholder extends StatelessWidget {

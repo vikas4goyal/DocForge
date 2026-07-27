@@ -766,3 +766,64 @@ user looking for something already in front of them.
 
 **A failing text index degrades to title-only results.** Finding fewer documents
 is recoverable; finding none is not.
+
+## 27. Sharing, printing and export (group 12)
+
+**The file of record is never handed out or moved.** A PDF share attaches the
+stored file itself; an image share renders *copies* into a staging directory;
+an export writes a *copy* to the chosen destination. No sharing path mutates a
+document.
+
+**A protected document keeps its protection by omission, not by effort.** The
+password lives in the PDF's bytes, so sharing the file shares the protection.
+No sharing use case reads secure storage at all — the guarantee is achieved by
+not going near the secret rather than by remembering to strip it somewhere.
+
+**Three seams, not one.** `ShareRepository`, `PrintRepository` and
+`ExportDestinationPicker` are separate interfaces because they fail differently
+and are substituted independently. Two of them treat *user cancellation as a
+successful result* rather than a failure: `printFile` returns `false` for a
+dismissed dialogue and `chooseDestination` returns `null` for a cancelled
+picker. The spec requires the app to return to the previous screen with no
+change and no message, and a failure result would produce a message.
+
+**Staging goes in the cache, not in documents storage.** A staged page image is
+a copy the receiving application may still hold a handle on after we are done,
+and the operating system is free to reclaim it later. Nothing staged is a
+document of record.
+
+**Page order is enforced by the feature, not trusted from the caller.** A
+selection arrives in tap order; `ShareRules.inPageOrder` sorts it. Image file
+names are zero-padded (`Scan_002.jpg`) because several mail clients order
+attachments alphabetically, and without padding page 10 arrives before page 2.
+
+**Enhancement is not re-run when rendering a share image.** The stored page
+image is already the enhanced one, so the render job bakes in rotation and
+re-encodes at 2400px — nothing more. Re-running enhancement would also mean
+importing another feature, which the layering check forbids.
+
+**The render job is injected, not imported.** `SharePageImages` takes an
+`IsolateJob<SharePageRequest, String>` in its constructor because the renderer
+lives in infrastructure and the application layer may not depend on it (§2).
+
+**A partial set is never handed over and never left behind.** When a page fails
+to render, or the batch is cancelled, every image already written is deleted
+before the failure is emitted. Half a document handed to a share sheet looks
+like the document lost pages.
+
+**"No recognised text" is answered as both a disabled control and a message.**
+The spec allows either; a disabled control with no explanation leaves the user
+guessing, so the tile is disabled *and* a notice beneath it offers to run
+recognition.
+
+**Every recovery handler is supplied to the error view.** Not only `onRetry`:
+a full device's recovery action is "manage storage", and supplying only the
+retry handler would leave that failure with a message and no way forward — the
+exact situation the "clear message and working recovery action" requirement
+exists to prevent. Found by a widget test, not by reading the code.
+
+**Offline is proved two ways.** A runtime check installs an `HttpOverrides` that
+fails the test the moment anything opens an `HttpClient`, and a source check
+scans the feature for `package:dio`, `HttpClient` and `package:http/`. Either
+alone is defeatable: the runtime check misses a path the suite does not walk,
+and the source check misses a request made through a transitive dependency.
