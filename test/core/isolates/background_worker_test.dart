@@ -105,6 +105,7 @@ void main() {
   for (final entry in <String, BackgroundWorker>{
     'InlineBackgroundWorker': const InlineBackgroundWorker(),
     'IsolateBackgroundWorker': const IsolateBackgroundWorker(),
+    'PooledIsolateBackgroundWorker': PooledIsolateBackgroundWorker(),
   }.entries) {
     final name = entry.key;
     final worker = entry.value;
@@ -238,4 +239,75 @@ void main() {
       });
     });
   }
+
+  group('PooledIsolateBackgroundWorker', () {
+    test('reuses one isolate across jobs', () async {
+      final worker = PooledIsolateBackgroundWorker();
+
+      // Asserted through isolate-local state rather than by timing. The counter
+      // is a global inside whichever isolate runs the job: a fresh isolate per
+      // job always reports 1, so a rising count is proof the same one is being
+      // reused — and it cannot pass by accident on a fast machine.
+      final first = await worker.run(countInvocations, null);
+      final second = await worker.run(countInvocations, null);
+      final third = await worker.run(countInvocations, null);
+
+      expect(first.valueOrNull, 1);
+      expect(second.valueOrNull, 2);
+      expect(third.valueOrNull, 3);
+
+      await worker.shutdown();
+    });
+
+    test('a spawn-per-job worker does not, which is the point', () async {
+      const worker = IsolateBackgroundWorker();
+
+      final first = await worker.run(countInvocations, null);
+      final second = await worker.run(countInvocations, null);
+
+      expect(first.valueOrNull, 1);
+      expect(second.valueOrNull, 1);
+    });
+
+    test('a failing job leaves the isolate usable', () async {
+      final worker = PooledIsolateBackgroundWorker();
+
+      final failed = await worker.run(alwaysThrows, null);
+      expect(failed.failureOrNull, isNotNull);
+
+      // The next job must still run: one bad page cannot end a batch.
+      final after = await worker.run(countInvocations, null);
+      expect(after.valueOrNull, isNotNull);
+
+      await worker.shutdown();
+    });
+
+    test('starts again after being shut down', () async {
+      final worker = PooledIsolateBackgroundWorker();
+
+      await worker.run(countInvocations, null);
+      await worker.shutdown();
+
+      final result = await worker.run(countInvocations, null);
+
+      // A new isolate, so its counter starts over.
+      expect(result.valueOrNull, 1);
+
+      await worker.shutdown();
+    });
+
+    test('shutting down without ever running is harmless', () async {
+      final worker = PooledIsolateBackgroundWorker();
+      await expectLater(worker.shutdown(), completes);
+    });
+  });
 }
+
+/// Counts how many times it has run *inside its own isolate*.
+int _invocations = 0;
+
+/// Returns the number of times this isolate has run it.
+int countInvocations(void _) => ++_invocations;
+
+/// Fails every time, for asserting a job's error does not kill the worker.
+int alwaysThrows(void _) => throw StateError('deliberate');

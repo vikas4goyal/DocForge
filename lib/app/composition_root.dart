@@ -48,7 +48,11 @@ Future<AppDependencies> buildAppDependencies() async {
     preferences: SharedPreferencesStore(preferences),
     secureStorage: const FlutterSecureStore(secureStorage),
     permissions: const PluginPermissionService(),
-    worker: const IsolateBackgroundWorker(),
+    // One isolate shared across jobs rather than one spawned per job. A scan
+    // session runs hundreds of them — a preview render per adjustment, a
+    // correction per crop, a pass per page of a batch — and each spawn
+    // allocates a heap and starts an event loop before any pixel is touched.
+    worker: PooledIsolateBackgroundWorker(),
     thumbnailCache: ThumbnailCache(),
   );
 }

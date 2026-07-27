@@ -76,28 +76,15 @@ class _CropScreenState extends State<CropScreen> {
             // moving the handle. The margin is a little over one touch target,
             // which is what it takes to get a whole fingertip beside a corner.
             Positioned.fill(
-              child: Padding(
-                // Room below for the rotate handle, which hangs off the bottom
-                // edge: without it a page that fills the canvas vertically
-                // would push the handle off-screen exactly when the selection
-                // is largest. The page is laid out inside what is left, so the
-                // handle is always reachable.
-                padding: const EdgeInsets.fromLTRB(
-                  28,
-                  20,
-                  28,
-                  _rotateHandleReach + AppTheme.minimumTouchTarget / 2,
-                ),
-                child: _CropCanvas(
-                  state: state,
-                  onImageSize: (size) {
-                    if (_imageSize == size) return;
-                    // Set outside the build it was reported from.
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      if (mounted) setState(() => _imageSize = size);
-                    });
-                  },
-                ),
+              child: _CropCanvas(
+                state: state,
+                onImageSize: (size) {
+                  if (_imageSize == size) return;
+                  // Set outside the build it was reported from.
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) setState(() => _imageSize = size);
+                  });
+                },
               ),
             ),
             if (state.isWorking)
@@ -233,16 +220,34 @@ class _CropCanvasState extends State<_CropCanvas> {
     _listener = listener;
   }
 
-  /// The rectangle the page actually occupies inside [canvas].
+  /// The rectangle the page occupies, laid out inside a margin for the handles.
   ///
-  /// Falls back to the whole canvas until the size is known, so the overlay is
-  /// never missing — only briefly less accurate.
+  /// The margin is taken out of the canvas *before* the page is fitted, not
+  /// added around the canvas. Padding the canvas instead leaves the page filling
+  /// it edge to edge on one axis, so a handle centred on a corner still hangs
+  /// half outside the Stack — clipped, invisible and unhittable — and the rotate
+  /// handle, which sits further out again, disappears entirely.
+  ///
+  /// Falls back to the same inset rectangle until the page's size is known, so
+  /// the overlay is never missing, only briefly less accurate.
   Rect _imageRect(Size canvas) {
-    final size = _imageSize;
-    if (size == null || size.isEmpty) return Offset.zero & canvas;
+    // A whole fingertip either side of a corner, and enough below the page for
+    // the rotate handle to hang clear of it.
+    const side = AppTheme.minimumTouchTarget / 2 + 8;
+    const bottom = _rotateHandleReach + AppTheme.minimumTouchTarget / 2;
 
-    final fitted = applyBoxFit(BoxFit.contain, size, canvas);
-    return Alignment.center.inscribe(fitted.destination, Offset.zero & canvas);
+    final available = Rect.fromLTWH(
+      side,
+      side,
+      math.max(1, canvas.width - side * 2),
+      math.max(1, canvas.height - side - bottom),
+    );
+
+    final size = _imageSize;
+    if (size == null || size.isEmpty) return available;
+
+    final fitted = applyBoxFit(BoxFit.contain, size, available.size);
+    return Alignment.center.inscribe(fitted.destination, available);
   }
 
   @override
@@ -257,12 +262,20 @@ class _CropCanvasState extends State<_CropCanvas> {
         return Stack(
           fit: StackFit.expand,
           children: [
+            // Drawn into exactly the rectangle the overlay is mapped through,
+            // rather than filling the canvas: any difference between the two
+            // puts the outline somewhere other than the page it describes.
+            // BoxFit.fill is safe here because imageRect already carries the
+            // page's aspect ratio.
             if (provider != null)
-              Image(
-                image: provider,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) =>
-                    const ColoredBox(color: Colors.black12),
+              Positioned.fromRect(
+                rect: imageRect,
+                child: Image(
+                  image: provider,
+                  fit: BoxFit.fill,
+                  errorBuilder: (context, error, stackTrace) =>
+                      const ColoredBox(color: Colors.black12),
+                ),
               ),
             CustomPaint(
               key: ScanKeys.edgeOverlay,

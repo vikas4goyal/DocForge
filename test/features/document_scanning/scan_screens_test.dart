@@ -623,10 +623,13 @@ void main() {
       await tester.tap(find.byKey(ScanKeys.cropResetButton));
       await tester.pumpAndSettle();
 
+      // Measured against the page, not the canvas. The page is laid out inside
+      // a margin so the handles have somewhere to sit, so canvas coordinates
+      // would only agree with these by accident.
       final handle = tester.getCenter(find.byKey(ScanKeys.cropHandle(0)));
-      final overlay = tester.getRect(find.byKey(ScanKeys.edgeOverlay));
-      expect(handle.dx, closeTo(overlay.left, 1));
-      expect(handle.dy, closeTo(overlay.top, 1));
+      final pageRect = tester.getRect(find.byType(Image));
+      expect(handle.dx, closeTo(pageRect.left, 1));
+      expect(handle.dy, closeTo(pageRect.top, 1));
     });
 
     testWidgets('confirming reports the corrected page', (tester) async {

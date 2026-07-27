@@ -183,3 +183,128 @@ class InlineBackgroundWorker with BatchRunner implements BackgroundWorker {
     }
   }
 }
+
+/// A [BackgroundWorker] backed by one isolate kept alive between jobs.
+///
+/// [IsolateBackgroundWorker] spawns, runs and tears down per job. Spawning is
+/// not free — it allocates a heap and starts an event loop — and the app pays it
+/// on every preview render, every perspective correction and every page of a
+/// batch. Over a scanning session that is the single largest source of overhead
+/// that does no useful work.
+///
+/// Jobs run one at a time, which is what they already did: batches are
+/// sequential by construction, and the screens that correct or enhance a page
+/// block on the result. Sharing one isolate therefore removes the spawn without
+/// changing what runs when.
+///
+/// The isolate starts on first use and lives until [shutdown]. A worker that is
+/// never used never spawns anything.
+class PooledIsolateBackgroundWorker
+    with BatchRunner
+    implements BackgroundWorker {
+  /// Creates a worker that shares one isolate across jobs.
+  PooledIsolateBackgroundWorker();
+
+  Isolate? _isolate;
+  SendPort? _commands;
+  Future<void>? _starting;
+
+  @override
+  Future<Result<R>> run<T, R>(IsolateJob<T, R> job, T input) async {
+    try {
+      await _ensureStarted();
+
+      // One port per request rather than one shared reply port: it correlates
+      // the answer with its question without a request id, and it is closed the
+      // moment the answer arrives.
+      final reply = ReceivePort();
+      _commands!.send((job, input, reply.sendPort));
+
+      final response = await reply.first;
+      reply.close();
+
+      // The job's own failure is carried back as a message rather than thrown
+      // across the boundary, because an arbitrary error object may not be
+      // sendable — and losing the error would turn a reportable failure into a
+      // hang.
+      return switch (response) {
+        (_workerOk, final Object? value) => Result<R>.success(value as R),
+        // Cancellation is carried as its own outcome rather than as an error
+        // message. The exception itself cannot be relied on to survive the
+        // boundary, and a cancelled job reported as an unexpected failure would
+        // show the user an error for something they chose.
+        (_workerCancelled, _) => Result<R>.failure(const Failure.cancelled()),
+        (_workerFailed, final Object? error) => Result<R>.failure(
+          _failureFor(error ?? 'the job failed without reporting why'),
+        ),
+        _ => Result<R>.failure(
+          Failure.unexpected(debugDetail: 'malformed worker reply: $response'),
+        ),
+      };
+    } on Object catch (error) {
+      return Result<R>.failure(_failureFor(error));
+    }
+  }
+
+  /// Starts the isolate if it is not already running.
+  ///
+  /// Concurrent callers await the same start rather than racing to spawn one
+  /// each, which would leave every isolate but the last unreachable and alive.
+  Future<void> _ensureStarted() {
+    if (_commands != null) return Future<void>.value();
+    return _starting ??= _start();
+  }
+
+  Future<void> _start() async {
+    final ready = ReceivePort();
+    _isolate = await Isolate.spawn(_workerMain, ready.sendPort);
+    _commands = await ready.first as SendPort;
+    ready.close();
+  }
+
+  /// Stops the isolate and releases it.
+  ///
+  /// Safe to call when nothing was ever started, and safe to call twice. A
+  /// worker used again afterwards simply starts a new isolate.
+  Future<void> shutdown() async {
+    _isolate?.kill(priority: Isolate.immediate);
+    _isolate = null;
+    _commands = null;
+    _starting = null;
+  }
+}
+
+/// The job completed and its value is attached.
+const _workerOk = 0;
+
+/// The job threw. A description of the error is attached.
+const _workerFailed = 1;
+
+/// The job was cancelled cooperatively.
+const _workerCancelled = 2;
+
+/// Entry point of the shared worker isolate.
+///
+/// Runs each job as it arrives and replies on the port that came with it. Errors
+/// are reported as a value, never rethrown: an uncaught error here would take
+/// the isolate down and strand every later job.
+void _workerMain(SendPort ready) {
+  final commands = ReceivePort();
+  ready.send(commands.sendPort);
+
+  commands.listen((message) {
+    if (message is! (Function, Object?, SendPort)) return;
+    final (job, input, reply) = message;
+
+    try {
+      reply.send((_workerOk, (job as dynamic)(input)));
+    } on CancelledException {
+      reply.send((_workerCancelled, null));
+    } on Object catch (error) {
+      // Stringified rather than sent as-is: an arbitrary error object may not
+      // be sendable, and failing to send it would leave the caller waiting for
+      // a reply that never comes.
+      reply.send((_workerFailed, '$error'));
+    }
+  });
+}
