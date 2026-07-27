@@ -451,10 +451,10 @@ There is no prior release, so this is a build-out rather than a migration.
 
 1. ~~**PDF manipulation library.**~~ **RESOLVED (task 1.2)** — `pdf_manipulator` ^4.0.0, MIT licensed. Syncfusion is rejected outright: no licence is held and its community terms carry revenue, headcount and registration conditions. Full reasoning in §12.
 2. ~~**Isar package and version.**~~ **RESOLVED (task 1.1)** — `isar_community` ^3.3.2. Upstream `isar_generator` is incompatible with `freezed` ^3.0.0; the community fork resolves and generates cleanly. Full reasoning and consequences in §6.
-3. **Edge-detection implementation — needed for phase 3b, not blocking 3a.** Native CV binding versus a pure-Dart contour detector in `image`. Decide on measured detection quality and app-size cost against real captures.
-4. **OCR language set.** Which languages ship in V1, and whether any require a downloadable model — which would need a first-use download flow and would qualify the "works entirely offline" claim for those languages specifically.
-5. **Delete semantics.** The specs require deleted documents to be recoverable until permanently removed. Whether "deleted" is a distinct state or simply the archive needs confirming; if distinct, a retention policy (indefinite, or auto-purge after N days) is a product decision.
-6. **Tablet layout ambition.** Whether tablets get a genuine two-pane master/detail layout or a responsive single-pane with a wider grid. The specs require only that the width be used well; the former is materially more work and more goldens.
+3. ~~**Edge-detection implementation.**~~ **RESOLVED (task 6.20)** — OpenCV via `dartcv4` ^1.1.8 (Apache-2.0). Chosen over a from-scratch pure-Dart contour detector on the grounds that the CV primitives are battle-tested upstream and writing them fresh is a large body of unproven code. Full reasoning and the testing consequence in §22.
+4. ~~**OCR language set.**~~ **RESOLVED (group 8)** — Latin script ships bundled and works entirely offline; other scripts are modelled as installable language packs behind a repository, so the offline claim is unqualified for what actually ships. See §23.
+5. ~~**Delete semantics.**~~ **RESOLVED** — the archive *is* the recovery state. Delete moves a document to the archive; "permanently remove" from the archive is the only irreversible action. This is what `document-library` already implements, and it satisfies "recoverable until permanently removed" without a third state.
+6. ~~**Tablet layout ambition.**~~ **RESOLVED** — responsive single-pane with wider grids and larger content, driven by the existing `ResponsiveLayout`. The specs require only that the width be used well, and a true two-pane master/detail is materially more work and roughly double the goldens for no requirement.
 
 ### 21. Corrections recorded during group 7
 
@@ -505,3 +505,60 @@ until scrolled to. Tests scroll to a chip and call `ensureVisible` before
 tapping — `scrollUntilVisible` stops as soon as the widget is in the tree, and a
 lazy list builds a little beyond the viewport, so a tap at that point can land
 on nothing.
+
+### 22. Automatic edge detection
+
+`dartcv4` ^1.1.8 (Apache-2.0, the maintained successor to the discontinued
+`opencv_dart`/`opencv_core`) supplies greyscale, Gaussian blur, Canny,
+`findContours` and `approxPolyDP`. Chosen over a from-scratch pure-Dart contour
+detector: the primitives are battle-tested upstream, and writing them fresh
+would be a large body of unproven code sitting directly on scan quality.
+
+**Version is pinned to the 1.x line by `pdf_manipulator`.** `dartcv4` 2.x
+depends on `hooks` ^1.0.0 while `pdf_manipulator` ^4.0.0 requires ^2.0.2, so
+version solving fails. 1.1.8 is what resolves alongside the PDF stack.
+
+**The native library does not load in the host test VM,** only on Android and
+iOS. That is the fact that shapes the design rather than an inconvenience to
+work around: if the whole detector lived in `infrastructure/`, "automatic edge
+detection" would be a large block of logic no test could reach.
+
+So the split is:
+
+- `infrastructure/opencv_edge_detector.dart` holds *only* calls whose behaviour
+  is guaranteed upstream — blur, Canny, dilate, find contours, approximate to a
+  polygon. Nothing here decides anything.
+- `domain/page_edge_geometry.dart` holds every *decision*, as pure functions:
+  corner ordering, area and angle measurement, convexity, the plausibility
+  rules, and which candidate wins. This is where a detector actually gets a
+  document wrong, and it is tested exhaustively without a camera.
+
+Three plausibility rules, each earning its place:
+
+- **Area between 15% and 99.5% of the frame.** Below that it is a business card
+  or a logo, and cropping to it silently removes most of a document the user
+  believes they scanned. Above it, the contour is the frame border, which Canny
+  finds reliably and which is never the document.
+- **Opposite edges within 3× of each other.** This is the real test of "a
+  rectangle seen at an angle". A corner-angle check alone does *not* reject a
+  wedge tapering from 800px to 60px — a trapezium's interior angles stay
+  moderate however extreme its taper — which the first implementation got wrong
+  and a test caught.
+- **Convex.** A quadrilateral that doubles back on itself is not paper from any
+  angle, and is exactly what corner ordering produces from a contour that was
+  never a page.
+
+Corners are ordered by coordinate sums and differences rather than by angle
+around the centroid: the two agree on a page seen at an angle and disagree on a
+nearly-square one, where only the sum-and-difference rule stays correct.
+
+Detection runs on a copy downscaled to 1024px on its longest edge, inside an
+isolate. A page outline is a feature hundreds of pixels across, so the full
+capture finds no more edges and takes many times longer — and the result is
+normalised, so a crop found on the downscale applies unchanged to the original.
+
+The whole thing is best-effort by contract. `EdgeDetector.detect` never fails:
+an undetected or unreadable capture returns `PageQuad.full`, which is the
+specified behaviour — the capture is kept, the whole frame becomes the default
+crop, and the user adjusts the corners by hand. `FullPageEdgeDetector` remains,
+both as that fallback and as the substitute tests and previews inject.

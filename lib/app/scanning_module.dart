@@ -10,6 +10,7 @@ import 'package:doc_forge/features/document_scanning/application/usecases/scanni
 import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';
+import 'package:doc_forge/features/document_scanning/infrastructure/opencv_edge_detector.dart';
 import 'package:doc_forge/features/document_scanning/infrastructure/page_correction_job.dart';
 import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cubits.dart';
 import 'package:doc_forge/features/document_scanning/presentation/screens/crop_screen.dart';
@@ -58,11 +59,18 @@ class ScanningModule {
 /// The staging area lives in the cache directory rather than in documents, so
 /// captures from an abandoned scan can be reclaimed by the operating system
 /// under storage pressure instead of counting as user data.
+///
+/// [detector] defaults to the OpenCV detector. It is injectable because the
+/// OpenCV binding needs a native library that exists on Android and iOS but not
+/// in the host test VM, so tests and previews substitute
+/// [FullPageEdgeDetector] — which is also the behaviour the spec requires when
+/// no edges can be found.
 ScanningModule buildScanningModule({
   required Directory directory,
   required PermissionService permissions,
   required IdGenerator ids,
   required BackgroundWorker worker,
+  EdgeDetector detector = const OpenCvEdgeDetector(),
 }) {
   final staging = LocalScanStagingArea(directory);
   final scanner = CameraScannerRepository(permissions, staging, ids);
@@ -70,10 +78,10 @@ ScanningModule buildScanningModule({
   return ScanningModule(
     scanner: scanner,
     staging: staging,
-    // The fallback detector until automatic detection lands: the full page
-    // becomes the default crop and the user adjusts the corners by hand, which
-    // is exactly what the spec requires when edges cannot be found.
-    capturePage: CapturePage(scanner, const FullPageEdgeDetector()),
+    // OpenCV finds the outline; `FullPageEdgeDetector` remains the specified
+    // behaviour for a capture whose edges cannot be found, and the detector
+    // falls back to exactly that rather than failing.
+    capturePage: CapturePage(scanner, detector),
     applyCorrection: ApplyPerspectiveCorrection(worker, correctPageJob),
     discardSession: DiscardScanSession(staging, scanner),
     buildPreview: scanner.buildPreview,

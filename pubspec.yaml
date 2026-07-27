@@ -63,7 +63,7 @@ dependencies:
   receive_sharing_intent: ^1.9.0
   pdf_manipulator: ^4.0.0
   meta: ^1.18.0
-
+  dartcv4: ^1.1.8
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -121,7 +121,7 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 - [x] 6.17 Add golden tests for the page review and crop screens in light and dark, phone and tablet.
 - [x] 6.18 Add dartdoc to all new public APIs and inline comments on the perspective-transform maths and the isolate boundary.
 - [x] 6.19 Run `dart format`, `flutter analyze`, the layering check and coverage for group 6.
-- [ ] 6.20 Phase 3b — resolve open question 3, implement automatic edge detection behind `EdgeDetector`, and unit-test it against real-capture fixtures including the not-detected fallback.
+- [x] 6.20 Phase 3b — resolve open question 3, implement automatic edge detection behind `EdgeDetector`, and unit-test it against real-capture fixtures including the not-detected fallback.
 
 ## 7. Image enhancement
 
