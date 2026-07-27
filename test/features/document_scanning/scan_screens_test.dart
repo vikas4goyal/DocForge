@@ -74,6 +74,8 @@ class _Recorder {
   CapturedPage? croppedPage;
   int? enhancedIndex;
   CapturedPage? enhancedPage;
+  int? capturedIndex;
+  CapturedPage? capturedPage;
 }
 
 void main() {
@@ -119,6 +121,10 @@ void main() {
         previewBuilder: (_) =>
             const ColoredBox(key: Key('fake_preview'), color: Colors.black),
         onFinished: () => recorder.finished++,
+        onPageCaptured: (index, page) async {
+          recorder.capturedIndex = index;
+          recorder.capturedPage = page;
+        },
         onCancelled: () => recorder.cancelled++,
         onOpenSettings: () => recorder.settings++,
         onImportInstead: () => recorder.importInstead++,
@@ -188,6 +194,38 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('1'), findsOneWidget);
+    });
+
+    testWidgets('a captured page is handed straight to the editors', (
+      tester,
+    ) async {
+      await tester.pumpWidget(captureScreen());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(ScanKeys.batchModeToggle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ScanKeys.shutterButton));
+      await tester.pumpAndSettle();
+
+      // Offered while the document is still in front of the user, rather than
+      // left to be found again in the review list later.
+      expect(recorder.capturedIndex, 0);
+      expect(recorder.capturedPage, isNotNull);
+    });
+
+    testWidgets('a failed capture opens no editor', (tester) async {
+      scanner.captureFailure = const Failure.camera(debugDetail: 'no camera');
+      await tester.pumpWidget(captureScreen());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(ScanKeys.batchModeToggle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ScanKeys.shutterButton));
+      await tester.pumpAndSettle();
+
+      // Opening an editor over a page that never existed would turn a failed
+      // shot into a puzzle.
+      expect(recorder.capturedPage, isNull);
     });
 
     testWidgets('batch mode keeps the camera up between captures', (

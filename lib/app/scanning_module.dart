@@ -341,6 +341,35 @@ class _ScanFlowState extends State<ScanFlow> {
     setState(() => _enhancements[page.id] = enhanced.enhancement);
   }
 
+  /// Takes a freshly captured page through the crop and enhance editors.
+  ///
+  /// Offered immediately rather than left for the review list: the page is
+  /// still in front of the user, and both steps are skippable, so this adds a
+  /// step to accept rather than one to undo. Declining either leaves the
+  /// capture exactly as it was.
+  Future<void> _editCapturedPage(int index, CapturedPage page) async {
+    final cropped = await openPageCrop(
+      context,
+      module: widget.module,
+      page: page,
+    );
+
+    if (cropped != null) _capture.pages[index] = cropped;
+    if (!mounted) return;
+
+    // Enhancement runs over the *cropped* page when there is one, so the
+    // preview shows the document rather than whatever surrounded it.
+    final edited = cropped ?? page;
+    final enhanced = await openPageEnhance(
+      context,
+      module: widget.module,
+      page: _pageRefFor(edited),
+    );
+
+    if (enhanced == null || !mounted) return;
+    setState(() => _enhancements[edited.id] = enhanced.enhancement);
+  }
+
   /// The review page as a [PageRef], carrying any settings already chosen.
   ///
   /// `CapturedPage` has nowhere to hold them — it describes what came off the
@@ -361,6 +390,7 @@ class _ScanFlowState extends State<ScanFlow> {
         child: ScanCaptureScreen(
           previewBuilder: widget.module.buildPreview,
           onFinished: _finishCapturing,
+          onPageCaptured: _editCapturedPage,
           onCancelled: widget.onExit,
           onOpenSettings: widget.onOpenSettings,
           onImportInstead: widget.onImportInstead,

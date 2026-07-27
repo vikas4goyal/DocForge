@@ -2,6 +2,7 @@
 library;
 
 import 'package:doc_forge/core/theme/app_theme.dart';
+import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cubits.dart';
 import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_states.dart';
 import 'package:doc_forge/features/document_scanning/presentation/scan_keys.dart';
@@ -25,6 +26,7 @@ class ScanCaptureScreen extends StatefulWidget {
   const ScanCaptureScreen({
     required this.previewBuilder,
     required this.onFinished,
+    required this.onPageCaptured,
     required this.onCancelled,
     required this.onOpenSettings,
     required this.onImportInstead,
@@ -36,6 +38,14 @@ class ScanCaptureScreen extends StatefulWidget {
 
   /// Called with the captured pages once the user is done.
   final VoidCallback onFinished;
+
+  /// Called with each page as it is captured, before the flow moves on.
+  ///
+  /// Gives the page straight to the editors while the document is still in
+  /// front of the user: edges are never more obviously wrong than in the second
+  /// after the shot, and correcting there saves finding the page again in a
+  /// list later.
+  final Future<void> Function(int index, CapturedPage page) onPageCaptured;
 
   /// Called when the user abandons the scan.
   final VoidCallback onCancelled;
@@ -115,7 +125,11 @@ class _ScanCaptureScreenState extends State<ScanCaptureScreen> {
         },
         bottomNavigationBar: state.status == ScanCaptureStatus.failure
             ? null
-            : _CaptureControls(state: state, onFinished: widget.onFinished),
+            : _CaptureControls(
+                state: state,
+                onFinished: widget.onFinished,
+                onPageCaptured: widget.onPageCaptured,
+              ),
       ),
     );
   }
@@ -123,10 +137,15 @@ class _ScanCaptureScreenState extends State<ScanCaptureScreen> {
 
 /// The shutter, batch toggle and done control.
 class _CaptureControls extends StatelessWidget {
-  const _CaptureControls({required this.state, required this.onFinished});
+  const _CaptureControls({
+    required this.state,
+    required this.onFinished,
+    required this.onPageCaptured,
+  });
 
   final ScanCaptureState state;
   final VoidCallback onFinished;
+  final Future<void> Function(int index, CapturedPage page) onPageCaptured;
 
   @override
   Widget build(BuildContext context) {
@@ -145,7 +164,19 @@ class _CaptureControls extends StatelessWidget {
               _ShutterButton(
                 enabled: state.canCapture,
                 onPressed: () async {
+                  final before = cubit.pages.length;
                   await cubit.capture();
+
+                  // Only when a page actually landed: a refused permission or a
+                  // full disk leaves the count unchanged, and opening an editor
+                  // over nothing would turn a failed shot into a puzzle.
+                  if (cubit.pages.length > before) {
+                    await onPageCaptured(
+                      cubit.pages.length - 1,
+                      cubit.pages.last,
+                    );
+                  }
+
                   // In batch mode the preview stays put for the next page,
                   // which is exactly what batch mode means.
                   if (!cubit.state.batchMode && cubit.pages.isNotEmpty) {
