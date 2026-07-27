@@ -72,6 +72,8 @@ class _Recorder {
   int exited = 0;
   int? croppedIndex;
   CapturedPage? croppedPage;
+  int? enhancedIndex;
+  CapturedPage? enhancedPage;
 }
 
 void main() {
@@ -134,6 +136,10 @@ void main() {
         onCropPage: (index, page) {
           recorder.croppedIndex = index;
           recorder.croppedPage = page;
+        },
+        onEnhancePage: (index, page) {
+          recorder.enhancedIndex = index;
+          recorder.enhancedPage = page;
         },
       ),
     ),
@@ -416,16 +422,17 @@ void main() {
       expect(find.text('Page 3'), findsOneWidget);
     });
 
-    testWidgets('rotating a page updates its row immediately', (tester) async {
-      await tester.pumpWidget(reviewScreen(pages(1)));
+    testWidgets('enhancing a page reports which one', (tester) async {
+      await tester.pumpWidget(reviewScreen(pages(2)));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(ScanKeys.pageRotateButton));
+      await tester.tap(find.byKey(ScanKeys.pageEnhanceButton).last);
       await tester.pumpAndSettle();
 
-      // Rotation is metadata applied at render time, so the row reflects it on
-      // the next frame rather than after a re-encode.
-      expect(find.text('Rotated 90°'), findsOneWidget);
+      // Per page rather than for the session: pages of one document are often
+      // shot under different light.
+      expect(recorder.enhancedIndex, 1);
+      expect(recorder.enhancedPage, isNotNull);
     });
 
     testWidgets('deleting a page removes it and offers an undo', (
@@ -531,7 +538,11 @@ void main() {
 
       // A screen-reader user moving through a long list must always know which
       // page they are about to change.
-      expect(find.bySemanticsLabel('Rotate page 1'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Crop and rotate page 1'),
+        findsOneWidget,
+      );
+      expect(find.bySemanticsLabel('Enhance page 1'), findsOneWidget);
       expect(find.bySemanticsLabel('Delete page 2'), findsOneWidget);
 
       handle.dispose();
@@ -547,6 +558,7 @@ void main() {
               onAddPages: () {},
               onExit: () {},
               onCropPage: (_, _) {},
+              onEnhancePage: (_, _) {},
             ),
           ),
           brightness: Brightness.dark,

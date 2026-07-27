@@ -67,6 +67,7 @@ void main() {
         onAddPages: () {},
         onExit: () {},
         onCropPage: (_, _) {},
+        onEnhancePage: (_, _) {},
       ),
     ),
     brightness,

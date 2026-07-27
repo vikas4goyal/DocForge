@@ -116,6 +116,7 @@ Widget _review(List<CapturedPage> pages) => BlocProvider<PageReviewCubit>(
     onAddPages: () {},
     onExit: () {},
     onCropPage: (_, _) {},
+    onEnhancePage: (_, _) {},
   ),
 );
 

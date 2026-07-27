@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:doc_forge/app/document_creation_module.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
+import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
@@ -114,6 +115,67 @@ ScanningModule buildScanningModule({
     enhancementDestination: enhancementDestination,
     buildPreview: scanner.buildPreview,
   );
+}
+
+// ── Reusable page editors ────────────────────────────────────────
+//
+// Crop and enhance are pushed as routes rather than being steps of the scan
+// flow, so the same screens serve every way a page can be reached: straight
+// after a capture, from a row in the review list, and from a page of a document
+// that was saved long ago. A second implementation for any of those would be a
+// second set of behaviours to keep in step, and the one the user reached would
+// decide which fixes they got.
+
+/// Opens the crop and rotate editor for [page], returning the corrected page.
+///
+/// Returns null when the user leaves without applying anything, which callers
+/// must treat as "keep what you had" rather than as a failure.
+Future<CapturedPage?> openPageCrop(
+  BuildContext context, {
+  required ScanningModule module,
+  required CapturedPage page,
+}) => Navigator.of(context).push<CapturedPage>(
+  MaterialPageRoute(
+    builder: (routeContext) => BlocProvider(
+      create: (_) => CropCubit(page, module.applyCorrection),
+      child: CropScreen(
+        // Written beside the capture rather than over it: keeping the original
+        // means a crop the user dislikes can be redone from the full page
+        // rather than from an already-cropped one.
+        destinationPath: '${page.imagePath}.cropped.jpg',
+        onCropped: (cropped) => Navigator.of(routeContext).pop(cropped),
+        onCancelled: () => Navigator.of(routeContext).pop(),
+      ),
+    ),
+  ),
+);
+
+/// Opens the enhancement editor for a single [page].
+///
+/// Returns the page carrying whatever settings were chosen, or null when the
+/// screen was left without finishing.
+Future<PageRef?> openPageEnhance(
+  BuildContext context, {
+  required ScanningModule module,
+  required PageRef page,
+}) async {
+  final edited = await Navigator.of(context).push<List<PageRef>>(
+    MaterialPageRoute(
+      builder: (routeContext) => BlocProvider<EnhancementCubit>(
+        create: (_) => EnhancementCubit(
+          [page],
+          module.applyEnhancement,
+          const PlanSessionEnhancement(),
+          module.enhancementDestination,
+        ),
+        child: EnhancementScreen(
+          onDone: (pages) => Navigator.of(routeContext).pop(pages),
+        ),
+      ),
+    ),
+  );
+
+  return edited == null || edited.isEmpty ? null : edited.first;
 }
 
 /// Which step of the scanning flow is showing.
@@ -235,9 +297,15 @@ class _ScanFlowState extends State<ScanFlow> {
     setState(() => _step = _ScanStep.review);
   }
 
+  /// Settings chosen for individual pages before the session-wide step.
+  ///
+  /// Keyed by page rather than by position, so reordering or deleting a page
+  /// cannot hand its settings to a different one.
+  final Map<PageId, EnhancementSettings> _enhancements = {};
+
   /// Moves from review into enhancement.
   void _finishReview() {
-    _pages = [for (final page in _review.state.pages) page.toPageRef()];
+    _pages = [for (final page in _review.state.pages) _pageRefFor(page)];
     setState(() => _step = _ScanStep.enhance);
   }
 
@@ -248,23 +316,41 @@ class _ScanFlowState extends State<ScanFlow> {
   }
 
   Future<void> _cropPage(int index, CapturedPage page) async {
-    final corrected = await Navigator.of(context).push<CapturedPage>(
-      MaterialPageRoute(
-        builder: (context) => BlocProvider(
-          create: (_) => CropCubit(page, widget.module.applyCorrection),
-          child: CropScreen(
-            // Written beside the capture rather than over it: keeping the
-            // original means a crop the user dislikes can be redone from the
-            // full page rather than from an already-cropped one.
-            destinationPath: '${page.imagePath}.cropped.jpg',
-            onCropped: (page) => Navigator.of(context).pop(page),
-            onCancelled: () => Navigator.of(context).pop(),
-          ),
-        ),
-      ),
+    final corrected = await openPageCrop(
+      context,
+      module: widget.module,
+      page: page,
     );
 
     if (corrected != null) _review.replace(index, corrected);
+  }
+
+  /// Opens the enhancement editor for one page of the review list.
+  ///
+  /// Per page rather than only for the whole session: pages of one document are
+  /// often shot under different light, and settings that suit one can be wrong
+  /// for the next.
+  Future<void> _enhancePage(int index, CapturedPage page) async {
+    final enhanced = await openPageEnhance(
+      context,
+      module: widget.module,
+      page: _pageRefFor(page),
+    );
+
+    if (enhanced == null) return;
+    setState(() => _enhancements[page.id] = enhanced.enhancement);
+  }
+
+  /// The review page as a [PageRef], carrying any settings already chosen.
+  ///
+  /// `CapturedPage` has nowhere to hold them — it describes what came off the
+  /// camera — so they are kept beside the list until the pages are built.
+  PageRef _pageRefFor(CapturedPage page) {
+    final settings = _enhancements[page.id];
+    final reference = page.toPageRef();
+    return settings == null
+        ? reference
+        : reference.copyWith(enhancement: settings);
   }
 
   @override
@@ -287,6 +373,7 @@ class _ScanFlowState extends State<ScanFlow> {
           onAddPages: () => setState(() => _step = _ScanStep.capture),
           onExit: widget.onExit,
           onCropPage: _cropPage,
+          onEnhancePage: _enhancePage,
         ),
       ),
       _ScanStep.enhance => BlocProvider<EnhancementCubit>(

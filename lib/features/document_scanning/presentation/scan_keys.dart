@@ -81,6 +81,9 @@ abstract final class ScanKeys {
   /// The delete control on a page row.
   static const pageDeleteButton = Key('scan_page_delete_button');
 
+  /// The enhance control on a page row.
+  static const pageEnhanceButton = Key('scan_page_enhance_button');
+
   /// The crop control on a page row.
   static const pageCropButton = Key('scan_page_crop_button');
 

@@ -20,6 +20,7 @@ class PageReviewScreen extends StatelessWidget {
     required this.onAddPages,
     required this.onExit,
     required this.onCropPage,
+    required this.onEnhancePage,
     super.key,
   });
 
@@ -34,6 +35,9 @@ class PageReviewScreen extends StatelessWidget {
 
   /// Called to open the crop screen for the page at an index.
   final void Function(int index, CapturedPage page) onCropPage;
+
+  /// Called to open the enhancement screen for the page at an index.
+  final void Function(int index, CapturedPage page) onEnhancePage;
 
   @override
   Widget build(BuildContext context) {
@@ -63,7 +67,11 @@ class PageReviewScreen extends StatelessWidget {
               ),
         body: state.isEmpty
             ? _EmptyState(onAddPages: onAddPages, onExit: onExit)
-            : _PageList(state: state, onCropPage: onCropPage),
+            : _PageList(
+                state: state,
+                onCropPage: onCropPage,
+                onEnhancePage: onEnhancePage,
+              ),
       ),
     );
   }
@@ -133,10 +141,15 @@ class _EmptyState extends StatelessWidget {
 
 /// The reorderable list of captured pages.
 class _PageList extends StatelessWidget {
-  const _PageList({required this.state, required this.onCropPage});
+  const _PageList({
+    required this.state,
+    required this.onCropPage,
+    required this.onEnhancePage,
+  });
 
   final PageReviewState state;
   final void Function(int index, CapturedPage page) onCropPage;
+  final void Function(int index, CapturedPage page) onEnhancePage;
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +170,7 @@ class _PageList extends StatelessWidget {
         page: state.pages[index],
         index: index,
         onCrop: () => onCropPage(index, state.pages[index]),
+        onEnhance: () => onEnhancePage(index, state.pages[index]),
       ),
     );
   }
@@ -168,12 +182,14 @@ class _PageRow extends StatelessWidget {
     required this.page,
     required this.index,
     required this.onCrop,
+    required this.onEnhance,
     super.key,
   });
 
   final CapturedPage page;
   final int index;
   final VoidCallback onCrop;
+  final VoidCallback onEnhance;
 
   @override
   Widget build(BuildContext context) {
@@ -190,16 +206,19 @@ class _PageRow extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           _RowAction(
-            actionKey: ScanKeys.pageRotateButton,
-            icon: Icons.rotate_90_degrees_cw_outlined,
-            label: 'Rotate page ${index + 1}',
-            onPressed: () => cubit.rotate(index),
+            actionKey: ScanKeys.pageCropButton,
+            icon: Icons.crop_rotate,
+            // Rotation lives in the crop editor now, where it turns the
+            // selection rather than the pixels — so one control covers
+            // straightening and framing, which are the same decision.
+            label: 'Crop and rotate page ${index + 1}',
+            onPressed: onCrop,
           ),
           _RowAction(
-            actionKey: ScanKeys.pageCropButton,
-            icon: Icons.crop,
-            label: 'Crop page ${index + 1}',
-            onPressed: onCrop,
+            actionKey: ScanKeys.pageEnhanceButton,
+            icon: Icons.auto_fix_high_outlined,
+            label: 'Enhance page ${index + 1}',
+            onPressed: onEnhance,
           ),
           _RowAction(
             actionKey: ScanKeys.pageDeleteButton,
