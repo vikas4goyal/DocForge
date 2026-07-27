@@ -86,4 +86,10 @@ abstract final class ScanKeys {
 
   /// A corner handle on the edge overlay, numbered clockwise from top-left.
   static Key cropHandle(int corner) => Key('scan_crop_handle_$corner');
+
+  /// An edge handle on the overlay, numbered clockwise from the top edge.
+  ///
+  /// Dragging one moves the whole edge, which is how a page is squared up
+  /// against a margin without chasing both of its corners.
+  static Key cropEdgeHandle(int edge) => Key('scan_crop_edge_handle_$edge');
 }
