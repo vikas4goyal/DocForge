@@ -53,7 +53,7 @@ class OpenCvEdgeDetector implements EdgeDetector {
 /// Returns [PageQuad.full] when no plausible outline is found, which is the
 /// behaviour the spec requires rather than a failure.
 PageQuad detectPageQuadJob(String imagePath) {
-  final source = cv.imread(imagePath);
+  final source = _readForDetection(imagePath);
   if (source.isEmpty) return PageQuad.full;
 
   try {
@@ -75,6 +75,40 @@ PageQuad detectPageQuadJob(String imagePath) {
   } finally {
     source.dispose();
   }
+}
+
+/// Decodes [imagePath] at the smallest size detection can still work from.
+///
+/// A capture is around 12 megapixels, but the outline is found at
+/// [PageEdgeGeometry.detectionMaxDimension] — so decoding every pixel only to
+/// throw most of them away is the bulk of the time between the shutter and the
+/// next screen. `IMREAD_REDUCED_*` applies the reduction inside the JPEG
+/// decoder rather than after it, so the discarded pixels are never produced.
+///
+/// Quarter size lands a phone capture at roughly the detection bound already.
+/// Smaller sources are re-read at a gentler reduction, because an outline found
+/// in a couple of hundred pixels would be too coarse to be worth having.
+cv.Mat _readForDetection(String imagePath) {
+  // Half of the bound: still enough detail for contour finding, and it leaves
+  // room for _downscaled to do nothing in the common case.
+  const floor = PageEdgeGeometry.detectionMaxDimension ~/ 2;
+
+  for (final flags in const [
+    cv.IMREAD_REDUCED_COLOR_4,
+    cv.IMREAD_REDUCED_COLOR_2,
+  ]) {
+    final reduced = cv.imread(imagePath, flags: flags);
+    if (reduced.isEmpty) {
+      reduced.dispose();
+      continue;
+    }
+
+    final longest = reduced.cols > reduced.rows ? reduced.cols : reduced.rows;
+    if (longest >= floor) return reduced;
+    reduced.dispose();
+  }
+
+  return cv.imread(imagePath);
 }
 
 /// Returns [source] scaled so its longest edge is within the detection bound.

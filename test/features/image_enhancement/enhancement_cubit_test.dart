@@ -13,6 +13,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'enhancement_test_support.dart';
 
+/// Long enough for the Cubit's preview debounce to elapse.
+///
+/// Settings are emitted immediately, so only assertions about a *render* need
+/// this — a test that just checks `state.settings` does not wait.
+const previewDebounceWait = Duration(milliseconds: 200);
+
 void main() {
   const magic = EnhancementSettings(filter: EnhancementFilter.magicColour);
 
@@ -82,6 +88,7 @@ void main() {
     blocTest<EnhancementCubit, EnhancementState>(
       'renders a preview and returns to ready',
       build: build,
+      wait: previewDebounceWait,
       act: (cubit) => cubit.selectFilter(EnhancementFilter.grayscale),
       expect: () => [
         isA<EnhancementState>()
@@ -105,6 +112,7 @@ void main() {
     blocTest<EnhancementCubit, EnhancementState>(
       'renders the preview at preview resolution, not full',
       build: build,
+      wait: previewDebounceWait,
       act: (cubit) => cubit.selectFilter(EnhancementFilter.grayscale),
       verify: (_) {
         expect(recordedRequests.single.isPreview, isTrue);
@@ -133,6 +141,7 @@ void main() {
     blocTest<EnhancementCubit, EnhancementState>(
       'brightness is recorded and previewed',
       build: build,
+      wait: previewDebounceWait,
       act: (cubit) => cubit.setBrightness(0.4),
       verify: (cubit) {
         expect(cubit.state.settings.brightness, 0.4);
@@ -164,6 +173,7 @@ void main() {
     blocTest<EnhancementCubit, EnhancementState>(
       'an adjustment keeps the filter that was already selected',
       build: build,
+      wait: previewDebounceWait,
       act: (cubit) async {
         await cubit.selectFilter(EnhancementFilter.magicColour);
         await cubit.setBrightness(0.25);
@@ -387,6 +397,9 @@ void main() {
       );
 
       await cubit.setBrightness(0.5);
+      // The render is debounced, so the failure it reports has not happened yet
+      // when setBrightness returns.
+      await Future<void>.delayed(previewDebounceWait);
       expect(cubit.state.status, EnhancementStatus.failure);
 
       final before = recordedRequests.length;

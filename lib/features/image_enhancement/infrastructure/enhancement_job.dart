@@ -40,7 +40,13 @@ const previewQuality = 80;
 /// one page's memory rather than fifty.
 String enhancePageJob(EnhancementRequest request) {
   final settings = EnhancementRules.clamp(request.settings);
-  final bytes = File(request.sourcePath).readAsBytesSync();
+
+  // Previews read a cached downscaled copy rather than the capture itself.
+  // Decoding a ~12 megapixel JPEG only to shrink it to the preview bound cost
+  // more than the filtering did, and it was paid again on every slider
+  // movement — which is what made the enhance screen feel stuck.
+  final readPath = _sourceForRequest(request);
+  final bytes = File(readPath).readAsBytesSync();
   final decoded = img.decodeImage(bytes);
 
   if (decoded == null) {
@@ -57,7 +63,10 @@ String enhancePageJob(EnhancementRequest request) {
   // original file is copied instead of rewritten.
   if (!EnhancementRules.requiresProcessing(settings)) {
     if (identical(source, decoded)) {
-      File(request.sourcePath).copySync(request.destinationPath);
+      // Copies whatever was actually read: for a preview that is the working
+      // copy, so an unfiltered preview does not hand the UI the full-resolution
+      // capture to decode and display.
+      File(readPath).copySync(request.destinationPath);
     } else {
       File(
         request.destinationPath,
@@ -130,6 +139,48 @@ img.Image enhance(img.Image source, EnhancementSettings settings) {
   }
 
   return working;
+}
+
+/// The path a request should actually decode.
+///
+/// A full-resolution render reads the capture. A preview reads a downscaled
+/// working copy kept beside it, creating that copy the first time it is asked
+/// for. Every later preview of the same page then decodes roughly one megapixel
+/// instead of twelve, which is the difference between a slider that tracks the
+/// finger and one that does not.
+///
+/// The working copy is derived data: if anything goes wrong producing it, the
+/// capture is used directly. A slow preview is worth far more than a failed one.
+String _sourceForRequest(EnhancementRequest request) {
+  final maxDimension = request.maxDimension;
+  if (maxDimension == null) return request.sourcePath;
+
+  final source = File(request.sourcePath);
+  final working = File('${request.sourcePath}.work.jpg');
+
+  try {
+    // Regenerated when the capture is newer, so a re-crop of the same page
+    // cannot leave a stale working copy behind for the enhance screen to show.
+    if (working.existsSync() &&
+        !working.lastModifiedSync().isBefore(source.lastModifiedSync())) {
+      return working.path;
+    }
+
+    final decoded = img.decodeImage(source.readAsBytesSync());
+    if (decoded == null) return request.sourcePath;
+
+    final scaled = _downscaled(decoded, maxDimension);
+    if (identical(scaled, decoded)) {
+      // Already within the bound — a working copy would be a second file with
+      // nothing to offer over the original.
+      return request.sourcePath;
+    }
+
+    working.writeAsBytesSync(img.encodeJpg(scaled, quality: previewQuality));
+    return working.path;
+  } on Object {
+    return request.sourcePath;
+  }
 }
 
 /// Returns [source] scaled so its longest edge is at most [maxDimension].

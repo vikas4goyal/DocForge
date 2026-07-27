@@ -51,6 +51,21 @@ class EnhancementCubit extends Cubit<EnhancementState> {
   /// on the way, which reads as the control being broken.
   int _previewGeneration = 0;
 
+  /// Coalesces slider movement into one render per pause.
+  ///
+  /// [_previewGeneration] already discards *results* the user has moved past,
+  /// but the work still ran: a drag across a slider queued a full render per
+  /// frame, each spawning an isolate, and the screen stayed busy long after the
+  /// finger stopped. Waiting for a short gap means only the value the user
+  /// actually settled on is ever rendered.
+  Timer? _previewDebounce;
+
+  /// How long settings must stay unchanged before the preview is rendered.
+  ///
+  /// Long enough to swallow a drag, short enough that a deliberate single
+  /// adjustment still feels immediate.
+  static const _previewDebounceDelay = Duration(milliseconds: 120);
+
   /// Selects [filter] and re-renders the preview.
   Future<void> selectFilter(EnhancementFilter filter) =>
       _updateSettings(state.settings.copyWith(filter: filter));
@@ -170,8 +185,15 @@ class EnhancementCubit extends Cubit<EnhancementState> {
 
   /// Applies [settings] and renders a preview of them.
   Future<void> _updateSettings(EnhancementSettings settings) async {
+    // The settings themselves are emitted at once, so every control stays
+    // attached to the finger; only the expensive render is deferred.
     emit(state.copyWith(settings: settings));
-    await _renderPreview(settings);
+
+    _previewDebounce?.cancel();
+    _previewDebounce = Timer(_previewDebounceDelay, () {
+      if (isClosed) return;
+      unawaited(_renderPreview(settings));
+    });
   }
 
   /// Renders a downscaled preview of [settings].
@@ -210,6 +232,8 @@ class EnhancementCubit extends Cubit<EnhancementState> {
     // nowhere to report to, and would keep writing files for a session the user
     // has already left.
     _batchToken?.cancel();
+    // A pending debounce would otherwise fire into a closed Cubit.
+    _previewDebounce?.cancel();
     await _batchSubscription?.cancel();
     return super.close();
   }
