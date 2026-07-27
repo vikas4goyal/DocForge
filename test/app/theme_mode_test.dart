@@ -23,6 +23,7 @@ AppScreens _screens() {
     scanPreview: (_) => page('scanPreview'),
     documents: (_) => page('documents'),
     documentDetail: (_, _) => page('documentDetail'),
+    viewer: (_, _) => page('viewer'),
     documentEdit: (_, _) => page('documentEdit'),
     folders: (_) => page('folders'),
     folderDetail: (_, _) => page('folderDetail'),

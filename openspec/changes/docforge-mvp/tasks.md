@@ -184,20 +184,20 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 10. Document viewer
 
-- [ ] 10.1 Implement the `document-viewer` domain layer and the PDF rendering repository interface.
-- [ ] 10.2 Implement on-demand page rendering; write repository tests including the corrupt-file and missing-file failures.
-- [ ] 10.3 Implement `ViewerCubit` and `ViewerState` including the locked (password-required) variant.
-- [ ] 10.4 Write `bloc_test` coverage for `ViewerCubit`: loading, ready, locked, correct and incorrect password, failure.
-- [ ] 10.5 Implement the viewer screen with continuous scroll, zoom, page indicator and jump-to-page using the specified keys.
-- [ ] 10.6 Implement the share, print and edit entry points from the viewer.
-- [ ] 10.7 Widget-test the viewer, including out-of-range page numbers, double-tap zoom reset and the password prompt not rendering content until authenticated.
-- [ ] 10.8 Verify large-document performance: on-demand rendering, bounded memory, smooth scrolling. Add a performance test.
-- [ ] 10.9 Add `@Preview()` entries for the viewer and its widgets across all required states, form factors and themes, fed by a fixture PDF.
-- [ ] 10.10 Implement the tablet viewer layout and verify it uses the additional width.
-- [ ] 10.11 Verify viewer accessibility: page indicator announcement, labelled action controls.
-- [ ] 10.12 Add golden tests for the viewer in light and dark, phone and tablet.
-- [ ] 10.13 Add dartdoc to all new public APIs in the viewer feature.
-- [ ] 10.14 Run `dart format`, `flutter analyze`, the layering check and coverage for group 10.
+- [x] 10.1 Implement the `document-viewer` domain layer and the PDF rendering repository interface.
+- [x] 10.2 Implement on-demand page rendering; write repository tests including the corrupt-file and missing-file failures.
+- [x] 10.3 Implement `ViewerCubit` and `ViewerState` including the locked (password-required) variant.
+- [x] 10.4 Write `bloc_test` coverage for `ViewerCubit`: loading, ready, locked, correct and incorrect password, failure.
+- [x] 10.5 Implement the viewer screen with continuous scroll, zoom, page indicator and jump-to-page using the specified keys.
+- [x] 10.6 Implement the share, print and edit entry points from the viewer.
+- [x] 10.7 Widget-test the viewer, including out-of-range page numbers, double-tap zoom reset and the password prompt not rendering content until authenticated.
+- [x] 10.8 Verify large-document performance: on-demand rendering, bounded memory, smooth scrolling. Add a performance test.
+- [x] 10.9 Add `@Preview()` entries for the viewer and its widgets across all required states, form factors and themes, fed by a fixture PDF.
+- [x] 10.10 Implement the tablet viewer layout and verify it uses the additional width.
+- [x] 10.11 Verify viewer accessibility: page indicator announcement, labelled action controls.
+- [x] 10.12 Add golden tests for the viewer in light and dark, phone and tablet.
+- [x] 10.13 Add dartdoc to all new public APIs in the viewer feature.
+- [x] 10.14 Run `dart format`, `flutter analyze`, the layering check and coverage for group 10.
 
 ## 11. Search
 

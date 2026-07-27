@@ -20,6 +20,7 @@ final testScreens = AppScreens(
   scanPreview: (_) => marker('scanPreview'),
   documents: (_) => marker('documents'),
   documentDetail: (_, id) => marker('documentDetail:${id.value}'),
+  viewer: (_, id) => marker('viewer:${id.value}'),
   documentEdit: (_, id) => marker('documentEdit:${id.value}'),
   folders: (_) => marker('folders'),
   folderDetail: (_, id) => marker('folderDetail:${id.value}'),

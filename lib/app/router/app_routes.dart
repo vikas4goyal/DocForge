@@ -45,6 +45,13 @@ abstract final class AppRoutes {
   /// A document's editing tools.
   static const documentEditTemplate = '/documents/:id/edit';
 
+  /// The viewer for one document.
+  ///
+  /// A child of the detail route rather than a replacement for it: opening a
+  /// document to read it and inspecting its metadata are different intents, and
+  /// Back from the viewer should return to the detail the user came from.
+  static const documentViewTemplate = '/documents/:id/view';
+
   /// All folders.
   static const folders = '/folders';
 
@@ -77,6 +84,9 @@ abstract final class AppRoutes {
 
   /// Returns the location of the editing tools for [id].
   static String documentEdit(DocumentId id) => '/documents/${id.value}/edit';
+
+  /// The viewer for [id].
+  static String documentView(DocumentId id) => '/documents/${id.value}/view';
 
   /// Returns the location of the contents of folder [id].
   static String folderDetail(FolderId id) => '/folders/${id.value}';

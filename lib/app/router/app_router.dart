@@ -43,6 +43,7 @@ class AppScreens {
     required this.scanPreview,
     required this.documents,
     required this.documentDetail,
+    required this.viewer,
     required this.documentEdit,
     required this.folders,
     required this.folderDetail,
@@ -80,6 +81,9 @@ class AppScreens {
 
   /// A single document.
   final DocumentScreenBuilder documentDetail;
+
+  /// Builds the viewer for one document.
+  final DocumentScreenBuilder viewer;
 
   /// A document's editing tools.
   final DocumentScreenBuilder documentEdit;
@@ -166,6 +170,13 @@ GoRouter createAppRouter({
           DocumentId(state.pathParameters[AppRoutes.idParameter]!),
         ),
         routes: [
+          GoRoute(
+            path: 'view',
+            builder: (context, state) => screens.viewer(
+              context,
+              DocumentId(state.pathParameters[AppRoutes.idParameter]!),
+            ),
+          ),
           GoRoute(
             path: 'edit',
             builder: (context, state) => screens.documentEdit(

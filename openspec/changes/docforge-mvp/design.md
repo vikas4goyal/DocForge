@@ -671,3 +671,50 @@ A widget test that emits and then pumps once sees the *previous* state — the
 frame is built before the stream delivers. Two bounded pumps are needed, and
 `pumpAndSettle` cannot be used where the state shows an indefinite progress bar.
 The same trap applies anywhere a test seeds a Cubit directly.
+
+### 25. Document viewer
+
+**`PdfRenderer` reports what a file *is*, and nothing more** — page count and
+whether it needed a password. Drawing pages is the viewer *widget*'s job,
+because on-demand rendering with bounded memory is a property of the rendering
+surface rather than of a repository call. Pulling every page through the
+interface would mean holding rendered bitmaps somewhere, which is exactly what
+the memory requirement forbids.
+
+**The rendering surface is injected from the composition root**, the same
+decision and the same reason as the camera preview: it is a plugin-backed widget
+that cannot exist in a test or a preview, and a screen that built its own could
+be neither.
+
+**A protected document is `locked`, not `failed`.** The prompt is the normal
+path for one; an error view would suggest something had gone wrong. A wrong
+password is likewise not an error state — the prompt stays up and says so, which
+is why `passwordRejected` is separate from `failure`.
+
+**Nothing of a locked document is rendered** — no page, no title, no page count,
+no recognised text, no share control. The state simply has no document in it
+until the file opens, so there is nothing for the screen to leak.
+
+**Passwords go to secure storage and only after they have worked.** A stored
+password is tried first so a document the user protected on this device opens
+without asking again; a typed one takes precedence over it, because a user
+retyping a password is correcting something. A secure store that cannot be read
+degrades to prompting rather than failing: being asked for a password is
+recoverable, being unable to open your own document is not.
+
+**The page count comes from the file, not from the record.** The two can
+disagree after an edit, and the file is the truth about what will be rendered.
+
+**Jumping to a page clamps rather than rejects.** A number past the end takes
+the user to the last page, which is what they were reaching for. A *non-numeric*
+entry does nothing at all, because silently jumping somewhere arbitrary is worse
+than no visible response.
+
+**Recognised text loads after the document is on screen.** Text is a secondary
+panel, and making the first page wait for it would break the "opens promptly"
+requirement for no benefit. A text lookup that fails degrades to empty: the
+viewer's job is to show the document.
+
+**Tablet width goes to a text panel, not to a bigger page.** A page scaled past
+its own resolution shows no more detail, while the recognised text is genuinely
+useful and has nowhere to live on a phone.

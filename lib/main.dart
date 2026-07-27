@@ -28,6 +28,10 @@ import 'package:doc_forge/features/document_library/presentation/screens/documen
 import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/folder_detail_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
+import 'package:doc_forge/features/document_viewer/application/usecases/viewer_usecases.dart';
+import 'package:doc_forge/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
+import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_cubit.dart';
+import 'package:doc_forge/features/document_viewer/presentation/screens/viewer_screen.dart';
 import 'package:doc_forge/features/onboarding/application/usecases/onboarding_usecases.dart';
 import 'package:doc_forge/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
 import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_cubit.dart';
@@ -37,6 +41,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdfrx/pdfrx.dart';
 
 /// Boots the application.
 Future<void> main() async {
@@ -197,6 +202,42 @@ AppScreens _screens(
     scanEnhance: (_) => const _Placeholder('Enhance'),
     scanPreview: (_) => const _Placeholder('Preview document'),
     documents: (context) => documentList(context, title: 'Documents'),
+    viewer: (context, id) => BlocProvider(
+      create: (_) => ViewerCubit(
+        id,
+        OpenDocumentForViewing(
+          library.documentReader,
+          const PdfrxRenderer(),
+          dependencies.secureStorage,
+        ),
+        RememberDocumentPassword(dependencies.secureStorage),
+        LoadViewerText(creation.ocrTextSource),
+      )..load(),
+      child: ViewerScreen(
+        // The rendering surface comes from here rather than from the screen:
+        // it is a plugin-backed widget, and a screen that built its own could
+        // be neither previewed nor tested.
+        surfaceBuilder:
+            (
+              context, {
+              required filePath,
+              required password,
+              required page,
+              required onPageChanged,
+            }) => PdfViewer.file(
+              filePath,
+              passwordProvider: () => password,
+              params: PdfViewerParams(
+                onPageChanged: (page) => onPageChanged(page ?? 1),
+              ),
+            ),
+        onBack: () => context.pop(),
+        // Sharing, printing and editing land in groups 12 and 14.
+        onShare: () => _notYet(context, 'Sharing'),
+        onPrint: () => _notYet(context, 'Printing'),
+        onEdit: () => _notYet(context, 'Editing'),
+      ),
+    ),
     documentDetail: (context, id) => BlocProvider(
       create: (_) => DocumentDetailCubit(
         id,
@@ -266,6 +307,14 @@ AppScreens _screens(
     privacy: (_) => const _Placeholder('Privacy policy'),
   );
 }
+
+/// Tells the user a capability is not in this build yet.
+///
+/// Preferred to an inert control: a button that does nothing when tapped reads
+/// as a bug, where a message reads as a boundary.
+void _notYet(BuildContext context, String capability) => ScaffoldMessenger.of(
+  context,
+).showSnackBar(SnackBar(content: Text('$capability arrives in a later step.')));
 
 /// A labelled stand-in for a screen that has not been built yet.
 class _Placeholder extends StatelessWidget {
