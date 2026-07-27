@@ -827,3 +827,62 @@ fails the test the moment anything opens an `HttpClient`, and a source check
 scans the feature for `package:dio`, `HttpClient` and `package:http/`. Either
 alone is defeatable: the runtime check misses a path the suite does not walk,
 and the source check misses a request made through a transitive dependency.
+
+## 28. Import (group 13)
+
+**Two shapes, because imported content arrives in two shapes.** Images become
+pages of a *new* document and are handed to the scanning flow's **review** step,
+so cropping, rotation, reordering and enhancement all apply to them before
+anything is saved — which is what the gallery scenario requires. A PDF is
+already a document: it is copied into app-private storage and a record is
+created directly, with the page count read from the file. `ImportFiles` runs
+both over one mixed selection so the user never has to separate them.
+
+**Imported pages reuse the scanning review screen rather than getting their
+own.** `ScanFlow` gained an `initialPages` bundle; when set it opens at review
+instead of the camera. A second review screen would have drifted from the first.
+Imported pages start at `PageQuad.full` and *not* marked corrected — they are
+already whatever the user chose to photograph, and marking them corrected would
+silently disable the crop step for them.
+
+**Order of operations for a PDF: copy, inspect, rename, write the record.** The
+copy lands under a `.partial` name and is inspected *there*, so a file that
+turns out to be corrupt or protected never occupies the name a real document
+would. The record is written last, and if it fails the stored file is deleted —
+without a record the file is unreachable, and an orphan only ever shows up as
+missing storage.
+
+**A protected PDF is a prompt, not an error.** `ImportedPdfInspector` reports an
+authentication failure, which `ImportFiles` converts into `ImportNeedsPassword`
+and *stops* — it does not carry on importing the rest of the selection while the
+user is being asked a question. Abandoning the prompt creates no document.
+
+**Classification is by extension, and that is deliberate.** The pickers on both
+platforms already filter by type; a selected file may be a security-scoped URL
+that cannot be read until it has been copied; and a PDF that is not really a PDF
+is caught when it is opened, which happens anyway and is the check that actually
+matters. HEIC is in the supported set because it is the iPhone camera default,
+and omitting it would reject most of a typical photo library.
+
+**The viewer's PDF renderer is adapted, not duplicated.** Import declares its
+own `ImportedPdfInspector`; `RendererPdfInspector` in `app/import_module.dart`
+implements it over the viewer's `PdfRenderer`. Neither feature imports the
+other — the composition root joins them (§2) — and DocForge does not carry a
+second PDF library to count pages.
+
+**Permissions are just-in-time by construction.** The system photo picker
+requests its own permission as it is shown, on both platforms, so nothing is
+asked for until the user taps the gallery source. A refused permission gets its
+*own* view, distinct from the error view, because it is the only failure whose
+recovery is the system settings — and the remaining sources stay reachable from
+it, which the spec requires explicitly.
+
+**Share-sheet arrival is two mechanisms made to look like one.**
+`SharedContentWatcher` reads the cold-launch payload after the first frame — a
+launch-time navigation into an unlaid-out tree is thrown away — and subscribes
+to the running-app stream. It wraps Home rather than a transient route, so a
+share arriving while the user is deep in another flow is not dropped. Registered
+on Android with `SEND`, `SEND_MULTIPLE` and `VIEW` intent filters on the
+`singleTop` launcher activity, and on iOS with `CFBundleDocumentTypes` plus
+`LSSupportsOpeningDocumentsInPlace` set to **false**, because an imported file is
+copied into app-private storage rather than edited where it sits.

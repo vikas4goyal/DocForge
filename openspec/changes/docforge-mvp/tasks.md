@@ -234,19 +234,19 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 13. Import
 
-- [ ] 13.1 Implement the `document-import` domain layer and the `ImportRepository` interface.
-- [ ] 13.2 Implement `ImportFromGallery`, `ImportFromFiles` and `HandleSharedFiles` with isolate-backed processing, progress and cancellation.
-- [ ] 13.3 Unit-test the import use cases, including selection order preservation and correct page count and file size for imported PDFs.
-- [ ] 13.4 Implement import validation: unsupported type, corrupt file, password-protected PDF; unit-test each, asserting no partial document is created.
-- [ ] 13.5 Implement share-sheet registration on Android and iOS and handle both cold-launch and already-running imports; write integration tests for both.
-- [ ] 13.6 Implement `ImportCubit` and `ImportState`; write `bloc_test` coverage including permission denied, cancellation and the multiple-files case.
-- [ ] 13.7 Implement the import options sheet, permission-denied view and error view with the specified keys.
-- [ ] 13.8 Widget-test the import screens, including the cancelled-picker and storage-full paths.
-- [ ] 13.9 Wire imported images into the scanning review step so cropping and enhancement can be applied; add a test.
-- [ ] 13.10 Add `@Preview()` entries for the import widgets and screens across all required states, form factors and themes.
-- [ ] 13.11 Verify import accessibility and that photo/file permissions are requested just in time, not before.
-- [ ] 13.12 Add dartdoc to all new public APIs in the import feature.
-- [ ] 13.13 Run `dart format`, `flutter analyze`, the layering check and coverage for group 13.
+- [x] 13.1 Implement the `document-import` domain layer and the `ImportRepository` interface.
+- [x] 13.2 Implement `ImportFromGallery`, `ImportFromFiles` and `HandleSharedFiles` with isolate-backed processing, progress and cancellation.
+- [x] 13.3 Unit-test the import use cases, including selection order preservation and correct page count and file size for imported PDFs.
+- [x] 13.4 Implement import validation: unsupported type, corrupt file, password-protected PDF; unit-test each, asserting no partial document is created.
+- [x] 13.5 Implement share-sheet registration on Android and iOS and handle both cold-launch and already-running imports; write integration tests for both.
+- [x] 13.6 Implement `ImportCubit` and `ImportState`; write `bloc_test` coverage including permission denied, cancellation and the multiple-files case.
+- [x] 13.7 Implement the import options sheet, permission-denied view and error view with the specified keys.
+- [x] 13.8 Widget-test the import screens, including the cancelled-picker and storage-full paths.
+- [x] 13.9 Wire imported images into the scanning review step so cropping and enhancement can be applied; add a test.
+- [x] 13.10 Add `@Preview()` entries for the import widgets and screens across all required states, form factors and themes.
+- [x] 13.11 Verify import accessibility and that photo/file permissions are requested just in time, not before.
+- [x] 13.12 Add dartdoc to all new public APIs in the import feature.
+- [x] 13.13 Run `dart format`, `flutter analyze`, the layering check and coverage for group 13.
 
 ## 14. PDF editing
 

@@ -151,6 +151,7 @@ class ScanFlow extends StatefulWidget {
     required this.onImportInstead,
     required this.onOpenSettings,
     super.key,
+    this.initialPages,
   });
 
   /// The scanning object graph.
@@ -171,6 +172,16 @@ class ScanFlow extends StatefulWidget {
   /// Opens the system settings so camera access can be granted.
   final VoidCallback onOpenSettings;
 
+  /// Pages the flow starts with, when they came from somewhere other than the
+  /// camera.
+  ///
+  /// Supplied by the import feature. When set the flow opens at the *review*
+  /// step rather than the camera, which is what makes cropping, rotation,
+  /// reordering and enhancement available to imported images — the scanning
+  /// flow already does all of that, and the alternative would be a second
+  /// review screen that drifts from this one.
+  final ScannedPageBundle? initialPages;
+
   @override
   State<ScanFlow> createState() => _ScanFlowState();
 }
@@ -181,9 +192,24 @@ class _ScanFlowState extends State<ScanFlow> {
     widget.module.capturePage,
     widget.module.discardSession,
   );
-  late final PageReviewCubit _review = PageReviewCubit(const []);
+  late final PageReviewCubit _review = PageReviewCubit([
+    for (final page in widget.initialPages?.pages ?? const <PageRef>[])
+      CapturedPage(
+        id: page.id,
+        imagePath: page.imagePath,
+        // Imported images have no detected edges: they are already whatever
+        // the user chose to photograph or save. The full page is the honest
+        // starting point, and the crop screen is there if they want one.
+        quad: PageQuad.full,
+        rotation: page.rotation,
+        // Nothing has been perspective-corrected, and marking them corrected
+        // would silently disable the crop step for imported pages.
+      ),
+  ]);
 
-  _ScanStep _step = _ScanStep.capture;
+  late _ScanStep _step = widget.initialPages == null
+      ? _ScanStep.capture
+      : _ScanStep.review;
 
   /// The session's pages once review is finished, carrying their enhancement.
   ///
@@ -277,7 +303,8 @@ class _ScanFlowState extends State<ScanFlow> {
           _pages,
           widget.creation.saveDocument,
           widget.creation.generateName,
-          source: PageSource.camera,
+          source: widget.initialPages?.source ?? PageSource.camera,
+          suggestedTitle: widget.initialPages?.suggestedTitle,
         )..load(),
         child: PdfPreviewScreen(
           onSaved: widget.onSaved,

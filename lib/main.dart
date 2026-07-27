@@ -5,10 +5,13 @@
 /// mutable global state lives here.
 library;
 
+import 'dart:async';
+
 import 'package:doc_forge/app/app.dart';
 import 'package:doc_forge/app/app_dependencies.dart';
 import 'package:doc_forge/app/composition_root.dart';
 import 'package:doc_forge/app/document_creation_module.dart';
+import 'package:doc_forge/app/import_module.dart';
 import 'package:doc_forge/app/library_module.dart';
 import 'package:doc_forge/app/router/app_router.dart';
 import 'package:doc_forge/app/router/app_routes.dart';
@@ -17,6 +20,7 @@ import 'package:doc_forge/app/scanning_module.dart';
 import 'package:doc_forge/app/sharing_module.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_forge/core/failures/failure_messages.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/theme/theme_mode_controller.dart';
@@ -24,6 +28,9 @@ import 'package:doc_forge/core/widgets/app_state_views.dart';
 import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
 import 'package:doc_forge/features/app_shell/presentation/cubit/home_cubit.dart';
 import 'package:doc_forge/features/app_shell/presentation/screens/home_screen.dart';
+import 'package:doc_forge/features/document_import/presentation/cubit/import_cubit.dart';
+import 'package:doc_forge/features/document_import/presentation/screens/import_options_sheet.dart';
+import 'package:doc_forge/features/document_import/presentation/widgets/shared_content_watcher.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
@@ -84,6 +91,16 @@ Future<void> main() async {
     namingPattern: () => NamingPattern.defaultPattern,
   );
 
+  final importing = buildImportModule(
+    renderer: const PdfrxRenderer(),
+    documentWriter: library.documentWriter,
+    documentsDirectory: library.documentsDirectory,
+    cacheDirectory: await getApplicationCacheDirectory(),
+    clock: dependencies.clock,
+    ids: dependencies.idGenerator,
+    worker: dependencies.worker,
+  );
+
   final sharing = buildSharingModule(
     documentReader: library.documentReader,
     ocrTextSource: creation.ocrTextSource,
@@ -114,6 +131,7 @@ Future<void> main() async {
       scanning,
       creation,
       sharing,
+      importing,
       onboardingRepository,
       onboardingGate,
     ),
@@ -135,6 +153,7 @@ AppScreens _screens(
   ScanningModule scanning,
   DocumentCreationModule creation,
   SharingModule sharing,
+  ImportModule importing,
   OnboardingRepositoryImpl onboardingRepository,
   OnboardingGateImpl onboardingGate,
 ) {
@@ -184,25 +203,40 @@ AppScreens _screens(
       ),
     ),
     unlock: (_) => const _Placeholder('Unlock'),
-    home: (context) => BlocProvider(
-      create: (_) => HomeCubit(
-        LoadHomeData(
-          library.documentReader,
-          library.folderReader,
-          library.storageSummaryReader,
-        ),
+    home: (context) => SharedContentWatcher(
+      takePending: importing.takePending,
+      watchShared: importing.watchShared,
+      // Wrapped around Home rather than around a route that comes and goes: a
+      // share arriving while the user is deep in another flow would otherwise
+      // be dropped.
+      onContent: (paths) => _importShared(
+        context,
+        paths,
+        importing,
+        scanning,
+        creation,
+        dependencies,
       ),
-      child: HomeScreen(
-        actions: HomeActions(
-          onScan: () => context.push(AppRoutes.scan),
-          onSearch: () => context.push(AppRoutes.search),
-          onOpenDocument: (id) => context.push(AppRoutes.documentDetail(id)),
-          onOpenFolder: (id) => context.push(AppRoutes.folderDetail(id)),
-          onAllDocuments: () => context.push(AppRoutes.documents),
-          onFolders: () => context.push(AppRoutes.folders),
-          onFavourites: () => context.push(AppRoutes.favourites),
-          onArchive: () => context.push(AppRoutes.archive),
-          onStorage: () => context.push(AppRoutes.settings),
+      child: BlocProvider(
+        create: (_) => HomeCubit(
+          LoadHomeData(
+            library.documentReader,
+            library.folderReader,
+            library.storageSummaryReader,
+          ),
+        ),
+        child: HomeScreen(
+          actions: HomeActions(
+            onScan: () => context.push(AppRoutes.scan),
+            onSearch: () => context.push(AppRoutes.search),
+            onOpenDocument: (id) => context.push(AppRoutes.documentDetail(id)),
+            onOpenFolder: (id) => context.push(AppRoutes.folderDetail(id)),
+            onAllDocuments: () => context.push(AppRoutes.documents),
+            onFolders: () => context.push(AppRoutes.folders),
+            onFavourites: () => context.push(AppRoutes.favourites),
+            onArchive: () => context.push(AppRoutes.archive),
+            onStorage: () => context.push(AppRoutes.settings),
+          ),
         ),
       ),
     ),
@@ -213,7 +247,15 @@ AppScreens _screens(
       // Home reloads on navigation, so the new document appears at the top of
       // Recent without anything having to tell it.
       onSaved: (_) => context.go(AppRoutes.home),
-      onImportInstead: () => context.go(AppRoutes.home),
+      // The scanning flow's "import instead" is the import sheet, which is
+      // where the gallery and file sources live.
+      onImportInstead: () => _openImportSheet(
+        context,
+        importing,
+        scanning,
+        creation,
+        dependencies,
+      ),
       onOpenSettings: () => dependencies.permissions.openSettings(),
     ),
     scanReview: (_) => const _Placeholder('Review pages'),
@@ -344,6 +386,120 @@ AppScreens _screens(
 void _notYet(BuildContext context, String capability) => ScaffoldMessenger.of(
   context,
 ).showSnackBar(SnackBar(content: Text('$capability arrives in a later step.')));
+
+/// Imports [paths] handed to DocForge by another application.
+///
+/// Goes straight to importing rather than showing the sources: the user already
+/// chose what to send and where to send it, and asking them again would be a
+/// question with one answer.
+Future<void> _importShared(
+  BuildContext context,
+  List<String> paths,
+  ImportModule importing,
+  ScanningModule scanning,
+  DocumentCreationModule creation,
+  AppDependencies dependencies,
+) async {
+  final cubit = ImportCubit(
+    importing.gallery,
+    importing.files,
+    importing.importFiles,
+  );
+
+  try {
+    await cubit.fromShareSheet(paths);
+    if (!context.mounted) return;
+
+    final state = cubit.state;
+    final bundle = state.bundle;
+
+    if (bundle != null) {
+      await _reviewImportedPages(
+        context,
+        bundle,
+        scanning,
+        creation,
+        dependencies,
+      );
+    } else if (state.imported.isNotEmpty) {
+      _report(context, state.outcomeMessage);
+    } else if (state.message != null) {
+      _report(context, state.message!);
+    }
+  } finally {
+    await cubit.close();
+  }
+}
+
+/// Opens the import sources as a modal bottom sheet.
+///
+/// Images that come back are handed to the scanning flow's *review* step rather
+/// than saved directly, which is what makes cropping and enhancement available
+/// to them — the requirement the gallery scenario states explicitly.
+Future<void> _openImportSheet(
+  BuildContext context,
+  ImportModule importing,
+  ScanningModule scanning,
+  DocumentCreationModule creation,
+  AppDependencies dependencies,
+) async {
+  await showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (sheetContext) => BlocProvider(
+      create: (_) => ImportCubit(
+        importing.gallery,
+        importing.files,
+        importing.importFiles,
+      ),
+      child: ImportOptionsSheet(
+        onScan: () => Navigator.of(sheetContext).pop(),
+        onOpenSettings: dependencies.permissions.openSettings,
+        onReadyForReview: (bundle) {
+          Navigator.of(sheetContext).pop();
+          unawaited(
+            _reviewImportedPages(
+              context,
+              bundle,
+              scanning,
+              creation,
+              dependencies,
+            ),
+          );
+        },
+        onImported: (state) {
+          Navigator.of(sheetContext).pop();
+          _report(context, state.outcomeMessage);
+        },
+      ),
+    ),
+  );
+}
+
+/// Opens the scanning flow at its review step, over [bundle].
+///
+/// A nested navigator route rather than a top-level one: the flow is transient
+/// and carries state the router has no place holding, which is the same reason
+/// the crop screen is pushed this way.
+Future<void> _reviewImportedPages(
+  BuildContext context,
+  ScannedPageBundle bundle,
+  ScanningModule scanning,
+  DocumentCreationModule creation,
+  AppDependencies dependencies,
+) => Navigator.of(context).push<void>(
+  MaterialPageRoute(
+    builder: (routeContext) => ScanFlow(
+      module: scanning,
+      creation: creation,
+      initialPages: bundle,
+      onExit: () => Navigator.of(routeContext).pop(),
+      onSaved: (_) => Navigator.of(routeContext).pop(),
+      onImportInstead: () => Navigator.of(routeContext).pop(),
+      onOpenSettings: dependencies.permissions.openSettings,
+    ),
+  ),
+);
 
 /// Opens the share options for [id] as a modal bottom sheet.
 ///
