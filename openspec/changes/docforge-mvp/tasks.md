@@ -271,21 +271,21 @@ Every group ends with its own format / analyze / coverage gate, so no group can 
 
 ## 15. Settings
 
-- [ ] 15.1 Implement the `app-settings` domain layer and the `SettingsRepository` interface with documented defaults for every setting.
-- [ ] 15.2 Implement the SharedPreferences-backed settings repository; write repository tests including the write-failure path.
-- [ ] 15.3 Implement `LoadSettings` and `UpdateSetting`; unit-test persistence, immediate effect and default values.
-- [ ] 15.4 Implement the naming-pattern preview and the quality trade-off descriptions; unit-test pattern expansion.
-- [ ] 15.5 Implement `SettingsCubit` and `SettingsState`; write `bloc_test` coverage including the write-failure path retaining the previous value.
-- [ ] 15.6 Implement the settings screen with every entry key from `specs/app-settings/spec.md`, each showing its current value.
-- [ ] 15.7 Implement the About and Privacy Policy screens with the local-only storage statement.
-- [ ] 15.8 Implement the storage information view backed by `StorageSummaryReader`; test that it updates after permanent removal.
-- [ ] 15.9 Widget-test all settings screens, including that changing the theme re-renders immediately without a restart.
-- [ ] 15.10 Verify that changing the OCR language does not alter previously recognised text; add a test.
-- [ ] 15.11 Add `@Preview()` entries for every settings widget and screen across all required states, form factors and themes.
-- [ ] 15.12 Verify settings accessibility: each entry announces its name and current value.
-- [ ] 15.13 Add golden tests for the settings screen in light and dark, phone and tablet.
-- [ ] 15.14 Add dartdoc to all new public APIs in the settings feature.
-- [ ] 15.15 Run `dart format`, `flutter analyze`, the layering check and coverage for group 15.
+- [x] 15.1 Implement the `app-settings` domain layer and the `SettingsRepository` interface with documented defaults for every setting.
+- [x] 15.2 Implement the SharedPreferences-backed settings repository; write repository tests including the write-failure path.
+- [x] 15.3 Implement `LoadSettings` and `UpdateSetting`; unit-test persistence, immediate effect and default values.
+- [x] 15.4 Implement the naming-pattern preview and the quality trade-off descriptions; unit-test pattern expansion.
+- [x] 15.5 Implement `SettingsCubit` and `SettingsState`; write `bloc_test` coverage including the write-failure path retaining the previous value.
+- [x] 15.6 Implement the settings screen with every entry key from `specs/app-settings/spec.md`, each showing its current value.
+- [x] 15.7 Implement the About and Privacy Policy screens with the local-only storage statement.
+- [x] 15.8 Implement the storage information view backed by `StorageSummaryReader`; test that it updates after permanent removal.
+- [x] 15.9 Widget-test all settings screens, including that changing the theme re-renders immediately without a restart.
+- [x] 15.10 Verify that changing the OCR language does not alter previously recognised text; add a test.
+- [x] 15.11 Add `@Preview()` entries for every settings widget and screen across all required states, form factors and themes.
+- [x] 15.12 Verify settings accessibility: each entry announces its name and current value.
+- [x] 15.13 Add golden tests for the settings screen in light and dark, phone and tablet.
+- [x] 15.14 Add dartdoc to all new public APIs in the settings feature.
+- [x] 15.15 Run `dart format`, `flutter analyze`, the layering check and coverage for group 15.
 
 ## 16. Security and app lock
 

@@ -18,6 +18,7 @@ import 'package:doc_forge/app/router/app_router.dart';
 import 'package:doc_forge/app/router/app_routes.dart';
 import 'package:doc_forge/app/router/route_gates.dart';
 import 'package:doc_forge/app/scanning_module.dart';
+import 'package:doc_forge/app/settings_module.dart';
 import 'package:doc_forge/app/sharing_module.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
@@ -26,6 +27,9 @@ import 'package:doc_forge/core/failures/failure_messages.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/theme/theme_mode_controller.dart';
 import 'package:doc_forge/core/widgets/app_state_views.dart';
+import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
+import 'package:doc_forge/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_forge/features/app_settings/presentation/screens/settings_screen.dart';
 import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
 import 'package:doc_forge/features/app_shell/presentation/cubit/home_cubit.dart';
 import 'package:doc_forge/features/app_shell/presentation/screens/home_screen.dart';
@@ -55,7 +59,6 @@ import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_cubi
 import 'package:doc_forge/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
 import 'package:doc_forge/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -83,6 +86,31 @@ Future<void> main() async {
     secureStorage: dependencies.secureStorage,
   );
 
+  final settings = buildSettingsModule(
+    preferences: dependencies.preferences,
+    storageReader: library.storageSummaryReader,
+    clock: dependencies.clock,
+  );
+
+  // Read once at startup and kept current by the settings screen. The features
+  // that consume a setting — naming, quality — read it through this holder
+  // rather than hitting preferences on every save, which would put a
+  // disk read in the middle of document creation.
+  final currentSettings = ValueNotifier<AppSettings>(await settings.load());
+
+  // Seeded from the stored choice so the very first frame is already in the
+  // right theme; a default-then-correct sequence would flash light before dark.
+  final themeMode = ThemeModeController(
+    themeModeFor(currentSettings.value.theme),
+  );
+
+  /// The version shown on the About screen.
+  ///
+  /// A constant rather than a `package_info_plus` lookup: the value is baked
+  /// into the build, and reading it asynchronously would make About the one
+  /// screen that has a loading state.
+  const appVersion = '1.0.0';
+
   final creation = buildDocumentCreationModule(
     isar: library.isar,
     documentsDirectory: library.documentsDirectory,
@@ -90,8 +118,7 @@ Future<void> main() async {
     ids: dependencies.idGenerator,
     documentReader: library.documentReader,
     documentWriter: library.documentWriter,
-    // Settings land in group 15; until then the default pattern applies.
-    namingPattern: () => NamingPattern.defaultPattern,
+    namingPattern: () => currentSettings.value.namingPattern,
   );
 
   final importing = buildImportModule(
@@ -145,6 +172,10 @@ Future<void> main() async {
       sharing,
       importing,
       editing,
+      settings,
+      currentSettings,
+      themeMode,
+      appVersion,
       onboardingRepository,
       onboardingGate,
     ),
@@ -154,7 +185,7 @@ Future<void> main() async {
     DocForgeApp(
       dependencies: dependencies,
       router: router,
-      themeMode: ThemeModeController(),
+      themeMode: themeMode,
     ),
   );
 }
@@ -168,6 +199,10 @@ AppScreens _screens(
   SharingModule sharing,
   ImportModule importing,
   PdfEditingModule editing,
+  SettingsModule settings,
+  ValueNotifier<AppSettings> currentSettings,
+  ThemeModeController themeMode,
+  String appVersion,
   OnboardingRepositoryImpl onboardingRepository,
   OnboardingGateImpl onboardingGate,
 ) {
@@ -386,7 +421,49 @@ AppScreens _screens(
       emptyMessage: 'Archived documents are kept here, out of your main list.',
       offerScan: false,
     ),
-    settings: (_) => const _Placeholder('Settings'),
+    settings: (context) => BlocProvider(
+      create: (_) => SettingsCubit(
+        settings.load,
+        settings.update,
+        settings.previewName,
+        settings.storage,
+        // Published to the root so an explicit theme takes effect without a
+        // restart, which the spec requires.
+        onThemeChanged: (choice) => themeMode.select(themeModeFor(choice)),
+      )..load(),
+      child: Builder(
+        builder: (screenContext) {
+          // Kept in step with what was actually persisted, so the naming
+          // pattern and quality presets a new document uses are the ones on
+          // screen.
+          currentSettings.value = screenContext
+              .watch<SettingsCubit>()
+              .state
+              .settings;
+
+          return SettingsScreen(
+            onBack: () => context.pop(),
+            onAbout: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (routeContext) => AboutScreen(
+                  version: appVersion,
+                  onBack: () => Navigator.of(routeContext).pop(),
+                ),
+              ),
+            ),
+            onPrivacyPolicy: () => Navigator.of(context).push<void>(
+              MaterialPageRoute(
+                builder: (routeContext) => PrivacyPolicyScreen(
+                  onBack: () => Navigator.of(routeContext).pop(),
+                ),
+              ),
+            ),
+            // The app lock lands in group 16; until then the switch is inert
+            // rather than absent, so its place in the list is already right.
+          );
+        },
+      ),
+    ),
     about: (_) => const _Placeholder('About'),
     privacy: (_) => const _Placeholder('Privacy policy'),
   );

@@ -952,3 +952,63 @@ Compression is modelled as dropping a padding line the page count ignores, so
 real watermark uses (0.28) it fails the WCAG contrast guideline this project
 treats as mandatory. The preview exists to be *read* before the watermark is
 applied, so legibility won over fidelity at 0.55.
+
+## 30. Settings (group 15)
+
+**The shared value objects moved to `core/contracts/`.** `PdfQuality`,
+`NamingPattern`, `DocumentNaming` and `OcrScript` were declared inside the
+features that act on them, but settings *configures* them — and a feature may
+not import another feature. `tool/check_layering.dart` would have caught it, so
+they now live in `core/contracts/models/settings_values.dart`, with the original
+files re-exporting them so no existing call site had to change. This is exactly
+what `core/contracts/` is for: vocabulary two features share.
+
+**Every default is declared once**, on `AppSettings.defaults`. "Each setting
+shows a documented default value" is then a property of one file rather than a
+claim spread across ten call sites. The app lock defaults to *off*: security
+that is on by default would lock a first-time user out of an application they
+have not yet put anything in.
+
+**Values are stored as string identifiers, never enum indices.** An index is a
+promise that the enum's declaration order never changes, and reordering an enum
+is not the kind of edit anyone treats as a migration — it would silently turn
+"best quality" into "small file" on every device that had chosen it. Every
+`from…` parser falls back to the default for an unrecognised value, so a
+preference written by a newer release degrades rather than crashes.
+
+**Reads never fail; writes do.** `SettingsRepository.load()` returns a plain
+`AppSettings` because a settings screen that will not open is worse than one
+showing defaults. A *write* returns a `Result`, because that is the failure the
+user needs to know about — and on failure the use case returns the **previous**
+settings, so "the previous value remains in effect" is enforced in one place
+rather than being a claim the UI makes on its own.
+
+**The app-lock flag is read through an injected reader, not from preferences.**
+It lives in secure storage, so it cannot be turned off by editing an unprotected
+file on a rooted device (§8). Settings shows it and asks for it to be changed;
+the security feature owns it.
+
+**A theme is published only after it has persisted.** `SettingsCubit` calls
+`onThemeChanged` inside the success branch. Applying a theme whose write failed
+would leave the application looking one way now and another after a restart.
+The controller is also *seeded* from the stored choice at startup, so the first
+frame is already correct rather than flashing light before dark.
+
+**Storage is read after the screen is on, and re-read on demand.** It is one row
+of many, and making the whole screen wait for a directory walk would make
+settings feel slow for nothing. Re-reading rather than caching is what makes the
+figure fall after a permanent removal.
+
+**A failed save is a banner, not a full-screen error.** The rest of the settings
+are still readable and changeable; replacing the screen would hide nine working
+settings over one that would not save.
+
+**Every tile announces its name and value together** — "Theme, Dark", not
+"Theme" then "Dark" as two items the user has to associate. In a list of ten
+settings, the separated form is guesswork.
+
+**The Privacy Policy is a local string constant.** The spec requires it to be
+readable with no network connection, which a hosted policy behind a web view
+would not be. Holding the text in `SettingsCopy` also means the guarantee is one
+string a test asserts on, so weakening it is a deliberate act rather than a copy
+edit in a widget tree.
