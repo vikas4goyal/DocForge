@@ -148,6 +148,29 @@ void main() {
     });
   });
 
+  group('flips', () {
+    const quad = PageQuad(
+      topLeft: NormalisedPoint(x: 0.1, y: 0.2),
+      topRight: NormalisedPoint(x: 0.9, y: 0.2),
+      bottomRight: NormalisedPoint(x: 0.9, y: 0.8),
+      bottomLeft: NormalisedPoint(x: 0.1, y: 0.8),
+    );
+
+    test('each is its own inverse', () {
+      expect(flipQuadHorizontally(flipQuadHorizontally(quad)), quad);
+      expect(flipQuadVertically(flipQuadVertically(quad)), quad);
+    });
+
+    test('both together are a half turn', () {
+      // Which is why the slider only needs a quarter turn either way: the
+      // orientations outside its range are reachable through the flips.
+      final turned = flipQuadVertically(flipQuadHorizontally(quad));
+
+      expect(turned.topLeft, quad.bottomRight);
+      expect(turned.bottomRight, quad.topLeft);
+    });
+  });
+
   group('replaceCorner', () {
     const quad = PageQuad(
       topLeft: NormalisedPoint(x: 0.1, y: 0.1),

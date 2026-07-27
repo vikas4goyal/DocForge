@@ -99,4 +99,10 @@ abstract final class ScanKeys {
   /// Returns the page to square.
   static const cropRotationReset = Key('scan_crop_rotation_reset');
 
+  /// Mirrors the page left-to-right.
+  static const cropFlipHorizontalButton = Key('scan_crop_flip_horizontal');
+
+  /// Mirrors the page top-to-bottom.
+  static const cropFlipVerticalButton = Key('scan_crop_flip_vertical');
+
 }

@@ -177,6 +177,22 @@ class _CropScreenState extends State<CropScreen> {
   /// The page's pixel size, once decoded.
   Size? _imageSize;
 
+  /// Mirrors the page, squaring it first.
+  ///
+  /// A flip is applied to an upright page. Mirroring one that is also turned
+  /// leaves an orientation that is hard to predict and harder to undo — the
+  /// rotation reverses along with the page — so the page is returned to square
+  /// and then mirrored, which is one obvious result rather than two combined.
+  void _flip(BuildContext context, {required bool horizontal}) {
+    final cubit = context.read<CropCubit>();
+    _rotate(context, 0);
+
+    final quad = cubit.state.quad;
+    cubit.adjust(
+      horizontal ? flipQuadHorizontally(quad) : flipQuadVertically(quad),
+    );
+  }
+
   /// Turns the page while leaving the selection where it is on screen.
   ///
   /// The selection belongs to the canvas, not to the page: turning the page
@@ -238,6 +254,22 @@ class _CropScreenState extends State<CropScreen> {
             icon: const Icon(Icons.close),
           ),
           actions: [
+            IconButton(
+              key: ScanKeys.cropFlipHorizontalButton,
+              tooltip: 'Flip horizontally',
+              onPressed: state.isWorking
+                  ? null
+                  : () => _flip(context, horizontal: true),
+              icon: const Icon(Icons.flip),
+            ),
+            IconButton(
+              key: ScanKeys.cropFlipVerticalButton,
+              tooltip: 'Flip vertically',
+              onPressed: state.isWorking
+                  ? null
+                  : () => _flip(context, horizontal: false),
+              icon: const RotatedBox(quarterTurns: 1, child: Icon(Icons.flip)),
+            ),
             TextButton(
               key: ScanKeys.cropResetButton,
               onPressed: state.isWorking
@@ -308,6 +340,26 @@ class _CropScreenState extends State<CropScreen> {
   }
 }
 
+/// Returns [quad] mirrored left-to-right.
+///
+/// Swapping the corners rather than the pixels: the correction maps these four
+/// points onto the output rectangle, so exchanging the left pair with the right
+/// pair produces a mirrored page for free.
+PageQuad flipQuadHorizontally(PageQuad quad) => PageQuad(
+  topLeft: quad.topRight,
+  topRight: quad.topLeft,
+  bottomRight: quad.bottomLeft,
+  bottomLeft: quad.bottomRight,
+);
+
+/// Returns [quad] mirrored top-to-bottom.
+PageQuad flipQuadVertically(PageQuad quad) => PageQuad(
+  topLeft: quad.bottomLeft,
+  topRight: quad.bottomRight,
+  bottomRight: quad.topRight,
+  bottomLeft: quad.topLeft,
+);
+
 /// Free-form rotation for the page beneath the selection.
 ///
 /// A slider rather than a handle dragged in a circle: straightening a scan is
@@ -315,9 +367,11 @@ class _CropScreenState extends State<CropScreen> {
 /// travel on a handle but a comfortable movement on a track. The reading is
 /// shown because "about right" is not the same as square.
 ///
-/// Runs both ways from zero. A page can be off in either direction, and forcing
-/// a counter-clockwise correction to be entered as 350-odd degrees would make
-/// the common case the awkward one.
+/// Runs a quarter turn either way from zero. A page can be off in either
+/// direction, so both are reachable — and holding the range to ±90 rather than
+/// ±180 puts twice the travel behind every degree, which is what makes a
+/// one-degree correction possible with a fingertip. The orientations that fall
+/// outside it are reached by the flips instead: a half turn is both of them.
 class _RotationSlider extends StatelessWidget {
   const _RotationSlider({
     required this.degrees,
@@ -329,39 +383,49 @@ class _RotationSlider extends StatelessWidget {
   final bool enabled;
   final ValueChanged<double> onChanged;
 
-  static const _range = 180.0;
+  static const _range = 90.0;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final reading = degrees.toStringAsFixed(1);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        IconButton(
-          key: ScanKeys.cropRotationReset,
-          tooltip: 'Straighten',
-          onPressed: enabled && degrees != 0 ? () => onChanged(0) : null,
-          icon: const Icon(Icons.settings_backup_restore),
+        // Above the track rather than beside it, so the slider keeps the full
+        // width. A tenth of a degree is visible in the reading even though it is
+        // far finer than a fingertip can place, because the number is what turns
+        // "about right" into square.
+        Text(
+          '$reading°',
+          style: Theme.of(context).textTheme.labelMedium,
         ),
-        Expanded(
-          child: Semantics(
-            label: 'Rotate page',
-            value: '${degrees.round()} degrees',
-            child: Slider(
-              key: ScanKeys.cropRotationSlider,
-              value: degrees.clamp(-_range, _range),
-              min: -_range,
-              max: _range,
-              label: '${degrees.round()}°',
-              onChanged: enabled ? onChanged : null,
+        Row(
+          children: [
+            IconButton(
+              key: ScanKeys.cropRotationReset,
+              tooltip: 'Straighten',
+              onPressed: enabled && degrees != 0 ? () => onChanged(0) : null,
+              icon: const Icon(Icons.settings_backup_restore),
             ),
-          ),
-        ),
-        SizedBox(
-          width: 44,
-          child: Text(
-            '${degrees.round()}°',
-            textAlign: TextAlign.end,
-            style: Theme.of(context).textTheme.labelMedium,
-          ),
+            Expanded(
+              child: Semantics(
+                label: 'Rotate page',
+                value: '$reading degrees',
+                child: Slider(
+                  key: ScanKeys.cropRotationSlider,
+                  value: degrees.clamp(-_range, _range),
+                  min: -_range,
+                  max: _range,
+                  // Continuous rather than notched: straightening lands wherever
+                  // the page happens to be off by, which is rarely a round
+                  // number.
+                  label: '$reading°',
+                  onChanged: enabled ? onChanged : null,
+                ),
+              ),
+            ),
+          ],
         ),
       ],
     );
