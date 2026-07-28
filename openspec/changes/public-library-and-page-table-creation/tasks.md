@@ -33,11 +33,11 @@
 
 ## 4. Layered page model and render pipeline
 
-- [ ] 4.1 Add `CropOp` and extend `PageDraft` to hold `originalImagePath`, an ordered `geometry` list and `enhancement`, with no pixels of its own (design D6)
-- [ ] 4.2 Add `composeGeometry(List<CropOp>)` to `document_scanning/domain/perspective_transform.dart`, returning the single transform equivalent to applying the ops in order
-- [ ] 4.3 Unit-test composition: one op matches today's behaviour, N ops equal sequential application within tolerance, an empty list is the identity, and rotation composes with perspective
-- [ ] 4.4 Add `PageRenderPlan` with value equality over (original, geometry, enhancement) and a render cache keyed by it; unit-test that an unchanged plan reuses its render and a changed one invalidates
-- [ ] 4.5 Render previews at display resolution and generation at full resolution through the same pipeline, and unit-test that both use one resampling pass regardless of op count
+- [x] 4.1 Add `CropOp` and extend `PageDraft` to hold `originalImagePath`, an ordered `geometry` list and `enhancement`, with no pixels of its own (design D6)
+- [x] 4.2 Add `composeGeometry(List<CropOp>)` to `document_scanning/domain/perspective_transform.dart`, returning the single transform equivalent to applying the ops in order
+- [x] 4.3 Unit-test composition: one op matches today's behaviour, N ops equal sequential application within tolerance, an empty list is the identity, and rotation composes with perspective
+- [x] 4.4 Add `PageRenderPlan` with value equality over (original, geometry, enhancement) and a render cache keyed by it; unit-test that an unchanged plan reuses its render and a changed one invalidates
+- [x] 4.5 Render previews at display resolution and generation at full resolution through the same pipeline, and unit-test that both use one resampling pass regardless of op count
 
 ## 5. Crop screen rework
 
