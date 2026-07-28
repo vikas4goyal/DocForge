@@ -65,18 +65,18 @@
 
 ## 7. Creation feature — session and page table
 
-- [ ] 7.1 Create `lib/features/document_creation/` with the layer folders, and confirm `PageDraft` (added in 4.1) is owned here (design D6)
-- [ ] 7.2 Move `ScanSessionRules` reorder / delete / restore / canSave into `CreationSession`, re-typed to `PageDraft`, and move their unit tests with them
-- [ ] 7.3 Add `CreationRules` with name validation and `validatePassword(password, confirmation)`, and unit-test both
-- [ ] 7.4 Add `PageTableCubit` and `PageTableState` — add, replace, reorder, delete, undo delete — with no business logic in the Cubit
-- [ ] 7.5 Cubit-test `PageTableCubit` for every operation, including reorder renumbering and undo restoring position
-- [ ] 7.6 Build `PageTableScreen` with `creation_page_table_screen`, `creation_page_list`, `creation_add_page_button`, `creation_save_button`, empty, loading and error states
-- [ ] 7.7 Build `PageRow` with crop, enhance, delete and drag-handle controls, page numbering, and `moveUp` / `moveDown` semantic actions for screen-reader reordering
-- [ ] 7.8 Build `AddPageSheet` offering camera and photo-library sources, with the permission-denied path
-- [ ] 7.9 Widget-test the page table: rows are pages in order, drag reorders and renumbers, delete and undo, save disabled while empty, semantic reordering
+- [x] 7.1 Create `lib/features/document_creation/` with the layer folders, and confirm `PageDraft` (added in 4.1) is owned here (design D6)
+- [x] 7.2 Move `ScanSessionRules` reorder / delete / restore / canSave into `CreationSession`, re-typed to `PageDraft`, and move their unit tests with them
+- [x] 7.3 Add `CreationRules` with name validation and `validatePassword(password, confirmation)`, and unit-test both
+- [x] 7.4 Add `PageTableCubit` and `PageTableState` — add, replace, reorder, delete, undo delete — with no business logic in the Cubit
+- [x] 7.5 Cubit-test `PageTableCubit` for every operation, including reorder renumbering and undo restoring position
+- [x] 7.6 Build `PageTableScreen` with `creation_page_table_screen`, `creation_page_list`, `creation_add_page_button`, `creation_save_button`, empty, loading and error states
+- [x] 7.7 Build `PageRow` with crop, enhance, delete and drag-handle controls, page numbering, and `moveUp` / `moveDown` semantic actions for screen-reader reordering
+- [x] 7.8 Build `AddPageSheet` offering camera and photo-library sources, with the permission-denied path
+- [x] 7.9 Widget-test the page table: rows are pages in order, drag reorders and renumbers, delete and undo, save disabled while empty, semantic reordering
 - [ ] 7.10 Implement the exit confirmation when the table has pages, discarding cleanly, and widget-test both answers plus the no-confirmation-when-empty case
-- [ ] 7.11 Golden-test `PageTableScreen` in light and dark, phone and tablet
-- [ ] 7.12 Add `@Preview()` entries for `PageTableScreen`, `PageRow` and `AddPageSheet` covering default, loading, empty, error and long content
+- [x] 7.11 Golden-test `PageTableScreen` in light and dark, phone and tablet
+- [x] 7.12 Add `@Preview()` entries for `PageTableScreen`, `PageRow` and `AddPageSheet` covering default, loading, empty, error and long content
 
 ## 8. Creation feature — add-page loop
 
@@ -88,15 +88,15 @@
 
 ## 9. Save dialog and generation
 
-- [ ] 9.1 Add `SaveDocumentCubit` and `SaveDocumentState` covering name, password, confirmation, validity and save progress
-- [ ] 9.2 Cubit-test the save Cubit: prefilled name, empty-name invalid, password mismatch invalid, save success, save failure retaining the session
-- [ ] 9.3 Build `SaveNameDialog` with the name field, the password toggle, the password and confirm fields (obscured), Cancel and Save
+- [x] 9.1 Add `SaveDocumentCubit` and `SaveDocumentState` covering name, password, confirmation, validity and save progress
+- [x] 9.2 Cubit-test the save Cubit: prefilled name, empty-name invalid, password mismatch invalid, save success, save failure retaining the session
+- [x] 9.3 Build `SaveNameDialog` with the name field, the password toggle, the password and confirm fields (obscured), Cancel and Save
 - [ ] 9.4 Extend `SaveDocument` with a destination folder and an optional password; write the unprotected PDF to cache, protect it with `PdfManipulatorEditor.protect`, then publish through `PublicFileStore` (design D11)
 - [ ] 9.5 Store the password through `RememberDocumentPassword` when protection is used, and unit-test that it never reaches preferences or the database
 - [ ] 9.6 Handle the duplicate-name case with a replace-or-rename confirmation, and unit-test that nothing is overwritten without it
-- [ ] 9.7 Widget-test the dialog: Cancel writes nothing, Save disabled on empty name and on password mismatch, progress disables the controls
+- [x] 9.7 Widget-test the dialog: Cancel writes nothing, Save disabled on empty name and on password mismatch, progress disables the controls
 - [ ] 9.8 Remove `PdfPreviewScreen` and `PdfGenerationCubit`'s preview responsibility, and delete their now-dead tests
-- [ ] 9.9 Add `@Preview()` entries for `SaveNameDialog`: default, empty name, password on, password mismatch, saving, error
+- [x] 9.9 Add `@Preview()` entries for `SaveNameDialog`: default, empty name, password on, password mismatch, saving, error
 
 ## 10. Dashboard and library operations
 
