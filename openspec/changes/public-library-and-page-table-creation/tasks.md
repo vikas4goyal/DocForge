@@ -100,12 +100,12 @@
 
 ## 10. Dashboard and library operations
 
-- [ ] 10.1 Add `DashboardCubit` and `DashboardState` covering the open folder path, entries, search query, loading, empty and error
-- [ ] 10.2 Cubit-test the dashboard: opening a folder, going up, search filtering, reconcile-driven refresh, error and retry
+- [x] 10.1 Add `DashboardCubit` and `DashboardState` covering the open folder path, entries, search query, loading, empty and error
+- [x] 10.2 Cubit-test the dashboard: opening a folder, going up, search filtering, reconcile-driven refresh, error and retry
 - [ ] 10.3 Build `DashboardScreen` with the search field, breadcrumb, content list, storage summary, create-folder and import-PDF actions, and the empty, loading and error states
-- [ ] 10.4 Add `CreateFolder` use case writing a real directory through `PublicFileStore`, rejecting duplicates and invalid names; unit-test both refusals
+- [x] 10.4 Add `CreateFolder` use case writing a real directory through `PublicFileStore`, rejecting duplicates and invalid names; unit-test both refusals
 - [ ] 10.5 Make rename, move, duplicate, delete and archive act on the file at the document's `LibraryPath`, and unit-test that each keeps the tree and the index in step
-- [ ] 10.6 Add `ImportPdfIntoFolder` copying an external PDF into the open folder, leaving the source untouched and retaining no grant; unit-test the collision, invalid-file and protected-source cases
+- [x] 10.6 Add `ImportPdfIntoFolder` copying an external PDF into the open folder, leaving the source untouched and retaining no grant; unit-test the collision, invalid-file and protected-source cases
 - [ ] 10.7 Repoint the share-sheet and "Open with" paths at `ImportPdfIntoFolder` for PDFs and at the page table for images
 - [ ] 10.8 Widget-test the dashboard: folder navigation, breadcrumb, only-our-folders browsable, import action, create-folder validation
 - [ ] 10.9 Golden-test `DashboardScreen` in light and dark, phone and tablet

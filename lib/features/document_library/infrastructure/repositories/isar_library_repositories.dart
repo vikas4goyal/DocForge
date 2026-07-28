@@ -195,6 +195,18 @@ class IsarFolderRepository implements FolderRepository {
   }
 
   @override
+  Future<Result<Folder?>> findByRelativePath(String relativePath) async {
+    final result = await _guard(
+      () => _isar.folderEntitys
+          .filter()
+          .relativePathEqualTo(relativePath)
+          .findFirst(),
+    );
+
+    return result.map((entity) => entity?.toDomain());
+  }
+
+  @override
   Future<Result<Folder>> save(Folder folder) async {
     final result = await _guard(
       () => _isar.writeTxn(

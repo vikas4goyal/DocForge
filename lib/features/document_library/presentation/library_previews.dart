@@ -101,6 +101,10 @@ class _InertFolders implements FolderRepository {
       const Result<Folder?>.success(null);
 
   @override
+  Future<Result<Folder?>> findByRelativePath(String relativePath) async =>
+      const Result<Folder?>.success(null);
+
+  @override
   Future<Result<Folder>> save(Folder folder) async =>
       Result<Folder>.success(folder);
 

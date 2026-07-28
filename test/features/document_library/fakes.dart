@@ -137,6 +137,17 @@ class FakeFolderRepository implements FolderRepository {
   }
 
   @override
+  Future<Result<Folder?>> findByRelativePath(String relativePath) async {
+    if (failure != null) return Result<Folder?>.failure(failure!);
+
+    return Result<Folder?>.success(
+      folders.values
+          .where((folder) => folder.relativePath == relativePath)
+          .firstOrNull,
+    );
+  }
+
+  @override
   Future<Result<Folder>> save(Folder folder) async {
     if (failure != null) return Result<Folder>.failure(failure!);
     folders[folder.id] = folder;

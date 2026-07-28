@@ -61,6 +61,13 @@ abstract interface class FolderRepository {
   /// Used to reject duplicate names before creating a folder.
   Future<Result<Folder?>> findByName(String name);
 
+  /// Returns the folder at [relativePath], or null when none exists.
+  ///
+  /// Distinct from [findByName]: folders nest, so two called `2026` under
+  /// different parents are different folders and only the path tells them
+  /// apart.
+  Future<Result<Folder?>> findByRelativePath(String relativePath);
+
   /// Creates or replaces [folder].
   Future<Result<Folder>> save(Folder folder);
 
