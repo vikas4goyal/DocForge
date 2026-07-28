@@ -132,13 +132,13 @@
 ## 13. Integration, documentation and gates
 
 - [x] 13.1 Integration test on a device: capture → crop → crop again → Next → enhance → row → add a second page → reorder → save → file present in the public tree → every session image gone
-- [ ] 13.1a Integration test of the layers: crop and enhance a page, revert the crop and confirm the enhancement survives, then revert the enhancement and confirm the crop survives
-- [ ] 13.2 Integration test: save with a password, confirm the file cannot be opened without it externally and opens without prompting in the application
-- [ ] 13.3 Integration test: create a folder in the app, verify it in the file browser; delete a PDF in the file browser, verify it disappears after resume; rename externally and verify metadata is retained
-- [ ] 13.4 Integration test: import an external PDF into an open folder and confirm the source is untouched
-- [ ] 13.5 Integration test: migration from a seeded layout-1 library, asserting no document is lost
+- [x] 13.1a Integration test of the layers: crop and enhance a page, revert the crop and confirm the enhancement survives, then revert the enhancement and confirm the crop survives
+- [x] 13.2 Integration test: save with a password, confirm the file cannot be opened without it externally and opens without prompting in the application
+- [x] 13.3 Integration test: create a folder in the app, verify it in the file browser; delete a PDF in the file browser, verify it disappears after resume; rename externally and verify metadata is retained
+- [x] 13.4 Integration test: import an external PDF into an open folder and confirm the source is untouched
+- [x] 13.5 Integration test: migration from a seeded layout-1 library, asserting no document is lost
 - [x] 13.6 Add dartdoc to every new public API named in the design's documentation section, and the inline comments it lists
 - [x] 13.7 Run `dart format --set-exit-if-changed` and fix
 - [x] 13.8 Run `flutter analyze` and fix every issue
-- [ ] 13.9 Run the full test suite including goldens and verify coverage is at least 80% overall and at least 90% for the new domain and application code
+- [x] 13.9 Run the full test suite including goldens and verify coverage is at least 80% overall and at least 90% for the new domain and application code
 - [ ] 13.10 Resolve the design's open questions on the device — external duplicate-name renames, and whether the sanitised or original folder name wins after an external rename — and record the answers in the design
