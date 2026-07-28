@@ -54,14 +54,14 @@
 
 ## 6. Single-page enhancement
 
-- [ ] 6.1 Reduce `EnhancementState` to a single page and remove `progress`, `applyingToAll`, `canApplyToAll` and the index clamping (design D7a)
-- [ ] 6.2 Remove `applyToAll`, `cancelApplyToAll` and `PlanSessionEnhancement`, and delete the `_BatchProgress` widget and the `enhance_apply_to_all_button`, `enhance_progress_indicator` and `enhance_cancel_button` controls
-- [ ] 6.3 Rename the reset control to `enhance_revert_button` ("Revert enhancement") and make it clear settings only, never geometry (design D7)
-- [ ] 6.4 Seed the enhancement preview from the page's original with its geometry applied, so enhancement follows a later crop without re-entry
-- [ ] 6.5 Cubit-test the reduced `EnhancementCubit`: filter and slider changes, undo, revert clearing settings while geometry is retained, preview coalescing, and failure handling
-- [ ] 6.6 Widget-test that no apply-to-all control is present regardless of document length, that done returns the settings, and that reverting enhancement leaves the page cropped
-- [ ] 6.7 Update `@Preview()` entries for `EnhancementScreen` to the single-page states, and remove the batch previews
-- [ ] 6.8 Delete the now-unused bulk enhancement tests rather than leaving them skipped
+- [x] 6.1 Reduce `EnhancementState` to a single page and remove `progress`, `applyingToAll`, `canApplyToAll` and the index clamping (design D7a)
+- [x] 6.2 Remove `applyToAll`, `cancelApplyToAll` and `PlanSessionEnhancement`, and delete the `_BatchProgress` widget and the `enhance_apply_to_all_button`, `enhance_progress_indicator` and `enhance_cancel_button` controls
+- [x] 6.3 Rename the reset control to `enhance_revert_button` ("Revert enhancement") and make it clear settings only, never geometry (design D7)
+- [x] 6.4 Seed the enhancement preview from the page's original with its geometry applied, so enhancement follows a later crop without re-entry
+- [x] 6.5 Cubit-test the reduced `EnhancementCubit`: filter and slider changes, undo, revert clearing settings while geometry is retained, preview coalescing, and failure handling
+- [x] 6.6 Widget-test that no apply-to-all control is present regardless of document length, that done returns the settings, and that reverting enhancement leaves the page cropped
+- [x] 6.7 Update `@Preview()` entries for `EnhancementScreen` to the single-page states, and remove the batch previews
+- [x] 6.8 Delete the now-unused bulk enhancement tests rather than leaving them skipped
 
 ## 7. Creation feature — session and page table
 

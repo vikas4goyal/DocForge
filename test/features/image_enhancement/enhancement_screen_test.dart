@@ -1,12 +1,16 @@
 /// Widget tests for the enhancement screen and its controls.
 library;
 
+import 'dart:io';
+
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
+import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
+import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
+import 'package:doc_forge/features/document_creation/domain/page_render_plan.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/enhance_keys.dart';
@@ -21,14 +25,35 @@ import 'enhancement_test_support.dart';
 void main() {
   setUp(resetJobRecording);
 
-  List<PageRef> session(int count) => [
-    for (var index = 0; index < count; index++)
-      PageRef(id: PageId('page-$index'), imagePath: '/page-$index.jpg'),
-  ];
+  /// The page every test enhances.
+  PageDraft draft() =>
+      const PageDraft(id: PageId('page-0'), originalImagePath: '/page-0.jpg');
 
-  late List<PageRef>? doneWith;
+  /// Plans the renderer was asked for, so a test can assert what was rendered.
+  final renderedPlans = <PageRenderPlan>[];
 
-  setUp(() => doneWith = null);
+  /// A renderer that records its plans and touches no real image.
+  RenderPage testRenderer() => RenderPage(
+    cacheDirectory: Directory.systemTemp.createTempSync('enhance_ui_'),
+    sizeOf: (path) async => const Result<({int width, int height})>.success((
+      width: 800,
+      height: 600,
+    )),
+    render: (plan, {required destinationPath, transform}) async {
+      renderedPlans.add(plan);
+      File(destinationPath)
+        ..parent.createSync(recursive: true)
+        ..writeAsStringSync('rendered');
+      return const Result<void>.success(null);
+    },
+  );
+
+  late PageDraft? doneWith;
+
+  setUp(() {
+    doneWith = null;
+    renderedPlans.clear();
+  });
 
   /// Pumps the screen over a Cubit seeded to [state].
   Future<EnhancementCubit> pumpScreen(
@@ -44,19 +69,14 @@ void main() {
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
 
-    final cubit = EnhancementCubit(
-      state?.pages ?? session(pages),
-      inlineApply(),
-      const PlanSessionEnhancement(),
-      destinationFor,
-    );
+    final cubit = EnhancementCubit(state?.page ?? draft(), testRenderer());
 
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
         home: BlocProvider<EnhancementCubit>.value(
           value: cubit,
-          child: EnhancementScreen(onDone: (pages) => doneWith = pages),
+          child: EnhancementScreen(onDone: (page) => doneWith = page),
         ),
       ),
     );
@@ -127,19 +147,13 @@ void main() {
       expect(find.byKey(EnhanceKeys.shadowRemovalToggle), findsOneWidget);
       expect(find.byKey(EnhanceKeys.resetButton), findsOneWidget);
     });
+    testWidgets('offers no apply-to-all control', (tester) async {
+      await pumpScreen(tester);
 
-    testWidgets('offers apply-to-all for a multi-page session', (tester) async {
-      await pumpScreen(tester, pages: 4);
-
-      expect(find.byKey(EnhanceKeys.applyToAllButton), findsOneWidget);
-    });
-
-    testWidgets('hides apply-to-all for a single page', (tester) async {
-      // Offering a control that visibly does nothing is worse than not offering
-      // it at all.
-      await pumpScreen(tester, pages: 1);
-
-      expect(find.byKey(EnhanceKeys.applyToAllButton), findsNothing);
+      // Enhancement is per page: the flow adds pages one at a time, so at the
+      // moment a page is enhanced there is no session of siblings to apply the
+      // settings to.
+      expect(find.text('Apply to all'), findsNothing);
     });
   });
 
@@ -150,7 +164,9 @@ void main() {
       await tapFilter(tester, EnhanceKeys.filterGrayscale);
 
       expect(cubit.state.settings.filter, EnhancementFilter.grayscale);
-      expect(recordedRequests.single.isPreview, isTrue);
+      // Rendered at display resolution: a page drawn a few hundred pixels wide
+      // gains nothing from being rendered at its true size.
+      expect(renderedPlans.last.scale, RenderScale.preview);
     });
 
     testWidgets('marks the selected filter as selected', (tester) async {
@@ -234,7 +250,7 @@ void main() {
     });
   });
 
-  group('reset', () {
+  group('revert enhancement', () {
     testWidgets('is inert until something has changed', (tester) async {
       await pumpScreen(tester);
 
@@ -260,7 +276,7 @@ void main() {
   });
 
   group('leaving the screen', () {
-    testWidgets('done commits the settings and hands back the pages', (
+    testWidgets('done hands back the page carrying the settings', (
       tester,
     ) async {
       await pumpScreen(tester);
@@ -270,68 +286,19 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(doneWith, isNotNull);
-      expect(doneWith!.first.enhancement.filter, EnhancementFilter.grayscale);
+      expect(doneWith!.enhancement.filter, EnhancementFilter.grayscale);
     });
 
-    testWidgets('leaving without saving does not modify the stored page', (
+    testWidgets('leaving without finishing does not modify the page', (
       tester,
     ) async {
-      final pages = session(2);
-      final cubit = await pumpScreen(
-        tester,
-        state: EnhancementState.initial(pages),
-      );
+      final cubit = await pumpScreen(tester);
 
       await tapFilter(tester, EnhanceKeys.filterBlackWhite);
 
-      // The screen is abandoned rather than completed: no commit, so the page
-      // in the session still carries its original settings and nothing
-      // full-resolution was ever written.
-      expect(cubit.state.pages.first.enhancement, EnhancementSettings.none);
-      expect(recordedRequests.every((request) => request.isPreview), isTrue);
-    });
-  });
-
-  group('apply to all', () {
-    testWidgets('shows progress and a cancel control while running', (
-      tester,
-    ) async {
-      final cubit = await pumpScreen(tester, pages: 6);
-
-      // Seeded directly rather than by running a batch: the inline worker
-      // finishes within one frame, so the running state would never be
-      // observable through a real run.
-      final holder = _StateHolder(cubit);
-      holder.set(
-        cubit.state.copyWith(
-          status: EnhancementStatus.applyingToAll,
-          progress: const Progress(completed: 2, total: 6),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(EnhanceKeys.progressIndicator), findsOneWidget);
-      expect(find.byKey(EnhanceKeys.cancelButton), findsOneWidget);
-      expect(find.text('Enhancing pages — 2 of 6'), findsOneWidget);
-    });
-
-    testWidgets('disables the controls while running', (tester) async {
-      final cubit = await pumpScreen(tester, pages: 6);
-
-      _StateHolder(cubit).set(
-        cubit.state.copyWith(
-          status: EnhancementStatus.applyingToAll,
-          progress: const Progress(completed: 1, total: 6),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Changing a setting mid-batch would leave some pages on the old settings
-      // and some on the new, with nothing on screen to say which.
-      final slider = tester.widget<AdjustmentSlider>(
-        find.byKey(EnhanceKeys.brightnessSlider),
-      );
-      expect(slider.enabled, isFalse);
+      // Abandoned rather than completed: the page still carries its original
+      // settings, and nothing full-resolution was ever written.
+      expect(cubit.state.page.enhancement, EnhancementSettings.none);
     });
   });
 
@@ -351,7 +318,7 @@ void main() {
       expect(find.byKey(EnhanceKeys.errorRetryButton), findsOneWidget);
     });
 
-    testWidgets('retrying re-renders the preview', (tester) async {
+    testWidgets('retrying recovers the screen', (tester) async {
       final cubit = await pumpScreen(tester);
 
       _StateHolder(cubit).set(
@@ -365,8 +332,12 @@ void main() {
       await tester.tap(find.byKey(EnhanceKeys.errorRetryButton));
       await tester.pumpAndSettle();
 
-      expect(recordedRequests, isNotEmpty);
+      // The render itself may be served from cache — asking for an unchanged
+      // plan twice must not redo the work — so recovery is what is asserted,
+      // not that pixels were produced again.
       expect(cubit.state.status, EnhancementStatus.ready);
+      expect(cubit.state.failure, isNull);
+      expect(find.byKey(EnhanceKeys.errorView), findsNothing);
     });
   });
 
@@ -467,12 +438,7 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
 
-      final cubit = EnhancementCubit(
-        session(3),
-        inlineApply(),
-        const PlanSessionEnhancement(),
-        destinationFor,
-      );
+      final cubit = EnhancementCubit(draft(), testRenderer());
       addTearDown(cubit.close);
 
       await tester.pumpWidget(

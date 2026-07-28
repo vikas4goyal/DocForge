@@ -10,20 +10,21 @@
 @Tags(['golden'])
 library;
 
+import 'dart:io';
+
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
+import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
+import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/screens/enhancement_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'enhancement_test_support.dart';
 
 /// A phone viewport, in logical pixels at a device pixel ratio of one.
 const _phone = Size(390, 844);
@@ -32,22 +33,26 @@ const _phone = Size(390, 844);
 const _tablet = Size(1024, 1366);
 
 /// Fixture pages, deterministic down to their identifiers.
-List<PageRef> _pages(int count) => List.generate(
-  count,
-  (index) => PageRef(
-    id: PageId('golden-page-$index'),
-    imagePath: '/golden/$index.jpg',
-  ),
+/// The page every golden renders.
+const _page = PageDraft(
+  id: PageId('golden-page'),
+  originalImagePath: '/golden/0.jpg',
+);
+
+/// A renderer that touches no filesystem, so goldens stay byte-stable.
+RenderPage _goldenRenderer() => RenderPage(
+  cacheDirectory: Directory('/golden'),
+  sizeOf: (path) async => const Result<({int width, int height})>.success((
+    width: 800,
+    height: 600,
+  )),
+  render: (plan, {required destinationPath, transform}) async =>
+      const Result<void>.success(null),
 );
 
 void main() {
   Widget host(EnhancementState state, Brightness brightness) {
-    final cubit = EnhancementCubit(
-      state.pages,
-      inlineApply(),
-      const PlanSessionEnhancement(),
-      destinationFor,
-    );
+    final cubit = EnhancementCubit(state.page, _goldenRenderer());
     addTearDown(cubit.close);
 
     return MaterialApp(
@@ -70,7 +75,7 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  final base = EnhancementState.initial(_pages(4));
+  final base = EnhancementState.initial(_page);
 
   group('enhancement screen goldens', () {
     testWidgets('phone, light', (tester) async {
@@ -125,20 +130,6 @@ void main() {
       await expectLater(
         find.byType(EnhancementScreen),
         matchesGoldenFile('goldens/enhance_adjusted_light.png'),
-      );
-    });
-
-    testWidgets('applying to all, light', (tester) async {
-      final running = base.copyWith(
-        status: EnhancementStatus.applyingToAll,
-        progress: const Progress(completed: 2, total: 4),
-      );
-
-      await pumpAt(tester, host(running, Brightness.light), _phone);
-
-      await expectLater(
-        find.byType(EnhancementScreen),
-        matchesGoldenFile('goldens/enhance_applying_light.png'),
       );
     });
 

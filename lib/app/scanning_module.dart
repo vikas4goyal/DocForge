@@ -43,7 +43,6 @@ class ScanningModule {
     required this.applyCorrection,
     required this.discardSession,
     required this.applyEnhancement,
-    required this.enhancementDestination,
     required this.renderPage,
     required this.buildPreview,
   });
@@ -65,9 +64,6 @@ class ScanningModule {
 
   /// Applies enhancement settings, off the UI thread.
   final ApplyEnhancement applyEnhancement;
-
-  /// Names the file an enhancement result is written to.
-  final EnhancementDestination enhancementDestination;
 
   /// Renders a page from its original and its layers, caching by plan.
   final RenderPage renderPage;
@@ -102,14 +98,6 @@ ScanningModule buildScanningModule({
   final staging = LocalScanStagingArea(directory);
   final scanner = CameraScannerRepository(permissions, staging, ids);
 
-  /// Enhancement output lives beside the capture, in the same staging area.
-  ///
-  /// Beside rather than over: keeping the original means a filter the user
-  /// dislikes can be redone from the capture rather than from an already
-  /// enhanced image, which would compound the processing.
-  String enhancementDestination(PageRef page, {required bool isPreview}) =>
-      '${page.imagePath}.${isPreview ? 'preview' : 'enhanced'}.jpg';
-
   return ScanningModule(
     scanner: scanner,
     staging: staging,
@@ -120,7 +108,6 @@ ScanningModule buildScanningModule({
     applyCorrection: ApplyPerspectiveCorrection(worker, correctPageJob),
     discardSession: DiscardScanSession(staging, scanner),
     applyEnhancement: ApplyEnhancement(worker, enhancePageJob),
-    enhancementDestination: enhancementDestination,
     renderPage: renderPage,
     buildPreview: scanner.buildPreview,
   );
@@ -164,29 +151,20 @@ Future<PageDraft?> openPageCrop(
 ///
 /// Returns the page carrying whatever settings were chosen, or null when the
 /// screen was left without finishing.
-Future<PageRef?> openPageEnhance(
+Future<PageDraft?> openPageEnhance(
   BuildContext context, {
   required ScanningModule module,
-  required PageRef page,
-}) async {
-  final edited = await Navigator.of(context).push<List<PageRef>>(
-    MaterialPageRoute(
-      builder: (routeContext) => BlocProvider<EnhancementCubit>(
-        create: (_) => EnhancementCubit(
-          [page],
-          module.applyEnhancement,
-          const PlanSessionEnhancement(),
-          module.enhancementDestination,
-        ),
-        child: EnhancementScreen(
-          onDone: (pages) => Navigator.of(routeContext).pop(pages),
-        ),
+  required PageDraft page,
+}) => Navigator.of(context).push<PageDraft>(
+  MaterialPageRoute(
+    builder: (routeContext) => BlocProvider<EnhancementCubit>(
+      create: (_) => EnhancementCubit(page, module.renderPage),
+      child: EnhancementScreen(
+        onDone: (edited) => Navigator.of(routeContext).pop(edited),
       ),
     ),
-  );
-
-  return edited == null || edited.isEmpty ? null : edited.first;
-}
+  ),
+);
 
 /// Which step of the scanning flow is showing.
 enum _ScanStep {
@@ -195,9 +173,6 @@ enum _ScanStep {
 
   /// The captured-page review list.
   review,
-
-  /// The enhancement controls for one page.
-  enhance,
 
   /// The document preview, where the PDF is named and saved.
   save,
@@ -316,15 +291,12 @@ class _ScanFlowState extends State<ScanFlow> {
   /// Geometry applied per page, keyed the same way and for the same reason.
   final Map<PageId, List<CropOp>> _geometry = {};
 
-  /// Moves from review into enhancement.
+  /// Moves from review into the save step.
+  ///
+  /// No session-wide enhancement step: enhancement is per page, chosen from a
+  /// row while the page is in front of the user (`design.md` D7a).
   void _finishReview() {
     _pages = [for (final page in _review.state.pages) _pageRefFor(page)];
-    setState(() => _step = _ScanStep.enhance);
-  }
-
-  /// Moves from enhancement into the save step, carrying the settings chosen.
-  void _finishEnhancing(List<PageRef> pages) {
-    _pages = pages;
     setState(() => _step = _ScanStep.save);
   }
 
@@ -358,10 +330,10 @@ class _ScanFlowState extends State<ScanFlow> {
     final enhanced = await openPageEnhance(
       context,
       module: widget.module,
-      page: _pageRefFor(page),
+      page: _draftFor(page),
     );
 
-    if (enhanced == null) return;
+    if (enhanced == null || !mounted) return;
     setState(() => _enhancements[page.id] = enhanced.enhancement);
   }
 
@@ -381,15 +353,14 @@ class _ScanFlowState extends State<ScanFlow> {
     if (cropped != null) _geometry[page.id] = cropped.geometry;
     if (!mounted) return;
 
-    final edited = page;
     final enhanced = await openPageEnhance(
       context,
       module: widget.module,
-      page: _pageRefFor(edited),
+      page: _draftFor(page),
     );
 
     if (enhanced == null || !mounted) return;
-    setState(() => _enhancements[edited.id] = enhanced.enhancement);
+    setState(() => _enhancements[page.id] = enhanced.enhancement);
   }
 
   /// The review page as a [PageRef], carrying any settings already chosen.
@@ -428,15 +399,6 @@ class _ScanFlowState extends State<ScanFlow> {
           onEnhancePage: _enhancePage,
         ),
       ),
-      _ScanStep.enhance => BlocProvider<EnhancementCubit>(
-        create: (_) => EnhancementCubit(
-          _pages,
-          widget.module.applyEnhancement,
-          const PlanSessionEnhancement(),
-          widget.module.enhancementDestination,
-        ),
-        child: EnhancementScreen(onDone: _finishEnhancing),
-      ),
       _ScanStep.save => BlocProvider<PdfGenerationCubit>(
         create: (_) => PdfGenerationCubit(
           _pages,
@@ -447,10 +409,10 @@ class _ScanFlowState extends State<ScanFlow> {
         )..load(),
         child: PdfPreviewScreen(
           onSaved: widget.onSaved,
-          // Back to enhancement rather than out of the flow: the pages are
-          // intact and nothing has been written, so the user can change their
-          // mind about the result without rescanning.
-          onBack: () => setState(() => _step = _ScanStep.enhance),
+          // Back to review rather than out of the flow: the pages are intact
+          // and nothing has been written, so the user can change their mind
+          // about the result without rescanning.
+          onBack: () => setState(() => _step = _ScanStep.review),
         ),
       ),
     };

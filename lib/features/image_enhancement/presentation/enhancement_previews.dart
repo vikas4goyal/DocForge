@@ -8,14 +8,16 @@
 /// and would fail entirely in CI, where no such file exists.
 library;
 
+import 'dart:io';
+
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
+import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/previews/fakes/fake_cubit.dart';
 import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
+import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
@@ -29,19 +31,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 String previewEnhancementJob(EnhancementRequest request) =>
     request.destinationPath;
 
-/// Names a destination without creating one.
-String _previewDestination(PageRef page, {required bool isPreview}) =>
-    '${page.imagePath}.preview.jpg';
-
-/// Fixture pages for a scanning session.
-List<PageRef> _pages(int count) => List.generate(
-  count,
-  (index) => PageRef(
-    id: PageId('preview-page-$index'),
-    imagePath: '/preview/$index.jpg',
-  ),
-);
-
 /// An [EnhancementCubit] frozen at a chosen state.
 ///
 /// Every method that would render a preview is left inert by seeding the state
@@ -50,15 +39,21 @@ List<PageRef> _pages(int count) => List.generate(
 class _PreviewEnhancementCubit extends EnhancementCubit
     with SeededCubit<EnhancementState> {
   _PreviewEnhancementCubit(EnhancementState state)
-    : super(
-        state.pages,
-        const ApplyEnhancement(InlineBackgroundWorker(), previewEnhancementJob),
-        const PlanSessionEnhancement(),
-        _previewDestination,
-      ) {
+    : super(state.page, _previewRenderer()) {
     seed(state);
   }
 }
+
+/// A renderer that touches no filesystem, so previews stay byte-stable.
+RenderPage _previewRenderer() => RenderPage(
+  cacheDirectory: Directory('/preview'),
+  sizeOf: (path) async => const Result<({int width, int height})>.success((
+    width: 800,
+    height: 600,
+  )),
+  render: (plan, {required destinationPath, transform}) async =>
+      const Result<void>.success(null),
+);
 
 Widget _screen(EnhancementState state) => BlocProvider<EnhancementCubit>(
   create: (_) => _PreviewEnhancementCubit(state),
@@ -66,8 +61,12 @@ Widget _screen(EnhancementState state) => BlocProvider<EnhancementCubit>(
 );
 
 /// The base state every screen preview varies from.
-EnhancementState _base({int pages = 4}) =>
-    EnhancementState.initial(_pages(pages));
+EnhancementState _base() => EnhancementState.initial(
+  const PageDraft(
+    id: PageId('preview-page-0'),
+    originalImagePath: '/preview/0.jpg',
+  ),
+);
 
 // ---------------------------------------------------------------------------
 // Enhancement screen
@@ -112,13 +111,16 @@ Widget enhanceAdjustments() => _screen(
   ),
 );
 
-/// A newer preview being rendered over the previous one.
+/// The screen while a render is in flight — this screen's loading state.
+///
+/// The previous preview stays on screen underneath rather than being blanked:
+/// the user is mid-adjustment, and an empty frame would read as data loss.
 @Preview(
-  name: 'Enhance — rendering',
+  name: 'Enhance — loading a preview',
   group: 'Enhancement',
   theme: appPreviewTheme,
 )
-Widget enhanceRendering() => _screen(
+Widget enhanceLoading() => _screen(
   _base().copyWith(
     status: EnhancementStatus.previewing,
     settings: const EnhancementSettings(
@@ -126,41 +128,6 @@ Widget enhanceRendering() => _screen(
     ),
   ),
 );
-
-/// A bulk enhancement part-way through.
-@Preview(
-  name: 'Enhance — applying to all',
-  group: 'Enhancement',
-  theme: appPreviewTheme,
-)
-Widget enhanceApplyingToAll() => _screen(
-  _base(pages: 12).copyWith(
-    status: EnhancementStatus.applyingToAll,
-    settings: const EnhancementSettings(filter: EnhancementFilter.grayscale),
-    progress: const Progress(completed: 5, total: 12),
-  ),
-);
-
-/// A bulk enhancement that has only just started.
-@Preview(
-  name: 'Enhance — applying to all, at the start',
-  group: 'Enhancement',
-  theme: appPreviewTheme,
-)
-Widget enhanceApplyingToAllStart() => _screen(
-  _base(pages: 30).copyWith(
-    status: EnhancementStatus.applyingToAll,
-    progress: const Progress(completed: 0, total: 30),
-  ),
-);
-
-/// A single-page session, where applying to all is meaningless.
-@Preview(
-  name: 'Enhance — single page',
-  group: 'Enhancement',
-  theme: appPreviewTheme,
-)
-Widget enhanceSinglePage() => _screen(_base(pages: 1));
 
 /// An enhancement that failed.
 @Preview(name: 'Enhance — error', group: 'Enhancement', theme: appPreviewTheme)
@@ -183,10 +150,6 @@ Widget enhanceStorageFull() => _screen(
     failure: const Failure.storageFull(),
   ),
 );
-
-/// An empty session, which the screen must survive rather than crash on.
-@Preview(name: 'Enhance — empty', group: 'Enhancement', theme: appPreviewTheme)
-Widget enhanceEmpty() => _screen(EnhancementState.initial(const []));
 
 /// The screen on a phone, light.
 @Preview(
