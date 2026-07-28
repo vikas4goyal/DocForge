@@ -113,13 +113,13 @@
 
 ## 11. Tab shell and routing
 
-- [ ] 11.1 Replace the Home route with a `StatefulShellRoute.indexedStack` over `/dashboard`, `/create` and `/settings`; remove `scan`, `scanReview`, `scanEnhance`, `scanPreview` from `AppRoutes` and add `dashboard`, `create` and the folder-path parameter (design D10)
-- [ ] 11.2 Build `AppTabScaffold` with the three destinations, the middle Create control intercepted to push the creation flow onto the root navigator, and the previous branch left selected
-- [ ] 11.3 Hide the tab bar inside camera, crop, enhancement and viewer routes
+- [x] 11.1 Replace the Home route with a `StatefulShellRoute.indexedStack` over `/dashboard`, `/create` and `/settings`; remove `scan`, `scanReview`, `scanEnhance`, `scanPreview` from `AppRoutes` and add `dashboard`, `create` and the folder-path parameter (design D10)
+- [x] 11.2 Build `AppTabScaffold` with the three destinations, the middle Create control intercepted to push the creation flow onto the root navigator, and the previous branch left selected
+- [x] 11.3 Hide the tab bar inside camera, crop, enhancement and viewer routes
 - [ ] 11.4 Navigation-test: `/` redirects to `/dashboard`, each branch keeps its own stack across tab switches, backing out of creation restores the previous branch, removed scan routes resolve to not-found
 - [ ] 11.5 Fold the storage summary and recents into the dashboard header and delete `HomeScreen`, `HomeCubit` and `HomeActions` along with their dead tests
-- [ ] 11.6 Golden-test `AppTabScaffold` with each tab selected, light and dark, phone and tablet
-- [ ] 11.7 Add `@Preview()` entries for `AppTabScaffold`
+- [x] 11.6 Golden-test `AppTabScaffold` with each tab selected, light and dark, phone and tablet
+- [x] 11.7 Add `@Preview()` entries for `AppTabScaffold`
 
 ## 12. Wiring, deletion and settings copy
 
@@ -127,7 +127,7 @@
 - [x] 12.2 Rebuild the `main.dart` composition for the new graph: public store, reconciler, creation module, dashboard, tab shell
 - [ ] 12.3 Add the settings copy stating that saved PDFs are visible to other applications and that protected PDFs cannot be read without their password
 - [ ] 12.4 Add the protected badge (`document_protected_badge`) to document rows and the detail screen
-- [ ] 12.5 Confirm no feature imports another feature after the restructure, and no `Platform.` branch exists outside the composition root
+- [x] 12.5 Confirm no feature imports another feature after the restructure, and no `Platform.` branch exists outside the composition root
 
 ## 13. Integration, documentation and gates
 

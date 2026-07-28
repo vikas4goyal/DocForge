@@ -44,6 +44,7 @@ import 'package:doc_forge/features/app_settings/presentation/cubit/settings_cubi
 import 'package:doc_forge/features/app_settings/presentation/screens/settings_screen.dart';
 import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
 import 'package:doc_forge/features/app_shell/presentation/cubit/home_cubit.dart';
+import 'package:doc_forge/features/app_shell/presentation/screens/app_tab_scaffold.dart';
 import 'package:doc_forge/features/app_shell/presentation/screens/home_screen.dart';
 import 'package:doc_forge/features/document_creation/application/usecases/add_page.dart';
 import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
@@ -388,6 +389,57 @@ AppScreens _screens(
     ),
   );
 
+  Widget settingsScreen(BuildContext context) => BlocProvider(
+    create: (_) => SettingsCubit(
+      settings.load,
+      settings.update,
+      settings.previewName,
+      settings.storage,
+      // Published to the root so an explicit theme takes effect without a
+      // restart, which the spec requires.
+      onThemeChanged: (choice) => themeMode.select(themeModeFor(choice)),
+    )..load(),
+    child: Builder(
+      builder: (screenContext) {
+        // Kept in step with what was actually persisted, so the naming
+        // pattern and quality presets a new document uses are the ones on
+        // screen.
+        currentSettings.value = screenContext
+            .watch<SettingsCubit>()
+            .state
+            .settings;
+
+        return SettingsScreen(
+          onBack: () => context.pop(),
+          onAbout: () => Navigator.of(context).push<void>(
+            MaterialPageRoute(
+              builder: (routeContext) => AboutScreen(
+                version: appVersion,
+                onBack: () => Navigator.of(routeContext).pop(),
+              ),
+            ),
+          ),
+          onPrivacyPolicy: () => Navigator.of(context).push<void>(
+            MaterialPageRoute(
+              builder: (routeContext) => PrivacyPolicyScreen(
+                onBack: () => Navigator.of(routeContext).pop(),
+              ),
+            ),
+          ),
+          onToggleAppLock: (requested) => _toggleAppLock(
+            context,
+            SetAppLockEnabled(
+              const LocalAuthAuthenticator(),
+              lockConfiguration,
+            ),
+            screenContext.read<SettingsCubit>(),
+            enabled: requested,
+          ),
+        );
+      },
+    ),
+  );
+
   return AppScreens(
     onboarding: (context) => BlocProvider(
       create: (_) => OnboardingCubit(
@@ -414,42 +466,47 @@ AppScreens _screens(
         onOpenSettings: dependencies.permissions.openSettings,
       ),
     ),
-    home: (context) => SharedContentWatcher(
-      takePending: importing.takePending,
-      watchShared: importing.watchShared,
-      // Wrapped around Home rather than around a route that comes and goes: a
-      // share arriving while the user is deep in another flow would otherwise
-      // be dropped.
-      onContent: (paths) =>
-          _importShared(context, paths, importing, creationFlow),
-      child: BlocProvider(
-        create: (_) => HomeCubit(
-          LoadHomeData(
-            library.documentReader,
-            library.folderReader,
-            library.storageSummaryReader,
-          ),
-        ),
-        child: HomeScreen(
-          actions: HomeActions(
-            onScan: () => context.push(AppRoutes.scan),
-            onImport: () => _openImportSheet(
-              context,
-              importing,
-              creationFlow,
-              dependencies,
+    home: (context) => _TabShell(
+      onCreate: () => context.push(AppRoutes.scan),
+      dashboard: SharedContentWatcher(
+        takePending: importing.takePending,
+        watchShared: importing.watchShared,
+        // Wrapped around Home rather than around a route that comes and goes: a
+        // share arriving while the user is deep in another flow would otherwise
+        // be dropped.
+        onContent: (paths) =>
+            _importShared(context, paths, importing, creationFlow),
+        child: BlocProvider(
+          create: (_) => HomeCubit(
+            LoadHomeData(
+              library.documentReader,
+              library.folderReader,
+              library.storageSummaryReader,
             ),
-            onSearch: () => context.push(AppRoutes.search),
-            onOpenDocument: (id) => context.push(AppRoutes.documentDetail(id)),
-            onOpenFolder: (id) => context.push(AppRoutes.folderDetail(id)),
-            onAllDocuments: () => context.push(AppRoutes.documents),
-            onFolders: () => context.push(AppRoutes.folders),
-            onFavourites: () => context.push(AppRoutes.favourites),
-            onArchive: () => context.push(AppRoutes.archive),
-            onStorage: () => context.push(AppRoutes.settings),
+          ),
+          child: HomeScreen(
+            actions: HomeActions(
+              onScan: () => context.push(AppRoutes.scan),
+              onImport: () => _openImportSheet(
+                context,
+                importing,
+                creationFlow,
+                dependencies,
+              ),
+              onSearch: () => context.push(AppRoutes.search),
+              onOpenDocument: (id) =>
+                  context.push(AppRoutes.documentDetail(id)),
+              onOpenFolder: (id) => context.push(AppRoutes.folderDetail(id)),
+              onAllDocuments: () => context.push(AppRoutes.documents),
+              onFolders: () => context.push(AppRoutes.folders),
+              onFavourites: () => context.push(AppRoutes.favourites),
+              onArchive: () => context.push(AppRoutes.archive),
+              onStorage: () => context.push(AppRoutes.settings),
+            ),
           ),
         ),
       ),
+      settings: settingsScreen(context),
     ),
     scan: (context) => CreationFlow(
       module: creationFlow,
@@ -570,59 +627,49 @@ AppScreens _screens(
       emptyMessage: 'Archived documents are kept here, out of your main list.',
       offerScan: false,
     ),
-    settings: (context) => BlocProvider(
-      create: (_) => SettingsCubit(
-        settings.load,
-        settings.update,
-        settings.previewName,
-        settings.storage,
-        // Published to the root so an explicit theme takes effect without a
-        // restart, which the spec requires.
-        onThemeChanged: (choice) => themeMode.select(themeModeFor(choice)),
-      )..load(),
-      child: Builder(
-        builder: (screenContext) {
-          // Kept in step with what was actually persisted, so the naming
-          // pattern and quality presets a new document uses are the ones on
-          // screen.
-          currentSettings.value = screenContext
-              .watch<SettingsCubit>()
-              .state
-              .settings;
-
-          return SettingsScreen(
-            onBack: () => context.pop(),
-            onAbout: () => Navigator.of(context).push<void>(
-              MaterialPageRoute(
-                builder: (routeContext) => AboutScreen(
-                  version: appVersion,
-                  onBack: () => Navigator.of(routeContext).pop(),
-                ),
-              ),
-            ),
-            onPrivacyPolicy: () => Navigator.of(context).push<void>(
-              MaterialPageRoute(
-                builder: (routeContext) => PrivacyPolicyScreen(
-                  onBack: () => Navigator.of(routeContext).pop(),
-                ),
-              ),
-            ),
-            onToggleAppLock: (requested) => _toggleAppLock(
-              context,
-              SetAppLockEnabled(
-                const LocalAuthAuthenticator(),
-                lockConfiguration,
-              ),
-              screenContext.read<SettingsCubit>(),
-              enabled: requested,
-            ),
-          );
-        },
-      ),
-    ),
+    settings: settingsScreen,
     about: (_) => const _Placeholder('About'),
     privacy: (_) => const _Placeholder('Privacy policy'),
   );
+}
+
+/// The tab shell, holding whichever destination is selected.
+///
+/// Selection lives here rather than in the router because Create is an action
+/// rather than a place: it pushes the page table above the shell, and the
+/// destination the user was on stays selected underneath (`design.md` D10).
+class _TabShell extends StatefulWidget {
+  const _TabShell({
+    required this.dashboard,
+    required this.settings,
+    required this.onCreate,
+  });
+
+  final Widget dashboard;
+  final Widget settings;
+  final VoidCallback onCreate;
+
+  @override
+  State<_TabShell> createState() => _TabShellState();
+}
+
+class _TabShellState extends State<_TabShell> {
+  AppTab _tab = AppTab.dashboard;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppTabScaffold(
+      tab: _tab,
+      onTabSelected: (tab) => setState(() => _tab = tab),
+      onCreate: widget.onCreate,
+      // Both destinations stay built, so switching away and back returns the
+      // user to the folder they were in rather than to the library root.
+      child: IndexedStack(
+        index: _tab.index,
+        children: [widget.dashboard, widget.settings],
+      ),
+    );
+  }
 }
 
 /// Tells the user a capability is not in this build yet.

@@ -19,8 +19,14 @@ abstract final class AppRoutes {
   /// Application lock screen.
   static const unlock = '/unlock';
 
-  /// Home screen — the application's primary screen.
+  /// The application's primary screen — the dashboard.
+  ///
+  /// Kept at the root so a deep link, a share and a cold start all land in the
+  /// same place, which is the folder the user's documents are in.
   static const home = '/';
+
+  /// The dashboard, as a named destination for the tab bar.
+  static const dashboard = '/';
 
   /// Creating a document: one page table, and the loop that fills it.
   ///
