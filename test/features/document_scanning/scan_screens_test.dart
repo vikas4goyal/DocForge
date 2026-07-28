@@ -4,7 +4,6 @@ import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
@@ -14,7 +13,6 @@ import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cubits.dart';
 import 'package:doc_forge/features/document_scanning/presentation/scan_keys.dart';
-import 'package:doc_forge/features/document_scanning/presentation/screens/crop_screen.dart';
 import 'package:doc_forge/features/document_scanning/presentation/screens/page_review_screen.dart';
 import 'package:doc_forge/features/document_scanning/presentation/screens/scan_capture_screen.dart';
 import 'package:flutter/material.dart';
@@ -78,6 +76,9 @@ class _Recorder {
   CapturedPage? capturedPage;
 }
 
+// The crop screen has its own file, `crop_screen_test.dart`: it applies in
+// place over a layered page rather than popping with a corrected capture, and
+// the harness this file uses predates that.
 void main() {
   late Directory workspace;
   late FakeScannerRepository scanner;
@@ -147,23 +148,6 @@ void main() {
           recorder.enhancedIndex = index;
           recorder.enhancedPage = page;
         },
-      ),
-    ),
-  );
-
-  Widget cropScreen(CapturedPage page) => host(
-    BlocProvider(
-      create: (_) => CropCubit(
-        page,
-        const ApplyPerspectiveCorrection(
-          InlineBackgroundWorker(),
-          passthroughJob,
-        ),
-      ),
-      child: CropScreen(
-        destinationPath: '/scan/corrected.jpg',
-        onCropped: (page) => recorder.croppedPage = page,
-        onCancelled: () => recorder.cancelled++,
       ),
     ),
   );
@@ -602,121 +586,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-    });
-  });
-
-  group('CropScreen', () {
-    testWidgets('shows the overlay and four corner handles', (tester) async {
-      await tester.pumpWidget(cropScreen(pages(1).single));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(ScanKeys.cropScreen), findsOneWidget);
-      expect(find.byKey(ScanKeys.edgeOverlay), findsOneWidget);
-      for (var corner = 0; corner < 4; corner++) {
-        expect(find.byKey(ScanKeys.cropHandle(corner)), findsOneWidget);
-      }
-    });
-
-    testWidgets('dragging a handle moves that corner', (tester) async {
-      await tester.pumpWidget(cropScreen(pages(1).single));
-      await tester.pumpAndSettle();
-      final before = tester.getCenter(find.byKey(ScanKeys.cropHandle(0)));
-
-      await tester.drag(
-        find.byKey(ScanKeys.cropHandle(0)),
-        const Offset(40, 40),
-      );
-      await tester.pumpAndSettle();
-
-      final after = tester.getCenter(find.byKey(ScanKeys.cropHandle(0)));
-      expect(after.dx, greaterThan(before.dx));
-      expect(after.dy, greaterThan(before.dy));
-    });
-
-    testWidgets('a handle cannot be dragged outside the page', (tester) async {
-      await tester.pumpWidget(cropScreen(pages(1).single));
-      await tester.pumpAndSettle();
-
-      // Far past the top-left corner.
-      await tester.drag(
-        find.byKey(ScanKeys.cropHandle(0)),
-        const Offset(-4000, -4000),
-      );
-      await tester.pumpAndSettle();
-
-      // A corner outside the image would describe a crop of pixels that do not
-      // exist, which the transform would then have to guess at.
-      expect(tester.takeException(), isNull);
-      expect(find.byKey(ScanKeys.cropHandle(0)), findsOneWidget);
-    });
-
-    testWidgets('resetting returns the crop to the whole page', (tester) async {
-      final page = pages(1).single.copyWith(quad: skewedQuad);
-      await tester.pumpWidget(cropScreen(page));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(ScanKeys.cropResetButton));
-      await tester.pumpAndSettle();
-
-      // Measured against the page, not the canvas. The page is laid out inside
-      // a margin so the handles have somewhere to sit, so canvas coordinates
-      // would only agree with these by accident.
-      final handle = tester.getCenter(find.byKey(ScanKeys.cropHandle(0)));
-      final pageRect = tester.getRect(find.byType(Image));
-      expect(handle.dx, closeTo(pageRect.left, 1));
-      expect(handle.dy, closeTo(pageRect.top, 1));
-    });
-
-    testWidgets('confirming reports the corrected page', (tester) async {
-      final page = pages(1).single.copyWith(quad: skewedQuad);
-      await tester.pumpWidget(cropScreen(page));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(ScanKeys.cropConfirmButton));
-      await tester.pumpAndSettle();
-
-      expect(recorder.croppedPage?.imagePath, '/scan/corrected.jpg');
-      expect(recorder.croppedPage?.isCorrected, isTrue);
-    });
-
-    testWidgets('cancelling reports it without applying anything', (
-      tester,
-    ) async {
-      await tester.pumpWidget(cropScreen(pages(1).single));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('scan_crop_cancel_button')));
-
-      expect(recorder.cancelled, 1);
-      expect(recorder.croppedPage, isNull);
-    });
-
-    testWidgets('each corner handle is labelled for a screen reader', (
-      tester,
-    ) async {
-      final handle = tester.ensureSemantics();
-      await tester.pumpWidget(cropScreen(pages(1).single));
-      await tester.pumpAndSettle();
-
-      expect(find.bySemanticsLabel('Top left crop handle'), findsOneWidget);
-      expect(find.bySemanticsLabel('Bottom right crop handle'), findsOneWidget);
-
-      handle.dispose();
-    });
-
-    testWidgets('each corner handle clears 48dp', (tester) async {
-      await tester.pumpWidget(cropScreen(pages(1).single));
-      await tester.pumpAndSettle();
-
-      for (var corner = 0; corner < 4; corner++) {
-        final size = tester.getSize(find.byKey(ScanKeys.cropHandle(corner)));
-        // The drawn dot is smaller than this on purpose; the hit area is what
-        // the accessibility baseline measures.
-        expect(
-          size.shortestSide,
-          greaterThanOrEqualTo(AppTheme.minimumTouchTarget),
-        );
-      }
     });
   });
 }

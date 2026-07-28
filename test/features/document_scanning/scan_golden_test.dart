@@ -10,11 +10,15 @@
 @Tags(['golden'])
 library;
 
+import 'dart:io';
+
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
+import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
+import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
+import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
+import 'package:doc_forge/features/document_scanning/domain/page_geometry.dart';
 import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
 import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cubits.dart';
@@ -53,6 +57,27 @@ List<CapturedPage> capturedPages(int count) => List.generate(
   ),
 );
 
+/// A page with nothing applied, so Revert renders disabled.
+PageDraft _freshDraft() => const PageDraft(
+  id: PageId('golden-page'),
+  originalImagePath: '/golden/page.jpg',
+);
+
+/// A page that has already been cropped, so Revert renders enabled.
+PageDraft _croppedDraft() =>
+    _freshDraft().withCrop(const CropOp(quad: _skewedQuad));
+
+/// A renderer that touches no filesystem, so goldens stay byte-stable.
+RenderPage _goldenRenderer() => RenderPage(
+  cacheDirectory: Directory('/golden'),
+  sizeOf: (path) async => const Result<({int width, int height})>.success((
+    width: 800,
+    height: 600,
+  )),
+  render: (plan, {required destinationPath, transform}) async =>
+      const Result<void>.success(null),
+);
+
 void main() {
   Widget host(Widget child, Brightness brightness) => MaterialApp(
     theme: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
@@ -73,20 +98,10 @@ void main() {
     brightness,
   );
 
-  Widget crop(CapturedPage page, Brightness brightness) => host(
+  Widget crop(PageDraft page, Brightness brightness) => host(
     BlocProvider(
-      create: (_) => CropCubit(
-        page,
-        const ApplyPerspectiveCorrection(
-          InlineBackgroundWorker(),
-          goldenCorrectionJob,
-        ),
-      ),
-      child: CropScreen(
-        destinationPath: '/golden/corrected.jpg',
-        onCropped: (_) {},
-        onCancelled: () {},
-      ),
+      create: (_) => CropCubit(page, _goldenRenderer()),
+      child: CropScreen(onNext: (_) {}, onCancelled: () {}),
     ),
     brightness,
   );
@@ -151,14 +166,7 @@ void main() {
 
   group('crop goldens', () {
     testWidgets('phone, light', (tester) async {
-      await pumpAt(
-        tester,
-        crop(
-          capturedPages(1).single.copyWith(quad: _skewedQuad),
-          Brightness.light,
-        ),
-        _phone,
-      );
+      await pumpAt(tester, crop(_croppedDraft(), Brightness.light), _phone);
 
       await expectLater(
         find.byType(CropScreen),
@@ -167,14 +175,7 @@ void main() {
     });
 
     testWidgets('phone, dark', (tester) async {
-      await pumpAt(
-        tester,
-        crop(
-          capturedPages(1).single.copyWith(quad: _skewedQuad),
-          Brightness.dark,
-        ),
-        _phone,
-      );
+      await pumpAt(tester, crop(_croppedDraft(), Brightness.dark), _phone);
 
       await expectLater(
         find.byType(CropScreen),
@@ -183,14 +184,7 @@ void main() {
     });
 
     testWidgets('tablet, light', (tester) async {
-      await pumpAt(
-        tester,
-        crop(
-          capturedPages(1).single.copyWith(quad: _skewedQuad),
-          Brightness.light,
-        ),
-        _tablet,
-      );
+      await pumpAt(tester, crop(_croppedDraft(), Brightness.light), _tablet);
 
       await expectLater(
         find.byType(CropScreen),
@@ -199,11 +193,7 @@ void main() {
     });
 
     testWidgets('full page, light', (tester) async {
-      await pumpAt(
-        tester,
-        crop(capturedPages(1).single, Brightness.light),
-        _phone,
-      );
+      await pumpAt(tester, crop(_freshDraft(), Brightness.light), _phone);
 
       await expectLater(
         find.byType(CropScreen),

@@ -5,11 +5,16 @@
 /// in the domain and application layers and are unit-tested there.
 library;
 
+import 'dart:async';
+
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
+import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
+import 'package:doc_forge/features/document_creation/domain/page_render_plan.dart';
 import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
+import 'package:doc_forge/features/document_scanning/domain/page_geometry.dart';
 import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_states.dart';
@@ -181,58 +186,93 @@ class PageReviewCubit extends Cubit<PageReviewState> {
 }
 
 /// Drives the crop screen.
+///
+/// Edits the page's geometry layer and nothing else. Applying appends a
+/// [CropOp] and re-renders; the enhancement is carried through untouched, which
+/// is what lets the two layers be reverted independently (`design.md` D6).
 class CropCubit extends Cubit<CropState> {
-  /// Creates the Cubit for [page].
-  CropCubit(CapturedPage page, this._correct)
-    : super(CropState.adjusting(page));
+  /// Creates the Cubit for [page], rendering through [_render].
+  CropCubit(PageDraft page, this._render) : super(CropState.adjusting(page)) {
+    unawaited(_refresh());
+  }
 
-  final ApplyPerspectiveCorrection _correct;
+  final RenderPage _render;
 
-  /// Moves the crop to [quad] as the user drags a handle.
+  /// Moves the selection to [quad] as the user drags a handle.
   ///
-  /// Emits on every drag frame, which is cheap: the state holds four points,
-  /// and nothing is written until the crop is confirmed.
+  /// Emits on every drag frame, which is cheap: the state holds four points
+  /// and nothing is rendered until the crop is applied.
   void adjust(PageQuad quad) => emit(state.copyWith(quad: quad));
 
-  /// Resets the crop to the whole page.
-  void reset() => emit(state.copyWith(quad: PageQuad.full));
+  /// Sets the pending rotation, in degrees.
+  void rotate(double degrees) => emit(state.copyWith(rotationDegrees: degrees));
 
-  /// Applies the crop, straightening the page off the UI thread.
+  /// Applies the pending selection and rotation to the page.
   ///
-  /// Returns the corrected page, or null when correction failed. A full-page
-  /// crop skips the work entirely — there is nothing to straighten, and running
-  /// the transform anyway would re-encode the capture for no benefit.
-  Future<CapturedPage?> confirm({required String destinationPath}) async {
-    if (state.quad.isFullPage) {
-      final unchanged = state.page.copyWith(quad: PageQuad.full);
-      emit(state.copyWith(status: CropStatus.done, page: unchanged));
-      return unchanged;
-    }
+  /// Appends to the geometry rather than replacing the image, then re-renders
+  /// and resets the pending state — so the screen stays put, showing the
+  /// cropped result, ready to be cropped again. It deliberately does not
+  /// navigate: continuing is the Next control's job.
+  Future<void> apply() async {
+    final pending = state.pendingOp;
+    if (pending == null || state.isWorking) return;
 
-    emit(state.copyWith(status: CropStatus.correcting));
+    emit(state.copyWith(status: CropStatus.applying));
 
-    final result = await _correct.single(
-      PageCorrectionRequest.forQuad(
-        sourcePath: state.page.imagePath,
-        destinationPath: destinationPath,
-        quad: state.quad,
-      ),
-    );
+    final cropped = state.page.withCrop(pending);
+    final rendered = await _render(PageRenderPlan.of(cropped));
+    if (isClosed) return;
 
-    switch (result) {
+    switch (rendered) {
       case Success(:final value):
-        final corrected = state.page.copyWith(
-          imagePath: value,
-          quad: state.quad,
-          isCorrected: true,
+        emit(
+          state.copyWith(
+            status: CropStatus.adjusting,
+            page: cropped,
+            // The view resets: the selection covers the whole of the new
+            // image and the rotation returns to square, because the crop the
+            // user just made is now part of the picture rather than pending.
+            quad: PageQuad.full,
+            rotationDegrees: 0,
+            renderPath: value,
+          ),
         );
-        emit(state.copyWith(status: CropStatus.done, page: corrected));
-        return corrected;
       case Failed(:final failure):
-        // Back to adjusting rather than to a dead end: the original capture is
-        // untouched, so the user can change the crop and try again.
+        // The page is untouched — the crop was never appended — so the user
+        // can adjust the selection and try again.
         emit(state.copyWith(status: CropStatus.adjusting, failure: failure));
-        return null;
+    }
+  }
+
+  /// Discards every crop and rotation, returning to the full original frame.
+  ///
+  /// The enhancement is deliberately untouched: reverting the crop gives the
+  /// user their whole page back, still enhanced. There is no undo stack —
+  /// one that only ever unwinds to the bottom is a flag pretending to be a
+  /// stack.
+  Future<void> revertToOriginal() async {
+    if (!state.page.hasGeometry || state.isWorking) return;
+
+    final reverted = state.page.revertGeometry();
+    emit(
+      state.copyWith(page: reverted, quad: PageQuad.full, rotationDegrees: 0),
+    );
+    await _refresh();
+  }
+
+  /// The page as it now stands, for the caller to keep.
+  PageDraft get page => state.page;
+
+  /// Renders the page as it currently is and shows the result.
+  ///
+  /// A failed render leaves the previous image on screen rather than blanking
+  /// it: the user is mid-edit, and an empty canvas would look like data loss.
+  Future<void> _refresh() async {
+    final rendered = await _render(PageRenderPlan.of(state.page));
+    if (isClosed) return;
+
+    if (rendered case Success(:final value)) {
+      emit(state.copyWith(renderPath: value));
     }
   }
 }

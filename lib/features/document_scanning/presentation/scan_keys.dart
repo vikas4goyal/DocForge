@@ -66,11 +66,26 @@ abstract final class ScanKeys {
   /// The draggable edge overlay.
   static const edgeOverlay = Key('scan_edge_overlay');
 
-  /// Control that confirms the crop.
-  static const cropConfirmButton = Key('scan_crop_confirm_button');
+  /// Control that applies the pending crop in place, without navigating.
+  static const cropConfirmButton = Key('scan_crop_apply_button');
 
-  /// Control that resets the crop to the whole page.
-  static const cropResetButton = Key('scan_crop_reset_button');
+  /// Continues from cropping to enhancement — the only path onward.
+  static const cropNextButton = Key('scan_crop_next_button');
+
+  /// Prompt shown when Next is used with changes that were never applied.
+  static const cropApplyPrompt = Key('scan_crop_apply_prompt');
+
+  /// Applies the pending changes and continues.
+  static const cropPromptApply = Key('scan_crop_prompt_apply');
+
+  /// Continues without applying the pending changes.
+  static const cropPromptSkip = Key('scan_crop_prompt_skip');
+
+  /// Discards every crop and rotation, returning the full original frame.
+  ///
+  /// Named for the layer it affects: the enhancement is untouched, so this is
+  /// not an undo-everything.
+  static const cropResetButton = Key('scan_crop_revert_button');
 
   /// A page row in the review list, keyed by page identifier.
   static Key pageItem(String pageId) => Key('scan_page_item_$pageId');

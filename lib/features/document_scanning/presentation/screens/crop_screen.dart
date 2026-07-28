@@ -6,7 +6,7 @@ import 'dart:math' as math;
 
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
+import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cubits.dart';
 import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_states.dart';
 import 'package:doc_forge/features/document_scanning/presentation/scan_keys.dart';
@@ -140,23 +140,26 @@ class PageTransform {
   }
 }
 
-/// Lets the user adjust a page's edges before correction is applied.
+/// Lets the user crop and straighten a page, repeatedly.
+///
+/// Applying does not navigate: it replaces the working image in place, so the
+/// result can be cropped again. Continuing to enhancement is the Next control's
+/// job alone (`design.md` D6).
 class CropScreen extends StatefulWidget {
   /// Creates the crop screen.
   const CropScreen({
-    required this.destinationPath,
-    required this.onCropped,
+    required this.onNext,
     required this.onCancelled,
     super.key,
   });
 
-  /// Where the corrected page is written.
-  final String destinationPath;
+  /// Called with the page once the user continues to enhancement.
+  ///
+  /// Carries whatever geometry has been applied by then, which may be none:
+  /// the user is allowed to look and move on.
+  final void Function(PageDraft page) onNext;
 
-  /// Called with the corrected page once the crop is applied.
-  final void Function(CapturedPage page) onCropped;
-
-  /// Called when the user leaves without applying a crop.
+  /// Called when the user leaves without continuing.
   final VoidCallback onCancelled;
 
   @override
@@ -235,6 +238,47 @@ class _CropScreenState extends State<CropScreen> {
     );
   }
 
+  /// Continues to enhancement, asking first about anything left unapplied.
+  ///
+  /// Applying silently would be a change the user did not ask for; discarding
+  /// silently would lose one they did. So the question is asked, and dismissing
+  /// it without answering stays here with the pending change intact.
+  Future<void> _next(BuildContext context, CropState state) async {
+    final cubit = context.read<CropCubit>();
+
+    if (state.hasUnappliedChanges) {
+      final shouldApply = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          key: ScanKeys.cropApplyPrompt,
+          title: const Text('Apply crop changes?'),
+          content: const Text(
+            'You have adjusted the edges or the rotation without applying '
+            'them. Apply the changes and continue?',
+          ),
+          actions: [
+            TextButton(
+              key: ScanKeys.cropPromptSkip,
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('No'),
+            ),
+            FilledButton(
+              key: ScanKeys.cropPromptApply,
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Yes'),
+            ),
+          ],
+        ),
+      );
+
+      // Dismissed rather than answered: stay, with the adjustment intact.
+      if (shouldApply == null) return;
+      if (shouldApply) await cubit.apply();
+    }
+
+    widget.onNext(cubit.page);
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<CropCubit, CropState>(
@@ -271,11 +315,9 @@ class _CropScreenState extends State<CropScreen> {
               icon: const RotatedBox(quarterTurns: 1, child: Icon(Icons.flip)),
             ),
             TextButton(
-              key: ScanKeys.cropResetButton,
-              onPressed: state.isWorking
-                  ? null
-                  : context.read<CropCubit>().reset,
-              child: const Text('Reset'),
+              key: ScanKeys.cropNextButton,
+              onPressed: state.isWorking ? null : () => _next(context, state),
+              child: const Text('Next'),
             ),
           ],
         ),
@@ -323,15 +365,28 @@ class _CropScreenState extends State<CropScreen> {
                 const SizedBox(height: 8),
                 FilledButton(
                   key: ScanKeys.cropConfirmButton,
-                  onPressed: state.isWorking
-                      ? null
-                      : () async {
-                          final page = await context.read<CropCubit>().confirm(
-                            destinationPath: widget.destinationPath,
-                          );
-                          if (page != null) widget.onCropped(page);
-                        },
+                  // Applies in place and stays put. The screen showing the
+                  // cropped result is what lets the user crop it again.
+                  onPressed: state.canApply
+                      ? () async {
+                          await context.read<CropCubit>().apply();
+                          if (context.mounted) setState(() => _rotation = 0);
+                        }
+                      : null,
                   child: const Text('Apply crop'),
+                ),
+                const SizedBox(height: 8),
+                // Below Apply, as the specification places it: the user reaches
+                // for it after a crop they dislike, not before one.
+                TextButton(
+                  key: ScanKeys.cropResetButton,
+                  onPressed: state.canRevert
+                      ? () async {
+                          await context.read<CropCubit>().revertToOriginal();
+                          if (context.mounted) setState(() => _rotation = 0);
+                        }
+                      : null,
+                  child: const Text('Revert to original'),
                 ),
               ],
             ),
@@ -477,7 +532,9 @@ class _CropCanvasState extends State<_CropCanvas> {
   @override
   void didUpdateWidget(_CropCanvas oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.state.page.imagePath != widget.state.page.imagePath) {
+    // The render, not the original: applying a crop produces a new render of
+    // the same page, and the canvas has to follow it.
+    if (oldWidget.state.renderPath != widget.state.renderPath) {
       _resolveImage();
     }
   }
@@ -504,7 +561,11 @@ class _CropCanvasState extends State<_CropCanvas> {
     _detachListener();
     _imageSize = null;
 
-    final provider = FileImage(File(widget.state.page.imagePath));
+    // Falls back to the original before the first render lands, so the canvas
+    // never shows an empty frame while the page is being prepared.
+    final provider = FileImage(
+      File(widget.state.renderPath ?? widget.state.page.originalImagePath),
+    );
     _provider = provider;
 
     final listener = ImageStreamListener(

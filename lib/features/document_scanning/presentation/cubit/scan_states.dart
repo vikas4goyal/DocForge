@@ -4,6 +4,8 @@ library;
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/failure_messages.dart';
+import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
+import 'package:doc_forge/features/document_scanning/domain/page_geometry.dart';
 import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
 import 'package:equatable/equatable.dart';
 
@@ -145,44 +147,67 @@ class PageReviewState extends Equatable {
 
 /// Where the crop screen is in its lifecycle.
 enum CropStatus {
-  /// The user is adjusting the corners.
+  /// The user is adjusting the selection.
   adjusting,
 
-  /// Perspective correction is running.
-  correcting,
+  /// A crop is being applied.
+  applying,
 
-  /// The corrected page has been written.
-  done,
-
-  /// Correction failed.
+  /// Applying failed.
   failure,
 }
 
 /// Immutable state of the crop screen.
+///
+/// The screen edits a page's *geometry layer* — the ordered crops and rotations
+/// applied over an untouched original. Applying appends to that list and
+/// re-renders; it does not replace the original, which is what makes reverting
+/// possible and what keeps the enhancement layer out of this screen's business
+/// entirely (`design.md` D6).
 class CropState extends Equatable {
   const CropState._({
     required this.status,
     required this.page,
     required this.quad,
+    required this.rotationDegrees,
+    this.renderPath,
     this.failure,
   });
 
-  /// Starts adjusting [page], seeded with its current crop.
-  CropState.adjusting(CapturedPage page)
-    : this._(status: CropStatus.adjusting, page: page, quad: page.quad);
+  /// Starts adjusting [page], with nothing pending.
+  ///
+  /// The selection begins as the whole of whatever the page currently shows —
+  /// not as the page's stored crop, because that crop has already been applied
+  /// and offering it again would ask the user to re-confirm work they did.
+  const CropState.adjusting(PageDraft page)
+    : this._(
+        status: CropStatus.adjusting,
+        page: page,
+        quad: PageQuad.full,
+        rotationDegrees: 0,
+      );
 
   /// Where the screen is in its lifecycle.
   final CropStatus status;
 
-  /// The page being cropped.
-  final CapturedPage page;
+  /// The page being cropped, carrying its original and both layers.
+  final PageDraft page;
 
-  /// The quadrilateral as the user has it now.
+  /// The selection as the user has it now, against the current render.
   ///
-  /// Held separately from `page.quad` so abandoning the screen leaves the
-  /// page's stored crop untouched — an adjustment is not applied until it is
-  /// confirmed.
+  /// Pending, not applied: leaving the screen without applying leaves the
+  /// page's geometry untouched.
   final PageQuad quad;
+
+  /// The rotation the user has dialled in but not yet applied.
+  final double rotationDegrees;
+
+  /// The rendered image the screen is showing, once one exists.
+  ///
+  /// Carries the page's enhancement as well as its geometry: the row thumbnail
+  /// is enhanced, so a crop screen showing raw pixels would read as though the
+  /// enhancement had been lost.
+  final String? renderPath;
 
   /// What went wrong, when something did.
   final Failure? failure;
@@ -190,25 +215,57 @@ class CropState extends Equatable {
   /// The user-facing message for [failure].
   String? get message => failure?.presentation.message;
 
-  /// Whether correction is currently running.
-  bool get isWorking => status == CropStatus.correcting;
+  /// Whether a crop is being applied.
+  bool get isWorking => status == CropStatus.applying;
 
-  /// Whether the crop differs from the page's stored one.
-  bool get hasChanges => quad != page.quad;
+  /// Whether the selection or the rotation has been changed but not applied.
+  ///
+  /// Drives the prompt shown when the user continues to enhancement: applying
+  /// silently would be a change they did not ask for, and discarding silently
+  /// would lose one they did.
+  bool get hasUnappliedChanges => !quad.isFullPage || rotationDegrees != 0;
+
+  /// Whether the apply control does anything.
+  bool get canApply => hasUnappliedChanges && !isWorking;
+
+  /// Whether any crop or rotation has been applied to this page.
+  ///
+  /// Drives the revert control, which is disabled when there is nothing of its
+  /// own layer to revert — rather than when nothing at all has been done.
+  bool get canRevert => page.hasGeometry && !isWorking;
+
+  /// The pending operation, or null when nothing is pending.
+  CropOp? get pendingOp => hasUnappliedChanges
+      ? CropOp(quad: quad, rotationDegrees: rotationDegrees)
+      : null;
 
   /// Returns a copy with the given fields replaced.
+  ///
+  /// [failure] is cleared unless supplied, so a resolved error cannot outlive
+  /// the condition that caused it.
   CropState copyWith({
     CropStatus? status,
-    CapturedPage? page,
+    PageDraft? page,
     PageQuad? quad,
+    double? rotationDegrees,
+    String? renderPath,
     Failure? failure,
   }) => CropState._(
     status: status ?? this.status,
     page: page ?? this.page,
     quad: quad ?? this.quad,
+    rotationDegrees: rotationDegrees ?? this.rotationDegrees,
+    renderPath: renderPath ?? this.renderPath,
     failure: failure,
   );
 
   @override
-  List<Object?> get props => [status, page, quad, failure];
+  List<Object?> get props => [
+    status,
+    page,
+    quad,
+    rotationDegrees,
+    renderPath,
+    failure,
+  ];
 }

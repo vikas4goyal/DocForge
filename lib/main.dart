@@ -44,6 +44,8 @@ import 'package:doc_forge/features/app_settings/presentation/screens/settings_sc
 import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
 import 'package:doc_forge/features/app_shell/presentation/cubit/home_cubit.dart';
 import 'package:doc_forge/features/app_shell/presentation/screens/home_screen.dart';
+import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
+import 'package:doc_forge/features/document_creation/infrastructure/page_render_job.dart';
 import 'package:doc_forge/features/document_import/presentation/cubit/import_cubit.dart';
 import 'package:doc_forge/features/document_import/presentation/screens/import_options_sheet.dart';
 import 'package:doc_forge/features/document_import/presentation/widgets/shared_content_watcher.dart';
@@ -108,8 +110,23 @@ Future<void> main() async {
 
   final documentFiles = PublicStoreDocumentFileResolver(publicStore);
 
+  // One renderer for the whole application: everything that shows a page goes
+  // through it, so the row thumbnail, the crop screen and the generated PDF
+  // cannot disagree about what the user's edits amount to.
+  final renderPage = RenderPage(
+    cacheDirectory: cacheDirectory,
+    sizeOf: readImageSize,
+    render: (plan, {required destinationPath, transform}) => renderPageJob(
+      dependencies.worker,
+      plan,
+      destinationPath: destinationPath,
+      transform: transform,
+    ),
+  );
+
   final scanning = buildScanningModule(
     directory: cacheDirectory,
+    renderPage: renderPage,
     permissions: dependencies.permissions,
     ids: dependencies.idGenerator,
     worker: dependencies.worker,

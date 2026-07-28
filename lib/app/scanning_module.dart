@@ -11,7 +11,10 @@ import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/permissions/permission_service.dart';
 import 'package:doc_forge/core/time/clock.dart';
+import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
+import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
+import 'package:doc_forge/features/document_scanning/domain/page_geometry.dart';
 import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';
@@ -41,6 +44,7 @@ class ScanningModule {
     required this.discardSession,
     required this.applyEnhancement,
     required this.enhancementDestination,
+    required this.renderPage,
     required this.buildPreview,
   });
 
@@ -64,6 +68,9 @@ class ScanningModule {
 
   /// Names the file an enhancement result is written to.
   final EnhancementDestination enhancementDestination;
+
+  /// Renders a page from its original and its layers, caching by plan.
+  final RenderPage renderPage;
 
   /// Builds the live camera preview.
   ///
@@ -89,6 +96,7 @@ ScanningModule buildScanningModule({
   required PermissionService permissions,
   required IdGenerator ids,
   required BackgroundWorker worker,
+  required RenderPage renderPage,
   EdgeDetector detector = const OpenCvEdgeDetector(),
 }) {
   final staging = LocalScanStagingArea(directory);
@@ -113,6 +121,7 @@ ScanningModule buildScanningModule({
     discardSession: DiscardScanSession(staging, scanner),
     applyEnhancement: ApplyEnhancement(worker, enhancePageJob),
     enhancementDestination: enhancementDestination,
+    renderPage: renderPage,
     buildPreview: scanner.buildPreview,
   );
 }
@@ -126,24 +135,25 @@ ScanningModule buildScanningModule({
 // second set of behaviours to keep in step, and the one the user reached would
 // decide which fixes they got.
 
-/// Opens the crop and rotate editor for [page], returning the corrected page.
+/// Opens the crop and rotate editor for [page].
 ///
-/// Returns null when the user leaves without applying anything, which callers
-/// must treat as "keep what you had" rather than as a failure.
-Future<CapturedPage?> openPageCrop(
+/// Returns the page carrying whatever geometry the user applied, or null when
+/// they left without continuing — which callers must treat as "keep what you
+/// had" rather than as a failure.
+///
+/// The editor works on a [PageDraft]: an untouched original plus the layers
+/// applied over it. Applying a crop appends to the geometry rather than
+/// replacing the image, which is what lets it be reverted later.
+Future<PageDraft?> openPageCrop(
   BuildContext context, {
   required ScanningModule module,
-  required CapturedPage page,
-}) => Navigator.of(context).push<CapturedPage>(
+  required PageDraft page,
+}) => Navigator.of(context).push<PageDraft>(
   MaterialPageRoute(
     builder: (routeContext) => BlocProvider(
-      create: (_) => CropCubit(page, module.applyCorrection),
+      create: (_) => CropCubit(page, module.renderPage),
       child: CropScreen(
-        // Written beside the capture rather than over it: keeping the original
-        // means a crop the user dislikes can be redone from the full page
-        // rather than from an already-cropped one.
-        destinationPath: '${page.imagePath}.cropped.jpg',
-        onCropped: (cropped) => Navigator.of(routeContext).pop(cropped),
+        onNext: (edited) => Navigator.of(routeContext).pop(edited),
         onCancelled: () => Navigator.of(routeContext).pop(),
       ),
     ),
@@ -303,6 +313,9 @@ class _ScanFlowState extends State<ScanFlow> {
   /// cannot hand its settings to a different one.
   final Map<PageId, EnhancementSettings> _enhancements = {};
 
+  /// Geometry applied per page, keyed the same way and for the same reason.
+  final Map<PageId, List<CropOp>> _geometry = {};
+
   /// Moves from review into enhancement.
   void _finishReview() {
     _pages = [for (final page in _review.state.pages) _pageRefFor(page)];
@@ -315,14 +328,25 @@ class _ScanFlowState extends State<ScanFlow> {
     setState(() => _step = _ScanStep.save);
   }
 
+  /// Bridges a capture into the layered page the editors work on.
+  ///
+  /// Temporary: this flow is being replaced by the page table, which holds
+  /// [PageDraft] throughout. Until then the two representations meet here.
+  PageDraft _draftFor(CapturedPage page) => PageDraft(
+    id: page.id,
+    originalImagePath: page.imagePath,
+    enhancement: _enhancements[page.id] ?? EnhancementSettings.none,
+  );
+
   Future<void> _cropPage(int index, CapturedPage page) async {
-    final corrected = await openPageCrop(
+    final edited = await openPageCrop(
       context,
       module: widget.module,
-      page: page,
+      page: _draftFor(page),
     );
 
-    if (corrected != null) _review.replace(index, corrected);
+    if (edited == null || !mounted) return;
+    setState(() => _geometry[page.id] = edited.geometry);
   }
 
   /// Opens the enhancement editor for one page of the review list.
@@ -351,15 +375,13 @@ class _ScanFlowState extends State<ScanFlow> {
     final cropped = await openPageCrop(
       context,
       module: widget.module,
-      page: page,
+      page: _draftFor(page),
     );
 
-    if (cropped != null) _capture.pages[index] = cropped;
+    if (cropped != null) _geometry[page.id] = cropped.geometry;
     if (!mounted) return;
 
-    // Enhancement runs over the *cropped* page when there is one, so the
-    // preview shows the document rather than whatever surrounded it.
-    final edited = cropped ?? page;
+    final edited = page;
     final enhanced = await openPageEnhance(
       context,
       module: widget.module,

@@ -4,7 +4,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
 import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
@@ -41,6 +40,9 @@ List<CapturedPage> pages(int count) => List.generate(
   ),
 );
 
+// The crop screen's Cubit is covered by `crop_cubit_test.dart`: it works on the
+// layered page model (an original plus geometry and enhancement), which this
+// file's capture-and-review fixtures predate.
 void main() {
   late Directory workspace;
   late FakeScannerRepository scanner;
@@ -63,17 +65,6 @@ void main() {
     scanner,
     CapturePage(scanner, const FullPageEdgeDetector()),
     DiscardScanSession(staging, scanner),
-  );
-
-  CropCubit buildCrop(
-    CapturedPage page, {
-    String Function(PageCorrectionRequest)? job,
-  }) => CropCubit(
-    page,
-    ApplyPerspectiveCorrection(
-      const InlineBackgroundWorker(),
-      job ?? passthroughCorrectionJob,
-    ),
   );
 
   group('ScanCaptureCubit', () {
@@ -435,114 +426,6 @@ void main() {
 
       expect(cubit.state.pages, hasLength(3));
       expect(cubit.state.pages.last.id.value, 'page-new');
-    });
-  });
-
-  group('CropCubit', () {
-    test('starts adjusting, seeded with the page current crop', () {
-      final page = pages(1).single.copyWith(quad: skewedQuad);
-      final cubit = buildCrop(page);
-
-      expect(cubit.state.status, CropStatus.adjusting);
-      expect(cubit.state.quad, skewedQuad);
-      expect(cubit.state.hasChanges, isFalse);
-    });
-
-    blocTest<CropCubit, CropState>(
-      'dragging a handle updates the crop',
-      build: () => buildCrop(pages(1).single),
-      act: (cubit) => cubit.adjust(skewedQuad),
-      expect: () => [
-        isA<CropState>()
-            .having((s) => s.quad, 'quad', skewedQuad)
-            .having((s) => s.hasChanges, 'hasChanges', isTrue),
-      ],
-    );
-
-    blocTest<CropCubit, CropState>(
-      'resetting returns the crop to the whole page',
-      build: () => buildCrop(pages(1).single.copyWith(quad: skewedQuad)),
-      act: (cubit) => cubit.reset(),
-      expect: () => [
-        isA<CropState>().having((s) => s.quad, 'quad', PageQuad.full),
-      ],
-    );
-
-    test('confirming a skewed crop corrects the page', () async {
-      final cubit = buildCrop(pages(1).single)..adjust(skewedQuad);
-
-      final corrected = await cubit.confirm(
-        destinationPath: '/scan/corrected.jpg',
-      );
-
-      expect(corrected, isNotNull);
-      expect(corrected!.imagePath, '/scan/corrected.jpg');
-      expect(corrected.isCorrected, isTrue);
-      expect(cubit.state.status, CropStatus.done);
-      await cubit.close();
-    });
-
-    test('confirming a full-page crop does no work at all', () async {
-      final cubit = buildCrop(pages(1).single, job: brokenCorrectionJob);
-
-      final result = await cubit.confirm(
-        destinationPath: '/scan/corrected.jpg',
-      );
-
-      // The job would have thrown if it ran. There is nothing to straighten,
-      // and running the transform anyway would re-encode for no benefit.
-      expect(result, isNotNull);
-      expect(result!.imagePath, '/scan/page-0.jpg');
-      expect(result.isCorrected, isFalse);
-      await cubit.close();
-    });
-
-    test(
-      'a failed correction returns to adjusting with the original intact',
-      () async {
-        final cubit = buildCrop(pages(1).single, job: brokenCorrectionJob)
-          ..adjust(skewedQuad);
-
-        final result = await cubit.confirm(
-          destinationPath: '/scan/corrected.jpg',
-        );
-
-        expect(result, isNull);
-        // Not a dead end: the capture is untouched, so the user can change the
-        // crop and try again.
-        expect(cubit.state.status, CropStatus.adjusting);
-        expect(cubit.state.page.imagePath, '/scan/page-0.jpg');
-        expect(cubit.state.page.isCorrected, isFalse);
-        expect(cubit.state.message, isNotEmpty);
-        await cubit.close();
-      },
-    );
-
-    test('a retry after a failed correction can succeed', () async {
-      final failing = buildCrop(pages(1).single, job: brokenCorrectionJob)
-        ..adjust(skewedQuad);
-      await failing.confirm(destinationPath: '/scan/corrected.jpg');
-      await failing.close();
-
-      final working = buildCrop(pages(1).single)..adjust(skewedQuad);
-      final corrected = await working.confirm(
-        destinationPath: '/scan/corrected.jpg',
-      );
-
-      expect(corrected, isNotNull);
-      await working.close();
-    });
-
-    test('correction runs through the background worker', () async {
-      final cubit = buildCrop(pages(1).single)..adjust(skewedQuad);
-
-      await cubit.confirm(destinationPath: '/scan/corrected.jpg');
-
-      // The use case owns the worker, so a Cubit that did the maths itself
-      // would not compile — but this pins that the corrected path came back
-      // through it rather than being fabricated.
-      expect(cubit.state.page.isCorrected, isTrue);
-      await cubit.close();
     });
   });
 }

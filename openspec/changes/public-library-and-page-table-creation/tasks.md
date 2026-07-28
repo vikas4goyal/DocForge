@@ -41,16 +41,16 @@
 
 ## 5. Crop screen rework
 
-- [ ] 5.1 Extend `CropState` with `originalImagePath`, `applied`, `enhancement`, `renderPath`, `rotationDegrees` and the `hasUnappliedChanges` / `canApply` / `canRevert` predicates (design D6)
-- [ ] 5.2 Rewrite `CropCubit.apply` to append a `CropOp`, re-render from the original through the composed transform, and emit with rotation 0 and a full-page selection, without popping
-- [ ] 5.3 Implement `CropCubit.revertToOriginal` clearing the geometry list and re-rendering, carrying the enhancement through untouched
-- [ ] 5.4 Cubit-test (`bloc_test`) apply-in-place, repeated apply, revert leaving enhancement intact, apply failure leaving the render intact, and the unapplied-changes flag
-- [ ] 5.5 Add the `scan_crop_apply_button`, `scan_crop_revert_button` (below apply) and `scan_crop_next_button` controls to `CropScreen`, and remove the pop-on-apply behaviour
-- [ ] 5.6 Display the enhanced render on the crop screen so it matches the page's row, and widget-test that an enhanced page looks the same in both places
-- [ ] 5.7 Add the unapplied-changes prompt (`scan_crop_apply_prompt`) on Next, with apply-and-continue and continue-without-applying, and dismissal leaving the screen intact
-- [ ] 5.8 Widget-test the crop screen: apply keeps the screen, Next navigates, prompt appears only with unapplied changes, both answers behave as specified, revert disabled until an apply has happened, and no undo control exists
-- [ ] 5.9 Golden-test `CropScreen` in light and dark, phone and tablet
-- [ ] 5.10 Add `@Preview()` entries for `CropScreen`: adjusting, applied once, applied twice, correcting, error, revert available
+- [x] 5.1 Extend `CropState` with `originalImagePath`, `applied`, `enhancement`, `renderPath`, `rotationDegrees` and the `hasUnappliedChanges` / `canApply` / `canRevert` predicates (design D6)
+- [x] 5.2 Rewrite `CropCubit.apply` to append a `CropOp`, re-render from the original through the composed transform, and emit with rotation 0 and a full-page selection, without popping
+- [x] 5.3 Implement `CropCubit.revertToOriginal` clearing the geometry list and re-rendering, carrying the enhancement through untouched
+- [x] 5.4 Cubit-test (`bloc_test`) apply-in-place, repeated apply, revert leaving enhancement intact, apply failure leaving the render intact, and the unapplied-changes flag
+- [x] 5.5 Add the `scan_crop_apply_button`, `scan_crop_revert_button` (below apply) and `scan_crop_next_button` controls to `CropScreen`, and remove the pop-on-apply behaviour
+- [x] 5.6 Display the enhanced render on the crop screen so it matches the page's row, and widget-test that an enhanced page looks the same in both places
+- [x] 5.7 Add the unapplied-changes prompt (`scan_crop_apply_prompt`) on Next, with apply-and-continue and continue-without-applying, and dismissal leaving the screen intact
+- [x] 5.8 Widget-test the crop screen: apply keeps the screen, Next navigates, prompt appears only with unapplied changes, both answers behave as specified, revert disabled until an apply has happened, and no undo control exists
+- [x] 5.9 Golden-test `CropScreen` in light and dark, phone and tablet
+- [x] 5.10 Add `@Preview()` entries for `CropScreen`: adjusting, applied once, applied twice, correcting, error, revert available
 
 ## 6. Single-page enhancement
 
