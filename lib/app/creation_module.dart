@@ -14,6 +14,7 @@ import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/storage/capture_staging.dart';
+import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_forge/features/document_creation/application/usecases/add_page.dart';
 import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
 import 'package:doc_forge/features/document_creation/presentation/creation_keys.dart';
@@ -38,6 +39,7 @@ class CreationModule {
     required this.scanning,
     required this.save,
     required this.suggestName,
+    required this.store,
   });
 
   /// Where a session's working files live.
@@ -63,6 +65,9 @@ class CreationModule {
 
   /// The name the save dialog opens with.
   final Future<String> Function() suggestName;
+
+  /// The library folder, so a duplicate name can be spotted before writing.
+  final PublicFileStore store;
 }
 
 /// Hosts the whole creation flow behind one route.
@@ -269,6 +274,13 @@ class _CreationFlowState extends State<CreationFlow> {
       folders: widget.folders,
       folderId: widget.folderId,
       suggestedName: suggested,
+      isNameTaken: (fileName, folders) async {
+        final listed = await widget.module.store.list(folders);
+        return (listed.valueOrNull ?? const <PublicEntry>[]).any(
+          (entry) => !entry.isFolder && entry.name == fileName,
+        );
+      },
+      confirmReplace: _confirmReplace,
     );
 
     final saved = await showDialog<Document>(
@@ -304,6 +316,39 @@ class _CreationFlowState extends State<CreationFlow> {
     if (!mounted) return;
 
     widget.onSaved(saved);
+  }
+
+  /// Asks whether to replace a document of the same name.
+  ///
+  /// Overwriting silently would destroy a document the user still has, and
+  /// suffixing silently would give them a name they did not choose.
+  Future<bool> _confirmReplace(String fileName) async {
+    if (!mounted) return false;
+
+    final replace = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        key: CreationKeys.replacePrompt,
+        title: const Text('Replace this document?'),
+        content: Text(
+          '"$fileName" is already in this folder. Replacing it cannot be '
+          'undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Choose another name'),
+          ),
+          FilledButton(
+            key: CreationKeys.replaceConfirmButton,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Replace'),
+          ),
+        ],
+      ),
+    );
+
+    return replace ?? false;
   }
 
   /// Leaves the flow, asking first when there is something to lose.

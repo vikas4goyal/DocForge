@@ -64,7 +64,7 @@ void main() {
   DocumentDetailCubit buildDetail(DocumentId id) => DocumentDetailCubit(
     id,
     LoadDocumentDetail(documents, pages),
-    RenameDocument(documents, clock),
+    RenameDocument(documents, clock, store),
     MoveDocument(documents, clock),
     ToggleFavourite(documents, clock),
     ArchiveDocument(documents, clock),

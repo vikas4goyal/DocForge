@@ -231,7 +231,7 @@ LibraryModule buildLibraryModuleOver({
     loadDocuments: LoadDocuments(documents),
     loadDocumentDetail: LoadDocumentDetail(documents, pages),
     loadFolderOptions: LoadFolderOptions(folders),
-    renameDocument: RenameDocument(documents, clock),
+    renameDocument: RenameDocument(documents, clock, store),
     moveDocument: move,
     toggleFavourite: ToggleFavourite(documents, clock),
     archiveDocument: ArchiveDocument(documents, clock),

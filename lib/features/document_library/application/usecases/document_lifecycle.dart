@@ -20,15 +20,20 @@ import 'package:doc_forge/features/document_library/domain/repositories/library_
 /// Renames a document.
 class RenameDocument {
   /// Creates the use case.
-  const RenameDocument(this._documents, this._clock);
+  const RenameDocument(this._documents, this._clock, this._store);
 
   final DocumentRepository _documents;
   final Clock _clock;
+  final PublicFileStore _store;
 
   /// Renames [id] to [title].
   ///
-  /// Rejects an empty or whitespace-only name; the existing title is kept. The
-  /// modified date is refreshed, the creation date never is.
+  /// Rejects an empty or whitespace-only name, and one the filesystem would
+  /// refuse: the title is also the file's name in a folder the user can reach
+  /// from their file browser, so "not empty" is no longer enough.
+  ///
+  /// The file is renamed as well as the record. Renaming only the record would
+  /// leave the two disagreeing, and the folder is the truth.
   Future<Result<Document>> call(DocumentId id, String title) async {
     final normalised = NameRules.normalise(title);
     if (normalised == null) {
@@ -36,14 +41,46 @@ class RenameDocument {
         Failure.validation(issue: ValidationIssue.emptyName),
       );
     }
+    if (!LibraryPath.isValidName(LibraryPath.pdfFileName(normalised))) {
+      return const Result<Document>.failure(
+        Failure.validation(issue: ValidationIssue.illegalName),
+      );
+    }
 
     final found = await _documents.findById(id);
 
-    return found.flatMapAsync(
-      (document) => _documents.save(
-        document.copyWith(title: normalised, updatedAt: _clock.now()),
-      ),
-    );
+    return found.flatMapAsync((document) async {
+      final destination = document.libraryPath.withFileName(
+        LibraryPath.pdfFileName(normalised),
+      );
+
+      // A name already taken in the same folder is refused rather than
+      // silently suffixed: the user asked for that name, and quietly giving
+      // them a different one is worse than saying no.
+      if (destination != document.libraryPath) {
+        final taken = await _store.exists(destination);
+        if (taken.valueOrNull ?? false) {
+          return const Result<Document>.failure(
+            Failure.validation(issue: ValidationIssue.duplicateDocumentName),
+          );
+        }
+
+        final renamed = await _store.rename(document.libraryPath, destination);
+        if (renamed case Failed(:final failure)) {
+          return Result<Document>.failure(failure);
+        }
+      }
+
+      // The record second: a record renamed before the file would describe a
+      // document at a path that does not hold one.
+      return _documents.save(
+        document.copyWith(
+          title: normalised,
+          libraryPath: destination,
+          updatedAt: _clock.now(),
+        ),
+      );
+    });
   }
 }
 

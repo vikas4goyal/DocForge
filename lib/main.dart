@@ -244,6 +244,7 @@ Future<void> main() async {
         ),
     suggestName: () =>
         creation.generateName(currentSettings.value.namingPattern),
+    store: publicStore,
   );
 
   final editing = buildPdfEditingModule(

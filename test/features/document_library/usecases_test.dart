@@ -40,7 +40,7 @@ void main() {
 
   group('RenameDocument', () {
     test('renames and refreshes the modified date', () async {
-      final result = await RenameDocument(documents, clock)(
+      final result = await RenameDocument(documents, clock, store)(
         sampleDocument.id,
         'Renamed',
       );
@@ -50,7 +50,7 @@ void main() {
     });
 
     test('never changes the creation date', () async {
-      final result = await RenameDocument(documents, clock)(
+      final result = await RenameDocument(documents, clock, store)(
         sampleDocument.id,
         'Renamed',
       );
@@ -59,7 +59,7 @@ void main() {
     });
 
     test('trims incidental whitespace', () async {
-      final result = await RenameDocument(documents, clock)(
+      final result = await RenameDocument(documents, clock, store)(
         sampleDocument.id,
         '  Spaced  ',
       );
@@ -68,7 +68,7 @@ void main() {
     });
 
     test('rejects an empty name and keeps the existing title', () async {
-      final result = await RenameDocument(documents, clock)(
+      final result = await RenameDocument(documents, clock, store)(
         sampleDocument.id,
         '   ',
       );
@@ -81,7 +81,7 @@ void main() {
     });
 
     test('reports not found for an unknown document', () async {
-      final result = await RenameDocument(documents, clock)(
+      final result = await RenameDocument(documents, clock, store)(
         const DocumentId('nope'),
         'x',
       );

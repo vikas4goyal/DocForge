@@ -35,12 +35,17 @@ void main() {
   late FakeFolderRepository folders;
   late FakePageRepository pages;
   late FakeDocumentFileStore files;
+  late InMemoryPublicFileStore store;
   late InMemorySecureStore secure;
   late Clock clock;
   late IdGenerator ids;
 
   setUp(() {
     documents = FakeDocumentRepository();
+    store = InMemoryPublicFileStore();
+    // Renaming moves the file as well as the record, so the file has to exist:
+    // the folder is the truth, and a record renamed alone would disagree.
+    store.files[sampleDocument.relativePath] = 'pdf';
     folders = FakeFolderRepository();
     pages = FakePageRepository();
     files = FakeDocumentFileStore();
@@ -61,7 +66,7 @@ void main() {
   DocumentDetailCubit detailCubit(DocumentId id) => DocumentDetailCubit(
     id,
     LoadDocumentDetail(documents, pages),
-    RenameDocument(documents, clock),
+    RenameDocument(documents, clock, store),
     MoveDocument(documents, clock),
     ToggleFavourite(documents, clock),
     ArchiveDocument(documents, clock),

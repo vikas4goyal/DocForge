@@ -115,7 +115,7 @@ void main() {
       create: (_) => DocumentDetailCubit(
         id,
         LoadDocumentDetail(documents, pages),
-        RenameDocument(documents, clock),
+        RenameDocument(documents, clock, InMemoryPublicFileStore()),
         MoveDocument(documents, clock),
         ToggleFavourite(documents, clock),
         ArchiveDocument(documents, clock),

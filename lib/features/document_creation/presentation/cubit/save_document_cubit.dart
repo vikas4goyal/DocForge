@@ -9,6 +9,7 @@ import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_forge/features/document_creation/domain/creation_rules.dart';
 import 'package:doc_forge/features/document_creation/presentation/cubit/save_document_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -26,6 +27,18 @@ typedef SaveDocumentRequest =
       FolderId? folderId,
     });
 
+/// Whether a document of this name already exists in the target folder.
+typedef NameTakenCheck =
+    Future<bool> Function(String fileName, List<String> folders);
+
+/// Asks the user whether to replace a document of the same name.
+///
+/// Returns true to replace, false to go back and choose another name. Asked
+/// rather than decided: overwriting silently would destroy a document the user
+/// still has, and suffixing silently would give them a name they did not
+/// choose.
+typedef ReplaceConfirmation = Future<bool> Function(String fileName);
+
 /// Drives the save dialog.
 class SaveDocumentCubit extends Cubit<SaveDocumentState> {
   /// Creates the Cubit for [pages], writing through [save].
@@ -39,6 +52,8 @@ class SaveDocumentCubit extends Cubit<SaveDocumentState> {
     required this.folders,
     String suggestedName = '',
     this.folderId,
+    this.isNameTaken,
+    this.confirmReplace,
   }) : _pages = pages,
        super(
          SaveDocumentState.initial(
@@ -57,6 +72,15 @@ class SaveDocumentCubit extends Cubit<SaveDocumentState> {
 
   /// The folder record the document belongs to, when it is in one.
   final FolderId? folderId;
+
+  /// Whether the chosen name is already taken in the target folder.
+  ///
+  /// Optional: a caller with no way to look — a preview, a test that does not
+  /// care — leaves it out and the check is skipped.
+  final NameTakenCheck? isNameTaken;
+
+  /// Asks whether to replace a document of the same name.
+  final ReplaceConfirmation? confirmReplace;
 
   /// Records the name as the user types it.
   void nameChanged(String name) => emit(state.copyWith(name: name));
@@ -90,6 +114,16 @@ class SaveDocumentCubit extends Cubit<SaveDocumentState> {
   /// open in that case, with the pages intact, so the user can retry.
   Future<Document?> submit() async {
     if (!state.canSave) return null;
+
+    final fileName = CreationRules.fileNameFor(state.name);
+    final check = isNameTaken;
+    if (check != null && await check(fileName, folders)) {
+      final replace = await confirmReplace?.call(fileName) ?? false;
+      // Nothing is overwritten without the answer being yes, and the dialog
+      // stays open so the user can type a different name.
+      if (!replace) return null;
+      if (isClosed) return null;
+    }
 
     emit(state.copyWith(status: SaveStatus.saving));
 

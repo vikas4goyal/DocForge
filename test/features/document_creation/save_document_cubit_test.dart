@@ -227,4 +227,62 @@ void main() {
       expect(requests, isEmpty);
     });
   });
+
+  group('duplicate names', () {
+    SaveDocumentCubit withExisting(
+      Set<String> taken, {
+      required bool replace,
+    }) => SaveDocumentCubit(
+      pages: [page('p0')],
+      folders: const [],
+      suggestedName: 'Invoice',
+      isNameTaken: (fileName, folders) async => taken.contains(fileName),
+      confirmReplace: (fileName) async => replace,
+      save:
+          (
+            pages, {
+            required title,
+            required folders,
+            password,
+            folderId,
+          }) async {
+            requests.add((title: title, folders: folders, password: password));
+            return Result<Document>.success(saved(title));
+          },
+    );
+
+    test('a free name is written without asking', () async {
+      final cubit = withExisting(const {}, replace: false);
+
+      await cubit.submit();
+
+      expect(requests, hasLength(1));
+    });
+
+    test('declining to replace writes nothing', () async {
+      final cubit = withExisting({'Invoice.pdf'}, replace: false);
+
+      final document = await cubit.submit();
+
+      // Overwriting silently would destroy a document the user still has.
+      expect(document, isNull);
+      expect(requests, isEmpty);
+    });
+
+    test('the dialog stays usable after declining', () async {
+      final cubit = withExisting({'Invoice.pdf'}, replace: false);
+
+      await cubit.submit();
+
+      expect(cubit.state.canSave, isTrue);
+    });
+
+    test('confirming replaces', () async {
+      final cubit = withExisting({'Invoice.pdf'}, replace: true);
+
+      await cubit.submit();
+
+      expect(requests, hasLength(1));
+    });
+  });
 }

@@ -25,12 +25,15 @@ import 'package:doc_forge/features/document_library/application/usecases/documen
 import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/document_file_store.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
+import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
+import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_state.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_state.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_list_state.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/folder_state.dart';
+import 'package:doc_forge/features/document_library/presentation/screens/dashboard_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/document_detail_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
@@ -216,7 +219,7 @@ class _PreviewDetailCubit extends DocumentDetailCubit
     : super(
         sampleDocument.id,
         const LoadDocumentDetail(_documents, _pages),
-        RenameDocument(_documents, _clock),
+        RenameDocument(_documents, _clock, _store),
         MoveDocument(_documents, _clock),
         ToggleFavourite(_documents, _clock),
         ArchiveDocument(_documents, _clock),
@@ -652,3 +655,121 @@ Widget folderListDark() => _folderList(
 Widget folderListTablet() => _folderList(
   FolderState(status: LoadStatus.ready, folders: sampleFolders(8)),
 );
+
+// ---------------------------------------------------------------------------
+// Dashboard
+// ---------------------------------------------------------------------------
+
+/// A dashboard Cubit frozen at a chosen state.
+class _SeededDashboardCubit extends DashboardCubit
+    with SeededCubit<DashboardState> {
+  _SeededDashboardCubit(DashboardState state)
+    : super(store: InMemoryPublicFileStore(), index: _documents) {
+    seed(state);
+  }
+}
+
+Widget _dashboard(DashboardState state) => BlocProvider<DashboardCubit>(
+  create: (_) => _SeededDashboardCubit(state),
+  child: DashboardScreen(
+    actions: DashboardActions(
+      onOpenDocument: (_) {},
+      onCreateFolder: (_) {},
+      onImportPdf: () {},
+    ),
+  ),
+);
+
+/// A dashboard holding a few folders and documents.
+DashboardState _dashboardState({int documents = 3, int folders = 2}) =>
+    const DashboardState.initial().copyWith(
+      status: DashboardStatus.ready,
+      folders: [
+        for (var index = 0; index < folders; index++)
+          DashboardFolder(name: 'Folder $index', documentCount: index * 2),
+      ],
+      documents: [
+        for (var index = 0; index < documents; index++) sampleDocument,
+      ],
+      storageBytes: 4 * 1024 * 1024,
+    );
+
+/// The dashboard with folders and documents, which is the ordinary case.
+@Preview(name: 'Dashboard — default', group: 'Library', theme: appPreviewTheme)
+Widget dashboardDefault() => _dashboard(_dashboardState());
+
+/// While the folder is being read.
+@Preview(name: 'Dashboard — loading', group: 'Library', theme: appPreviewTheme)
+Widget dashboardLoading() => _dashboard(
+  const DashboardState.initial().copyWith(status: DashboardStatus.loading),
+);
+
+/// A folder holding nothing.
+@Preview(
+  name: 'Dashboard — empty folder',
+  group: 'Library',
+  theme: appPreviewTheme,
+)
+Widget dashboardEmpty() => _dashboard(
+  const DashboardState.initial().copyWith(status: DashboardStatus.ready),
+);
+
+/// A folder that could not be read.
+@Preview(name: 'Dashboard — error', group: 'Library', theme: appPreviewTheme)
+Widget dashboardError() => _dashboard(
+  const DashboardState.initial().copyWith(
+    status: DashboardStatus.failure,
+    failure: const Failure.storage(),
+  ),
+);
+
+/// A folder deep enough that the breadcrumb has to scroll.
+@Preview(
+  name: 'Dashboard — long content',
+  group: 'Library',
+  theme: appPreviewTheme,
+)
+Widget dashboardLongContent() => _dashboard(
+  _dashboardState(
+    documents: 30,
+    folders: 6,
+  ).copyWith(path: const ['Invoices', '2026', 'Quarter 3', 'September']),
+);
+
+/// The dashboard on a phone, light.
+@Preview(
+  name: 'Dashboard — phone, light',
+  group: 'Library',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget dashboardPhoneLight() => _dashboard(_dashboardState());
+
+/// The dashboard on a phone, dark.
+@Preview(
+  name: 'Dashboard — phone, dark',
+  group: 'Library',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+  brightness: Brightness.dark,
+)
+Widget dashboardPhoneDark() => _dashboard(_dashboardState());
+
+/// The dashboard on a tablet, light.
+@Preview(
+  name: 'Dashboard — tablet, light',
+  group: 'Library',
+  size: PreviewSize.tablet,
+  theme: appPreviewTheme,
+)
+Widget dashboardTabletLight() => _dashboard(_dashboardState());
+
+/// The dashboard on a tablet, dark.
+@Preview(
+  name: 'Dashboard — tablet, dark',
+  group: 'Library',
+  size: PreviewSize.tablet,
+  theme: appPreviewTheme,
+  brightness: Brightness.dark,
+)
+Widget dashboardTabletDark() => _dashboard(_dashboardState());

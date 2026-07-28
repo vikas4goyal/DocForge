@@ -82,7 +82,7 @@
 
 - [x] 8.1 Add `AddPageFromCamera` and `AddPageFromGallery` use cases producing a `PageDraft` from a source image, and unit-test them
 - [x] 8.2 Wire the loop in the creation flow host: pick or capture → crop → enhance → append row, with abandonment at either step adding nothing
-- [ ] 8.3 Make each row action open its editor on the layer it owns, and widget-test that cropping twice does not compound, that re-enhancing does not double-apply, and that reverting either layer leaves the other intact
+- [x] 8.3 Make each row action open its editor on the layer it owns, and widget-test that cropping twice does not compound, that re-enhancing does not double-apply, and that reverting either layer leaves the other intact
 - [x] 8.4 Handle multi-select from the photo library by running the loop per image in selection order, and test the ordering
 - [x] 8.5 Strip `ScanCaptureCubit` down to camera lifecycle, removing `pages`, `batchMode` and the page counter, and update its Cubit tests
 
@@ -93,7 +93,7 @@
 - [x] 9.3 Build `SaveNameDialog` with the name field, the password toggle, the password and confirm fields (obscured), Cancel and Save
 - [x] 9.4 Extend `SaveDocument` with a destination folder and an optional password; write the unprotected PDF to cache, protect it with `PdfManipulatorEditor.protect`, then publish through `PublicFileStore` (design D11)
 - [x] 9.5 Store the password through `RememberDocumentPassword` when protection is used, and unit-test that it never reaches preferences or the database
-- [ ] 9.6 Handle the duplicate-name case with a replace-or-rename confirmation, and unit-test that nothing is overwritten without it
+- [x] 9.6 Handle the duplicate-name case with a replace-or-rename confirmation, and unit-test that nothing is overwritten without it
 - [x] 9.7 Widget-test the dialog: Cancel writes nothing, Save disabled on empty name and on password mismatch, progress disables the controls
 - [x] 9.8 Remove `PdfPreviewScreen` and `PdfGenerationCubit`'s preview responsibility, and delete their now-dead tests
 - [x] 9.9 Add `@Preview()` entries for `SaveNameDialog`: default, empty name, password on, password mismatch, saving, error
@@ -102,21 +102,21 @@
 
 - [x] 10.1 Add `DashboardCubit` and `DashboardState` covering the open folder path, entries, search query, loading, empty and error
 - [x] 10.2 Cubit-test the dashboard: opening a folder, going up, search filtering, reconcile-driven refresh, error and retry
-- [ ] 10.3 Build `DashboardScreen` with the search field, breadcrumb, content list, storage summary, create-folder and import-PDF actions, and the empty, loading and error states
+- [x] 10.3 Build `DashboardScreen` with the search field, breadcrumb, content list, storage summary, create-folder and import-PDF actions, and the empty, loading and error states
 - [x] 10.4 Add `CreateFolder` use case writing a real directory through `PublicFileStore`, rejecting duplicates and invalid names; unit-test both refusals
-- [ ] 10.5 Make rename, move, duplicate, delete and archive act on the file at the document's `LibraryPath`, and unit-test that each keeps the tree and the index in step
+- [x] 10.5 Make rename, move, duplicate, delete and archive act on the file at the document's `LibraryPath`, and unit-test that each keeps the tree and the index in step
 - [x] 10.6 Add `ImportPdfIntoFolder` copying an external PDF into the open folder, leaving the source untouched and retaining no grant; unit-test the collision, invalid-file and protected-source cases
-- [ ] 10.7 Repoint the share-sheet and "Open with" paths at `ImportPdfIntoFolder` for PDFs and at the page table for images
-- [ ] 10.8 Widget-test the dashboard: folder navigation, breadcrumb, only-our-folders browsable, import action, create-folder validation
-- [ ] 10.9 Golden-test `DashboardScreen` in light and dark, phone and tablet
-- [ ] 10.10 Add `@Preview()` entries for `DashboardScreen`: default, loading, empty folder, error, long content
+- [x] 10.7 Repoint the share-sheet and "Open with" paths at `ImportPdfIntoFolder` for PDFs and at the page table for images
+- [x] 10.8 Widget-test the dashboard: folder navigation, breadcrumb, only-our-folders browsable, import action, create-folder validation
+- [x] 10.9 Golden-test `DashboardScreen` in light and dark, phone and tablet
+- [x] 10.10 Add `@Preview()` entries for `DashboardScreen`: default, loading, empty folder, error, long content
 
 ## 11. Tab shell and routing
 
 - [x] 11.1 Replace the Home route with a `StatefulShellRoute.indexedStack` over `/dashboard`, `/create` and `/settings`; remove `scan`, `scanReview`, `scanEnhance`, `scanPreview` from `AppRoutes` and add `dashboard`, `create` and the folder-path parameter (design D10)
 - [x] 11.2 Build `AppTabScaffold` with the three destinations, the middle Create control intercepted to push the creation flow onto the root navigator, and the previous branch left selected
 - [x] 11.3 Hide the tab bar inside camera, crop, enhancement and viewer routes
-- [ ] 11.4 Navigation-test: `/` redirects to `/dashboard`, each branch keeps its own stack across tab switches, backing out of creation restores the previous branch, removed scan routes resolve to not-found
+- [x] 11.4 Navigation-test: `/` redirects to `/dashboard`, each branch keeps its own stack across tab switches, backing out of creation restores the previous branch, removed scan routes resolve to not-found
 - [ ] 11.5 Fold the storage summary and recents into the dashboard header and delete `HomeScreen`, `HomeCubit` and `HomeActions` along with their dead tests
 - [x] 11.6 Golden-test `AppTabScaffold` with each tab selected, light and dark, phone and tablet
 - [x] 11.7 Add `@Preview()` entries for `AppTabScaffold`
