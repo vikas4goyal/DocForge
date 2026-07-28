@@ -79,9 +79,16 @@ The application SHALL address every document by its path relative to `DocForge` 
 ### Requirement: Reconciliation with external changes
 The application SHALL reconcile its index with the contents of the public folder on launch and on resume, so that changes made outside the application are reflected inside it.
 
-#### Scenario: File added externally
-- **WHEN** a PDF is placed into `DocForge` by another application and DocForge is resumed
+Reconciliation is asymmetric on Android, and deliberately so. Android publishes the library through MediaStore, which returns only the rows the writing package owns: DocForge therefore sees its own files change or disappear, and sees directories however they were made, but never sees a file another application put there. Making those files visible would require either `MANAGE_EXTERNAL_STORAGE`, which Google Play restricts to file managers and backup tools, or moving the whole Android store onto the Storage Access Framework, which costs a one-time folder grant the design set out to avoid (D2). The gap is recorded rather than hidden because it also means a document written before an uninstall, or restored from a backup, is on disk but outside the application's view.
+
+#### Scenario: File added externally (iOS)
+- **WHEN** a PDF is placed into `DocForge` by another application on iOS and DocForge is resumed
 - **THEN** the document appears in the dashboard with a page count and file size read from the file
+
+#### Scenario: File added externally (Android)
+- **WHEN** a PDF is placed into `DocForge` by another application on Android and DocForge is resumed
+- **THEN** the document does NOT appear in the dashboard, because Android returns only the MediaStore rows the application itself owns and denies direct filesystem reads of another application's files
+- **AND** the user reaches such a PDF through the import action instead, which copies it into the library under the application's own ownership
 
 #### Scenario: File removed externally
 - **WHEN** a PDF is deleted from `DocForge` by another application and DocForge is resumed
@@ -90,6 +97,7 @@ The application SHALL reconcile its index with the contents of the public folder
 #### Scenario: Folder added externally
 - **WHEN** a folder is created inside `DocForge` by another application and DocForge is resumed
 - **THEN** the folder appears in the dashboard and can be opened
+- **AND** on Android it opens empty unless the files inside it were written by DocForge, for the reason given above
 
 #### Scenario: Renamed file keeps its metadata
 - **WHEN** a PDF inside `DocForge` is renamed by another application and DocForge is resumed

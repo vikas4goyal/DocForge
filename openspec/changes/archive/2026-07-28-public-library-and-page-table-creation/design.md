@@ -367,6 +367,16 @@ Addressing documents by folder-relative path with a content fingerprint is the s
 2. **Archived documents stay visible in Files.** Archive is metadata-only, so an archived document remains in its folder externally. Alternative is moving it to `DocForge/.Archive/`, which makes archive a file move and complicates restore. Proposed: metadata-only, as specified.
 3. **Legacy folder names that are invalid as directories.** Existing `FolderEntity` names were never constrained to filesystem-safe characters. Proposed: sanitise during migration and keep the original name as the display title; needs a decision on whether the sanitised name or the original wins after a later external rename.
 
+### Correction to D2, from the emulator
+
+D2 chose MediaStore with no user prompt. Verified on a Pixel 9 at API 36, that choice buys everything it promised in one direction and nothing in the other.
+
+Publishing works exactly as designed: PDFs land in `Documents/DocForge/`, nested folders and all, with `application/pdf` set, and a process running as a different UID reads their bytes without difficulty. Deleting a document from a file browser is detected on the next walk.
+
+Reading back what other applications write does not work, and cannot be made to work under MediaStore. A PDF placed in `DocForge` by another application is absent from `MediaStore.Files` as far as DocForge is concerned — the collection returns only rows the querying package owns — and a direct filesystem read of it fails with `EACCES`. Directories are exempt, which is why an externally created folder still appears and then opens empty. The same ownership rule means a document written before an uninstall is stranded: still on disk, invisible to the reinstalled application.
+
+The two ways out are `MANAGE_EXTERNAL_STORAGE`, which Google Play grants only to file managers and backup tools, and the Storage Access Framework, which sees the whole granted tree regardless of ownership but requires the one-time folder prompt D2 set out to avoid. Neither was taken here. `public-document-storage` now states the asymmetry as the specified behaviour rather than describing a reconciliation that only half exists; revisiting it is a change of its own.
+
 ### Answers recorded during implementation
 
 **Q3 — the name on disk wins, and there was never a contest.** `DashboardCubit` lists folders from `PublicFileStore.list`, never from `FolderEntity`, so what the dashboard shows is what the directory is called. `ReconcileLibrary` reads the folder set only to build the diff and writes no folder records back. A folder renamed externally therefore shows its new name on the next load with no reconciliation step involved, and the migration's sanitised name only ever mattered as the directory it created. The `FolderEntity` record survives as the identifier documents are filed under; its `name` is not what the user reads.
