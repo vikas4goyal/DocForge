@@ -117,7 +117,7 @@
 - [x] 11.2 Build `AppTabScaffold` with the three destinations, the middle Create control intercepted to push the creation flow onto the root navigator, and the previous branch left selected
 - [x] 11.3 Hide the tab bar inside camera, crop, enhancement and viewer routes
 - [x] 11.4 Navigation-test: `/` redirects to `/dashboard`, each branch keeps its own stack across tab switches, backing out of creation restores the previous branch, removed scan routes resolve to not-found
-- [ ] 11.5 Fold the storage summary and recents into the dashboard header and delete `HomeScreen`, `HomeCubit` and `HomeActions` along with their dead tests
+- [x] 11.5 Fold the storage summary and recents into the dashboard header and delete `HomeScreen`, `HomeCubit` and `HomeActions` along with their dead tests
 - [x] 11.6 Golden-test `AppTabScaffold` with each tab selected, light and dark, phone and tablet
 - [x] 11.7 Add `@Preview()` entries for `AppTabScaffold`
 
