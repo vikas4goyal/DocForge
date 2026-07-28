@@ -2,8 +2,8 @@
 library;
 
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/enhance_keys.dart';

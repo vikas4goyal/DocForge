@@ -16,6 +16,7 @@ import 'dart:io';
 
 import 'package:doc_forge/app/document_creation_module.dart';
 import 'package:doc_forge/app/library_module.dart';
+import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
@@ -28,7 +29,6 @@ import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
 import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
 import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';

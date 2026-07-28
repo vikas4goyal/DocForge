@@ -8,16 +8,13 @@
 /// and would fail entirely in CI, where no such file exists.
 library;
 
-import 'dart:io';
-
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/previews/fakes/fake_cubit.dart';
+import 'package:doc_forge/core/previews/fakes/fake_page_renderer.dart';
 import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
@@ -39,21 +36,10 @@ String previewEnhancementJob(EnhancementRequest request) =>
 class _PreviewEnhancementCubit extends EnhancementCubit
     with SeededCubit<EnhancementState> {
   _PreviewEnhancementCubit(EnhancementState state)
-    : super(state.page, _previewRenderer()) {
+    : super(state.page, const FakePageRenderer()) {
     seed(state);
   }
 }
-
-/// A renderer that touches no filesystem, so previews stay byte-stable.
-RenderPage _previewRenderer() => RenderPage(
-  cacheDirectory: Directory('/preview'),
-  sizeOf: (path) async => const Result<({int width, int height})>.success((
-    width: 800,
-    height: 600,
-  )),
-  render: (plan, {required destinationPath, transform}) async =>
-      const Result<void>.success(null),
-);
 
 Widget _screen(EnhancementState state) => BlocProvider<EnhancementCubit>(
   create: (_) => _PreviewEnhancementCubit(state),

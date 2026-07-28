@@ -48,10 +48,32 @@ class DocumentCard extends StatelessWidget {
             Icons.description_outlined,
             color: theme.colorScheme.primary,
           ),
-          title: Text(
-            document.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  document.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (document.isProtected)
+                // Marked because the folder is visible to other applications:
+                // the badge is what tells the user which of their documents
+                // another app could actually read.
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Semantics(
+                    label: 'Password protected',
+                    child: Icon(
+                      key: LibraryKeys.documentProtectedBadge,
+                      Icons.lock_outline,
+                      size: 16,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+            ],
           ),
           subtitle: Text(
             DisplayFormatting.documentSubtitle(document),

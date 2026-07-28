@@ -3,7 +3,7 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/features/document_creation/presentation/creation_keys.dart';
 import 'package:flutter/material.dart';
 

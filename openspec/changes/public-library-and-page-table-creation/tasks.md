@@ -125,8 +125,8 @@
 
 - [x] 12.1 Delete `ScanFlow` and its step machine from `scanning_module.dart`; rename the module to reflect its narrowed camera-and-crop responsibility
 - [x] 12.2 Rebuild the `main.dart` composition for the new graph: public store, reconciler, creation module, dashboard, tab shell
-- [ ] 12.3 Add the settings copy stating that saved PDFs are visible to other applications and that protected PDFs cannot be read without their password
-- [ ] 12.4 Add the protected badge (`document_protected_badge`) to document rows and the detail screen
+- [x] 12.3 Add the settings copy stating that saved PDFs are visible to other applications and that protected PDFs cannot be read without their password
+- [x] 12.4 Add the protected badge (`document_protected_badge`) to document rows and the detail screen
 - [x] 12.5 Confirm no feature imports another feature after the restructure, and no `Platform.` branch exists outside the composition root
 
 ## 13. Integration, documentation and gates
@@ -137,8 +137,8 @@
 - [ ] 13.3 Integration test: create a folder in the app, verify it in the file browser; delete a PDF in the file browser, verify it disappears after resume; rename externally and verify metadata is retained
 - [ ] 13.4 Integration test: import an external PDF into an open folder and confirm the source is untouched
 - [ ] 13.5 Integration test: migration from a seeded layout-1 library, asserting no document is lost
-- [ ] 13.6 Add dartdoc to every new public API named in the design's documentation section, and the inline comments it lists
-- [ ] 13.7 Run `dart format --set-exit-if-changed` and fix
-- [ ] 13.8 Run `flutter analyze` and fix every issue
+- [x] 13.6 Add dartdoc to every new public API named in the design's documentation section, and the inline comments it lists
+- [x] 13.7 Run `dart format --set-exit-if-changed` and fix
+- [x] 13.8 Run `flutter analyze` and fix every issue
 - [ ] 13.9 Run the full test suite including goldens and verify coverage is at least 80% overall and at least 90% for the new domain and application code
 - [ ] 13.10 Resolve the design's open questions on the device — external duplicate-name renames, and whether the sanitised or original folder name wins after an external rename — and record the answers in the design

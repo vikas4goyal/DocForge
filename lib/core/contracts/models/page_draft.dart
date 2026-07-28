@@ -11,9 +11,9 @@
 /// and clearing the enhancement leaves the crop at its cropped size.
 library;
 
+import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/document_scanning/domain/page_geometry.dart';
 import 'package:meta/meta.dart';
 
 /// A page being built, holding no pixels of its own.

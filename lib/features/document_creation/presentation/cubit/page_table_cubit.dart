@@ -5,8 +5,8 @@
 /// there; nothing in this class decides them.
 library;
 
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/features/document_creation/domain/creation_session.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/document_creation/presentation/cubit/page_table_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

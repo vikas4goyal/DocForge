@@ -2,9 +2,9 @@
 library;
 
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:equatable/equatable.dart';
 

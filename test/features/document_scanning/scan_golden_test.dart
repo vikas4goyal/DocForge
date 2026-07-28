@@ -12,14 +12,14 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
-import 'package:doc_forge/features/document_scanning/domain/page_geometry.dart';
-import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
 import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cubits.dart';
 import 'package:doc_forge/features/document_scanning/presentation/screens/crop_screen.dart';

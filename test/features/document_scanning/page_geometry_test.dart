@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
+import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/document_scanning/domain/page_geometry.dart';
-import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A rectangular selection, as a fraction of each edge.

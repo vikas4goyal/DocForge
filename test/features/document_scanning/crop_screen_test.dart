@@ -2,9 +2,9 @@ import 'dart:io';
 
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cubits.dart';
 import 'package:doc_forge/features/document_scanning/presentation/scan_keys.dart';
 import 'package:doc_forge/features/document_scanning/presentation/screens/crop_screen.dart';

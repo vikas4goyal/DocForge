@@ -8,18 +8,18 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/previews/fakes/fake_cubit.dart';
+import 'package:doc_forge/core/previews/fakes/fake_page_renderer.dart';
 import 'package:doc_forge/core/previews/preview_scaffold.dart';
 import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_forge/features/document_scanning/domain/page_geometry.dart';
-import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
 import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';
@@ -124,22 +124,8 @@ Widget _review(List<CapturedPage> pages) => BlocProvider<PageReviewCubit>(
 );
 
 Widget _crop(PageDraft page) => BlocProvider<CropCubit>(
-  create: (_) => CropCubit(page, _previewRenderer()),
+  create: (_) => CropCubit(page, const FakePageRenderer()),
   child: CropScreen(onNext: (_) {}, onCancelled: () {}),
-);
-
-/// A renderer that never touches the filesystem.
-///
-/// Previews must be byte-stable and must not depend on a machine's temporary
-/// directory, so this reports the original back rather than producing pixels.
-RenderPage _previewRenderer() => RenderPage(
-  cacheDirectory: Directory('/preview'),
-  sizeOf: (path) async => const Result<({int width, int height})>.success((
-    width: 800,
-    height: 600,
-  )),
-  render: (plan, {required destinationPath, transform}) async =>
-      const Result<void>.success(null),
 );
 
 /// A correction job that does nothing, for previews.

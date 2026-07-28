@@ -10,8 +10,8 @@
 library;
 
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 
 /// The rules the page table applies to its list.
 abstract final class CreationSession {

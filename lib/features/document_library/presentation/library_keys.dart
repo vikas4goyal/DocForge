@@ -25,6 +25,12 @@ abstract final class LibraryKeys {
   /// Empty state shown when a document list has nothing to show.
   static const documentListEmptyState = Key('document_list_empty_state');
 
+  /// Marks a document whose PDF is password protected.
+  ///
+  /// Shown because the library folder is visible to other applications: this
+  /// is what tells the user which of their documents another app could read.
+  static const documentProtectedBadge = Key('document_protected_badge');
+
   /// Loading indicator shown while a document list loads.
   static const documentListLoading = Key('document_list_loading');
 

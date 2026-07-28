@@ -31,6 +31,9 @@ abstract final class SettingsKeys {
   /// The biometric-lock entry.
   static const biometricLock = Key('settings_biometric_lock');
 
+  /// Explains that saved PDFs are visible to other applications.
+  static const storageVisibility = Key('settings_storage_visibility');
+
   /// The storage-information entry.
   static const storageInfo = Key('settings_storage_info');
 

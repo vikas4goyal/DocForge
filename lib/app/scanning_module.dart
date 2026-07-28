@@ -3,11 +3,11 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
+import 'package:doc_forge/core/contracts/page_renderer.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/permissions/permission_service.dart';
 import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
 import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';
@@ -56,7 +56,7 @@ class ScanningModule {
   final ApplyEnhancement applyEnhancement;
 
   /// Renders a page from its original and its layers, caching by plan.
-  final RenderPage renderPage;
+  final PageRenderer renderPage;
 
   /// Builds the live camera preview.
   ///
@@ -82,7 +82,7 @@ ScanningModule buildScanningModule({
   required PermissionService permissions,
   required IdGenerator ids,
   required BackgroundWorker worker,
-  required RenderPage renderPage,
+  required PageRenderer renderPage,
   EdgeDetector detector = const OpenCvEdgeDetector(),
 }) {
   final staging = LocalScanStagingArea(directory);

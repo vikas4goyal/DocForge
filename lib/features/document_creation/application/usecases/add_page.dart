@@ -8,11 +8,11 @@ library;
 import 'dart:io';
 
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/storage/capture_staging.dart';
 import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 
 /// Picks one or more images, returning their paths.
 ///

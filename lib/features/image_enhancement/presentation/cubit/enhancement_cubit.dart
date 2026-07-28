@@ -14,10 +14,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
+import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
+import 'package:doc_forge/core/contracts/page_renderer.dart';
 import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
-import 'package:doc_forge/features/document_creation/domain/page_render_plan.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -29,7 +29,7 @@ class EnhancementCubit extends Cubit<EnhancementState> {
     unawaited(_renderPreview(state.settings));
   }
 
-  final RenderPage _render;
+  final PageRenderer _render;
 
   /// Counts preview requests so a slow one cannot overwrite a newer result.
   ///

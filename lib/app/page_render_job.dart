@@ -8,17 +8,22 @@
 /// Everything here runs **inside a background isolate**: it may not touch
 /// Flutter, and only the request and the returned path cross the boundary,
 /// never a decoded image.
+///
+/// Lives in `app/` rather than in a feature because it is the one place that
+/// joins two of them — the geometry maths in `core` and the enhancement pass
+/// owned by `image_enhancement` — and the composition root is the only layer
+/// allowed to know both.
 library;
 
 import 'dart:io';
 
+import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/features/document_creation/domain/page_render_plan.dart';
-import 'package:doc_forge/features/document_scanning/domain/page_geometry.dart';
-import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
 import 'package:doc_forge/features/image_enhancement/infrastructure/enhancement_job.dart';
 import 'package:image/image.dart' as img;
 import 'package:meta/meta.dart';

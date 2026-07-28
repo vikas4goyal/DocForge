@@ -1,12 +1,12 @@
 import 'dart:io';
 
+import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/isolates/cancellation.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
 import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:flutter_test/flutter_test.dart';

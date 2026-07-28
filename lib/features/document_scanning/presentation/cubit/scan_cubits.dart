@@ -7,14 +7,14 @@ library;
 
 import 'dart:async';
 
+import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
+import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
+import 'package:doc_forge/core/contracts/page_renderer.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
-import 'package:doc_forge/features/document_creation/domain/page_render_plan.dart';
 import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_forge/features/document_scanning/domain/page_geometry.dart';
 import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_states.dart';
@@ -196,7 +196,7 @@ class CropCubit extends Cubit<CropState> {
     unawaited(_refresh());
   }
 
-  final RenderPage _render;
+  final PageRenderer _render;
 
   /// Moves the selection to [quad] as the user drags a handle.
   ///

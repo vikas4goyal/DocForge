@@ -1,10 +1,10 @@
 /// Use cases for the scanning flow.
 library;
 
+import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
 import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
 

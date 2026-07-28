@@ -1,8 +1,8 @@
+import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
-import 'package:doc_forge/features/document_creation/domain/page_render_plan.dart';
-import 'package:doc_forge/features/document_scanning/domain/page_geometry.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
+import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 PageQuad box(double left, double top, double right, double bottom) => PageQuad(

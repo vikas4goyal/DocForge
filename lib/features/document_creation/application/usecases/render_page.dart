@@ -11,18 +11,22 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
+import 'package:doc_forge/core/contracts/page_renderer.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_creation/domain/page_render_plan.dart';
-import 'package:doc_forge/features/document_scanning/domain/page_geometry.dart';
 
 /// Produces the pixels for one plan, off the UI thread.
+///
+/// Distinct from `PageRenderer`, which is the *contract* consumers depend on:
+/// this is the pixel work the implementation delegates to.
 ///
 /// [transform] is the single composed geometry — the original is resampled once
 /// however many crops the user applied. A null transform means no geometry, in
 /// which case the implementation copies or enhances the original directly
 /// rather than running an identity resample over it.
-typedef PageRenderer =
+typedef PagePixelWriter =
     Future<Result<void>> Function(
       PageRenderPlan plan, {
       required String destinationPath,
@@ -34,7 +38,7 @@ typedef ImageSizeReader =
     Future<Result<({int width, int height})>> Function(String imagePath);
 
 /// Renders pages and caches the results by plan.
-class RenderPage {
+class RenderPage implements PageRenderer {
   /// Creates the use case.
   RenderPage({
     required this.cacheDirectory,
@@ -53,7 +57,7 @@ class RenderPage {
   final String directoryName;
 
   /// Produces pixels for a plan.
-  final PageRenderer render;
+  final PagePixelWriter render;
 
   /// Reads the original's dimensions.
   final ImageSizeReader sizeOf;
@@ -73,6 +77,7 @@ class RenderPage {
   /// layer applied returns the original itself — there is nothing to render,
   /// and copying it would be a byte-for-byte duplicate of a file that already
   /// exists.
+  @override
   Future<Result<String>> call(PageRenderPlan plan) {
     if (plan.isPassThrough) {
       return Future.value(Result<String>.success(plan.originalImagePath));

@@ -14,11 +14,11 @@ import 'dart:io';
 
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
-import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
 import 'package:doc_forge/features/image_enhancement/presentation/screens/enhancement_screen.dart';

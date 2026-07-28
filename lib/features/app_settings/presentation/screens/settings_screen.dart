@@ -163,6 +163,23 @@ class SettingsScreen extends StatelessWidget {
                 ),
           onTap: cubit.refreshStorage,
         ),
+        // Stated plainly rather than left to be discovered. Saved PDFs are
+        // deliberately visible to other applications — that is what makes them
+        // reachable from the Files app — and a user who assumes otherwise has
+        // assumed something about their own documents that is not true.
+        const ListTile(
+          key: SettingsKeys.storageVisibility,
+          leading: Icon(Icons.folder_shared_outlined),
+          title: Text('Where your PDFs are kept'),
+          subtitle: Text(
+            'Saved PDFs live in a DocForge folder other apps can see, so you '
+            'can open them from Files and share them anywhere. '
+            'Password-protected PDFs cannot be read without their password. '
+            'Page images you capture stay private and are deleted once the '
+            'PDF is made.',
+          ),
+          isThreeLine: true,
+        ),
         const Divider(),
         SettingsValueTile(
           key: SettingsKeys.about,
