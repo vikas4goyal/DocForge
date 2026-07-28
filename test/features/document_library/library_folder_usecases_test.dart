@@ -46,8 +46,8 @@ void main() {
     final document = Document(
       id: DocumentId('doc-$path'),
       title: libraryPath.fileName.replaceAll('.pdf', ''),
-      createdAt: DateTime.utc(2026, 3, 1),
-      updatedAt: DateTime.utc(2026, 3, 1),
+      createdAt: DateTime.utc(2026, 3),
+      updatedAt: DateTime.utc(2026, 3),
       pageCount: 1,
       sizeInBytes: 1024,
       libraryPath: libraryPath,
