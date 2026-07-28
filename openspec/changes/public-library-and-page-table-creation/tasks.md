@@ -74,28 +74,28 @@
 - [x] 7.7 Build `PageRow` with crop, enhance, delete and drag-handle controls, page numbering, and `moveUp` / `moveDown` semantic actions for screen-reader reordering
 - [x] 7.8 Build `AddPageSheet` offering camera and photo-library sources, with the permission-denied path
 - [x] 7.9 Widget-test the page table: rows are pages in order, drag reorders and renumbers, delete and undo, save disabled while empty, semantic reordering
-- [ ] 7.10 Implement the exit confirmation when the table has pages, discarding cleanly, and widget-test both answers plus the no-confirmation-when-empty case
+- [x] 7.10 Implement the exit confirmation when the table has pages, discarding cleanly, and widget-test both answers plus the no-confirmation-when-empty case
 - [x] 7.11 Golden-test `PageTableScreen` in light and dark, phone and tablet
 - [x] 7.12 Add `@Preview()` entries for `PageTableScreen`, `PageRow` and `AddPageSheet` covering default, loading, empty, error and long content
 
 ## 8. Creation feature — add-page loop
 
-- [ ] 8.1 Add `AddPageFromCamera` and `AddPageFromGallery` use cases producing a `PageDraft` from a source image, and unit-test them
-- [ ] 8.2 Wire the loop in the creation flow host: pick or capture → crop → enhance → append row, with abandonment at either step adding nothing
+- [x] 8.1 Add `AddPageFromCamera` and `AddPageFromGallery` use cases producing a `PageDraft` from a source image, and unit-test them
+- [x] 8.2 Wire the loop in the creation flow host: pick or capture → crop → enhance → append row, with abandonment at either step adding nothing
 - [ ] 8.3 Make each row action open its editor on the layer it owns, and widget-test that cropping twice does not compound, that re-enhancing does not double-apply, and that reverting either layer leaves the other intact
-- [ ] 8.4 Handle multi-select from the photo library by running the loop per image in selection order, and test the ordering
-- [ ] 8.5 Strip `ScanCaptureCubit` down to camera lifecycle, removing `pages`, `batchMode` and the page counter, and update its Cubit tests
+- [x] 8.4 Handle multi-select from the photo library by running the loop per image in selection order, and test the ordering
+- [x] 8.5 Strip `ScanCaptureCubit` down to camera lifecycle, removing `pages`, `batchMode` and the page counter, and update its Cubit tests
 
 ## 9. Save dialog and generation
 
 - [x] 9.1 Add `SaveDocumentCubit` and `SaveDocumentState` covering name, password, confirmation, validity and save progress
 - [x] 9.2 Cubit-test the save Cubit: prefilled name, empty-name invalid, password mismatch invalid, save success, save failure retaining the session
 - [x] 9.3 Build `SaveNameDialog` with the name field, the password toggle, the password and confirm fields (obscured), Cancel and Save
-- [ ] 9.4 Extend `SaveDocument` with a destination folder and an optional password; write the unprotected PDF to cache, protect it with `PdfManipulatorEditor.protect`, then publish through `PublicFileStore` (design D11)
-- [ ] 9.5 Store the password through `RememberDocumentPassword` when protection is used, and unit-test that it never reaches preferences or the database
+- [x] 9.4 Extend `SaveDocument` with a destination folder and an optional password; write the unprotected PDF to cache, protect it with `PdfManipulatorEditor.protect`, then publish through `PublicFileStore` (design D11)
+- [x] 9.5 Store the password through `RememberDocumentPassword` when protection is used, and unit-test that it never reaches preferences or the database
 - [ ] 9.6 Handle the duplicate-name case with a replace-or-rename confirmation, and unit-test that nothing is overwritten without it
 - [x] 9.7 Widget-test the dialog: Cancel writes nothing, Save disabled on empty name and on password mismatch, progress disables the controls
-- [ ] 9.8 Remove `PdfPreviewScreen` and `PdfGenerationCubit`'s preview responsibility, and delete their now-dead tests
+- [x] 9.8 Remove `PdfPreviewScreen` and `PdfGenerationCubit`'s preview responsibility, and delete their now-dead tests
 - [x] 9.9 Add `@Preview()` entries for `SaveNameDialog`: default, empty name, password on, password mismatch, saving, error
 
 ## 10. Dashboard and library operations
@@ -123,15 +123,15 @@
 
 ## 12. Wiring, deletion and settings copy
 
-- [ ] 12.1 Delete `ScanFlow` and its step machine from `scanning_module.dart`; rename the module to reflect its narrowed camera-and-crop responsibility
-- [ ] 12.2 Rebuild the `main.dart` composition for the new graph: public store, reconciler, creation module, dashboard, tab shell
+- [x] 12.1 Delete `ScanFlow` and its step machine from `scanning_module.dart`; rename the module to reflect its narrowed camera-and-crop responsibility
+- [x] 12.2 Rebuild the `main.dart` composition for the new graph: public store, reconciler, creation module, dashboard, tab shell
 - [ ] 12.3 Add the settings copy stating that saved PDFs are visible to other applications and that protected PDFs cannot be read without their password
 - [ ] 12.4 Add the protected badge (`document_protected_badge`) to document rows and the detail screen
 - [ ] 12.5 Confirm no feature imports another feature after the restructure, and no `Platform.` branch exists outside the composition root
 
 ## 13. Integration, documentation and gates
 
-- [ ] 13.1 Integration test on a device: capture → crop → crop again → Next → enhance → row → add a second page → reorder → save → file present in the public tree → every session image gone
+- [x] 13.1 Integration test on a device: capture → crop → crop again → Next → enhance → row → add a second page → reorder → save → file present in the public tree → every session image gone
 - [ ] 13.1a Integration test of the layers: crop and enhance a page, revert the crop and confirm the enhancement survives, then revert the enhancement and confirm the crop survives
 - [ ] 13.2 Integration test: save with a password, confirm the file cannot be opened without it externally and opens without prompting in the application
 - [ ] 13.3 Integration test: create a folder in the app, verify it in the file browser; delete a PDF in the file browser, verify it disappears after resume; rename externally and verify metadata is retained

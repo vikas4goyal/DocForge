@@ -91,6 +91,7 @@ class _PreviewHomeCubit extends HomeCubit with SeededCubit<HomeState> {
 /// Actions that record nothing, for previews.
 final _noopActions = HomeActions(
   onScan: () {},
+  onImport: () {},
   onSearch: () {},
   onOpenDocument: (_) {},
   onOpenFolder: (_) {},

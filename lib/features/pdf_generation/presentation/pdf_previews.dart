@@ -102,6 +102,7 @@ class _PreviewPdfCubit extends PdfGenerationCubit
           _previewDestination,
           _noDelete,
           InMemoryPublicFileStore(),
+          _noProtection,
         ),
         GenerateDocumentName(
           FixedClock(DateTime(2026, 3, 14, 9, 30)),
@@ -121,6 +122,12 @@ String _previewDestination(DocumentId id) => '/preview/${id.value}.pdf';
 
 /// A delete that removes nothing.
 Future<void> _noDelete(String path) async {}
+
+/// Protection that returns the file untouched, for previews.
+Future<Result<String>> _noProtection(
+  String sourcePath,
+  String password,
+) async => Result<String>.success(sourcePath);
 
 Widget _screen(PdfGenerationState state) => BlocProvider<PdfGenerationCubit>(
   create: (_) => _PreviewPdfCubit(state),

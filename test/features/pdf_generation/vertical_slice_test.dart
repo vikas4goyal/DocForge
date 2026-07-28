@@ -138,6 +138,7 @@ void main() {
     recogniser = FakeOcrRepository();
 
     creation = buildDocumentCreationModule(
+      protectPdf: _noProtection,
       // Inline so composition runs the real enhancement path without isolates.
       applyEnhancement: const ApplyEnhancement(
         InlineBackgroundWorker(),
@@ -379,3 +380,12 @@ void main() {
     expect(captured.single.imagePath, startsWith(staging.path));
   });
 }
+
+/// Protection that returns the file untouched.
+///
+/// These tests assert on what the generator produces, not on the encryption —
+/// which the editing feature owns and tests separately.
+Future<Result<String>> _noProtection(
+  String sourcePath,
+  String password,
+) async => Result<String>.success(sourcePath);

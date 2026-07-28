@@ -83,6 +83,7 @@ DocumentCreationModule buildDocumentCreationModule({
   required Isar isar,
   required Directory workingDirectory,
   required PublicFileStore publicStore,
+  required PdfProtector protectPdf,
   required Clock clock,
   required IdGenerator ids,
   required DocumentReader documentReader,
@@ -157,6 +158,7 @@ DocumentCreationModule buildDocumentCreationModule({
       }
     },
     publicStore,
+    protectPdf,
   );
 
   final generateName = GenerateDocumentName(clock, documentReader);

@@ -38,9 +38,6 @@ class AppScreens {
     required this.unlock,
     required this.home,
     required this.scan,
-    required this.scanReview,
-    required this.scanEnhance,
-    required this.scanPreview,
     required this.documents,
     required this.documentDetail,
     required this.viewer,
@@ -64,17 +61,8 @@ class AppScreens {
   /// Home.
   final ScreenBuilder home;
 
-  /// Camera capture.
+  /// The creation flow: the page table and the loop that fills it.
   final ScreenBuilder scan;
-
-  /// Captured-page review.
-  final ScreenBuilder scanReview;
-
-  /// Page enhancement.
-  final ScreenBuilder scanEnhance;
-
-  /// Document preview before saving.
-  final ScreenBuilder scanPreview;
 
   /// All documents.
   final ScreenBuilder documents;
@@ -146,18 +134,6 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.scan,
         builder: (context, state) => screens.scan(context),
-      ),
-      GoRoute(
-        path: AppRoutes.scanReview,
-        builder: (context, state) => screens.scanReview(context),
-      ),
-      GoRoute(
-        path: AppRoutes.scanEnhance,
-        builder: (context, state) => screens.scanEnhance(context),
-      ),
-      GoRoute(
-        path: AppRoutes.scanPreview,
-        builder: (context, state) => screens.scanPreview(context),
       ),
       GoRoute(
         path: AppRoutes.documents,

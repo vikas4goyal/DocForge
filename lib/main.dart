@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:doc_forge/app/app.dart';
 import 'package:doc_forge/app/app_dependencies.dart';
 import 'package:doc_forge/app/composition_root.dart';
+import 'package:doc_forge/app/creation_module.dart';
 import 'package:doc_forge/app/document_creation_module.dart';
 import 'package:doc_forge/app/import_module.dart';
 import 'package:doc_forge/app/library_module.dart';
@@ -44,7 +45,10 @@ import 'package:doc_forge/features/app_settings/presentation/screens/settings_sc
 import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
 import 'package:doc_forge/features/app_shell/presentation/cubit/home_cubit.dart';
 import 'package:doc_forge/features/app_shell/presentation/screens/home_screen.dart';
+import 'package:doc_forge/features/document_creation/application/usecases/add_page.dart';
 import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
+import 'package:doc_forge/features/document_creation/domain/creation_session.dart';
+import 'package:doc_forge/features/document_creation/domain/page_draft.dart';
 import 'package:doc_forge/features/document_creation/infrastructure/page_render_job.dart';
 import 'package:doc_forge/features/document_import/presentation/cubit/import_cubit.dart';
 import 'package:doc_forge/features/document_import/presentation/screens/import_options_sheet.dart';
@@ -71,6 +75,7 @@ import 'package:doc_forge/features/onboarding/application/usecases/onboarding_us
 import 'package:doc_forge/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
 import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_cubit.dart';
 import 'package:doc_forge/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/pdf_manipulator_editor.dart';
 import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
 import 'package:doc_forge/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
 import 'package:flutter/material.dart';
@@ -174,7 +179,23 @@ Future<void> main() async {
   /// screen that has a loading state.
   const appVersion = '1.0.0';
 
+  // One editor instance, shared: generation protects through it and the
+  // editing feature manipulates through it, so encryption has one
+  // implementation rather than two that can drift.
+  final pdfEditor = PdfManipulatorEditor();
+
   final creation = buildDocumentCreationModule(
+    // Protecting a generated PDF reuses the editor that already does it, so
+    // there is one implementation of encryption rather than two.
+    protectPdf: (sourcePath, password) async {
+      final destination = '$sourcePath.protected';
+      final result = await pdfEditor.protect(
+        sourcePath,
+        destination,
+        password: password,
+      );
+      return result.map((_) => destination);
+    },
     isar: library.isar,
     workingDirectory: workingDirectory,
     publicStore: publicStore,
@@ -198,7 +219,34 @@ Future<void> main() async {
     worker: dependencies.worker,
   );
 
+  // The creation flow: one page table, and the loop that fills it.
+  final staging = CaptureStaging(cacheDirectory);
+  final creationFlow = CreationModule(
+    staging: staging,
+    renderPage: renderPage,
+    addFromCamera: AddPageFromCamera(() async {
+      final captured = await scanning.capturePage();
+      return captured.map((page) => page.imagePath);
+    }, StagePageImage(staging, dependencies.idGenerator)),
+    addFromGallery: AddPagesFromGallery(
+      importing.gallery.pickImages,
+      StagePageImage(staging, dependencies.idGenerator),
+    ),
+    discardSession: DiscardCreationSession(staging),
+    scanning: scanning,
+    save: (pages, {required title, required folders, password, folderId}) =>
+        creation.saveDocument(
+          CreationSession.toBundle(pages),
+          title: title,
+          folders: folders,
+          folderId: folderId,
+        ),
+    suggestName: () =>
+        creation.generateName(currentSettings.value.namingPattern),
+  );
+
   final editing = buildPdfEditingModule(
+    editor: pdfEditor,
     documentReader: library.documentReader,
     documentWriter: library.documentWriter,
     secureStorage: dependencies.secureStorage,
@@ -252,6 +300,7 @@ Future<void> main() async {
       creation,
       sharing,
       importing,
+      creationFlow,
       editing,
       documentFiles,
       settings,
@@ -298,6 +347,7 @@ AppScreens _screens(
   DocumentCreationModule creation,
   SharingModule sharing,
   ImportModule importing,
+  CreationModule creationFlow,
   PdfEditingModule editing,
   DocumentFileResolver documentFiles,
   SettingsModule settings,
@@ -370,14 +420,8 @@ AppScreens _screens(
       // Wrapped around Home rather than around a route that comes and goes: a
       // share arriving while the user is deep in another flow would otherwise
       // be dropped.
-      onContent: (paths) => _importShared(
-        context,
-        paths,
-        importing,
-        scanning,
-        creation,
-        dependencies,
-      ),
+      onContent: (paths) =>
+          _importShared(context, paths, importing, creationFlow),
       child: BlocProvider(
         create: (_) => HomeCubit(
           LoadHomeData(
@@ -389,6 +433,12 @@ AppScreens _screens(
         child: HomeScreen(
           actions: HomeActions(
             onScan: () => context.push(AppRoutes.scan),
+            onImport: () => _openImportSheet(
+              context,
+              importing,
+              creationFlow,
+              dependencies,
+            ),
             onSearch: () => context.push(AppRoutes.search),
             onOpenDocument: (id) => context.push(AppRoutes.documentDetail(id)),
             onOpenFolder: (id) => context.push(AppRoutes.folderDetail(id)),
@@ -401,27 +451,13 @@ AppScreens _screens(
         ),
       ),
     ),
-    scan: (context) => ScanFlow(
-      module: scanning,
-      creation: creation,
+    scan: (context) => CreationFlow(
+      module: creationFlow,
       onExit: () => context.go(AppRoutes.home),
       // Home reloads on navigation, so the new document appears at the top of
       // Recent without anything having to tell it.
       onSaved: (_) => context.go(AppRoutes.home),
-      // The scanning flow's "import instead" is the import sheet, which is
-      // where the gallery and file sources live.
-      onImportInstead: () => _openImportSheet(
-        context,
-        importing,
-        scanning,
-        creation,
-        dependencies,
-      ),
-      onOpenSettings: () => dependencies.permissions.openSettings(),
     ),
-    scanReview: (_) => const _Placeholder('Review pages'),
-    scanEnhance: (_) => const _Placeholder('Enhance'),
-    scanPreview: (_) => const _Placeholder('Preview document'),
     documents: (context) => documentList(context, title: 'Documents'),
     viewer: (context, id) => BlocProvider(
       create: (_) => ViewerCubit(
@@ -643,9 +679,7 @@ Future<void> _importShared(
   BuildContext context,
   List<String> paths,
   ImportModule importing,
-  ScanningModule scanning,
-  DocumentCreationModule creation,
-  AppDependencies dependencies,
+  CreationModule creationFlow,
 ) async {
   final cubit = ImportCubit(
     importing.gallery,
@@ -661,13 +695,7 @@ Future<void> _importShared(
     final bundle = state.bundle;
 
     if (bundle != null) {
-      await _reviewImportedPages(
-        context,
-        bundle,
-        scanning,
-        creation,
-        dependencies,
-      );
+      await _reviewImportedPages(context, bundle, creationFlow);
     } else if (state.imported.isNotEmpty) {
       _report(context, state.outcomeMessage);
     } else if (state.message != null) {
@@ -715,8 +743,7 @@ Future<void> _toggleAppLock(
 Future<void> _openImportSheet(
   BuildContext context,
   ImportModule importing,
-  ScanningModule scanning,
-  DocumentCreationModule creation,
+  CreationModule creationFlow,
   AppDependencies dependencies,
 ) async {
   await showModalBottomSheet<void>(
@@ -733,15 +760,7 @@ Future<void> _openImportSheet(
         onOpenSettings: dependencies.permissions.openSettings,
         onReadyForReview: (bundle) {
           Navigator.of(sheetContext).pop();
-          unawaited(
-            _reviewImportedPages(
-              context,
-              bundle,
-              scanning,
-              creation,
-              dependencies,
-            ),
-          );
+          unawaited(_reviewImportedPages(context, bundle, creationFlow));
         },
         onImported: (state) {
           Navigator.of(sheetContext).pop();
@@ -760,19 +779,20 @@ Future<void> _openImportSheet(
 Future<void> _reviewImportedPages(
   BuildContext context,
   ScannedPageBundle bundle,
-  ScanningModule scanning,
-  DocumentCreationModule creation,
-  AppDependencies dependencies,
+  CreationModule creationFlow,
 ) => Navigator.of(context).push<void>(
   MaterialPageRoute(
-    builder: (routeContext) => ScanFlow(
-      module: scanning,
-      creation: creation,
-      initialPages: bundle,
+    builder: (routeContext) => CreationFlow(
+      module: creationFlow,
+      // Imported images arrive as pages with neither layer applied: they are
+      // already whatever the user chose to photograph or save, and the crop
+      // screen is there if they want one.
+      initialPages: [
+        for (final page in bundle.pages)
+          PageDraft(id: page.id, originalImagePath: page.imagePath),
+      ],
       onExit: () => Navigator.of(routeContext).pop(),
       onSaved: (_) => Navigator.of(routeContext).pop(),
-      onImportInstead: () => Navigator.of(routeContext).pop(),
-      onOpenSettings: dependencies.permissions.openSettings,
     ),
   ),
 );

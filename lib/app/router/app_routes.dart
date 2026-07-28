@@ -22,17 +22,12 @@ abstract final class AppRoutes {
   /// Home screen — the application's primary screen.
   static const home = '/';
 
-  /// Camera capture.
+  /// Creating a document: one page table, and the loop that fills it.
+  ///
+  /// The crop, enhancement and camera screens are pushed by the flow rather
+  /// than declared here: they are steps of a transient session, and a deep link
+  /// into one would land on a session that does not exist.
   static const scan = '/scan';
-
-  /// Review of the pages captured in the current session.
-  static const scanReview = '/scan/review';
-
-  /// Enhancement of the current session's pages.
-  static const scanEnhance = '/scan/enhance';
-
-  /// Preview of the document about to be saved.
-  static const scanPreview = '/scan/preview';
 
   /// All documents.
   static const documents = '/documents';
@@ -97,9 +92,6 @@ abstract final class AppRoutes {
     unlock,
     home,
     scan,
-    scanReview,
-    scanEnhance,
-    scanPreview,
     documents,
     folders,
     search,

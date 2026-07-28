@@ -53,6 +53,7 @@ void main() {
       (id) => '/documents/${id.value}.pdf',
       (path) async => deleted.add(path),
       store,
+      _noProtection,
     );
   });
 
@@ -451,3 +452,12 @@ void main() {
     });
   });
 }
+
+/// Protection that returns the file untouched.
+///
+/// These tests assert on what the generator produces, not on the encryption —
+/// which the editing feature owns and tests separately.
+Future<Result<String>> _noProtection(
+  String sourcePath,
+  String password,
+) async => Result<String>.success(sourcePath);

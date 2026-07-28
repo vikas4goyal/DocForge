@@ -43,6 +43,7 @@ void main() {
 
   HomeActions actions() => HomeActions(
     onScan: () => recorder.scans++,
+    onImport: () {},
     onSearch: () => recorder.searches++,
     onOpenDocument: (id) => recorder.openedDocument = id,
     onOpenFolder: (id) => recorder.openedFolder = id,

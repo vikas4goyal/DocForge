@@ -6,6 +6,7 @@ import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
 import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/core/time/clock.dart';
@@ -49,6 +50,7 @@ void main() {
       (id) => '/documents/${id.value}.pdf',
       (path) async {},
       InMemoryPublicFileStore(),
+      _noProtection,
     ),
     GenerateDocumentName(
       FixedClock(DateTime(2026, 3, 14, 9, 30)),
@@ -348,3 +350,12 @@ class _StateHolder {
 
   void set(PdfGenerationState state) => _cubit.emit(state);
 }
+
+/// Protection that returns the file untouched.
+///
+/// These tests assert on what the generator produces, not on the encryption —
+/// which the editing feature owns and tests separately.
+Future<Result<String>> _noProtection(
+  String sourcePath,
+  String password,
+) async => Result<String>.success(sourcePath);

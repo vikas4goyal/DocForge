@@ -190,6 +190,7 @@ class SaveDocument {
     this._destinationFor,
     this._deleteFile,
     this._store,
+    this._protect,
   );
 
   final BuildSearchablePdf _build;
@@ -199,6 +200,12 @@ class SaveDocument {
   final PdfDestination _destinationFor;
   final Future<void> Function(String path) _deleteFile;
   final PublicFileStore _store;
+
+  /// Encrypts a generated PDF, returning the path of the protected copy.
+  ///
+  /// A function rather than the editor itself: generation has no business
+  /// depending on the editing feature, and this is the whole of what it needs.
+  final PdfProtector _protect;
 
   /// Saves [bundle] as a document titled [title].
   ///
@@ -212,6 +219,7 @@ class SaveDocument {
     PdfQuality quality = PdfQuality.defaultQuality,
     FolderId? folderId,
     List<String> folders = const [],
+    String? password,
     CancellationToken? token,
     DocumentId? documentId,
   }) async {
@@ -250,11 +258,25 @@ class SaveDocument {
         return Result<Document>.failure(failure);
       }
 
+      // Protected before publishing, never after: encrypting in place would
+      // mean an unprotected copy existed in a folder other applications can
+      // read, however briefly.
+      var sourcePath = pdf.filePath;
+      if (password != null) {
+        final protected = await _protect(pdf.filePath, password);
+        if (protected case Failed(:final failure)) {
+          await _deleteFile(pdf.filePath);
+          return Result<Document>.failure(failure);
+        }
+        sourcePath = protected.valueOrNull!;
+      }
+
       final published = await _store.writeFile(
         libraryPath.valueOrNull!,
-        pdf.filePath,
+        sourcePath,
       );
       await _deleteFile(pdf.filePath);
+      if (sourcePath != pdf.filePath) await _deleteFile(sourcePath);
 
       if (published case Failed(:final failure)) {
         return Result<Document>.failure(failure);
@@ -269,6 +291,7 @@ class SaveDocument {
         sizeInBytes: pdf.sizeInBytes,
         libraryPath: libraryPath.valueOrNull!,
         folderId: folderId,
+        isProtected: password != null,
         // Taken from what was actually composed rather than from whether
         // recognition was attempted: a run that produced no legible text
         // leaves a document with nothing to share, and offering "share
@@ -335,6 +358,10 @@ class SaveDocument {
     }
   }
 }
+
+/// Encrypts the PDF at [sourcePath], returning the protected copy's path.
+typedef PdfProtector =
+    Future<Result<String>> Function(String sourcePath, String password);
 
 /// Turns captured or imported pages into a stored document.
 ///

@@ -48,6 +48,7 @@ void main() {
       child: HomeScreen(
         actions: HomeActions(
           onScan: () {},
+          onImport: () {},
           onSearch: () {},
           onOpenDocument: (_) {},
           onOpenFolder: (_) {},

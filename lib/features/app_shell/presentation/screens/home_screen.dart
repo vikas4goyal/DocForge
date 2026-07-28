@@ -21,6 +21,7 @@ class HomeActions {
   /// Creates the action set.
   const HomeActions({
     required this.onScan,
+    required this.onImport,
     required this.onSearch,
     required this.onOpenDocument,
     required this.onOpenFolder,
@@ -31,8 +32,14 @@ class HomeActions {
     this.onStorage,
   });
 
-  /// Starts the scanning flow.
+  /// Starts the creation flow.
   final VoidCallback onScan;
+
+  /// Opens the import sources.
+  ///
+  /// Distinct from creation: importing brings an existing PDF into the library
+  /// rather than building a new one, and the two produce different things.
+  final VoidCallback onImport;
 
   /// Opens search.
   final VoidCallback onSearch;

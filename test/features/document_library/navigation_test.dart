@@ -109,9 +109,6 @@ void main() {
       ),
     ),
     scan: (_) => _placeholder('scan'),
-    scanReview: (_) => _placeholder('scanReview'),
-    scanEnhance: (_) => _placeholder('scanEnhance'),
-    scanPreview: (_) => _placeholder('scanPreview'),
     documents: (context) => listRoute(context, title: 'Documents'),
     viewer: (_, id) => _placeholder('viewer:${id.value}'),
     documentDetail: (context, id) => BlocProvider(
