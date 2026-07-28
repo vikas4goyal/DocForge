@@ -108,22 +108,32 @@ void main() {
       await staging.discardSession('render-crop');
     });
 
-    testWidgets('cropping twice resamples the original once', (tester) async {
+    testWidgets('cropping twice lands where cropping once does', (
+      tester,
+    ) async {
+      // Two chains onto the *same* region of the original. The second crop is
+      // expressed in the coordinates the first one leaves behind: keeping
+      // [0 .. 0.75] first means the original's [0.25 .. 0.75] is [1/3 .. 1] of
+      // what remains. Getting this wrong is how the composition would silently
+      // land somewhere else and still produce a plausible-looking image.
       final once = (await stagedPage(
         'render-once',
       )).withCrop(CropOp(quad: box(0.25, 0.25, 0.75, 0.75)));
       final twice = (await stagedPage('render-twice'))
-          .withCrop(CropOp(quad: box(0.0, 0.0, 0.5, 0.5)))
-          .withCrop(CropOp(quad: box(0.5, 0.5, 1.0, 1.0)));
+          .withCrop(CropOp(quad: box(0.0, 0.0, 0.75, 0.75)))
+          .withCrop(CropOp(quad: box(1 / 3, 1 / 3, 1.0, 1.0)));
 
       final first = await renderPage(PageRenderPlan.of(once));
       final second = await renderPage(PageRenderPlan.of(twice));
 
-      // Both reach a quarter-sized region. The composed chain must not have
-      // cost an extra resampling pass to get there.
+      // Equal dimensions are what says the composed chain reached the same
+      // region. That it got there in a single resampling pass is proved by the
+      // host test against step-by-step application; what this adds is that the
+      // real decoder and the real geometry agree on device.
       final a = img.decodeImage(File(first.valueOrNull!).readAsBytesSync())!;
       final b = img.decodeImage(File(second.valueOrNull!).readAsBytesSync())!;
       expect((a.width - b.width).abs(), lessThanOrEqualTo(2));
+      expect((a.height - b.height).abs(), lessThanOrEqualTo(2));
 
       await staging.discardSession('render-once');
       await staging.discardSession('render-twice');
