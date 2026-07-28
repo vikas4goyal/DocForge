@@ -16,6 +16,15 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes.dart';
 
+/// Finds [text] inside the content list, ignoring the recents strip above it.
+///
+/// A recently-saved document appears in both, so an unscoped text finder would
+/// match twice and say nothing about which list rendered it.
+Finder inList(String text) => find.descendant(
+  of: find.byKey(DashboardKeys.contentList),
+  matching: find.text(text),
+);
+
 void main() {
   late InMemoryPublicFileStore store;
   late FakeDocumentRepository documents;
@@ -98,8 +107,8 @@ void main() {
       given('Statement.pdf');
       await pumpDashboard(tester);
 
-      expect(find.text('Invoices'), findsOneWidget);
-      expect(find.text('Statement'), findsOneWidget);
+      expect(inList('Invoices'), findsOneWidget);
+      expect(inList('Statement'), findsOneWidget);
     });
   });
 
@@ -159,7 +168,7 @@ void main() {
       given('Invoice.pdf');
       await pumpDashboard(tester);
 
-      await tester.tap(find.text('Invoice'));
+      await tester.tap(inList('Invoice'));
       await tester.pumpAndSettle();
 
       expect(opened.single.title, 'Invoice');
@@ -280,7 +289,7 @@ void main() {
       await tester.tap(find.byKey(DashboardKeys.errorRetryButton));
       await tester.pumpAndSettle();
 
-      expect(find.text('Invoice'), findsOneWidget);
+      expect(inList('Invoice'), findsOneWidget);
     });
   });
 

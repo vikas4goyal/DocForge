@@ -35,8 +35,8 @@ import 'package:doc_forge/core/storage/key_value_store.dart';
 import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
 import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_forge/features/document_search/domain/search_query.dart';
 import 'package:doc_forge/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
 import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
@@ -199,16 +199,15 @@ void main() {
     final text = await creation.ocrTextSource.textForDocument(document.id);
     expect(text.valueOrNull, contains('Acme'));
 
-    // ---- Find it from the Home screen ------------------------------------
-    final home = await LoadHomeData(
-      library.documentReader,
-      library.folderReader,
-      library.storageSummaryReader,
-    )();
-    final homeData = (home as Success<HomeData>).value;
+    // ---- Find it from the dashboard --------------------------------------
+    final dashboard = DashboardCubit(
+      store: library.publicStore,
+      index: library.documents,
+    );
+    await dashboard.load();
 
-    expect(homeData.recentDocuments.map((d) => d.id), contains(document.id));
-    expect(homeData.storage.documentCount, 1);
+    expect(dashboard.state.recents.map((d) => d.id), contains(document.id));
+    expect(dashboard.state.documents.length, 1);
 
     // ---- Organise it into a folder ---------------------------------------
     final folder = await library.createFolder('Invoices');

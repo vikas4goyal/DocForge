@@ -23,9 +23,9 @@ import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
 import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
 import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_forge/features/document_search/domain/search_query.dart';
 import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -84,8 +84,19 @@ void main() {
     if (root.existsSync()) root.deleteSync(recursive: true);
   });
 
-  /// Writes [count] documents straight into Isar.
+  /// Writes [count] documents into Isar and into the library folder.
+  ///
+  /// Both, not just the index: the dashboard lists the folder and joins the
+  /// index to it, so a library that exists only in Isar would render empty and
+  /// the timing would measure nothing.
   Future<void> seed(int count) async {
+    final folder = Directory('${root.path}/documents/DocForge');
+    for (var index = 0; index < count; index++) {
+      File(
+        '${folder.path}/doc-$index.pdf',
+      ).writeAsBytesSync(List<int>.filled(64, 0));
+    }
+
     await isar.writeTxn(() async {
       await isar.documentEntitys.putAll([
         for (var index = 0; index < count; index++)
@@ -130,31 +141,33 @@ void main() {
       await seed(1000);
 
       final stopwatch = Stopwatch()..start();
-      final result = await LoadHomeData(
-        library.documentReader,
-        library.folderReader,
-        library.storageSummaryReader,
-      )();
+      final dashboard = DashboardCubit(
+        store: library.publicStore,
+        index: library.documents,
+      );
+      await dashboard.load();
       stopwatch.stop();
 
-      expect(result, isA<Success<HomeData>>());
+      expect(dashboard.state.failure, isNull);
       expect(stopwatch.elapsed, lessThan(_interactiveBudget));
     });
 
-    test('Home shows a bounded number of recent documents', () async {
-      // The figure that matters more than the timing: Home renders a fixed
-      // handful however large the library grows.
+    test('the dashboard shows a bounded number of recent documents', () async {
+      // The figure that matters more than the timing: the recents strip stays
+      // a fixed handful however large the library grows.
       await seed(1000);
 
-      final result = await LoadHomeData(
-        library.documentReader,
-        library.folderReader,
-        library.storageSummaryReader,
-      )();
+      final dashboard = DashboardCubit(
+        store: library.publicStore,
+        index: library.documents,
+      );
+      await dashboard.load();
 
-      final home = (result as Success<HomeData>).value;
-      expect(home.recentDocuments.length, lessThanOrEqualTo(20));
-      expect(home.storage.documentCount, 1000);
+      expect(
+        dashboard.state.recents.length,
+        lessThanOrEqualTo(DashboardCubit.maxRecents),
+      );
+      expect(dashboard.state.documents.length, 1000);
     });
 
     test('a search returns within budget and is bounded', () async {

@@ -28,6 +28,12 @@ class DashboardCubit extends Cubit<DashboardState> {
   /// source of truth, and this describes what is in it.
   final DocumentRepository index;
 
+  /// How many recent documents the strip shows.
+  ///
+  /// Enough to be useful, few enough that it stays a strip rather than a
+  /// second document list above the first.
+  static const maxRecents = 5;
+
   /// Loads the folder currently open.
   Future<void> load() => _loadFolder(state.path);
 
@@ -132,11 +138,20 @@ class DashboardCubit extends Cubit<DashboardState> {
     final bytes = await store.totalBytes();
     if (isClosed) return;
 
+    // Recents span the library rather than the open folder, and only matter at
+    // the root: inside a folder the user has already said what they are
+    // looking at.
+    final recents = path.isEmpty
+        ? (byPath.values.where((d) => d.isVisibleInLibrary).toList()
+            ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)))
+        : const <Document>[];
+
     emit(
       state.copyWith(
         status: DashboardStatus.ready,
         folders: folders,
         documents: documents,
+        recents: recents.take(maxRecents).toList(),
         storageBytes: bytes.valueOrNull ?? state.storageBytes,
       ),
     );

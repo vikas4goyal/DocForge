@@ -1,7 +1,7 @@
 /// The application's three destinations.
 library;
 
-import 'package:doc_forge/features/app_shell/presentation/home_keys.dart';
+import 'package:doc_forge/features/app_shell/presentation/shell_keys.dart';
 import 'package:flutter/material.dart';
 
 /// Which destination the tab bar is showing.
@@ -45,10 +45,10 @@ class AppTabScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: HomeKeys.tabScaffold,
+      key: ShellKeys.tabScaffold,
       body: child,
       floatingActionButton: FloatingActionButton(
-        key: HomeKeys.createTab,
+        key: ShellKeys.createTab,
         onPressed: onCreate,
         tooltip: 'Create PDF',
         child: const Icon(Icons.add),
@@ -63,7 +63,7 @@ class AppTabScaffold extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _TabButton(
-              buttonKey: HomeKeys.dashboardTab,
+              buttonKey: ShellKeys.dashboardTab,
               icon: Icons.folder_outlined,
               selectedIcon: Icons.folder,
               label: 'Dashboard',
@@ -72,7 +72,7 @@ class AppTabScaffold extends StatelessWidget {
             ),
             const SizedBox(width: 48),
             _TabButton(
-              buttonKey: HomeKeys.settingsTab,
+              buttonKey: ShellKeys.settingsTab,
               icon: Icons.settings_outlined,
               selectedIcon: Icons.settings,
               label: 'Settings',

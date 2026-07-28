@@ -44,19 +44,19 @@ import 'package:doc_forge/features/app_security/presentation/widgets/app_lock_ob
 import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
 import 'package:doc_forge/features/app_settings/presentation/cubit/settings_cubit.dart';
 import 'package:doc_forge/features/app_settings/presentation/screens/settings_screen.dart';
-import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
-import 'package:doc_forge/features/app_shell/presentation/cubit/home_cubit.dart';
 import 'package:doc_forge/features/app_shell/presentation/screens/app_tab_scaffold.dart';
-import 'package:doc_forge/features/app_shell/presentation/screens/home_screen.dart';
 import 'package:doc_forge/features/document_creation/application/usecases/add_page.dart';
 import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
 import 'package:doc_forge/features/document_creation/domain/creation_session.dart';
 import 'package:doc_forge/features/document_import/presentation/cubit/import_cubit.dart';
 import 'package:doc_forge/features/document_import/presentation/screens/import_options_sheet.dart';
 import 'package:doc_forge/features/document_import/presentation/widgets/shared_content_watcher.dart';
+import 'package:doc_forge/features/document_library/application/usecases/library_folder_usecases.dart';
+import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
+import 'package:doc_forge/features/document_library/presentation/screens/dashboard_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/document_detail_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/folder_detail_screen.dart';
@@ -472,37 +472,33 @@ AppScreens _screens(
       dashboard: SharedContentWatcher(
         takePending: importing.takePending,
         watchShared: importing.watchShared,
-        // Wrapped around Home rather than around a route that comes and goes: a
-        // share arriving while the user is deep in another flow would otherwise
-        // be dropped.
+        // Wrapped around the dashboard rather than around a route that comes
+        // and goes: a share arriving while the user is deep in another flow
+        // would otherwise be dropped.
         onContent: (paths) =>
             _importShared(context, paths, importing, creationFlow),
         child: BlocProvider(
-          create: (_) => HomeCubit(
-            LoadHomeData(
-              library.documentReader,
-              library.folderReader,
-              library.storageSummaryReader,
-            ),
-          ),
-          child: HomeScreen(
-            actions: HomeActions(
-              onScan: () => context.push(AppRoutes.scan),
-              onImport: () => _openImportSheet(
-                context,
-                importing,
-                creationFlow,
-                dependencies,
+          create: (_) => DashboardCubit(
+            store: library.publicStore,
+            index: library.documents,
+          )..load(),
+          child: Builder(
+            builder: (dashboardContext) => DashboardScreen(
+              actions: DashboardActions(
+                onOpenDocument: (document) =>
+                    context.push(AppRoutes.documentDetail(document.id)),
+                onCreateFolder: (name) => _createFolder(
+                  dashboardContext,
+                  library.createLibraryFolder,
+                  name,
+                ),
+                onImportPdf: () => _openImportSheet(
+                  context,
+                  importing,
+                  creationFlow,
+                  dependencies,
+                ),
               ),
-              onSearch: () => context.push(AppRoutes.search),
-              onOpenDocument: (id) =>
-                  context.push(AppRoutes.documentDetail(id)),
-              onOpenFolder: (id) => context.push(AppRoutes.folderDetail(id)),
-              onAllDocuments: () => context.push(AppRoutes.documents),
-              onFolders: () => context.push(AppRoutes.folders),
-              onFavourites: () => context.push(AppRoutes.favourites),
-              onArchive: () => context.push(AppRoutes.archive),
-              onStorage: () => context.push(AppRoutes.settings),
             ),
           ),
         ),
@@ -912,6 +908,30 @@ Future<void> _print(
 
   if (result case Failed(:final failure)) {
     _report(context, failure.presentation.message);
+  }
+}
+
+/// Creates a folder, reporting a refusal where the user can see it.
+///
+/// Validation lives in the use case rather than the dialog: a name the
+/// filesystem will refuse has to be refused the same way wherever it is
+/// entered.
+Future<void> _createFolder(
+  BuildContext context,
+  CreateLibraryFolder create,
+  String name,
+) async {
+  final created = await create(
+    name,
+    parent: context.read<DashboardCubit>().state.path,
+  );
+  if (!context.mounted) return;
+
+  switch (created) {
+    case Success():
+      await context.read<DashboardCubit>().load();
+    case Failed(:final failure):
+      _report(context, failure.presentation.message);
   }
 }
 

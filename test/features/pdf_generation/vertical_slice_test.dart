@@ -26,8 +26,8 @@ import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
 import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
 import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
 import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
@@ -301,17 +301,16 @@ void main() {
         [0, 1, 2],
       );
 
-      // --- And at the top of Recent on Home ----------------------------------
-      final home = await LoadHomeData(
-        library.documentReader,
-        library.folderReader,
-        library.storageSummaryReader,
-      )();
+      // --- And at the top of Recent on the dashboard -------------------------
+      final dashboard = DashboardCubit(
+        store: library.publicStore,
+        index: library.documents,
+      );
+      await dashboard.load();
 
-      final data = (home as Success<HomeData>).value;
-      expect(data.isEmpty, isFalse);
-      expect(data.recentDocuments.first.id, document.id);
-      expect(data.storage.documentCount, 1);
+      expect(dashboard.state.isEmpty, isFalse);
+      expect(dashboard.state.recents.first.id, document.id);
+      expect(dashboard.state.documents.length, 1);
     },
   );
 

@@ -2,8 +2,8 @@
 library;
 
 import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/app_shell/presentation/home_keys.dart';
 import 'package:doc_forge/features/app_shell/presentation/screens/app_tab_scaffold.dart';
+import 'package:doc_forge/features/app_shell/presentation/shell_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -41,10 +41,10 @@ void main() {
     ) async {
       await pumpScaffold(tester);
 
-      expect(find.byKey(HomeKeys.tabScaffold), findsOneWidget);
-      expect(find.byKey(HomeKeys.dashboardTab), findsOneWidget);
-      expect(find.byKey(HomeKeys.settingsTab), findsOneWidget);
-      expect(find.byKey(HomeKeys.createTab), findsOneWidget);
+      expect(find.byKey(ShellKeys.tabScaffold), findsOneWidget);
+      expect(find.byKey(ShellKeys.dashboardTab), findsOneWidget);
+      expect(find.byKey(ShellKeys.settingsTab), findsOneWidget);
+      expect(find.byKey(ShellKeys.createTab), findsOneWidget);
     });
 
     testWidgets('renders the selected destination', (tester) async {
@@ -58,7 +58,7 @@ void main() {
     testWidgets('the dashboard destination', (tester) async {
       await pumpScaffold(tester, tab: AppTab.settings);
 
-      await tester.tap(find.byKey(HomeKeys.dashboardTab));
+      await tester.tap(find.byKey(ShellKeys.dashboardTab));
       await tester.pumpAndSettle();
 
       expect(selected, [AppTab.dashboard]);
@@ -67,7 +67,7 @@ void main() {
     testWidgets('the settings destination', (tester) async {
       await pumpScaffold(tester);
 
-      await tester.tap(find.byKey(HomeKeys.settingsTab));
+      await tester.tap(find.byKey(ShellKeys.settingsTab));
       await tester.pumpAndSettle();
 
       // Settings is one tap from anywhere now, rather than reachable only by
@@ -82,7 +82,7 @@ void main() {
     ) async {
       await pumpScaffold(tester);
 
-      await tester.tap(find.byKey(HomeKeys.createTab));
+      await tester.tap(find.byKey(ShellKeys.createTab));
       await tester.pumpAndSettle();
 
       // A Create tab that stayed selected would leave the bar highlighting a
@@ -100,7 +100,7 @@ void main() {
       await pumpScaffold(tester);
 
       expect(
-        tester.getSemantics(find.byKey(HomeKeys.dashboardTab)),
+        tester.getSemantics(find.byKey(ShellKeys.dashboardTab)),
         matchesSemantics(
           label: 'Dashboard',
           isButton: true,
@@ -120,7 +120,7 @@ void main() {
       await pumpScaffold(tester);
 
       expect(
-        tester.getSemantics(find.byKey(HomeKeys.settingsTab)),
+        tester.getSemantics(find.byKey(ShellKeys.settingsTab)),
         matchesSemantics(
           label: 'Settings',
           isButton: true,

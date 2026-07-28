@@ -74,6 +74,8 @@ class DashboardScreen extends StatelessWidget {
               children: [
                 _SearchField(state: state, cubit: cubit),
                 if (!state.isSearching) _Breadcrumb(state: state, cubit: cubit),
+                if (state.showsRecents)
+                  _Recents(state: state, actions: actions),
                 Expanded(
                   child: _Body(state: state, actions: actions),
                 ),
@@ -191,6 +193,45 @@ class _Breadcrumb extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// The most recently modified documents, from anywhere in the library.
+class _Recents extends StatelessWidget {
+  const _Recents({required this.state, required this.actions});
+
+  final DashboardState state;
+  final DashboardActions actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          child: Text('Recent', style: Theme.of(context).textTheme.titleSmall),
+        ),
+        SizedBox(
+          height: 40,
+          child: ListView.separated(
+            key: DashboardKeys.recents,
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: state.recents.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (context, index) {
+              final document = state.recents[index];
+              return ActionChip(
+                avatar: const Icon(Icons.description_outlined, size: 16),
+                label: Text(document.title),
+                onPressed: () => actions.onOpenDocument(document),
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

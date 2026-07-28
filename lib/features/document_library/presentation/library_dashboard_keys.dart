@@ -26,6 +26,9 @@ abstract final class DashboardKeys {
   /// How much space the library occupies.
   static const storageSummary = Key('dashboard_storage_summary');
 
+  /// The recently modified documents, shown at the library root.
+  static const recents = Key('dashboard_recents');
+
   /// Shown when the open folder holds nothing.
   static const emptyState = Key('dashboard_empty_state');
 

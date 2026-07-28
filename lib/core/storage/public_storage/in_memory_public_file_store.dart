@@ -151,7 +151,7 @@ class InMemoryPublicFileStore implements PublicFileStore {
     List<String> folders,
     String newName,
   ) async {
-    final pending = _pendingFailure<void>();
+    final pending = _pendingFailure<void>('renameFolder');
     if (pending != null) return pending;
 
     if (!LibraryPath.isValidName(newName) || folders.isEmpty) {

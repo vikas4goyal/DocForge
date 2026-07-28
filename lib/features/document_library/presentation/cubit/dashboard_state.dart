@@ -48,6 +48,7 @@ class DashboardState extends Equatable {
     required this.folders,
     required this.documents,
     required this.query,
+    this.recents = const [],
     this.storageBytes = 0,
     this.failure,
   });
@@ -79,6 +80,13 @@ class DashboardState extends Equatable {
   /// What the user has typed into the search field.
   final String query;
 
+  /// The most recently modified documents, from anywhere in the library.
+  ///
+  /// Shown at the root only. Inside a folder the user has already said which
+  /// documents they are interested in, and a recents strip would be answering
+  /// a question they did not ask.
+  final List<Document> recents;
+
   /// How much space the library occupies.
   final int storageBytes;
 
@@ -105,6 +113,9 @@ class DashboardState extends Equatable {
   /// Whether the open folder holds nothing at all.
   bool get isEmpty => folders.isEmpty && documents.isEmpty;
 
+  /// Whether the recents strip should be shown.
+  bool get showsRecents => isAtRoot && !isSearching && recents.isNotEmpty;
+
   /// The breadcrumb from the library root to the open folder.
   List<String> get breadcrumb => ['DocForge', ...path];
 
@@ -118,6 +129,7 @@ class DashboardState extends Equatable {
     List<DashboardFolder>? folders,
     List<Document>? documents,
     String? query,
+    List<Document>? recents,
     int? storageBytes,
     Failure? failure,
   }) => DashboardState._(
@@ -126,6 +138,7 @@ class DashboardState extends Equatable {
     folders: folders ?? this.folders,
     documents: documents ?? this.documents,
     query: query ?? this.query,
+    recents: recents ?? this.recents,
     storageBytes: storageBytes ?? this.storageBytes,
     failure: failure,
   );
@@ -137,6 +150,7 @@ class DashboardState extends Equatable {
     folders,
     documents,
     query,
+    recents,
     storageBytes,
     failure,
   ];

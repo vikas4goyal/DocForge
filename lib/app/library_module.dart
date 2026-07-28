@@ -17,8 +17,10 @@ import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
 import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
+import 'package:doc_forge/features/document_library/application/usecases/library_folder_usecases.dart';
 import 'package:doc_forge/features/document_library/application/usecases/reconcile_library.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/document_file_store.dart';
+import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
 import 'package:doc_forge/features/document_library/infrastructure/datasource/document_file_store.dart';
 import 'package:doc_forge/features/document_library/infrastructure/document_title_index.dart';
 import 'package:doc_forge/features/document_library/infrastructure/library_contracts_impl.dart';
@@ -61,6 +63,9 @@ class LibraryModule {
     required this.folderReader,
     required this.storageSummaryReader,
     required this.reconcile,
+    required this.documents,
+    required this.publicStore,
+    required this.createLibraryFolder,
   });
 
   /// Loads a page of documents.
@@ -116,6 +121,15 @@ class LibraryModule {
 
   /// Storage reporting for the dashboard and settings.
   final StorageSummaryReader storageSummaryReader;
+
+  /// The document index, for screens that join it to the folder.
+  final DocumentRepository documents;
+
+  /// The user-visible library folder.
+  final PublicFileStore publicStore;
+
+  /// Creates a folder inside the library.
+  final CreateLibraryFolder createLibraryFolder;
 
   /// Brings the index back into step with the library folder.
   ///
@@ -246,6 +260,9 @@ LibraryModule buildLibraryModuleOver({
     documentWriter: LibraryDocumentWriter(documents, pages, clock),
     folderReader: LibraryFolderReader(folders),
     storageSummaryReader: LibraryStorageSummaryReader(storageSummary),
+    documents: documents,
+    publicStore: store,
+    createLibraryFolder: CreateLibraryFolder(store, folders, clock, ids),
     reconcile: ReconcileLibrary(
       store: store,
       documents: documents,
