@@ -23,13 +23,13 @@
 
 ## 3. Reconciliation and temporary-file lifecycle
 
-- [ ] 3.1 Add `ReconcileLibrary` use case as a pure diff over index entries and tree entries producing added / removed / modified / renamed, matching on `(size, mtime)` fingerprint before path (design D5)
-- [ ] 3.2 Unit-test the diff for each case including a rename that must retain favourite, archive and OCR text, and a fingerprint collision
-- [ ] 3.3 Run the tree walk in the pooled background isolate and throttle with the `library.reconcile.lastRunAt` preference; verify a resume within 60s does not re-walk
-- [ ] 3.4 Trigger reconcile on launch and on app resume, and cover it with a widget test using a fake lifecycle observer
-- [ ] 3.5 Add `CleanupOrphanedCaptures` — sweep the creation-session cache at startup — and unit-test that it deletes orphans and spares an in-progress session
-- [ ] 3.6 Delete every image belonging to a session — originals, cached renders and thumbnails — after a successful save and after a confirmed discard; unit-test both, and that nothing is deleted when generation fails
-- [ ] 3.7 Make thumbnails a derived cache rendered from the PDF on demand, keyed by document fingerprint and evictable; unit-test that a missing thumbnail is re-rendered rather than reported as a failure, and that a changed file invalidates it (design D4a)
+- [x] 3.1 Add `ReconcileLibrary` use case as a pure diff over index entries and tree entries producing added / removed / modified / renamed, matching on `(size, mtime)` fingerprint before path (design D5)
+- [x] 3.2 Unit-test the diff for each case including a rename that must retain favourite, archive and OCR text, and a fingerprint collision
+- [x] 3.3 Run the tree walk in the pooled background isolate and throttle with the `library.reconcile.lastRunAt` preference; verify a resume within 60s does not re-walk
+- [x] 3.4 Trigger reconcile on launch and on app resume, and cover it with a widget test using a fake lifecycle observer
+- [x] 3.5 Add `CleanupOrphanedCaptures` — sweep the creation-session cache at startup — and unit-test that it deletes orphans and spares an in-progress session
+- [x] 3.6 Delete every image belonging to a session — originals, cached renders and thumbnails — after a successful save and after a confirmed discard; unit-test both, and that nothing is deleted when generation fails
+- [x] 3.7 Make thumbnails a derived cache rendered from the PDF on demand, keyed by document fingerprint and evictable; unit-test that a missing thumbnail is re-rendered rather than reported as a failure, and that a changed file invalidates it (design D4a)
 
 ## 4. Layered page model and render pipeline
 

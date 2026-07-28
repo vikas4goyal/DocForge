@@ -26,6 +26,7 @@ import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_forge/core/failures/failure_messages.dart';
 import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_forge/core/storage/capture_staging.dart';
 import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_forge/core/storage/public_storage/public_storage_factory.dart';
 import 'package:doc_forge/core/theme/theme_mode_controller.dart';
@@ -53,6 +54,7 @@ import 'package:doc_forge/features/document_library/presentation/screens/documen
 import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/folder_detail_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
+import 'package:doc_forge/features/document_library/presentation/widgets/library_reconciler.dart';
 import 'package:doc_forge/features/document_search/presentation/bloc/search_bloc.dart';
 import 'package:doc_forge/features/document_search/presentation/screens/search_screen.dart';
 import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
@@ -115,6 +117,11 @@ Future<void> main() async {
 
   final library = await buildLibraryModule(
     store: publicStore,
+    preferences: dependencies.preferences,
+    // Reconciliation needs to know how many pages a file it has never seen
+    // holds. The renderer is the only thing that knows, and handing over the
+    // one method keeps the library from depending on the viewer.
+    pageCountOf: const RendererPdfInspector(PdfrxRenderer()).pageCountOf,
     clock: dependencies.clock,
     ids: dependencies.idGenerator,
     secureStorage: dependencies.secureStorage,
@@ -241,15 +248,26 @@ Future<void> main() async {
     ),
   );
 
+  // Anything left by a run that was killed mid-session. Swept before the first
+  // frame so a crash during creation does not leave full-resolution captures
+  // occupying space the user cannot account for.
+  unawaited(CaptureStaging(cacheDirectory).sweepOrphans());
+
   runApp(
     // Wrapped outside the app, so the re-lock happens whatever route the user
     // was on when the phone went into a pocket.
     AppLockObserver(
       gate: lockGate,
-      child: DocForgeApp(
-        dependencies: dependencies,
-        router: router,
-        themeMode: themeMode,
+      child: LibraryReconciler(
+        // The library folder is visible in the user's file browser, so it can
+        // change while DocForge is in the background. Reconciling on resume is
+        // what makes that change appear when they come back.
+        reconcile: library.reconcile.call,
+        child: DocForgeApp(
+          dependencies: dependencies,
+          router: router,
+          themeMode: themeMode,
+        ),
       ),
     ),
   );

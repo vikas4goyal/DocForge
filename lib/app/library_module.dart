@@ -17,6 +17,7 @@ import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
 import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
+import 'package:doc_forge/features/document_library/application/usecases/reconcile_library.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/document_file_store.dart';
 import 'package:doc_forge/features/document_library/infrastructure/datasource/document_file_store.dart';
 import 'package:doc_forge/features/document_library/infrastructure/document_title_index.dart';
@@ -59,6 +60,7 @@ class LibraryModule {
     required this.documentWriter,
     required this.folderReader,
     required this.storageSummaryReader,
+    required this.reconcile,
   });
 
   /// Loads a page of documents.
@@ -112,8 +114,14 @@ class LibraryModule {
   /// Folder read access for other capabilities.
   final FolderReader folderReader;
 
-  /// Storage reporting for Home and settings.
+  /// Storage reporting for the dashboard and settings.
   final StorageSummaryReader storageSummaryReader;
+
+  /// Brings the index back into step with the library folder.
+  ///
+  /// The folder is the user's: they can add, rename and delete files in it
+  /// while the application is running, so this runs at launch and on resume.
+  final ReconcileLibrary reconcile;
 
   /// The open database.
   ///
@@ -144,6 +152,8 @@ class LibraryModule {
 /// opens its own database connection.
 Future<LibraryModule> buildLibraryModule({
   required PublicFileStore store,
+  required PreferenceStore preferences,
+  required PdfPageCountReader pageCountOf,
   required Clock clock,
   required IdGenerator ids,
   required SecureStore secureStorage,
@@ -176,6 +186,8 @@ Future<LibraryModule> buildLibraryModule({
     isar: isar,
     documentsDirectory: supportDirectory,
     store: store,
+    preferences: preferences,
+    pageCountOf: pageCountOf,
     clock: clock,
     ids: ids,
     secureStorage: secureStorage,
@@ -191,6 +203,8 @@ LibraryModule buildLibraryModuleOver({
   required Isar isar,
   required Directory documentsDirectory,
   required PublicFileStore store,
+  required PreferenceStore preferences,
+  required PdfPageCountReader pageCountOf,
   required Clock clock,
   required IdGenerator ids,
   required SecureStore secureStorage,
@@ -232,5 +246,14 @@ LibraryModule buildLibraryModuleOver({
     documentWriter: LibraryDocumentWriter(documents, pages, clock),
     folderReader: LibraryFolderReader(folders),
     storageSummaryReader: LibraryStorageSummaryReader(storageSummary),
+    reconcile: ReconcileLibrary(
+      store: store,
+      documents: documents,
+      pages: pages,
+      preferences: preferences,
+      clock: clock,
+      ids: ids,
+      pageCountOf: pageCountOf,
+    ),
   );
 }

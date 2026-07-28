@@ -121,6 +121,11 @@ void main() {
       isar: isar,
       documentsDirectory: documents,
       store: publicStore,
+      preferences: InMemoryPreferenceStore(),
+      // Reconciliation reads the page count of a file it has never seen;
+      // a fixed answer keeps these tests off a real renderer.
+      pageCountOf: (path, {String? password}) async =>
+          const Result<int>.success(1),
       clock: clock,
       ids: SequentialIdGenerator(prefix: 'doc'),
       secureStorage: _InMemorySecureStore(),
