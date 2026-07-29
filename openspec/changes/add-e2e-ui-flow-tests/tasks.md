@@ -1,17 +1,17 @@
 ## 1. Composition seam
 
-- [ ] 1.1 Extract a public `buildDocForge({...})` from `main()` (`lib/main.dart:89-337`) into `lib/app/`, returning the configured root widget; reduce `main.dart` to `runApp(await buildDocForge())`. Every platform service currently hardcoded becomes a named optional parameter defaulting to today's real implementation — behaviour must be byte-identical.
-- [ ] 1.2 Split the private `_screens(...)` (`lib/main.dart:340`, 17 positional params) into per-feature screen builders assembled into `AppScreens`; make the assembly public and callable from a test.
-- [ ] 1.3 Add a `ScannerRepository` parameter to `buildScanningModule` (`lib/app/scanning_module.dart:89`), defaulting to `CameraScannerRepository`.
-- [ ] 1.4 Route `DeviceAuthenticator` (`lib/main.dart:433,462`), `PdfRenderer` (`:147,214,521`) and the public file store (`:104`) through `buildDocForge` parameters, defaulting to `LocalAuthAuthenticator`, `PdfrxRenderer` and `buildPublicFileStore`.
-- [ ] 1.5 Add dartdoc to every new public API from 1.1–1.4 (what it builds, each parameter, what it defaults to and why) and inline comments where a default encodes a platform constraint.
+- [x] 1.1 Extract a public `buildDocForge({...})` from `main()` (`lib/main.dart:89-337`) into `lib/app/`, returning the configured root widget; reduce `main.dart` to `runApp(await buildDocForge())`. Every platform service currently hardcoded becomes a named optional parameter defaulting to today's real implementation — behaviour must be byte-identical.
+- [x] 1.2 Split the private `_screens(...)` (`lib/main.dart:340`, 17 positional params) into per-feature screen builders assembled into `AppScreens`; make the assembly public and callable from a test.
+- [x] 1.3 Add a `ScannerRepository` parameter to `buildScanningModule` (`lib/app/scanning_module.dart:89`), defaulting to `CameraScannerRepository`.
+- [x] 1.4 Route `DeviceAuthenticator` (`lib/main.dart:433,462`), `PdfRenderer` (`:147,214,521`) and the public file store (`:104`) through `buildDocForge` parameters, defaulting to `LocalAuthAuthenticator`, `PdfrxRenderer` and `buildPublicFileStore`.
+- [x] 1.5 Add dartdoc to every new public API from 1.1–1.4 (what it builds, each parameter, what it defaults to and why) and inline comments where a default encodes a platform constraint.
 - [ ] 1.6 Verify the refactor on a real device: launch the app, walk onboarding → dashboard → open a document, and confirm no behavioural change.
-- [ ] 1.7 Unit-test `buildDocForge`: it builds with all defaults, each override is honoured, and the resulting tree matches the pre-refactor structure.
+- [x] 1.7 Unit-test `buildDocForge`: it builds with all defaults, each override is honoured, and the resulting tree matches the pre-refactor structure.
 
 ## 2. Test-only seam containment
 
-- [ ] 2.1 Add a rule to `tool/check_layering.dart`: production `main.dart` must not transitively import the test entrypoint or any `Fake*` platform implementation.
-- [ ] 2.2 Add a test in `test/tool/` proving the new layering rule fails when a fake is imported from the production entrypoint and passes otherwise.
+- [x] 2.1 Add a rule to `tool/check_layering.dart`: production `main.dart` must not transitively import the test entrypoint or any `Fake*` platform implementation.
+- [x] 2.2 Add a test in `test/tool/` proving the new layering rule fails when a fake is imported from the production entrypoint and passes otherwise.
 
 ## 3. Widget keys and semantics registry
 

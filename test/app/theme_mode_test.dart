@@ -1,5 +1,5 @@
 import 'package:doc_forge/app/app.dart';
-import 'package:doc_forge/app/composition_root.dart';
+import 'package:doc_forge/app/fake_dependencies.dart';
 import 'package:doc_forge/app/router/app_router.dart';
 import 'package:doc_forge/app/router/app_routes.dart';
 import 'package:doc_forge/app/router/route_gates.dart';

@@ -10,6 +10,11 @@
 ///    domain interfaces, never on the implementations behind them.
 /// 3. No file under `features/<a>/` may import `features/<b>/` — cross-feature
 ///    cooperation goes through `core/contracts/` (see `design.md` §2).
+/// 4. Nothing reachable from production `main.dart` may name a `Fake*` platform
+///    implementation, or import anything outside `lib/`. The fakes deliberately
+///    live in `lib/` because the widget previews need them there, so this rule
+///    is the only thing standing between that convenience and shipping a fake
+///    to a user (`design.md` D8).
 ///
 /// Run with `dart run tool/check_layering.dart`. Exits 0 when clean and 1 when
 /// any violation is found, printing every violation rather than only the first
@@ -141,6 +146,160 @@ List<LayeringViolation> checkFile(String path, String content) {
   return violations;
 }
 
+/// Converts a `package:doc_forge/...` URI to its path under `lib/`.
+///
+/// Returns null for a URI that leaves the package — `dart:`, another package,
+/// or a relative import — because those are not part of the graph this rule
+/// walks.
+String? libPathOf(String importPath) {
+  const prefix = 'package:doc_forge/';
+  if (!importPath.startsWith(prefix)) return null;
+  return 'lib/${importPath.substring(prefix.length)}';
+}
+
+/// Strips comments from [content] so a rule reads code and not prose.
+///
+/// Required rather than cosmetic: the composition root documents which fake a
+/// test substitutes, and a rule that matched on the doc comment would report
+/// the explanation of the rule as a breach of it.
+String withoutComments(String content) {
+  final withoutBlocks = content.replaceAll(
+    RegExp(r'/\*.*?\*/', dotAll: true),
+    '',
+  );
+
+  return withoutBlocks
+      .split('\n')
+      .map((line) {
+        // Only a comment that starts the line, so a `//` inside a string
+        // literal — a URL, most often — does not truncate real code.
+        final trimmed = line.trimLeft();
+        return trimmed.startsWith('//') ? '' : line;
+      })
+      .join('\n');
+}
+
+/// Returns every file reachable from [entrypoint] by following imports.
+///
+/// [sources] maps a path under `lib/` to its content. Only intra-package
+/// imports are followed; a URI pointing outside the package ends that branch,
+/// and an import naming a file absent from [sources] is skipped rather than
+/// failing, so the walk describes the graph it can see.
+Set<String> reachableFrom(String entrypoint, Map<String, String> sources) {
+  final seen = <String>{};
+  final pending = <String>[entrypoint];
+
+  while (pending.isNotEmpty) {
+    final path = pending.removeLast();
+    if (!seen.add(path)) continue;
+
+    final content = sources[path];
+    if (content == null) continue;
+
+    for (final line in content.split('\n')) {
+      final match = _directive.firstMatch(line);
+      if (match == null) continue;
+      final target = libPathOf(match.group(1)!);
+      if (target != null && !seen.contains(target)) pending.add(target);
+    }
+  }
+
+  return seen;
+}
+
+/// Matches a reference to a fake implementation.
+///
+/// Anchored on a word boundary so `buildFakeAppDependencies` — a builder whose
+/// name merely contains the word — is not mistaken for a fake type.
+final RegExp _fakeReference = RegExp(r'\bFake[A-Z]\w*');
+
+/// Checks that production [entrypoint] cannot reach a fake.
+///
+/// Walks the import graph from [entrypoint] through [sources] and reports two
+/// things: a file that names a `Fake*` type it does not itself declare, and an
+/// import that leaves `lib/` — which is how a test-only entrypoint would get
+/// into a release build.
+///
+/// A file that declares a fake may name it: that is the declaration, and the
+/// fakes have to live somewhere. What the rule forbids is production code
+/// *using* one, which is the mistake that would actually reach a user.
+List<LayeringViolation> checkProductionEntrypoint({
+  required String entrypoint,
+  required Map<String, String> sources,
+}) {
+  final violations = <LayeringViolation>[];
+
+  for (final path in reachableFrom(entrypoint, sources).toList()..sort()) {
+    final content = sources[path];
+    if (content == null) continue;
+
+    final code = withoutComments(content);
+    final declared = RegExp(
+      r'\bclass\s+(Fake[A-Z]\w*)',
+    ).allMatches(code).map((match) => match.group(1)!).toSet();
+
+    final lines = code.split('\n');
+    for (var i = 0; i < lines.length; i++) {
+      final directive = _directive.firstMatch(lines[i]);
+      if (directive != null) {
+        final target = directive.group(1)!;
+        if (target.startsWith('package:doc_forge/') ||
+            target.startsWith('dart:') ||
+            target.startsWith('package:')) {
+          continue;
+        }
+
+        violations.add(
+          LayeringViolation(
+            file: path,
+            line: i + 1,
+            importPath: target,
+            rule:
+                'production main.dart must not reach outside lib/ — '
+                'a test-only entrypoint cannot be in a release build',
+          ),
+        );
+        continue;
+      }
+
+      for (final match in _fakeReference.allMatches(lines[i])) {
+        final name = match.group(0)!;
+        if (declared.contains(name)) continue;
+
+        violations.add(
+          LayeringViolation(
+            file: path,
+            line: i + 1,
+            importPath: name,
+            rule:
+                'production main.dart must not reach $name — '
+                'fakes live in lib/ for the previews and must not ship',
+          ),
+        );
+      }
+    }
+  }
+
+  return violations;
+}
+
+/// Reads every Dart file under [root] into a path-to-content map.
+Map<String, String> readSources(Directory root) {
+  final sources = <String, String>{};
+  if (!root.existsSync()) return sources;
+
+  for (final file in root.listSync(recursive: true).whereType<File>()) {
+    if (!file.path.endsWith('.dart')) continue;
+    // Normalised to a repository-relative path, because that is what an import
+    // resolves to and what a violation should name.
+    final index = file.path.indexOf('lib/');
+    final path = index == -1 ? file.path : file.path.substring(index);
+    sources[path] = file.readAsStringSync();
+  }
+
+  return sources;
+}
+
 /// Walks [root] and returns every layering violation in its Dart sources.
 List<LayeringViolation> checkDirectory(Directory root) {
   final violations = <LayeringViolation>[];
@@ -163,7 +322,13 @@ List<LayeringViolation> checkDirectory(Directory root) {
 
 /// Runs the layering check over `lib/` and exits non-zero on any violation.
 void main() {
-  final violations = checkDirectory(Directory('lib'));
+  final violations = [
+    ...checkDirectory(Directory('lib')),
+    ...checkProductionEntrypoint(
+      entrypoint: 'lib/main.dart',
+      sources: readSources(Directory('lib')),
+    ),
+  ];
 
   if (violations.isEmpty) {
     stdout.writeln('Layering check passed: no violations found.');

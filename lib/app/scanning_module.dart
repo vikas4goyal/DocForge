@@ -77,6 +77,18 @@ class ScanningModule {
 /// in the host test VM, so tests and previews substitute
 /// [FullPageEdgeDetector] — which is also the behaviour the spec requires when
 /// no edges can be found.
+///
+/// [scanner] defaults to [CameraScannerRepository] over the staging area built
+/// here. It is injectable for the same reason as [detector]: the camera is a
+/// platform edge with no host-VM implementation, so an end-to-end flow
+/// substitutes `FakeScannerRepository` to capture fixture images deterministically.
+/// A caller that supplies its own scanner is responsible for its staging
+/// behaviour; the staging area passed to the module is still the local one, so
+/// captures land where the rest of the flow expects to find them.
+///
+/// [buildPreview] defaults to the live camera preview when the default scanner
+/// is used. A substituted scanner has no camera to preview, so it falls back to
+/// an inert surface rather than reaching for a controller that does not exist.
 ScanningModule buildScanningModule({
   required Directory directory,
   required PermissionService permissions,
@@ -84,24 +96,40 @@ ScanningModule buildScanningModule({
   required BackgroundWorker worker,
   required PageRenderer renderPage,
   EdgeDetector detector = const OpenCvEdgeDetector(),
+  ScannerRepository? scanner,
+  CameraPreviewBuilder? buildPreview,
 }) {
   final staging = LocalScanStagingArea(directory);
-  final scanner = CameraScannerRepository(permissions, staging, ids);
+  final resolvedScanner =
+      scanner ?? CameraScannerRepository(permissions, staging, ids);
 
   return ScanningModule(
-    scanner: scanner,
+    scanner: resolvedScanner,
     staging: staging,
     // OpenCV finds the outline; `FullPageEdgeDetector` remains the specified
     // behaviour for a capture whose edges cannot be found, and the detector
     // falls back to exactly that rather than failing.
-    capturePage: CapturePage(scanner, detector),
+    capturePage: CapturePage(resolvedScanner, detector),
     applyCorrection: ApplyPerspectiveCorrection(worker, correctPageJob),
-    discardSession: DiscardScanSession(staging, scanner),
+    discardSession: DiscardScanSession(staging, resolvedScanner),
     applyEnhancement: ApplyEnhancement(worker, enhancePageJob),
     renderPage: renderPage,
-    buildPreview: scanner.buildPreview,
+    buildPreview:
+        buildPreview ??
+        (resolvedScanner is CameraScannerRepository
+            ? resolvedScanner.buildPreview
+            : _unavailableCameraPreview),
   );
 }
+
+/// The preview surface for a scanner that has no camera behind it.
+///
+/// A plain dark surface rather than a message: the capture screen already
+/// renders its own state, and a substituted scanner is only ever in play in a
+/// test, a preview or a golden, where the preview area's contents are not what
+/// is being asserted.
+Widget _unavailableCameraPreview(BuildContext context) =>
+    const ColoredBox(color: Color(0xFF101010));
 
 // ── Reusable page editors ────────────────────────────────────────
 //

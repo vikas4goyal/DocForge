@@ -205,4 +205,190 @@ import 'package:doc_forge/features/other/domain/thing.dart';
       expect(violations.map((v) => v.line), [1, 2]);
     });
   });
+
+  group('libPathOf', () {
+    test('maps a package URI to its path under lib/', () {
+      expect(
+        libPathOf('package:doc_forge/app/doc_forge.dart'),
+        'lib/app/doc_forge.dart',
+      );
+    });
+
+    test('returns null for a URI that leaves the package', () {
+      expect(libPathOf('dart:io'), isNull);
+      expect(libPathOf('package:flutter/material.dart'), isNull);
+      expect(libPathOf('../support/harness.dart'), isNull);
+    });
+  });
+
+  group('withoutComments', () {
+    test('removes line comments so prose is not read as code', () {
+      expect(
+        withoutComments('// uses FakeScannerRepository\nfinal a = 1;'),
+        '\nfinal a = 1;',
+      );
+    });
+
+    test('removes block comments', () {
+      expect(
+        withoutComments('/* FakeThing */ final a = 1;').trim(),
+        'final a = 1;',
+      );
+    });
+
+    test('keeps a // that appears inside a string literal', () {
+      const line = "const url = 'https://example.com';";
+      expect(withoutComments(line), line);
+    });
+  });
+
+  group('reachableFrom', () {
+    test('follows imports transitively', () {
+      final sources = {
+        'lib/main.dart': "import 'package:doc_forge/app/a.dart';",
+        'lib/app/a.dart': "import 'package:doc_forge/app/b.dart';",
+        'lib/app/b.dart': '',
+        'lib/app/unreached.dart': '',
+      };
+
+      expect(reachableFrom('lib/main.dart', sources), {
+        'lib/main.dart',
+        'lib/app/a.dart',
+        'lib/app/b.dart',
+      });
+    });
+
+    test('terminates on a cycle', () {
+      final sources = {
+        'lib/main.dart': "import 'package:doc_forge/app/a.dart';",
+        'lib/app/a.dart': "import 'package:doc_forge/main.dart';",
+      };
+
+      expect(reachableFrom('lib/main.dart', sources), hasLength(2));
+    });
+  });
+
+  group('checkProductionEntrypoint', () {
+    test('fails when the entrypoint uses a fake', () {
+      final sources = {
+        'lib/main.dart': """
+import 'package:doc_forge/app/fakes.dart';
+
+void main() => run(FakeScannerRepository());
+""",
+        'lib/app/fakes.dart': 'class FakeScannerRepository {}',
+      };
+
+      final violations = checkProductionEntrypoint(
+        entrypoint: 'lib/main.dart',
+        sources: sources,
+      );
+
+      expect(violations, hasLength(1));
+      expect(violations.single.file, 'lib/main.dart');
+      expect(violations.single.importPath, 'FakeScannerRepository');
+    });
+
+    test('fails when a fake is used anywhere in the transitive closure', () {
+      final sources = {
+        'lib/main.dart': "import 'package:doc_forge/app/root.dart';",
+        'lib/app/root.dart': """
+import 'package:doc_forge/app/fakes.dart';
+
+final authenticator = FakeDeviceAuthenticator();
+""",
+        'lib/app/fakes.dart': 'class FakeDeviceAuthenticator {}',
+      };
+
+      final violations = checkProductionEntrypoint(
+        entrypoint: 'lib/main.dart',
+        sources: sources,
+      );
+
+      expect(violations.single.file, 'lib/app/root.dart');
+    });
+
+    test('passes when the fake is only declared, never used', () {
+      // The shape the repository actually has: the fake ships beside the real
+      // implementation so previews can reach it, and nothing production uses
+      // it.
+      final sources = {
+        'lib/main.dart': "import 'package:doc_forge/app/scanner.dart';",
+        'lib/app/scanner.dart': '''
+class CameraScannerRepository {}
+
+class FakeScannerRepository {}
+''',
+      };
+
+      expect(
+        checkProductionEntrypoint(
+          entrypoint: 'lib/main.dart',
+          sources: sources,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('passes when a fake is only named in a doc comment', () {
+      final sources = {
+        'lib/main.dart': '''
+/// Defaults to the real scanner; a flow substitutes [FakeScannerRepository].
+void main() {}
+''',
+      };
+
+      expect(
+        checkProductionEntrypoint(
+          entrypoint: 'lib/main.dart',
+          sources: sources,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('ignores a fake that only an unreached file uses', () {
+      final sources = {
+        'lib/main.dart': '',
+        'lib/app/fake_dependencies.dart':
+            'final permissions = FakePermissionService();',
+      };
+
+      expect(
+        checkProductionEntrypoint(
+          entrypoint: 'lib/main.dart',
+          sources: sources,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('fails when the entrypoint imports outside the package', () {
+      final sources = {
+        'lib/main.dart': "import '../integration_test/support/app_boot.dart';",
+      };
+
+      final violations = checkProductionEntrypoint(
+        entrypoint: 'lib/main.dart',
+        sources: sources,
+      );
+
+      expect(violations, hasLength(1));
+      expect(violations.single.rule, contains('must not reach outside lib/'));
+    });
+
+    test('does not mistake a builder whose name contains "Fake" for one', () {
+      final sources = {
+        'lib/main.dart': 'final dependencies = buildFakeAppDependencies();',
+      };
+
+      expect(
+        checkProductionEntrypoint(
+          entrypoint: 'lib/main.dart',
+          sources: sources,
+        ),
+        isEmpty,
+      );
+    });
+  });
 }

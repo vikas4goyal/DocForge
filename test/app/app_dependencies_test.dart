@@ -1,5 +1,5 @@
 import 'package:doc_forge/app/app_dependencies.dart';
-import 'package:doc_forge/app/composition_root.dart';
+import 'package:doc_forge/app/fake_dependencies.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/isolates/background_worker.dart';
 import 'package:doc_forge/core/isolates/thumbnail_cache.dart';

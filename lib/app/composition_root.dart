@@ -56,31 +56,3 @@ Future<AppDependencies> buildAppDependencies() async {
     thumbnailCache: ThumbnailCache(),
   );
 }
-
-/// Constructs a dependency graph backed entirely by in-memory fakes.
-///
-/// For widget tests, previews and goldens. Nothing here touches the platform,
-/// the filesystem, the network or a database, and every collaborator is
-/// deterministic — a fixed clock and sequential ids — so a golden rendered from
-/// it is byte-stable.
-AppDependencies buildFakeAppDependencies({
-  Clock? clock,
-  IdGenerator? idGenerator,
-  PreferenceStore? preferences,
-  SecureStore? secureStorage,
-  PermissionService? permissions,
-  BackgroundWorker? worker,
-  ThumbnailCache? thumbnailCache,
-}) {
-  return AppDependencies(
-    clock: clock ?? FixedClock(DateTime.utc(2026, 7, 26, 10, 30)),
-    idGenerator: idGenerator ?? SequentialIdGenerator(),
-    preferences: preferences ?? InMemoryPreferenceStore(),
-    secureStorage: secureStorage ?? InMemorySecureStore(),
-    permissions: permissions ?? FakePermissionService(),
-    // Inline rather than isolate-backed: a test asserting on a failure should
-    // not also be exercising isolate spawn behaviour.
-    worker: worker ?? const InlineBackgroundWorker(),
-    thumbnailCache: thumbnailCache ?? ThumbnailCache(),
-  );
-}
