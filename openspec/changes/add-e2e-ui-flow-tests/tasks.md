@@ -48,7 +48,7 @@
 - [x] 5.9 `flows/edit_test.dart` — modify a document with the editing tools and confirm the saved result changed.
 - [x] 5.10 `flows/share_test.dart` — invoke share and assert the correct file and metadata reach the fake share boundary.
 - [x] 5.11 `flows/settings_and_lock_test.dart` — change a setting and confirm it persists; enable the app lock and confirm a relaunch requires unlocking.
-- [ ] 5.12 Run every flow file in a shuffled order and confirm each passes independently of the others.
+- [x] 5.12 Run every flow file in a shuffled order and confirm each passes independently of the others.
 - [ ] 5.13 Confirm the whole flow suite is green on one Android device and one iOS simulator.
 
 ## 6. Component tier
@@ -67,8 +67,8 @@
 - [x] 7.2 Make it exit non-zero on the first failing stage and print a per-stage pass/fail summary naming the failing flow and step.
 - [x] 7.3 Report per-flow timing in the summary.
 - [x] 7.4 With no device or simulator attached, run every other stage and report Tier‑3 as *skipped* and the overall result as *incomplete* — never *passed*.
-- [ ] 7.5 Test `tool/verify.dart` in `test/tool/`: stage ordering, non-zero exit on failure, and the no-device summary.
-- [ ] 7.6 Wire CI to call `tool/verify.dart` in place of its current sequence.
+- [x] 7.5 Test `tool/verify.dart` in `test/tool/`: stage ordering, non-zero exit on failure, and the no-device summary.
+- [x] 7.6 Wire CI to call `tool/verify.dart` in place of its current sequence.
 
 ## 8. Workflow enforcement
 
@@ -78,7 +78,7 @@
 
 ## 9. Completion
 
-- [ ] 9.1 `dart format` and `flutter analyze` clean across the repository.
-- [ ] 9.2 Coverage ≥80% overall and ≥90% on business logic.
-- [ ] 9.3 Run `tool/verify.dart` end to end on a device and confirm every stage passes.
-- [ ] 9.4 Confirm the flow catalogue in the spec matches the files in `integration_test/flows/` exactly, in both directions.
+- [x] 9.1 `dart format` and `flutter analyze` clean across the repository.
+- [x] 9.2 Coverage ≥80% overall and ≥90% on business logic.
+- [x] 9.3 Run `tool/verify.dart` end to end on a device and confirm every stage passes.
+- [x] 9.4 Confirm the flow catalogue in the spec matches the files in `integration_test/flows/` exactly, in both directions.
