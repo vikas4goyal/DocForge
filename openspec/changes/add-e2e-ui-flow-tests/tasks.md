@@ -59,7 +59,7 @@
 - [x] 6.4 Component tests for the creation screens: capture, crop, enhance, page table, generation.
 - [x] 6.5 Component tests for viewer, PDF edit, search, share and settings.
 - [x] 6.6 Component test for onboarding and the app lock screen.
-- [ ] 6.7 Add a `bloc_test` Cubit test for any Cubit whose emitted state sequence the component tier reveals as untested.
+- [x] 6.7 Add a `bloc_test` Cubit test for any Cubit whose emitted state sequence the component tier reveals as untested.
 
 ## 7. Verification gate
 
