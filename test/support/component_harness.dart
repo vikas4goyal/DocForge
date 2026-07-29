@@ -20,6 +20,7 @@ import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:provider/single_child_widget.dart';
 
 /// Mounts [screen] with everything a real screen expects above it.
 ///
@@ -38,7 +39,11 @@ import 'package:flutter_test/flutter_test.dart';
 Future<void> pumpComponent(
   WidgetTester tester,
   Widget screen, {
-  List<BlocProvider<dynamic>> providers = const [],
+  // Typed as the provider package's own base rather than `BlocProvider<...>`:
+  // a list element type of `BlocProvider<dynamic>` makes Dart infer
+  // `BlocProvider.value(value: cubit)` as `BlocProvider<dynamic>`, which
+  // provides `dynamic` and leaves the screen unable to find its Cubit.
+  List<SingleChildWidget> providers = const [],
   ThemeData? theme,
   Size size = const Size(390, 844),
 }) async {

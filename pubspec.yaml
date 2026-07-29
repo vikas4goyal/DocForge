@@ -96,6 +96,13 @@ dev_dependencies:
   integration_test:
     sdk: flutter
 
+  # Already present transitively through flutter_bloc; declared so the
+  # component-test harness can name `SingleChildWidget` in a signature. Typing
+  # that parameter as `BlocProvider<dynamic>` instead is not an option: it makes
+  # Dart infer `BlocProvider.value(value: cubit)` as `BlocProvider<dynamic>`,
+  # which provides `dynamic` and leaves every screen unable to find its Cubit.
+  provider: ^6.1.5
+
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
