@@ -17,7 +17,7 @@ env:
 
 jobs:
   verify:
-    name: Format, analyze, test, coverage
+    name: Verification gate (host stages)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,23 +37,28 @@ jobs:
       - name: Generate code
         run: dart run build_runner build
 
-      - name: Check formatting
-        run: dart format --set-exit-if-changed .
-
-      - name: Analyze
-        run: flutter analyze
-
-      - name: Check architecture layering
-        run: dart run tool/check_layering.dart
-
-      - name: Check Android/iOS-only targeting
-        run: dart run tool/check_platforms.dart
-
-      - name: Run tests with coverage
-        run: flutter test --coverage
-
-      - name: Verify coverage thresholds
-        run: dart run tool/check_coverage.dart
+      # One command rather than six steps, so CI and a developer's terminal run
+      # the same gate in the same order. `tool/verify.dart` sequences format,
+      # analyse, layering, platforms, Tier 1 + Tier 2 and coverage, and fails
+      # fast on the first of them.
+      #
+      # `--no-device` because this runner has none. The gate then reports
+      # INCOMPLETE and exits 2 — deliberately not zero, because passing every
+      # host stage is not the same as the change working. This job accepts that
+      # one code and nothing else, so a genuine failure (exit 1) still fails the
+      # build. The authoritative verdict comes from the `integration` job below,
+      # which runs the same command with a device attached.
+      - name: Run the verification gate (host stages)
+        run: |
+          set +e
+          dart run tool/verify.dart --no-device
+          code=$?
+          set -e
+          if [ "$code" -eq 0 ] || [ "$code" -eq 2 ]; then
+            echo "Host stages passed. Tier 3 is covered by the integration job."
+            exit 0
+          fi
+          exit "$code"
 
       - uses: actions/upload-artifact@v4
         if: always()
@@ -141,7 +146,7 @@ jobs:
         run: flutter build ios --debug
 
   integration:
-    name: Integration tests
+    name: Verification gate (with a device)
     # Runs on an Android emulator, NOT an iOS simulator. GoogleMLKit ships no
     # arm64 simulator slices, so the OCR dependency cannot be built for an
     # Apple Silicon iOS simulator at all — and GitHub's macOS runners are Apple
@@ -172,10 +177,13 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Run integration tests on an Android emulator
+      # The full gate, with a device. This is the only job whose green means
+      # the change is verified: it runs every host stage and then every flow,
+      # and reports PASSED only when Tier 3 actually ran.
+      - name: Run the verification gate on an Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
           arch: x86_64
           profile: pixel_6
-          script: flutter test integration_test
+          script: dart run tool/verify.dart
