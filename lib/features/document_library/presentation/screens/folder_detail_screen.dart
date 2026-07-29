@@ -2,6 +2,7 @@
 library;
 
 import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -31,11 +32,20 @@ class FolderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DocumentListScreen(
-      title: folderName,
-      onOpenDocument: onOpenDocument,
-      emptyTitle: 'This folder is empty',
-      emptyMessage: 'Move documents here to keep them together.',
+    // Keyed and labelled here rather than inside [DocumentListScreen]: that
+    // screen serves four routes, so its own key cannot say which one the user
+    // is on. A flow that opened a folder and asserted on the list key alone
+    // would pass without ever leaving the list it started from.
+    return Semantics(
+      key: LibraryKeys.folderDetailScreen,
+      container: true,
+      label: LibrarySemantics.folderDetailScreen(folderName),
+      child: DocumentListScreen(
+        title: folderName,
+        onOpenDocument: onOpenDocument,
+        emptyTitle: 'This folder is empty',
+        emptyMessage: 'Move documents here to keep them together.',
+      ),
     );
   }
 }

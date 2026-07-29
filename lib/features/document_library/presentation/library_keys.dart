@@ -120,4 +120,37 @@ abstract final class LibraryKeys {
 
   /// A page thumbnail on the document detail screen.
   static Key pageThumbnail(String pageId) => Key('page_thumbnail_$pageId');
+
+  /// Root of the folder detail screen.
+  ///
+  /// Distinct from [documentListScreen] even though the folder view is built
+  /// from that screen: an end-to-end flow that navigated into a folder and
+  /// found only a document list could not tell whether it had arrived or was
+  /// still looking at the list it started from.
+  static const folderDetailScreen = Key('library_folder_detail_screen');
+
+  /// The folder name shown as the folder detail screen's title.
+  static const folderDetailTitle = Key('library_folder_detail_title');
+
+  /// The wrapper that reconciles the library folder when the app resumes.
+  ///
+  /// The library folder is visible in the user's file browser, so it can change
+  /// while DocForge is in the background. Keyed so a flow can assert the
+  /// reconciler is mounted rather than discover its absence as a stale list.
+  static const libraryReconciler = Key('library_reconciler');
+}
+
+/// Semantics labels for the document library feature.
+///
+/// Declared beside [LibraryKeys] and for the same reason: a label an
+/// accessibility test or an end-to-end flow asserts on is part of the contract,
+/// and an inline literal is a contract nothing can check. A label that moves
+/// becomes a compile error here rather than a test that quietly stops matching.
+abstract final class LibrarySemantics {
+  /// Announces the folder the user has opened.
+  ///
+  /// Names the folder rather than saying "folder contents", because a screen
+  /// reader user arriving here needs to know *which* folder they opened.
+  static String folderDetailScreen(String folderName) =>
+      'Contents of folder $folderName';
 }

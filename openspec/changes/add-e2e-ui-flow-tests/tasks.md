@@ -15,9 +15,9 @@
 
 ## 3. Widget keys and semantics registry
 
-- [ ] 3.1 Add `library_folder_detail_*` keys for `folder_detail_screen.dart` (currently zero keys) so a flow can distinguish it from `DocumentListScreen`, and apply them.
-- [ ] 3.2 Replace `AppTabScaffold`'s dynamic `buttonKey` (`app_tab_scaffold.dart:121`) with one `static const Key` per tab destination and apply them.
-- [ ] 3.3 Add keys to `AppLockObserver`, `SharedContentWatcher` and `LibraryReconciler` so a flow can assert the app-wide wrappers are mounted.
+- [x] 3.1 Add `library_folder_detail_*` keys for `folder_detail_screen.dart` (currently zero keys) so a flow can distinguish it from `DocumentListScreen`, and apply them.
+- [x] 3.2 Replace `AppTabScaffold`'s dynamic `buttonKey` (`app_tab_scaffold.dart:121`) with one `static const Key` per tab destination and apply them.
+- [x] 3.3 Add keys to `AppLockObserver`, `SharedContentWatcher` and `LibraryReconciler` so a flow can assert the app-wide wrappers are mounted.
 - [ ] 3.4 Add keys for every control the catalogued flows touch in the thinly-keyed widgets: `settings_widgets.dart`, `page_row.dart`, `folder_tile.dart`, `page_thumbnail.dart`, `enhancement_widgets.dart`, `share_widgets.dart`, `onboarding_screen.dart`.
 - [ ] 3.5 Introduce `static const String` semantics labels alongside the keys in each `*_keys.dart`, replacing the inline literals on every control a flow drives.
 - [ ] 3.6 Add semantics labels where they are absent on driven surfaces: `folder_detail_screen.dart`, `library_dialogs.dart`, `save_name_dialog.dart`.

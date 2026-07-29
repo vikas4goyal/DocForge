@@ -17,6 +17,7 @@ import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/permissions/permission_service.dart';
 import 'package:doc_forge/features/app_shell/presentation/screens/app_tab_scaffold.dart';
 import 'package:doc_forge/features/document_import/presentation/cubit/import_cubit.dart';
+import 'package:doc_forge/features/document_import/presentation/import_keys.dart';
 import 'package:doc_forge/features/document_import/presentation/screens/import_options_sheet.dart';
 import 'package:doc_forge/features/document_import/presentation/widgets/shared_content_watcher.dart';
 import 'package:doc_forge/features/document_library/application/usecases/library_folder_usecases.dart';
@@ -47,6 +48,7 @@ ScreenBuilder buildHomeScreen({
   return (context) => _TabShell(
     onCreate: () => context.push(AppRoutes.scan),
     dashboard: SharedContentWatcher(
+      key: ImportKeys.sharedContentWatcher,
       takePending: importing.takePending,
       watchShared: importing.watchShared,
       // Wrapped around the dashboard rather than around a route that comes

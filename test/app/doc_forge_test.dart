@@ -22,9 +22,12 @@ import 'package:doc_forge/core/storage/storage_keys.dart';
 import 'package:doc_forge/features/app_security/domain/repositories/app_lock_repository.dart';
 import 'package:doc_forge/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
 import 'package:doc_forge/features/app_security/presentation/screens/unlock_screen.dart';
+import 'package:doc_forge/features/app_security/presentation/security_keys.dart';
 import 'package:doc_forge/features/app_security/presentation/widgets/app_lock_observer.dart';
 import 'package:doc_forge/features/document_import/domain/repositories/import_repository.dart';
+import 'package:doc_forge/features/document_import/presentation/import_keys.dart';
 import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/dashboard_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/widgets/library_reconciler.dart';
@@ -171,6 +174,24 @@ void main() {
         findsOneWidget,
       );
       expect(find.descendant(of: reconciler, matching: app), findsOneWidget);
+    });
+
+    testWidgets('keys the three app-wide wrappers', (tester) async {
+      final dependencies = buildFakeAppDependencies();
+      await dependencies.preferences.writeBool(
+        PreferenceKeys.onboardingComplete,
+        true,
+      );
+
+      await tester.pumpWidget(await boot(tester, dependencies: dependencies));
+      await settle(tester);
+
+      // None of the three renders anything of its own, so a flow can only
+      // assert they are mounted by key. The watcher is inside Home, which is
+      // why onboarding has to be complete for this to find it.
+      expect(find.byKey(SecurityKeys.appLockObserver), findsOneWidget);
+      expect(find.byKey(LibraryKeys.libraryReconciler), findsOneWidget);
+      expect(find.byKey(ImportKeys.sharedContentWatcher), findsOneWidget);
     });
 
     testWidgets('hands the supplied dependencies to the root widget', (

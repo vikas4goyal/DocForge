@@ -39,6 +39,7 @@ import 'package:doc_forge/core/theme/theme_mode_controller.dart';
 import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
 import 'package:doc_forge/features/app_security/domain/repositories/app_lock_repository.dart';
 import 'package:doc_forge/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
+import 'package:doc_forge/features/app_security/presentation/security_keys.dart';
 import 'package:doc_forge/features/app_security/presentation/widgets/app_lock_observer.dart';
 import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
 import 'package:doc_forge/features/document_creation/application/usecases/add_page.dart';
@@ -46,6 +47,7 @@ import 'package:doc_forge/features/document_creation/application/usecases/render
 import 'package:doc_forge/features/document_creation/domain/creation_session.dart';
 import 'package:doc_forge/features/document_import/domain/repositories/import_repository.dart';
 import 'package:doc_forge/features/document_import/infrastructure/repositories/platform_import_sources.dart';
+import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
 import 'package:doc_forge/features/document_library/presentation/widgets/library_reconciler.dart';
 import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_forge/features/document_scanning/infrastructure/opencv_edge_detector.dart';
@@ -400,8 +402,10 @@ Future<Widget> buildDocForge({
   // Wrapped outside the app, so the re-lock happens whatever route the user was
   // on when the phone went into a pocket.
   return AppLockObserver(
+    key: SecurityKeys.appLockObserver,
     gate: lockGate,
     child: LibraryReconciler(
+      key: LibraryKeys.libraryReconciler,
       // The library folder is visible in the user's file browser, so it can
       // change while DocForge is in the background. Reconciling on resume is
       // what makes that change appear when they come back.

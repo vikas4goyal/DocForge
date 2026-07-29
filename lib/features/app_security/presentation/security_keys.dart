@@ -21,4 +21,11 @@ abstract final class SecurityKeys {
 
   /// The indicator shown while the system prompt is up.
   static const authenticatingIndicator = Key('security_authenticating');
+
+  /// The wrapper that re-locks the application when it leaves the foreground.
+  ///
+  /// Keyed even though it renders nothing of its own: it wraps the whole
+  /// application, and a flow that asserts the lock re-engages needs to prove it
+  /// is mounted rather than infer it from the lock happening to work.
+  static const appLockObserver = Key('security_app_lock_observer');
 }
