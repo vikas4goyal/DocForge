@@ -43,3 +43,9 @@ abstract final class SearchKeys {
   /// One result row, keyed by document identifier.
   static Key resultRow(String documentId) => Key('search_result_$documentId');
 }
+
+/// Semantics labels for search.
+abstract final class SearchSemantics {
+  /// The control that narrows results to a date range.
+  static const filterByDate = 'Filter by date';
+}

@@ -275,7 +275,7 @@ class AboutScreen extends StatelessWidget {
           Semantics(
             // Named together, so a screen reader announces "Version, 1.0.0"
             // rather than a bare number the user has to interpret.
-            label: 'Version, $version',
+            label: SettingsSemantics.version(version),
             excludeSemantics: true,
             child: Text('Version $version', style: theme.textTheme.bodyLarge),
           ),

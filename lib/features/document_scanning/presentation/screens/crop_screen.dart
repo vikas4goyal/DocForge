@@ -292,7 +292,7 @@ class _CropScreenState extends State<CropScreen> {
         appBar: AppBar(
           title: const Text('Adjust edges'),
           leading: IconButton(
-            key: const Key('scan_crop_cancel_button'),
+            key: ScanKeys.cropCancelButton,
             tooltip: 'Cancel cropping',
             onPressed: widget.onCancelled,
             icon: const Icon(Icons.close),
@@ -453,7 +453,10 @@ class _RotationSlider extends StatelessWidget {
         // width. A tenth of a degree is visible in the reading even though it is
         // far finer than a fingertip can place, because the number is what turns
         // "about right" into square.
-        Text('$reading°', style: Theme.of(context).textTheme.labelMedium),
+        Text(
+          ScanSemantics.rotationDisplay(reading),
+          style: Theme.of(context).textTheme.labelMedium,
+        ),
         Row(
           children: [
             IconButton(
@@ -464,8 +467,8 @@ class _RotationSlider extends StatelessWidget {
             ),
             Expanded(
               child: Semantics(
-                label: 'Rotate page',
-                value: '$reading degrees',
+                label: ScanSemantics.rotatePage,
+                value: ScanSemantics.rotationValue(reading),
                 child: Slider(
                   key: ScanKeys.cropRotationSlider,
                   value: degrees.clamp(-_range, _range),
@@ -474,7 +477,7 @@ class _RotationSlider extends StatelessWidget {
                   // Continuous rather than notched: straightening lands wherever
                   // the page happens to be off by, which is rarely a round
                   // number.
-                  label: '$reading°',
+                  label: ScanSemantics.rotationDisplay(reading),
                   onChanged: enabled ? onChanged : null,
                 ),
               ),

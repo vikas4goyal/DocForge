@@ -65,7 +65,7 @@ class SaveNameDialog extends StatelessWidget {
               enabled: !state.isSaving,
               autofocus: true,
               decoration: InputDecoration(
-                labelText: 'Name',
+                labelText: CreationSemantics.saveNameField,
                 suffixText: '.pdf',
                 errorText: _messageFor(state.nameProblem),
               ),
@@ -75,10 +75,8 @@ class SaveNameDialog extends StatelessWidget {
             SwitchListTile(
               key: CreationKeys.savePasswordToggle,
               contentPadding: EdgeInsets.zero,
-              title: const Text('Protect with password'),
-              subtitle: const Text(
-                'Other apps will need this password to open the file',
-              ),
+              title: const Text(CreationSemantics.savePasswordToggle),
+              subtitle: const Text(CreationSemantics.savePasswordHint),
               value: state.passwordEnabled,
               onChanged: state.isSaving ? null : onPasswordEnabledChanged,
             ),
@@ -91,7 +89,9 @@ class SaveNameDialog extends StatelessWidget {
                 // document, not to an account, and offering to save it to a
                 // keychain would file it under the wrong thing entirely.
                 autofillHints: const [],
-                decoration: const InputDecoration(labelText: 'Password'),
+                decoration: const InputDecoration(
+                  labelText: CreationSemantics.savePasswordField,
+                ),
                 onChanged: onPasswordChanged,
               ),
               const SizedBox(height: 8),
@@ -101,7 +101,7 @@ class SaveNameDialog extends StatelessWidget {
                 obscureText: true,
                 autofillHints: const [],
                 decoration: InputDecoration(
-                  labelText: 'Confirm password',
+                  labelText: CreationSemantics.savePasswordConfirmField,
                   errorText: _messageFor(state.passwordProblem),
                 ),
                 onChanged: onConfirmationChanged,
@@ -122,17 +122,31 @@ class SaveNameDialog extends StatelessWidget {
         ),
       ),
       actions: [
-        TextButton(
-          key: CreationKeys.saveCancelButton,
-          // Enabled even while saving: cancelling is how the user stops, and
-          // a dialog with no way out during a slow write is a trap.
-          onPressed: onCancel,
-          child: const Text('Cancel'),
+        // Both actions name what they act on: "Save" and "Cancel" are what a
+        // listener hears in every dialog the application has, and this is the
+        // one where the difference is a document either existing or not.
+        Semantics(
+          button: true,
+          label: CreationSemantics.saveCancel,
+          excludeSemantics: true,
+          child: TextButton(
+            key: CreationKeys.saveCancelButton,
+            // Enabled even while saving: cancelling is how the user stops, and
+            // a dialog with no way out during a slow write is a trap.
+            onPressed: onCancel,
+            child: const Text('Cancel'),
+          ),
         ),
-        FilledButton(
-          key: CreationKeys.saveConfirmButton,
-          onPressed: state.canSave ? onSave : null,
-          child: const Text('Save'),
+        Semantics(
+          button: true,
+          enabled: state.canSave,
+          label: CreationSemantics.saveConfirm,
+          excludeSemantics: true,
+          child: FilledButton(
+            key: CreationKeys.saveConfirmButton,
+            onPressed: state.canSave ? onSave : null,
+            child: const Text('Save'),
+          ),
         ),
       ],
     );

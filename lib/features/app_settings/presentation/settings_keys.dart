@@ -57,4 +57,45 @@ abstract final class SettingsKeys {
 
   /// The preview of the chosen naming pattern.
   static const namingPreview = Key('settings_naming_preview');
+
+  /// The sheet a choice setting opens to offer its options.
+  static const choiceSheet = Key('settings_choice_sheet');
+
+  /// One option inside a choice setting's sheet.
+  ///
+  /// Identified by the value's own name rather than by its label or its
+  /// position: the label is user-visible text that moves and localises, and the
+  /// position changes whenever an option is added.
+  static Key choiceOption(String optionName) =>
+      Key('settings_choice_option_$optionName');
+
+  /// The stable name of [option], for [choiceOption].
+  ///
+  /// Enum values stringify as `Type.value`; the value alone is what identifies
+  /// the option, and it survives a sibling being added or the labels changing.
+  static String optionNameOf(Object? option) =>
+      option.toString().split('.').last;
+}
+
+/// Semantics labels for settings.
+///
+/// Every tile announces its **name and current value together**, which the
+/// accessibility scenario requires: a screen reader that reads "Theme" and then
+/// "Dark" as two separate items leaves the user to associate them, and in a
+/// list of ten settings that is guesswork. Composing those two halves here
+/// rather than in each widget is what keeps the pairing consistent.
+abstract final class SettingsSemantics {
+  /// Announces a choice setting as its name and its current value.
+  static String choiceTile(String title, String valueLabel) =>
+      '$title, $valueLabel';
+
+  /// Announces a switch setting as its name and whether it is on.
+  static String switchTile(String title, {required bool on}) =>
+      '$title, ${on ? 'on' : 'off'}';
+
+  /// Announces the example the chosen naming pattern would produce.
+  static String namingPreview(String example) => 'Example name, $example';
+
+  /// Announces the application version on the About screen.
+  static String version(String version) => 'Version, $version';
 }

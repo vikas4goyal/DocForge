@@ -68,18 +68,21 @@ class _FolderMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Actions for ${tile.folder.name}',
+      label: LibrarySemantics.folderActions(tile.folder.name),
       child: ExcludeSemantics(
         child: PopupMenuButton<void>(
+          key: LibraryKeys.folderMenuButton(tile.folder.id.value),
           icon: const Icon(Icons.more_vert),
           itemBuilder: (context) => [
             if (tile.onRename != null)
               PopupMenuItem<void>(
+                key: LibraryKeys.folderMenuRename,
                 onTap: tile.onRename,
                 child: const Text('Rename'),
               ),
             if (tile.onDelete != null)
               PopupMenuItem<void>(
+                key: LibraryKeys.folderMenuDelete,
                 onTap: tile.onDelete,
                 child: const Text('Delete'),
               ),

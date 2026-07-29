@@ -156,7 +156,7 @@ class EnhancementPreview extends StatelessWidget {
 
     return Semantics(
       image: true,
-      label: 'Page preview',
+      label: EnhanceSemantics.pagePreview,
       child: ExcludeSemantics(
         child: ColoredBox(
           // A fixed neutral grey in both themes, so the same enhancement is

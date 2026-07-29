@@ -216,7 +216,7 @@ class PdfMetadataView extends StatelessWidget {
             // Name and value together, so a screen reader announces "Pages, 7"
             // rather than reading a label and a number as separate items the
             // user has to associate themselves.
-            label: '$label, $value',
+            label: PdfEditSemantics.metadataRow(label, value),
             excludeSemantics: true,
             child: ListTile(
               dense: true,

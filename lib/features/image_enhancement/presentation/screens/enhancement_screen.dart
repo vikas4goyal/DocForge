@@ -179,19 +179,19 @@ class _Controls extends StatelessWidget {
         const SizedBox(height: 16),
         AdjustmentSlider(
           key: EnhanceKeys.brightnessSlider,
-          label: 'Brightness',
+          label: EnhanceSemantics.brightness,
           value: state.settings.brightness,
           onChanged: cubit.setBrightness,
         ),
         AdjustmentSlider(
           key: EnhanceKeys.contrastSlider,
-          label: 'Contrast',
+          label: EnhanceSemantics.contrast,
           value: state.settings.contrast,
           onChanged: cubit.setContrast,
         ),
         AdjustmentSlider(
           key: EnhanceKeys.sharpenControl,
-          label: 'Sharpen',
+          label: EnhanceSemantics.sharpen,
           value: state.settings.sharpen,
           min: 0,
           onChanged: cubit.setSharpen,

@@ -18,12 +18,12 @@
 - [x] 3.1 Add `library_folder_detail_*` keys for `folder_detail_screen.dart` (currently zero keys) so a flow can distinguish it from `DocumentListScreen`, and apply them.
 - [x] 3.2 Replace `AppTabScaffold`'s dynamic `buttonKey` (`app_tab_scaffold.dart:121`) with one `static const Key` per tab destination and apply them.
 - [x] 3.3 Add keys to `AppLockObserver`, `SharedContentWatcher` and `LibraryReconciler` so a flow can assert the app-wide wrappers are mounted.
-- [ ] 3.4 Add keys for every control the catalogued flows touch in the thinly-keyed widgets: `settings_widgets.dart`, `page_row.dart`, `folder_tile.dart`, `page_thumbnail.dart`, `enhancement_widgets.dart`, `share_widgets.dart`, `onboarding_screen.dart`.
-- [ ] 3.5 Introduce `static const String` semantics labels alongside the keys in each `*_keys.dart`, replacing the inline literals on every control a flow drives.
-- [ ] 3.6 Add semantics labels where they are absent on driven surfaces: `folder_detail_screen.dart`, `library_dialogs.dart`, `save_name_dialog.dart`.
-- [ ] 3.7 Add a test asserting every key declared in a `*_keys.dart` registry is present in the built tree of its screen, so a renamed or dropped key fails loudly.
-- [ ] 3.8 Re-run the existing `@Preview()` entries for every screen touched in 3.1–3.6 and confirm each still renders in all its previewed states, themes and form factors.
-- [ ] 3.9 Re-record any golden affected by a keyed or semantics change and confirm the diff is empty of visual change.
+- [x] 3.4 Add keys for every control the catalogued flows touch in the thinly-keyed widgets: `settings_widgets.dart`, `page_row.dart`, `folder_tile.dart`, `page_thumbnail.dart`, `enhancement_widgets.dart`, `share_widgets.dart`, `onboarding_screen.dart`.
+- [x] 3.5 Introduce `static const String` semantics labels alongside the keys in each `*_keys.dart`, replacing the inline literals on every control a flow drives.
+- [x] 3.6 Add semantics labels where they are absent on driven surfaces: `folder_detail_screen.dart`, `library_dialogs.dart`, `save_name_dialog.dart`.
+- [x] 3.7 Add a test asserting every key declared in a `*_keys.dart` registry is present in the built tree of its screen, so a renamed or dropped key fails loudly.
+- [x] 3.8 Re-run the existing `@Preview()` entries for every screen touched in 3.1–3.6 and confirm each still renders in all its previewed states, themes and form factors.
+- [x] 3.9 Re-record any golden affected by a keyed or semantics change and confirm the diff is empty of visual change.
 
 ## 4. End-to-end support harness
 

@@ -11,6 +11,7 @@ import 'package:doc_forge/app/router/app_routes.dart';
 import 'package:doc_forge/app/router/route_gates.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/widgets/app_state_views.dart';
+import 'package:doc_forge/core/widgets/core_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -215,10 +216,10 @@ class _RouteNotFound extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: const Key('route_not_found_screen'),
+      key: CoreKeys.routeNotFoundScreen,
       appBar: AppBar(title: const Text('Not found')),
       body: AppEmptyState(
-        key: const Key('route_not_found_state'),
+        key: CoreKeys.routeNotFoundState,
         title: 'That page does not exist',
         message: location,
         icon: Icons.help_outline,

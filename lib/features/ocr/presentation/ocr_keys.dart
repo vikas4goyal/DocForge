@@ -40,3 +40,9 @@ abstract final class OcrKeys {
   /// The control that starts recognition on a document never recognised.
   static const recogniseButton = Key('ocr_recognise_button');
 }
+
+/// Semantics labels for text recognition.
+abstract final class OcrSemantics {
+  /// Announced while recognition is running.
+  static const extractingText = 'Extracting text';
+}

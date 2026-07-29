@@ -46,3 +46,9 @@ abstract final class ViewerKeys {
   /// The panel showing the document's recognised text, on wide layouts.
   static const textPanel = Key('viewer_text_panel');
 }
+
+/// Semantics labels for the viewer.
+abstract final class ViewerSemantics {
+  /// Announces which page of how many the reader is on.
+  static String pageIndicator(String pageLabel) => 'Page $pageLabel';
+}

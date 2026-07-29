@@ -54,6 +54,18 @@ abstract final class ScanKeys {
   /// Empty state shown when every page has been deleted.
   static const reviewEmptyState = Key('scan_review_empty_state');
 
+  /// The control that abandons capture without keeping anything.
+  static const captureCancelButton = Key('scan_cancel_button');
+
+  /// The control that leaves the crop editor without applying a change.
+  static const cropCancelButton = Key('scan_crop_cancel_button');
+
+  /// The control that restores a page deleted from the review list.
+  static const reviewUndoButton = Key('scan_review_undo_button');
+
+  /// The control that leaves the review list.
+  static const reviewExitButton = Key('scan_review_exit_button');
+
   /// Control that saves the session as a document.
   static const saveButton = Key('scan_save_button');
 
@@ -119,4 +131,43 @@ abstract final class ScanKeys {
 
   /// Mirrors the page top-to-bottom.
   static const cropFlipVerticalButton = Key('scan_crop_flip_vertical');
+}
+
+/// Semantics labels for capture, crop and review.
+abstract final class ScanSemantics {
+  /// The shutter.
+  static const capturePage = 'Capture page';
+
+  /// The control that leaves capture for the review list.
+  static const reviewCaptured = 'Review captured pages';
+
+  /// The rotation control on the crop screen.
+  static const rotatePage = 'Rotate page';
+
+  /// The current rotation, announced in degrees.
+  ///
+  /// Spelled out rather than shown as the degree sign: a screen reader renders
+  /// "°" inconsistently, and the number the user is reasoning about is an
+  /// angle, not the control's raw range.
+  static String rotationValue(String reading) => '$reading degrees';
+
+  /// The current rotation as it is written on screen.
+  static String rotationDisplay(String reading) => '$reading°';
+
+  /// Names the crop action and the page it applies to, exactly as the page
+  /// table does: the two screens offer the same action over the same page, so a
+  /// listener should not hear it described two different ways.
+  static String cropPage(int pageNumber) => 'Crop and rotate page $pageNumber';
+
+  /// Names the enhance action and its page.
+  static String enhancePage(int pageNumber) => 'Enhance page $pageNumber';
+
+  /// Names the delete action and its page.
+  static String deletePage(int pageNumber) => 'Delete page $pageNumber';
+
+  /// The action that restores a page the user has just deleted.
+  static const undoDelete = 'Undo';
+
+  /// Announced while perspective correction is running over the batch.
+  static const straighteningPages = 'Straightening pages';
 }

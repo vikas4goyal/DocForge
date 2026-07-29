@@ -42,7 +42,7 @@ class PageThumbnail extends StatelessWidget {
     return Semantics(
       button: onTap != null,
       image: true,
-      label: 'Page ${page.pageNumber}',
+      label: LibrarySemantics.pageThumbnail(page.pageNumber),
       child: ExcludeSemantics(
         child: InkWell(
           key: LibraryKeys.pageThumbnail(page.id.value),

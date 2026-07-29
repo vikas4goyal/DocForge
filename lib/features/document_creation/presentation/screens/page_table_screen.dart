@@ -202,7 +202,10 @@ class _PageList extends StatelessWidget {
       ..showSnackBar(
         SnackBar(
           content: Text('Page $pageNumber deleted'),
-          action: SnackBarAction(label: 'Undo', onPressed: cubit.undoDelete),
+          action: SnackBarAction(
+            label: CreationSemantics.undoDelete,
+            onPressed: cubit.undoDelete,
+          ),
         ),
       );
   }

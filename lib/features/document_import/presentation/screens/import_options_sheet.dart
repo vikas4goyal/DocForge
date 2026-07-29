@@ -140,6 +140,7 @@ class _Importing extends StatelessWidget {
         total: progress?.total ?? 0,
         label: state.progressLabel,
         onCancel: context.read<ImportCubit>().cancel,
+        cancelKey: ImportKeys.cancelButton,
       ),
     );
   }

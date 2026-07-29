@@ -58,7 +58,7 @@ class SettingsChoiceTile<T> extends StatelessWidget {
       children: [
         Semantics(
           button: true,
-          label: '$title, $valueLabel',
+          label: SettingsSemantics.choiceTile(title, valueLabel),
           excludeSemantics: true,
           child: ListTile(
             title: Text(title),
@@ -77,6 +77,7 @@ class SettingsChoiceTile<T> extends StatelessWidget {
       context: context,
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
+        key: SettingsKeys.choiceSheet,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -98,6 +99,9 @@ class SettingsChoiceTile<T> extends StatelessWidget {
                 children: [
                   for (final option in options)
                     RadioListTile<T>(
+                      key: SettingsKeys.choiceOption(
+                        SettingsKeys.optionNameOf(option),
+                      ),
                       value: option,
                       title: Text(labelFor(option)),
                       subtitle: descriptionFor == null
@@ -180,7 +184,7 @@ class SettingsSwitchTile extends StatelessWidget {
     return Semantics(
       toggled: value,
       enabled: onChanged != null,
-      label: '$title, ${value ? 'on' : 'off'}',
+      label: SettingsSemantics.switchTile(title, on: value),
       excludeSemantics: true,
       child: SwitchListTile(
         title: Text(title),
@@ -211,7 +215,7 @@ class NamingPatternPreview extends StatelessWidget {
       key: SettingsKeys.namingPreview,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Semantics(
-        label: 'Example name, $example',
+        label: SettingsSemantics.namingPreview(example),
         excludeSemantics: true,
         child: Text(
           'Example: $example',

@@ -82,8 +82,9 @@ class _Generating extends StatelessWidget {
       key: PdfKeys.generationProgress,
       completed: 0,
       total: 0,
-      label: 'Creating your document',
+      label: PdfSemantics.creatingDocument,
       onCancel: cubit.cancel,
+      cancelKey: PdfKeys.cancelButton,
     );
   }
 }
@@ -152,7 +153,7 @@ class _QualitySelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Document quality',
+      label: PdfSemantics.documentQuality,
       value: state.quality.label,
       child: SegmentedButton<PdfQuality>(
         key: PdfKeys.qualitySelector,
@@ -215,7 +216,7 @@ class _PagePreview extends StatelessWidget {
 
     return Semantics(
       image: true,
-      label: 'Page $number',
+      label: PdfSemantics.page(number),
       child: ExcludeSemantics(
         child: Column(
           key: PdfKeys.pageItem(page.id.value),

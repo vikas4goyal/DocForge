@@ -145,7 +145,7 @@ class _Body extends StatelessWidget {
         if (onOpenViewer != null) ...[
           const SizedBox(height: 16),
           FilledButton.icon(
-            key: const Key('document_open_button'),
+            key: LibraryKeys.documentOpenButton,
             onPressed: onOpenViewer,
             icon: const Icon(Icons.visibility_outlined),
             label: const Text('Open'),
@@ -252,7 +252,7 @@ class _ActionMenu extends StatelessWidget {
     final cubit = context.read<DocumentDetailCubit>();
 
     return PopupMenuButton<void>(
-      key: const Key('document_detail_menu'),
+      key: LibraryKeys.documentDetailMenu,
       icon: const Icon(Icons.more_vert),
       itemBuilder: (context) => [
         PopupMenuItem<void>(

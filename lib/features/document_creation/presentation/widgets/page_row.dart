@@ -64,22 +64,22 @@ class PageRow extends StatelessWidget {
     return Semantics(
       // Announced as a position rather than a name: a page of a scan has no
       // title, and "page 3 of 7" is what the user is actually tracking.
-      label: 'Page $pageNumber of $pageCount',
+      label: CreationSemantics.pageRow(pageNumber, pageCount),
       // The screen-reader path to reordering. A drag handle is unusable
       // without a pointer, and reordering is not an optional capability.
       //
       // `value` has to be present whenever increase or decrease is: the
       // framework asserts on a node that offers the action but has nothing for
       // the reader to announce moving between.
-      value: 'Page $pageNumber',
+      value: CreationSemantics.pagePosition(pageNumber),
       onIncrease: onMoveDown,
       onDecrease: onMoveUp,
-      increasedValue: onMoveDown == null
-          ? 'Page $pageNumber'
-          : 'Page ${pageNumber + 1}',
-      decreasedValue: onMoveUp == null
-          ? 'Page $pageNumber'
-          : 'Page ${pageNumber - 1}',
+      increasedValue: CreationSemantics.pagePosition(
+        onMoveDown == null ? pageNumber : pageNumber + 1,
+      ),
+      decreasedValue: CreationSemantics.pagePosition(
+        onMoveUp == null ? pageNumber : pageNumber - 1,
+      ),
       child: Card(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         child: Padding(
@@ -112,19 +112,19 @@ class PageRow extends StatelessWidget {
               _RowAction(
                 actionKey: CreationKeys.rowCropButton,
                 icon: Icons.crop,
-                label: 'Crop and rotate page $pageNumber',
+                label: CreationSemantics.cropPage(pageNumber),
                 onPressed: onCrop,
               ),
               _RowAction(
                 actionKey: CreationKeys.rowEnhanceButton,
                 icon: Icons.auto_fix_high,
-                label: 'Enhance page $pageNumber',
+                label: CreationSemantics.enhancePage(pageNumber),
                 onPressed: onEnhance,
               ),
               _RowAction(
                 actionKey: CreationKeys.rowDeleteButton,
                 icon: Icons.delete_outline,
-                label: 'Delete page $pageNumber',
+                label: CreationSemantics.deletePage(pageNumber),
                 onPressed: onDelete,
               ),
             ],

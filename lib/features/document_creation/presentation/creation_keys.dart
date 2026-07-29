@@ -93,3 +93,67 @@ abstract final class CreationKeys {
   /// Confirms replacing.
   static const replaceConfirmButton = Key('creation_replace_confirm_button');
 }
+
+/// Semantics labels for the page table.
+///
+/// A page of a scan has no title, so every label here is built from the page's
+/// *position*: "page 3 of 7" is what the user is actually tracking, and it is
+/// the only thing that distinguishes one row from another.
+abstract final class CreationSemantics {
+  /// Announces a row as its position in the document.
+  static String pageRow(int pageNumber, int pageCount) =>
+      'Page $pageNumber of $pageCount';
+
+  /// The row's value, which the reorder actions move between.
+  ///
+  /// Required whenever a node offers increase or decrease: the framework
+  /// asserts on an action with nothing for the reader to announce moving to.
+  static String pagePosition(int pageNumber) => 'Page $pageNumber';
+
+  /// Names the crop action *and* the page it applies to.
+  ///
+  /// "Crop" alone tells a screen reader user nothing about which of seven rows
+  /// they are on.
+  static String cropPage(int pageNumber) => 'Crop and rotate page $pageNumber';
+
+  /// Names the enhance action and its page.
+  static String enhancePage(int pageNumber) => 'Enhance page $pageNumber';
+
+  /// Names the delete action and its page.
+  static String deletePage(int pageNumber) => 'Delete page $pageNumber';
+
+  /// The action that restores a page the user has just deleted.
+  static const undoDelete = 'Undo';
+
+  /// The dialog that names the document before it is written.
+  static const saveDialog = 'Save PDF';
+
+  /// The document's name.
+  ///
+  /// The field's visible label *is* its spoken label — Flutter derives the
+  /// field's semantics from the decoration — so this is one constant serving
+  /// both rather than two that could disagree.
+  static const saveNameField = 'Name';
+
+  /// The control that turns password protection on.
+  static const savePasswordToggle = 'Protect with password';
+
+  /// The password itself.
+  static const savePasswordField = 'Password';
+
+  /// The password, entered a second time.
+  static const savePasswordConfirmField = 'Confirm password';
+
+  /// Writes the document.
+  ///
+  /// Names the object as well as the verb, because "Save" on its own is what a
+  /// listener hears in every dialog the application has.
+  static const saveConfirm = 'Save document';
+
+  /// Leaves the dialog without writing anything.
+  static const saveCancel = 'Cancel saving';
+
+  /// Explains what protecting the document actually does.
+  static const savePasswordHint =
+      'Other apps will need this password to open the file';
+}

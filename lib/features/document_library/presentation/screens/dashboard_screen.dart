@@ -8,6 +8,7 @@ import 'package:doc_forge/core/widgets/app_state_views.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_state.dart';
 import 'package:doc_forge/features/document_library/presentation/library_dashboard_keys.dart';
+import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
 import 'package:doc_forge/features/document_library/presentation/widgets/document_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -316,7 +317,9 @@ class _StorageSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
-      label: 'Library uses ${DisplayFormatting.fileSize(state.storageBytes)}',
+      label: LibrarySemantics.storageUsage(
+        DisplayFormatting.fileSize(state.storageBytes),
+      ),
       child: ExcludeSemantics(
         child: Padding(
           key: DashboardKeys.storageSummary,

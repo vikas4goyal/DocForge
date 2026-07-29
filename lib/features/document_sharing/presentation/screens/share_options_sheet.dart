@@ -166,6 +166,7 @@ class _Preparing extends StatelessWidget {
         label: state.progressLabel,
         // Only a page render can be cancelled; handing a single file to the
         // share sheet is over before a cancel control could be pressed.
+        cancelKey: ShareKeys.cancelButton,
         onCancel: state.format == ShareFormat.images
             ? context.read<ShareCubit>().cancel
             : null,

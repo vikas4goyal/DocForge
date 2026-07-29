@@ -37,3 +37,15 @@ abstract final class PdfKeys {
   /// One page in the preview list, keyed by page identifier.
   static Key pageItem(String pageId) => Key('pdf_preview_page_$pageId');
 }
+
+/// Semantics labels for generation and its preview.
+abstract final class PdfSemantics {
+  /// Announced while the document is being composed.
+  static const creatingDocument = 'Creating your document';
+
+  /// The quality selector.
+  static const documentQuality = 'Document quality';
+
+  /// Announces one page of the preview by its number.
+  static String page(int number) => 'Page $number';
+}

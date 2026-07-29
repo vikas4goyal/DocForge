@@ -92,7 +92,7 @@ class _ScanCaptureScreenState extends State<ScanCaptureScreen> {
           foregroundColor: Colors.white,
           title: _PageCounter(count: state.pageCount),
           leading: IconButton(
-            key: const Key('scan_cancel_button'),
+            key: ScanKeys.captureCancelButton,
             tooltip: 'Cancel scanning',
             onPressed: () async {
               await context.read<ScanCaptureCubit>().abandon();
@@ -212,7 +212,7 @@ class _ShutterButton extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: enabled,
-      label: 'Capture page',
+      label: ScanSemantics.capturePage,
       child: ExcludeSemantics(
         child: IconButton.filled(
           key: ScanKeys.shutterButton,
@@ -296,7 +296,7 @@ class _DoneButton extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: enabled,
-      label: 'Review captured pages',
+      label: ScanSemantics.reviewCaptured,
       child: ExcludeSemantics(
         child: IconButton(
           key: ScanKeys.doneButton,

@@ -159,7 +159,7 @@ class _Filters extends StatelessWidget {
           Semantics(
             button: true,
             selected: state.query.modifiedWithin != null,
-            label: 'Filter by date',
+            label: SearchSemantics.filterByDate,
             child: ExcludeSemantics(
               child: ActionChip(
                 key: SearchKeys.filterDate,

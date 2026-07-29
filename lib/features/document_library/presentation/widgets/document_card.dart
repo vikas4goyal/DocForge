@@ -64,7 +64,7 @@ class DocumentCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: Semantics(
-                    label: 'Password protected',
+                    label: LibrarySemantics.passwordProtected,
                     child: Icon(
                       key: LibraryKeys.documentProtectedBadge,
                       Icons.lock_outline,

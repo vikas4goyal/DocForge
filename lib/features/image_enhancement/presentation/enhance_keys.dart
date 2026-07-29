@@ -96,3 +96,22 @@ extension EnhancementFilterLabel on EnhancementFilter {
     EnhancementFilter.grayscale => 'Shades of grey, no colour',
   };
 }
+
+/// Semantics labels for the enhancement screen.
+///
+/// The sliders announce their value as a percentage rather than as the raw
+/// -1.0 to 1.0 offset: "brightness, 30%" is something a listener can act on,
+/// where "brightness, 0.3" requires knowing the scale.
+abstract final class EnhanceSemantics {
+  /// The brightness adjustment.
+  static const brightness = 'Brightness';
+
+  /// The contrast adjustment.
+  static const contrast = 'Contrast';
+
+  /// The sharpen adjustment.
+  static const sharpen = 'Sharpen';
+
+  /// The page as the current settings would render it.
+  static const pagePreview = 'Page preview';
+}

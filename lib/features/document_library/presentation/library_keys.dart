@@ -129,8 +129,47 @@ abstract final class LibraryKeys {
   /// still looking at the list it started from.
   static const folderDetailScreen = Key('library_folder_detail_screen');
 
-  /// The folder name shown as the folder detail screen's title.
-  static const folderDetailTitle = Key('library_folder_detail_title');
+  /// The action menu on a folder row, keyed by the folder it belongs to.
+  ///
+  /// Per folder rather than a single constant: a list of folders renders one
+  /// menu each, and a flow renaming the second folder has to be able to say
+  /// which menu it means.
+  static Key folderMenuButton(String folderId) =>
+      Key('folder_menu_button_$folderId');
+
+  /// The rename entry inside a folder's action menu.
+  ///
+  /// A constant rather than per folder, because only one menu is open at a
+  /// time: the entry is unambiguous once the menu it belongs to was opened.
+  static const folderMenuRename = Key('folder_menu_rename');
+
+  /// The delete entry inside a folder's action menu.
+  static const folderMenuDelete = Key('folder_menu_delete');
+
+  /// The dialog that picks a document's destination folder.
+  static const documentMoveDialog = Key('document_move_dialog');
+
+  /// The choice that leaves a document unfiled.
+  static const documentMoveOptionNone = Key('document_move_option_none');
+
+  /// One destination folder in the move dialog.
+  static Key documentMoveOption(String folderId) =>
+      Key('document_move_option_$folderId');
+
+  /// The control that opens a document for reading from its detail screen.
+  static const documentOpenButton = Key('document_open_button');
+
+  /// The overflow menu on the document detail screen.
+  static const documentDetailMenu = Key('document_detail_menu');
+
+  /// The control that retries a failed document list load.
+  static const documentListRetryButton = Key('document_list_retry_button');
+
+  /// The indicator shown while the next page of documents loads.
+  static const documentListLoadMore = Key('document_list_load_more');
+
+  /// The control that retries a failed folder list load.
+  static const folderListRetryButton = Key('folder_list_retry_button');
 
   /// The wrapper that reconciles the library folder when the app resumes.
   ///
@@ -153,4 +192,51 @@ abstract final class LibrarySemantics {
   /// reader user arriving here needs to know *which* folder they opened.
   static String folderDetailScreen(String folderName) =>
       'Contents of folder $folderName';
+
+  /// Announces how much space the library occupies.
+  static String storageUsage(String formattedSize) =>
+      'Library uses $formattedSize';
+
+  /// Marks a document whose PDF is password protected.
+  ///
+  /// Announced because the library folder is visible to other applications:
+  /// this is what tells the user which of their documents another app could
+  /// read.
+  static const passwordProtected = 'Password protected';
+
+  /// Announces a page thumbnail by its position in the document.
+  static String pageThumbnail(int pageNumber) => 'Page $pageNumber';
+
+  /// Announces a folder's action menu, naming the folder it acts on.
+  static String folderActions(String folderName) => 'Actions for $folderName';
+
+  /// The name field in the rename and folder-name dialogs.
+  static const nameField = 'Name';
+
+  /// Confirms permanent removal, naming what is about to be removed.
+  ///
+  /// "Delete" alone is the most dangerous label in the application to leave
+  /// ambiguous: a listener who has lost track of which dialog is open cannot
+  /// tell it from any other delete.
+  static String deleteConfirm(String title) => 'Delete $title permanently';
+
+  /// Abandons a permanent removal.
+  static const deleteCancel = 'Keep this document';
+
+  /// Deletes a folder but keeps the documents that were in it.
+  static String folderDeleteMoveOut(String folderName) =>
+      'Delete folder $folderName and keep its documents';
+
+  /// Deletes a folder together with everything in it.
+  static String folderDeleteWithDocuments(String folderName) =>
+      'Delete folder $folderName and its documents';
+
+  /// The folder picker.
+  static const moveDialog = 'Move to folder';
+
+  /// The choice that leaves a document unfiled.
+  static const moveOptionNone = 'No folder';
+
+  /// One destination in the folder picker.
+  static String moveOption(String folderName) => 'Move to $folderName';
 }

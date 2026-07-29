@@ -72,7 +72,7 @@ class _FolderListScreenState extends State<FolderListScreen> {
           LoadStatus.failure => AppErrorView(
             key: LibraryKeys.folderListErrorView,
             failure: state.failure ?? const Failure.unexpected(),
-            retryKey: const Key('folder_list_retry_button'),
+            retryKey: LibraryKeys.folderListRetryButton,
             onRetry: () => context.read<FolderCubit>().load(),
           ),
           LoadStatus.ready => ListView.builder(

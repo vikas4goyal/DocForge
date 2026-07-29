@@ -116,7 +116,7 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
             // The failure the load actually produced, so the recovery offered
             // matches the cause rather than always being a bare retry.
             failure: state.failure ?? const Failure.unexpected(),
-            retryKey: const Key('document_list_retry_button'),
+            retryKey: LibraryKeys.documentListRetryButton,
             onRetry: () => context.read<DocumentListCubit>().load(),
           ),
           LoadStatus.ready => _DocumentList(
@@ -177,7 +177,7 @@ class _DocumentList extends StatelessWidget {
       itemBuilder: (context, index) {
         if (index >= state.documents.length) {
           return const Center(
-            key: Key('document_list_load_more'),
+            key: LibraryKeys.documentListLoadMore,
             child: Padding(
               padding: EdgeInsets.all(16),
               child: SizedBox(

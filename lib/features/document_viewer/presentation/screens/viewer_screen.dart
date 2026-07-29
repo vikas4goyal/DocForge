@@ -335,7 +335,7 @@ class _PageBarState extends State<_PageBar> {
         children: [
           Semantics(
             liveRegion: true,
-            label: 'Page ${widget.state.pageLabel}',
+            label: ViewerSemantics.pageIndicator(widget.state.pageLabel),
             child: ExcludeSemantics(
               child: Text(
                 widget.state.pageLabel,

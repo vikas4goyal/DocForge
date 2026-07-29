@@ -19,3 +19,20 @@ abstract final class ShellKeys {
   /// The settings destination.
   static const settingsTab = Key('app_tab_settings');
 }
+
+/// Semantics labels for the app shell.
+///
+/// Declared beside [ShellKeys] so a label an accessibility test or an
+/// end-to-end flow asserts on has one definition. An inline literal is a
+/// contract nothing can check: it can be reworded without anything failing
+/// until a flow stops finding it.
+abstract final class ShellSemantics {
+  /// The dashboard destination.
+  static const dashboardTab = 'Dashboard';
+
+  /// The settings destination.
+  static const settingsTab = 'Settings';
+
+  /// The control that starts a new document.
+  static const createButton = 'Create PDF';
+}

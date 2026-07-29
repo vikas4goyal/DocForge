@@ -163,8 +163,9 @@ class _Progress extends StatelessWidget {
       key: OcrKeys.progressIndicator,
       completed: progress?.completed ?? 0,
       total: progress?.total ?? 0,
-      label: 'Extracting text',
+      label: OcrSemantics.extractingText,
       onCancel: cubit.cancel,
+      cancelKey: OcrKeys.cancelButton,
     );
   }
 }

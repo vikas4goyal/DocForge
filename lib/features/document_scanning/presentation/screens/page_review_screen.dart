@@ -114,7 +114,7 @@ class _EmptyState extends StatelessWidget {
               const SizedBox(height: 24),
               if (state.canUndo) ...[
                 FilledButton.tonal(
-                  key: const Key('scan_review_undo_button'),
+                  key: ScanKeys.reviewUndoButton,
                   onPressed: context.read<PageReviewCubit>().undoDelete,
                   child: const Text('Undo delete'),
                 ),
@@ -127,7 +127,7 @@ class _EmptyState extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               TextButton(
-                key: const Key('scan_review_exit_button'),
+                key: ScanKeys.reviewExitButton,
                 onPressed: onExit,
                 child: const Text('Leave without saving'),
               ),
@@ -211,19 +211,19 @@ class _PageRow extends StatelessWidget {
             // Rotation lives in the crop editor now, where it turns the
             // selection rather than the pixels — so one control covers
             // straightening and framing, which are the same decision.
-            label: 'Crop and rotate page ${index + 1}',
+            label: ScanSemantics.cropPage(index + 1),
             onPressed: onCrop,
           ),
           _RowAction(
             actionKey: ScanKeys.pageEnhanceButton,
             icon: Icons.auto_fix_high_outlined,
-            label: 'Enhance page ${index + 1}',
+            label: ScanSemantics.enhancePage(index + 1),
             onPressed: onEnhance,
           ),
           _RowAction(
             actionKey: ScanKeys.pageDeleteButton,
             icon: Icons.delete_outline,
-            label: 'Delete page ${index + 1}',
+            label: ScanSemantics.deletePage(index + 1),
             onPressed: () => _deleteWithUndo(context, cubit, index),
           ),
         ],
@@ -244,7 +244,10 @@ class _PageRow extends StatelessWidget {
       ..showSnackBar(
         SnackBar(
           content: Text('Page ${index + 1} deleted'),
-          action: SnackBarAction(label: 'Undo', onPressed: cubit.undoDelete),
+          action: SnackBarAction(
+            label: ScanSemantics.undoDelete,
+            onPressed: cubit.undoDelete,
+          ),
         ),
       );
   }
@@ -342,7 +345,7 @@ class ScanCorrectionProgress extends StatelessWidget {
   Widget build(BuildContext context) => AppProgressIndicator(
     completed: completed,
     total: total,
-    label: 'Straightening pages',
+    label: ScanSemantics.straighteningPages,
     onCancel: onCancel,
   );
 }

@@ -68,11 +68,18 @@ abstract final class PdfEditKeys {
   static const progress = Key('pdf_edit_progress');
 
   /// The control that abandons an in-progress operation.
-  static const cancelButton = Key('pdf_edit_cancel_button');
 
   /// The view shown when an operation fails.
   static const errorView = Key('pdf_edit_error_view');
 
   /// The control that retries after a failure.
   static const errorRetryButton = Key('pdf_edit_error_retry_button');
+}
+
+/// Semantics labels for the PDF editor.
+abstract final class PdfEditSemantics {
+  /// Announces a metadata row as its name and its value together, for the same
+  /// reason the settings tiles do: two separately announced items leave the
+  /// listener to pair them.
+  static String metadataRow(String label, String value) => '$label, $value';
 }
