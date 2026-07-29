@@ -38,7 +38,7 @@
 ## 5. End-to-end flows
 
 - [ ] 5.1 Write the flow for the journey that is broken today first; demonstrate it failing before any fix, and record what it proves.
-- [ ] 5.2 `flows/first_launch_test.dart` — onboarding completes and the app lands on the dashboard (accounting for the `/unlock` → `/onboarding` → `/` redirect chain in `route_gates.dart:44`).
+- [x] 5.2 `flows/first_launch_test.dart` — onboarding completes and the app lands on the dashboard (accounting for the `/unlock` → `/onboarding` → `/` redirect chain in `route_gates.dart:44`).
 - [ ] 5.3 `flows/capture_to_document_test.dart` — capture pages, enhance, create the page table, generate the PDF, open it in the viewer. Crop and enhance are reached by tapping, since they are imperative `Navigator.push` targets.
 - [ ] 5.4 `flows/page_table_test.dart` — build a page table, reorder and remove pages, confirm the generated document reflects the final order.
 - [ ] 5.5 `flows/import_test.dart` — import a file and confirm it appears in the library.
@@ -63,10 +63,10 @@
 
 ## 7. Verification gate
 
-- [ ] 7.1 Write `tool/verify.dart` running, in order: `dart format --set-exit-if-changed`, `flutter analyze`, `check_layering`, `check_platforms`, Tier‑1 + Tier‑2, goldens, `check_coverage`, Tier‑3.
-- [ ] 7.2 Make it exit non-zero on the first failing stage and print a per-stage pass/fail summary naming the failing flow and step.
-- [ ] 7.3 Report per-flow timing in the summary.
-- [ ] 7.4 With no device or simulator attached, run every other stage and report Tier‑3 as *skipped* and the overall result as *incomplete* — never *passed*.
+- [x] 7.1 Write `tool/verify.dart` running, in order: `dart format --set-exit-if-changed`, `flutter analyze`, `check_layering`, `check_platforms`, Tier‑1 + Tier‑2, goldens, `check_coverage`, Tier‑3.
+- [x] 7.2 Make it exit non-zero on the first failing stage and print a per-stage pass/fail summary naming the failing flow and step.
+- [x] 7.3 Report per-flow timing in the summary.
+- [x] 7.4 With no device or simulator attached, run every other stage and report Tier‑3 as *skipped* and the overall result as *incomplete* — never *passed*.
 - [ ] 7.5 Test `tool/verify.dart` in `test/tool/`: stage ordering, non-zero exit on failure, and the no-device summary.
 - [ ] 7.6 Wire CI to call `tool/verify.dart` in place of its current sequence.
 
