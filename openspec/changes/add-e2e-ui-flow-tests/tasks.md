@@ -27,13 +27,13 @@
 
 ## 4. End-to-end support harness
 
-- [ ] 4.1 Create `integration_test/support/app_boot.dart`: boots `buildDocForge` with `buildFakeAppDependencies(...)`, a per-flow temporary Isar and documents directory via `buildLibraryModuleOver(isar:, documentsDirectory:)`, and teardown.
-- [ ] 4.2 Create `integration_test/support/fake_platform.dart` bundling the fakes that already ship in `lib/`: `FakeScannerRepository`, `FakeOcrRepository`, `FakeDeviceAuthenticator`, `FakePdfRenderer`, `FakeShareRepository`, `FakePrintRepository`, `FakeExportDestinationPicker`, `FakeGalleryPicker`, `FakeFileBrowser`, `FakeSharedContentSource`, `FullPageEdgeDetector`.
-- [ ] 4.3 Add checked-in fixture assets (page images, a source PDF, an importable file) containing no real personal data, and wire them into the fakes.
-- [ ] 4.4 Add `pumpUntilFound(key, timeout:)` and a step-naming helper so a timeout failure reports the key it waited for and the step that was running.
-- [ ] 4.5 Write screen robots in `integration_test/support/robots/` exposing intent-level methods for: onboarding, unlock, dashboard, tab shell, scan/capture, crop, enhance, page table, PDF generation, document list, folder detail, document detail, viewer, PDF edit, search, share, settings.
-- [ ] 4.6 Add a determinism test: the harness produces identical state across two consecutive boots, and no fake reads the wall clock, generates randomness, or touches the network.
-- [ ] 4.7 Dartdoc the harness: what each robot drives, what each fake returns, and how a flow seeds and cleans its own state.
+- [x] 4.1 Create `integration_test/support/app_boot.dart`: boots `buildDocForge` with `buildFakeAppDependencies(...)`, a per-flow temporary Isar and documents directory via `buildLibraryModuleOver(isar:, documentsDirectory:)`, and teardown.
+- [x] 4.2 Create `integration_test/support/fake_platform.dart` bundling the fakes that already ship in `lib/`: `FakeScannerRepository`, `FakeOcrRepository`, `FakeDeviceAuthenticator`, `FakePdfRenderer`, `FakeShareRepository`, `FakePrintRepository`, `FakeExportDestinationPicker`, `FakeGalleryPicker`, `FakeFileBrowser`, `FakeSharedContentSource`, `FullPageEdgeDetector`.
+- [x] 4.3 Add checked-in fixture assets (page images, a source PDF, an importable file) containing no real personal data, and wire them into the fakes.
+- [x] 4.4 Add `pumpUntilFound(key, timeout:)` and a step-naming helper so a timeout failure reports the key it waited for and the step that was running.
+- [x] 4.5 Write screen robots in `integration_test/support/robots/` exposing intent-level methods for: onboarding, unlock, dashboard, tab shell, scan/capture, crop, enhance, page table, PDF generation, document list, folder detail, document detail, viewer, PDF edit, search, share, settings.
+- [x] 4.6 Add a determinism test: the harness produces identical state across two consecutive boots, and no fake reads the wall clock, generates randomness, or touches the network.
+- [x] 4.7 Dartdoc the harness: what each robot drives, what each fake returns, and how a flow seeds and cleans its own state.
 
 ## 5. End-to-end flows
 

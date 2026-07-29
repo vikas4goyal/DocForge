@@ -124,8 +124,14 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # To add assets to your application, add an assets section, like this:
-  # assets:
+  # Fixtures for the Tier-3 flow suite. Bundled because an integration test
+  # runs on a device, where the only way to reach a checked-in file is through
+  # the asset bundle. They are a few hundred bytes of generated shapes and text
+  # and contain no personal data.
+  assets:
+    - integration_test/fixtures/
+
+  # To add further assets, add them to the section above, like this:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
 
