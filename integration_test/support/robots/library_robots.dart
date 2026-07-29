@@ -48,8 +48,13 @@ class DocumentListRobot extends Robot {
   /// Whether the list is showing its empty state.
   bool get isEmpty => has(LibraryKeys.documentListEmptyState);
 
-  /// How many document rows are showing.
-  int get documentCount => find
+  /// The identifiers of every document row currently on screen.
+  ///
+  /// Read out of the row keys, which carry the identifier by construction. This
+  /// is how a flow gets from "something was imported" to "the row I mean"
+  /// without reaching past the widget tree into the database — which would make
+  /// it a Tier-2 test wearing a Tier-3 costume.
+  List<String> get visibleDocumentIds => find
       .byWidgetPredicate(
         (widget) =>
             widget.key is ValueKey<String> &&
@@ -58,7 +63,14 @@ class DocumentListRobot extends Robot {
             ),
       )
       .evaluate()
-      .length;
+      .map(
+        (element) => ((element.widget.key! as ValueKey<String>).value)
+            .substring(LibraryKeys.documentListItemPrefix.length + 1),
+      )
+      .toList();
+
+  /// How many document rows are showing.
+  int get documentCount => visibleDocumentIds.length;
 }
 
 /// Drives a folder's contents.
