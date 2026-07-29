@@ -64,8 +64,9 @@ class DocumentListRobot extends Robot {
       )
       .evaluate()
       .map(
-        (element) => ((element.widget.key! as ValueKey<String>).value)
-            .substring(LibraryKeys.documentListItemPrefix.length + 1),
+        (element) => (element.widget.key! as ValueKey<String>).value.substring(
+          LibraryKeys.documentListItemPrefix.length + 1,
+        ),
       )
       // Distinct, because a list wraps each row in several widgets that carry
       // the row's key: counting elements would report one document as four.

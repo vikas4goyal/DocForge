@@ -6,28 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-/// A placeholder screen that announces which route rendered it.
-Widget marker(String name) => Scaffold(body: Center(child: Text(name)));
-
-/// Screens that render their own route name, so a test can assert on it.
-final testScreens = AppScreens(
-  onboarding: (_) => marker('onboarding'),
-  unlock: (_) => marker('unlock'),
-  home: (_) => marker('home'),
-  scan: (_) => marker('scan'),
-  documents: (_) => marker('documents'),
-  documentDetail: (_, id) => marker('documentDetail:${id.value}'),
-  viewer: (_, id) => marker('viewer:${id.value}'),
-  documentEdit: (_, id) => marker('documentEdit:${id.value}'),
-  folders: (_) => marker('folders'),
-  folderDetail: (_, id) => marker('folderDetail:${id.value}'),
-  search: (_) => marker('search'),
-  favourites: (_) => marker('favourites'),
-  archive: (_) => marker('archive'),
-  settings: (_) => marker('settings'),
-  about: (_) => marker('about'),
-  privacy: (_) => marker('privacy'),
-);
+import '../../support/marker_screens.dart';
 
 /// Pumps the router at [location] with the given gate states.
 Future<GoRouter> pumpRouter(
@@ -41,7 +20,7 @@ Future<GoRouter> pumpRouter(
       lockGate: FakeAppLockGate(isLocked: locked),
       onboardingGate: FakeOnboardingGate(needsOnboarding: needsOnboarding),
     ),
-    screens: testScreens,
+    screens: markerScreens(),
     initialLocation: location,
   );
 

@@ -11,27 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-/// A screen that names itself, so a test can assert which one resolved.
-Widget _named(String name) => Scaffold(body: Text(name));
-
-AppScreens _screens() => AppScreens(
-  onboarding: (_) => _named('onboarding'),
-  unlock: (_) => _named('unlock'),
-  home: (_) => _named('home'),
-  scan: (_) => _named('scan'),
-  documents: (_) => _named('documents'),
-  documentDetail: (_, id) => _named('detail:${id.value}'),
-  viewer: (_, id) => _named('viewer:${id.value}'),
-  documentEdit: (_, id) => _named('edit:${id.value}'),
-  folders: (_) => _named('folders'),
-  folderDetail: (_, id) => _named('folder:${id.value}'),
-  search: (_) => _named('search'),
-  favourites: (_) => _named('favourites'),
-  archive: (_) => _named('archive'),
-  settings: (_) => _named('settings'),
-  about: (_) => _named('about'),
-  privacy: (_) => _named('privacy'),
-);
+import '../../support/marker_screens.dart';
 
 /// Gates that let everything through, so a routing test tests routing.
 class _OpenGate implements OnboardingGate {
@@ -54,7 +34,7 @@ void main() {
   Future<GoRouter> pumpAt(WidgetTester tester, String location) async {
     final router = createAppRouter(
       guard: RouteGuard(lockGate: _UnlockedGate(), onboardingGate: _OpenGate()),
-      screens: _screens(),
+      screens: markerScreens(),
       initialLocation: location,
     );
 

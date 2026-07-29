@@ -11,6 +11,7 @@
 library;
 
 import 'package:doc_forge/features/app_settings/presentation/settings_keys.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -33,6 +34,17 @@ void main() {
     await settings.waitUntilVisible();
     await settings.choose(SettingsKeys.theme, 'dark');
 
+    // The theme is published to the application root, so choosing it is
+    // visible immediately and everywhere — which is what the spec means by
+    // "applies without a restart".
+    expect(
+      tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
+      ThemeMode.dark,
+      reason:
+          'Choosing a theme must apply it, not merely record it. A choice '
+          'that changed nothing on screen would look broken to the user.',
+    );
+
     // Away and back, because a setting that only survives while its screen is
     // mounted is not persisted — it is just state.
     await shell.openDashboard();
@@ -40,7 +52,11 @@ void main() {
     await shell.openSettings();
 
     await settings.waitUntilVisible();
-    expect(settings.isVisible, isTrue);
+    expect(
+      tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
+      ThemeMode.dark,
+      reason: 'The chosen theme must survive leaving the screen.',
+    );
   });
 
   testWidgets('a successful unlock reaches the library', (tester) async {

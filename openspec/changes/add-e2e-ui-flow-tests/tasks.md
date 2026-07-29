@@ -37,28 +37,28 @@
 
 ## 5. End-to-end flows
 
-- [ ] 5.1 Write the flow for the journey that is broken today first; demonstrate it failing before any fix, and record what it proves.
+- [x] 5.1 Write the flow for the journey that is broken today first; demonstrate it failing before any fix, and record what it proves.
 - [x] 5.2 `flows/first_launch_test.dart` — onboarding completes and the app lands on the dashboard (accounting for the `/unlock` → `/onboarding` → `/` redirect chain in `route_gates.dart:44`).
-- [ ] 5.3 `flows/capture_to_document_test.dart` — capture pages, enhance, create the page table, generate the PDF, open it in the viewer. Crop and enhance are reached by tapping, since they are imperative `Navigator.push` targets.
-- [ ] 5.4 `flows/page_table_test.dart` — build a page table, reorder and remove pages, confirm the generated document reflects the final order.
-- [ ] 5.5 `flows/import_test.dart` — import a file and confirm it appears in the library.
-- [ ] 5.6 `flows/browse_and_view_test.dart` — open a document from the library, read it in the viewer, return to the originating screen.
-- [ ] 5.7 `flows/search_test.dart` — search the library and open a result.
-- [ ] 5.8 `flows/organise_test.dart` — rename, favourite, move to a folder, archive and delete a document.
-- [ ] 5.9 `flows/edit_test.dart` — modify a document with the editing tools and confirm the saved result changed.
-- [ ] 5.10 `flows/share_test.dart` — invoke share and assert the correct file and metadata reach the fake share boundary.
-- [ ] 5.11 `flows/settings_and_lock_test.dart` — change a setting and confirm it persists; enable the app lock and confirm a relaunch requires unlocking.
+- [x] 5.3 `flows/capture_to_document_test.dart` — capture pages, enhance, create the page table, generate the PDF, open it in the viewer. Crop and enhance are reached by tapping, since they are imperative `Navigator.push` targets.
+- [x] 5.4 `flows/page_table_test.dart` — build a page table, reorder and remove pages, confirm the generated document reflects the final order.
+- [x] 5.5 `flows/import_test.dart` — import a file and confirm it appears in the library.
+- [x] 5.6 `flows/browse_and_view_test.dart` — open a document from the library, read it in the viewer, return to the originating screen.
+- [x] 5.7 `flows/search_test.dart` — search the library and open a result.
+- [x] 5.8 `flows/organise_test.dart` — rename, favourite, move to a folder, archive and delete a document.
+- [x] 5.9 `flows/edit_test.dart` — modify a document with the editing tools and confirm the saved result changed.
+- [x] 5.10 `flows/share_test.dart` — invoke share and assert the correct file and metadata reach the fake share boundary.
+- [x] 5.11 `flows/settings_and_lock_test.dart` — change a setting and confirm it persists; enable the app lock and confirm a relaunch requires unlocking.
 - [ ] 5.12 Run every flow file in a shuffled order and confirm each passes independently of the others.
 - [ ] 5.13 Confirm the whole flow suite is green on one Android device and one iOS simulator.
 
 ## 6. Component tier
 
-- [ ] 6.1 Create the `test/features/<feature>/component/` convention and a shared harness that mounts a screen with its real Cubit over real use cases and faked repositories.
-- [ ] 6.2 Consolidate the duplicated `_screens()` marker sets in `test/app/router/app_router_test.dart:11` and `test/app/router/creation_navigation_test.dart:17` into that shared harness.
-- [ ] 6.3 Component tests for the library screens: dashboard, document list, folder detail, document detail.
-- [ ] 6.4 Component tests for the creation screens: capture, crop, enhance, page table, generation.
-- [ ] 6.5 Component tests for viewer, PDF edit, search, share and settings.
-- [ ] 6.6 Component test for onboarding and the app lock screen.
+- [x] 6.1 Create the `test/features/<feature>/component/` convention and a shared harness that mounts a screen with its real Cubit over real use cases and faked repositories.
+- [x] 6.2 Consolidate the duplicated `_screens()` marker sets in `test/app/router/app_router_test.dart:11` and `test/app/router/creation_navigation_test.dart:17` into that shared harness.
+- [x] 6.3 Component tests for the library screens: dashboard, document list, folder detail, document detail.
+- [x] 6.4 Component tests for the creation screens: capture, crop, enhance, page table, generation.
+- [x] 6.5 Component tests for viewer, PDF edit, search, share and settings.
+- [x] 6.6 Component test for onboarding and the app lock screen.
 - [ ] 6.7 Add a `bloc_test` Cubit test for any Cubit whose emitted state sequence the component tier reveals as untested.
 
 ## 7. Verification gate
