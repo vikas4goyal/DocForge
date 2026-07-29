@@ -28,6 +28,7 @@ import 'package:doc_forge/app/router/app_router.dart';
 import 'package:doc_forge/app/router/app_routes.dart';
 import 'package:doc_forge/app/router/route_gates.dart';
 import 'package:doc_forge/app/scanning_module.dart';
+import 'package:doc_forge/app/screens/home_refresh.dart';
 import 'package:doc_forge/app/screens/app_screens_builder.dart';
 import 'package:doc_forge/app/settings_module.dart';
 import 'package:doc_forge/app/sharing_module.dart';
@@ -365,12 +366,18 @@ Future<Widget> buildDocForge({
   // the router is built, which is what the redirects depend on.
   await (onboardingGate.load(), lockGate.load()).wait;
 
+  // Owned here rather than declared as a global, because the project bars
+  // global mutable state: the router publishes route changes through it and
+  // Home subscribes, so both have to be handed the same instance.
+  final routeObserver = HomeRefreshObserver();
+
   final router = createAppRouter(
     guard: RouteGuard(lockGate: lockGate, onboardingGate: onboardingGate),
     // Without this the user would sit on the unlock screen after authenticating,
     // because GoRouter re-evaluates its redirect only when told to.
     refreshListenable: AppLockListenable(lockGate),
     initialLocation: initialLocation,
+    observers: [routeObserver],
     screens: buildAppScreens(
       library: library,
       creation: creation,
@@ -391,6 +398,7 @@ Future<Widget> buildDocForge({
       onboardingGate: onboardingGate,
       authenticator: authenticator,
       pdfRenderer: pdfRenderer,
+      routeObserver: routeObserver,
     ),
   );
 

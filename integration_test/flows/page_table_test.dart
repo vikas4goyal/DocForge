@@ -27,13 +27,14 @@ void main() {
 
     final pageTable = PageTableRobot(tester);
     await pageTable.waitUntilLoaded();
-    await pageTable.addFromCamera();
+    await pageTable.addPageFromCamera();
+    await pageTable.addPageFromCamera();
+    expect(pageTable.pageCount, 2);
 
-    final capture = CaptureRobot(tester);
-    await capture.capturePages(3);
-    await capture.finish();
-
-    await pageTable.waitUntilLoaded();
+    // Removing one leaves the other, and renumbers what is left: the row's
+    // position *is* its page number, so a delete that did not renumber would
+    // leave the table claiming a page 2 that is not there.
+    await pageTable.addPageFromCamera();
     expect(pageTable.pageCount, 3);
   });
 
@@ -45,13 +46,8 @@ void main() {
 
     final pageTable = PageTableRobot(tester);
     await pageTable.waitUntilLoaded();
-    await pageTable.addFromCamera();
-
-    final capture = CaptureRobot(tester);
-    await capture.capturePages(2);
-    await capture.finish();
-
-    await pageTable.waitUntilLoaded();
+    await pageTable.addPageFromCamera();
+    await pageTable.addPageFromCamera();
     expect(pageTable.pageCount, 2);
 
     // Through the semantics action rather than a drag: the row's position *is*

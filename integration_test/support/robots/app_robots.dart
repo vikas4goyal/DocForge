@@ -164,14 +164,28 @@ class DashboardRobot extends Robot {
     await waitFor(ImportKeys.sheet);
   });
 
-  /// Opens search from the dashboard's search field.
+  /// Searches the library from the dashboard.
   ///
-  /// Opens only: the query itself is typed through `SearchRobot`, because the
-  /// dashboard's field is an entry point to the search screen rather than a
-  /// field that searches in place.
-  Future<void> openSearch() => step('opening search', () async {
+  /// The dashboard's field filters in place rather than opening a screen —
+  /// there is a `/search` route, but nothing in the shell navigates to it — so
+  /// this is the search a user actually performs.
+  Future<void> search(String query) => step('searching for "$query"', () async {
     await waitUntilVisible();
-    await tap(DashboardKeys.searchField);
+    await type(DashboardKeys.searchField, query);
+    // The query is debounced, so the wait has to outlast the debounce window
+    // before the result can be believed.
+    await tester.pump(const Duration(milliseconds: 600));
+    await pumpUntilAnyOf(tester, [
+      DashboardKeys.contentList,
+      DashboardKeys.emptyState,
+    ]);
+  });
+
+  /// Clears the query, restoring the unfiltered library.
+  Future<void> clearSearch() => step('clearing the search', () async {
+    await waitUntilVisible();
+    await type(DashboardKeys.searchField, '');
+    await tester.pump(const Duration(milliseconds: 600));
   });
 
   /// Whether the dashboard is showing its empty state.

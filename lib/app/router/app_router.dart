@@ -108,15 +108,20 @@ class AppScreens {
 /// evaluated before the onboarding gate. [refreshListenable] causes GoRouter to
 /// re-evaluate redirects when gate state changes — without it, unlocking the
 /// app would leave the user sitting on the unlock screen.
+/// [observers] are handed to the router so a screen can learn when a route
+/// pushed over it has popped. Home needs that: it is built once and kept alive,
+/// so nothing else would tell it that a document was added while it was covered.
 GoRouter createAppRouter({
   required RouteGuard guard,
   required AppScreens screens,
   String initialLocation = AppRoutes.home,
   Listenable? refreshListenable,
+  List<NavigatorObserver> observers = const [],
 }) {
   return GoRouter(
     initialLocation: initialLocation,
     refreshListenable: refreshListenable,
+    observers: observers,
     redirect: (context, state) => guard.redirectFor(state.matchedLocation),
     errorBuilder: (context, state) => _RouteNotFound(location: state.uri.path),
     routes: [

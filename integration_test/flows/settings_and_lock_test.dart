@@ -43,22 +43,25 @@ void main() {
     expect(settings.isVisible, isTrue);
   });
 
-  testWidgets('an enabled lock stands in front of the application', (
-    tester,
-  ) async {
+  testWidgets('a successful unlock reaches the library', (tester) async {
     // Booted with the lock already on, which is what a relaunch after enabling
     // it looks like: the gate is read from secure storage before the first
     // frame, and the guard redirects on the strength of that.
+    //
+    // The screen prompts on mount and the substituted authenticator answers at
+    // once, so the assertion is that the user *arrives* — waiting for the
+    // unlock screen itself would be racing an animation that is already over.
     await bootDocForge(tester, appLockEnabled: true);
 
-    final unlock = UnlockRobot(tester);
-    await unlock.waitUntilVisible();
+    final dashboard = DashboardRobot(tester);
+    await dashboard.waitUntilLoaded();
     expect(
-      unlock.isVisible,
+      dashboard.isVisible,
       isTrue,
       reason:
-          'An enabled lock must be in front of the library on launch, not '
-          'behind it.',
+          'Authenticating must let the user through to the library, not leave '
+          'them sitting on the unlock screen — which is what happens when the '
+          'gate is not told the lock was released.',
     );
   });
 

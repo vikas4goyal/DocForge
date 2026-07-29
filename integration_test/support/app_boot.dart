@@ -151,8 +151,15 @@ Future<FlowApp> bootDocForge(
   }
 
   final fixtures = Fixtures(fixtureDirectory);
+
+  // Materialised before the platform is built, because the substituted camera
+  // writes these bytes on every capture and the composer downstream has to be
+  // able to decode them.
+  final captureImage = await File(await fixtures.pageOne()).readAsBytes();
+
   final platform = buildFakePlatform(
     captureDirectory: cacheDirectory,
+    captureImageBytes: captureImage,
     galleryImages: galleryImages,
     pickedFiles: pickedFiles,
     pendingSharedContent: pendingSharedContent,

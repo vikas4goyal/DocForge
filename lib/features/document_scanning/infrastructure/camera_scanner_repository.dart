@@ -261,11 +261,23 @@ class FakeScannerRepository implements ScannerRepository {
   ///
   /// When [directory] is null nothing is written and the returned paths are
   /// synthetic, which suits a preview that only needs a page count.
-  FakeScannerRepository({this.directory, IdGenerator? ids})
+  FakeScannerRepository({this.directory, IdGenerator? ids, this.imageBytes})
     : _ids = ids ?? SequentialIdGenerator(prefix: 'capture');
 
   /// Where captures are written, when anywhere.
   final Directory? directory;
+
+  /// The bytes each capture writes.
+  ///
+  /// Defaults to a single byte, which is enough to prove the disk-first rule —
+  /// the file exists before the capture is returned — and is all a widget test
+  /// or a preview needs.
+  ///
+  /// An end-to-end flow passes a real fixture image instead, because it goes on
+  /// to *compose a PDF* from these captures: a placeholder byte is not a
+  /// decodable image, and generation fails on it with "the PDF could not be
+  /// processed" — which looks exactly like a product bug and is not one.
+  final List<int>? imageBytes;
 
   final IdGenerator _ids;
 
@@ -319,9 +331,9 @@ class FakeScannerRepository implements ScannerRepository {
         : '${directory!.path}/${id.value}.jpg';
 
     if (directory != null) {
-      // A byte of content, so a test can assert the file exists and a caller
-      // that forgets to write is caught rather than silently passing.
-      await File(path).writeAsBytes(const [0]);
+      // Content, so a test can assert the file exists and a caller that forgets
+      // to write is caught rather than silently passing.
+      await File(path).writeAsBytes(imageBytes ?? const [0]);
     }
 
     final result = CaptureResult(id: id, imagePath: path);

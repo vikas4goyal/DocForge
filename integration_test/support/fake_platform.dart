@@ -92,7 +92,9 @@ class FakePlatform {
 ///
 /// [captureDirectory] is where the fake scanner writes its captures — the
 /// flow's own temporary directory, so captures from one flow cannot be found by
-/// the next.
+/// the next. [captureImageBytes] is what it writes there: a real fixture image,
+/// because the flow goes on to compose a PDF from these captures and a
+/// placeholder byte is not something the composer can decode.
 ///
 /// [galleryImages] and [pickedFiles] are what the pickers answer with. They
 /// default to empty, which stands for the user cancelling: a flow that means to
@@ -106,6 +108,7 @@ class FakePlatform {
 /// A flow proving the lock actually locks sets it false.
 FakePlatform buildFakePlatform({
   required Directory captureDirectory,
+  required List<int> captureImageBytes,
   List<String> galleryImages = const [],
   List<String> pickedFiles = const [],
   List<String> pendingSharedContent = const [],
@@ -116,7 +119,10 @@ FakePlatform buildFakePlatform({
     // Writes a real file per capture, so the disk-first rule the scanning spec
     // states is genuinely exercised: a fake returning a path to nothing would
     // let a bug that never writes the image pass every flow.
-    scanner: FakeScannerRepository(directory: captureDirectory),
+    scanner: FakeScannerRepository(
+      directory: captureDirectory,
+      imageBytes: captureImageBytes,
+    ),
     detector: const FullPageEdgeDetector(),
     recogniser: FakeOcrRepository(
       // Fixed rather than read from a clock, so the recognised-at stamp a flow

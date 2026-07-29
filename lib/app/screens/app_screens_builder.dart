@@ -13,6 +13,7 @@ import 'package:doc_forge/app/import_module.dart';
 import 'package:doc_forge/app/library_module.dart';
 import 'package:doc_forge/app/pdf_editing_module.dart';
 import 'package:doc_forge/app/router/app_router.dart';
+import 'package:doc_forge/app/screens/home_refresh.dart';
 import 'package:doc_forge/app/screens/creation_screens.dart';
 import 'package:doc_forge/app/screens/library_screens.dart';
 import 'package:doc_forge/app/screens/search_screens.dart';
@@ -63,6 +64,9 @@ import 'package:flutter/material.dart';
 ///   host-VM implementation.
 /// - [pdfRenderer] opens a document in the viewer. A parameter for the same
 ///   reason: pdfrx binds a native library the host test VM does not have.
+/// - [routeObserver] must be the one the router was built with. Home subscribes
+///   to it so it reloads when a route pushed over it pops, which is the only
+///   thing that makes a saved or imported document appear.
 AppScreens buildAppScreens({
   required LibraryModule library,
   required DocumentCreationModule creation,
@@ -83,6 +87,7 @@ AppScreens buildAppScreens({
   required OnboardingGateImpl onboardingGate,
   required DeviceAuthenticator authenticator,
   required PdfRenderer pdfRenderer,
+  required HomeRefreshObserver routeObserver,
 }) {
   final securityScreens = buildSecurityScreens(
     permissions: permissions,
@@ -125,6 +130,7 @@ AppScreens buildAppScreens({
       creationFlow: creationFlow,
       permissions: permissions,
       settings: settingsScreens.settings,
+      routeObserver: routeObserver,
     ),
     scan: buildCreationScreen(creationFlow: creationFlow),
     documents: libraryScreens.documents,

@@ -1,15 +1,20 @@
 /// Waiting, and saying what was being waited for.
 ///
 /// A Tier-3 flow drives an application doing real work — rendering pages,
-/// composing a PDF, writing to the library folder — so `pumpAndSettle` is the
-/// wrong tool twice over. It either hangs, because something is genuinely still
-/// running, or it races, because it returned during a gap between two pieces of
-/// work. And when it does fail it says only "pumpAndSettle timed out", which
+/// composing a PDF, writing to the library folder — so a bare `pumpAndSettle`
+/// is the wrong tool twice over. It hangs, because something is genuinely still
+/// running, and when it does fail it says only "pumpAndSettle timed out", which
 /// tells whoever reads the CI log nothing about where the flow was.
 ///
-/// Everything here is built around the opposite property: a timeout names the
-/// key it was waiting for and the step that was running, so the failure is
-/// actionable without re-running anything (`design.md` D4).
+/// A bare `pump` is no better in the other direction: it does not reliably
+/// flush the work a tap sets off, so a wait built on it watches for something
+/// that was never given the chance to appear.
+///
+/// So every wait here is a *bounded* settle inside a loop with its own
+/// deadline: hard enough to let a route push or an opening sheet complete,
+/// bounded enough never to hang, and failing with the key it waited for and the
+/// step that was running — so the failure is actionable without re-running
+/// anything (`design.md` D4).
 library;
 
 import 'package:flutter/widgets.dart';
@@ -49,11 +54,33 @@ Future<T> step<T>(String name, Future<T> Function() body) async {
   }
 }
 
-/// Pumps until [finder] matches, or fails naming what it waited for.
+/// Advances the application by up to [interval], as hard as it can.
 ///
-/// Pumps one frame at a time rather than settling: the application is doing
-/// real work throughout a flow, and the question being asked is "is it on
-/// screen yet", not "has everything everywhere stopped".
+/// Settles rather than pumping a single frame, because a bare `pump` does not
+/// reliably flush the work a tap sets off — a pushed route, an opening sheet —
+/// and a wait built on it sits watching for something that was never given the
+/// chance to appear.
+///
+/// The settle is *bounded* and its timeout is swallowed. That is the whole
+/// trick: an unbounded `pumpAndSettle` hangs against an application doing real
+/// work, and a bare `pump` misses things. A short settle that gives up quietly
+/// does neither, and the caller's own deadline stays the thing that decides
+/// when to fail.
+Future<void> _advance(WidgetTester tester, Duration interval) async {
+  try {
+    await tester.pumpAndSettle(
+      interval,
+      EnginePhase.sendSemanticsUpdate,
+      const Duration(seconds: 1),
+    );
+  } on FlutterError {
+    // Still animating after a second — a progress indicator, most often. The
+    // frames were pumped, which is what was needed.
+    await tester.pump(interval);
+  }
+}
+
+/// Pumps until [finder] matches, or fails naming what it waited for.
 Future<void> pumpUntil(
   WidgetTester tester,
   Finder finder, {
@@ -64,7 +91,7 @@ Future<void> pumpUntil(
   final deadline = tester.binding.clock.now().add(timeout);
 
   while (tester.binding.clock.now().isBefore(deadline)) {
-    await tester.pump(interval);
+    await _advance(tester, interval);
     if (finder.evaluate().isNotEmpty) return;
   }
 
@@ -91,7 +118,7 @@ Future<void> pumpUntilAnyOf(
   final deadline = tester.binding.clock.now().add(timeout);
 
   while (tester.binding.clock.now().isBefore(deadline)) {
-    await tester.pump(interval);
+    await _advance(tester, interval);
     if (keys.any((key) => find.byKey(key).evaluate().isNotEmpty)) return;
   }
 
@@ -128,7 +155,7 @@ Future<void> pumpUntilGone(
   final deadline = tester.binding.clock.now().add(timeout);
 
   while (tester.binding.clock.now().isBefore(deadline)) {
-    await tester.pump(interval);
+    await _advance(tester, interval);
     if (find.byKey(key).evaluate().isEmpty) return;
   }
 
@@ -150,7 +177,7 @@ Future<void> tapKey(
 }) async {
   await pumpUntilFound(tester, key, timeout: timeout);
   await tester.tap(find.byKey(key));
-  await tester.pump();
+  await _advance(tester, const Duration(milliseconds: 50));
 }
 
 /// Enters [text] into the field carrying [key], waiting for it first.
@@ -162,7 +189,7 @@ Future<void> enterTextInto(
 }) async {
   await pumpUntilFound(tester, key, timeout: timeout);
   await tester.enterText(find.byKey(key), text);
-  await tester.pump();
+  await _advance(tester, const Duration(milliseconds: 50));
 }
 
 /// Scrolls [scrollable] until the widget carrying [key] is visible, then taps.

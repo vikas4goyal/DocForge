@@ -65,14 +65,17 @@ class CropRobot extends Robot {
   @override
   Key get screenKey => ScanKeys.cropScreen;
 
-  /// Accepts the crop as offered and continues.
+  /// Accepts the crop as offered and continues to enhancement.
   ///
   /// The substituted detector returns the full page, which is also what the
   /// spec requires when edges cannot be found, so accepting it exercises a real
   /// path rather than a test-only one.
+  ///
+  /// Uses the *next* control rather than the confirm control: confirm applies
+  /// the crop in place and stays, next is what leaves the screen with the page.
   Future<void> acceptAndContinue() => step('accepting the crop', () async {
     await waitUntilVisible();
-    await tap(ScanKeys.cropConfirmButton);
+    await tap(ScanKeys.cropNextButton);
   });
 
   /// Rotates the page by dragging the rotation slider.
@@ -148,16 +151,43 @@ class PageTableRobot extends Robot {
     ]);
   });
 
-  /// Adds pages from the camera.
-  Future<void> addFromCamera() =>
+  /// Adds one page from the camera, through crop and enhancement.
+  ///
+  /// There is no camera *screen* on this path: the page table captures through
+  /// the scanner directly and then walks the new page through crop and
+  /// enhancement, which is where the user actually decides what the page looks
+  /// like. Driving it any other way would be testing a route the creation flow
+  /// does not use.
+  Future<void> addPageFromCamera() =>
       step('adding a page from the camera', () async {
         await waitUntilVisible();
         await tap(CreationKeys.addPageButton);
         await waitFor(CreationKeys.addPageSheet);
         await tap(CreationKeys.addFromCamera);
+
+        // Crop, then enhancement, in that order — the loop every newly staged
+        // page goes through before it becomes a row.
+        await CropRobot(tester).acceptAndContinue();
+        await EnhanceRobot(tester).done();
+
+        await waitUntilVisible();
       });
 
-  /// Adds pages from the photo library.
+  /// Starts adding a page from the camera and stops at the crop screen.
+  ///
+  /// For a flow that means to abandon the page rather than finish it: crop is
+  /// the first screen it can be abandoned from, and the spec requires that
+  /// abandoning adds nothing.
+  Future<void> beginAddingPageFromCamera() =>
+      step('beginning to add a page from the camera', () async {
+        await waitUntilVisible();
+        await tap(CreationKeys.addPageButton);
+        await waitFor(CreationKeys.addPageSheet);
+        await tap(CreationKeys.addFromCamera);
+        await CropRobot(tester).waitUntilVisible();
+      });
+
+  /// Adds pages from the photo library, through the same crop and enhance loop.
   Future<void> addFromGallery() =>
       step('adding pages from the photo library', () async {
         await waitUntilVisible();
@@ -218,13 +248,21 @@ class PageTableRobot extends Robot {
       });
 
   /// How many page rows the table is showing.
+  ///
+  /// Counts *distinct* keys, not matching elements. A reorderable list wraps
+  /// each child in several widgets that carry the child's key, so counting
+  /// elements reports one page as four and makes the assertion meaningless.
   int get pageCount => find
       .byWidgetPredicate(
         (widget) =>
             widget.key is ValueKey<String> &&
-            (widget.key! as ValueKey<String>).value.startsWith('creation_row_'),
+            (widget.key! as ValueKey<String>).value.startsWith(
+              CreationKeys.rowPrefix,
+            ),
       )
       .evaluate()
+      .map((element) => (element.widget.key! as ValueKey<String>).value)
+      .toSet()
       .length;
 
   /// Saves the document as [name], with no password.

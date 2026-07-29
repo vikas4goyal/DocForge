@@ -9,6 +9,7 @@ import 'package:doc_forge/app/import_module.dart';
 import 'package:doc_forge/app/library_module.dart';
 import 'package:doc_forge/app/router/app_router.dart';
 import 'package:doc_forge/app/router/app_routes.dart';
+import 'package:doc_forge/app/screens/home_refresh.dart';
 import 'package:doc_forge/app/screens/screen_support.dart';
 import 'package:doc_forge/core/contracts/models/page_draft.dart';
 import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
@@ -38,43 +39,66 @@ import 'package:go_router/go_router.dart';
 ///
 /// [settings] is the already-built settings screen rather than another copy of
 /// it, so the tab and the `/settings` route are the same screen.
+///
+/// [routeObserver] is how the dashboard learns that a route pushed over it has
+/// popped. Without it, a document saved from the creation flow is written to
+/// disk and never appears, because Home is built once and nothing rebuilds it.
 ScreenBuilder buildHomeScreen({
   required LibraryModule library,
   required ImportModule importing,
   required CreationModule creationFlow,
   required PermissionService permissions,
   required ScreenBuilder settings,
+  required HomeRefreshObserver routeObserver,
 }) {
   return (context) => _TabShell(
     onCreate: () => context.push(AppRoutes.scan),
-    dashboard: SharedContentWatcher(
-      key: ImportKeys.sharedContentWatcher,
-      takePending: importing.takePending,
-      watchShared: importing.watchShared,
-      // Wrapped around the dashboard rather than around a route that comes
-      // and goes: a share arriving while the user is deep in another flow
-      // would otherwise be dropped.
-      onContent: (paths) =>
-          importShared(context, paths, importing, creationFlow),
-      child: BlocProvider(
-        create: (_) =>
-            DashboardCubit(store: library.publicStore, index: library.documents)
-              ..load(),
-        child: Builder(
-          builder: (dashboardContext) => DashboardScreen(
-            actions: DashboardActions(
-              onOpenDocument: (document) =>
-                  context.push(AppRoutes.documentDetail(document.id)),
-              onCreateFolder: (name) => createFolder(
-                dashboardContext,
-                library.createLibraryFolder,
-                name,
-              ),
-              onImportPdf: () => openImportSheet(
-                context,
-                importing,
-                creationFlow,
-                permissions,
+    // The provider is outermost so both import paths — the sheet the user
+    // opens and the content another application shares in — sit inside it and
+    // can reload the dashboard when they finish. The watcher still wraps the
+    // dashboard rather than a route that comes and goes, so a share arriving
+    // while the user is deep in another flow is not dropped.
+    // The provider is outermost so both import paths — the sheet the user
+    // opens and the content another application shares in — sit inside it and
+    // can reload the dashboard when they finish. The watcher still wraps the
+    // dashboard rather than a route that comes and goes, so a share arriving
+    // while the user is deep in another flow is not dropped.
+    dashboard: BlocProvider(
+      create: (_) =>
+          DashboardCubit(store: library.publicStore, index: library.documents)
+            ..load(),
+      child: Builder(
+        builder: (dashboardContext) => HomeRefreshListener(
+          observer: routeObserver,
+          // Saving a scan and reviewing imported pages both leave a route above
+          // Home and both can change what the library holds. Home is built once
+          // and kept alive, so without this the document is written and never
+          // appears.
+          onRefresh: () => unawaited(reloadDashboard(dashboardContext)),
+          child: SharedContentWatcher(
+            key: ImportKeys.sharedContentWatcher,
+            takePending: importing.takePending,
+            watchShared: importing.watchShared,
+            onContent: (paths) =>
+                importShared(dashboardContext, paths, importing, creationFlow),
+            child: DashboardScreen(
+              actions: DashboardActions(
+                onOpenDocument: (document) =>
+                    context.push(AppRoutes.documentDetail(document.id)),
+                onCreateFolder: (name) => createFolder(
+                  dashboardContext,
+                  library.createLibraryFolder,
+                  name,
+                ),
+                // Opened from the dashboard's own context rather than the
+                // route's, because a completed import has to reload the
+                // dashboard and only a descendant of its provider can reach it.
+                onImportPdf: () => openImportSheet(
+                  dashboardContext,
+                  importing,
+                  creationFlow,
+                  permissions,
+                ),
               ),
             ),
           ),
@@ -152,6 +176,10 @@ Future<void> importShared(
       await reviewImportedPages(context, bundle, creationFlow);
     } else if (state.imported.isNotEmpty) {
       report(context, state.outcomeMessage);
+      // Same reason as the import sheet: the dashboard is kept alive by the
+      // tab shell and nothing else would rebuild it, so a document shared in
+      // from another application would arrive invisibly.
+      await reloadDashboard(context);
     } else if (state.message != null) {
       report(context, state.message!);
     }
@@ -190,6 +218,12 @@ Future<void> openImportSheet(
         onImported: (state) {
           Navigator.of(sheetContext).pop();
           report(context, state.outcomeMessage);
+          // The dashboard is built once and kept alive by the tab shell's
+          // IndexedStack, so nothing rebuilds it when the sheet closes over
+          // it. Without this the user is told "1 document imported" while
+          // looking at a library that still appears empty, and it stays that
+          // way until the application is relaunched.
+          unawaited(reloadDashboard(context));
         },
       ),
     ),
@@ -221,6 +255,26 @@ Future<void> reviewImportedPages(
     ),
   ),
 );
+
+/// Reloads the dashboard so it shows what was just written.
+///
+/// The dashboard is created once, inside the tab shell's IndexedStack, and both
+/// destinations stay built — which is what returns the user to the folder they
+/// were in rather than to the library root. The cost of that is that nothing
+/// rebuilds it when a sheet closes over it, so anything that adds a document
+/// from outside the dashboard has to say so.
+///
+/// Safe to call from a context that has no [DashboardCubit] above it: an import
+/// can also be started from a route where there is no dashboard to reload, and
+/// that is not a failure.
+Future<void> reloadDashboard(BuildContext context) async {
+  final cubit = context.mounted
+      ? context.findAncestorWidgetOfExactType<BlocProvider<DashboardCubit>>()
+      : null;
+  if (cubit == null || !context.mounted) return;
+
+  await context.read<DashboardCubit>().load();
+}
 
 /// Creates a folder, reporting a refusal where the user can see it.
 ///

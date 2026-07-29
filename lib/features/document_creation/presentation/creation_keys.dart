@@ -40,8 +40,15 @@ abstract final class CreationKeys {
   /// Shown when something went wrong.
   static const errorView = Key('creation_error_view');
 
+  /// The shared prefix of every page-row key.
+  ///
+  /// Distinct from the row *actions* below, which are `creation_row_*`: a
+  /// finder matching on that prefix would count a row's three action buttons
+  /// as three more rows, and report one page as four.
+  static const rowPrefix = 'creation_page_row_';
+
   /// A page row, keyed by the page it shows.
-  static Key row(PageId id) => Key('creation_row_${id.value}');
+  static Key row(PageId id) => Key('$rowPrefix${id.value}');
 
   /// Opens crop and rotate for a row.
   static const rowCropButton = Key('creation_row_crop_button');

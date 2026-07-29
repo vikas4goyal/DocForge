@@ -2,15 +2,16 @@
 ///
 /// Precondition: onboarding is complete and the library is empty.
 ///
-/// What it proves: the whole creation journey end to end. Capture two pages,
-/// crop one, enhance one, build the page table, generate the PDF, and open the
-/// result in the viewer. Every one of those steps passes in isolation today;
-/// this is the flow that proves they still work when assembled, which is the
-/// gap that let a broken journey ship alongside 118 green test files.
+/// What it proves: the whole creation journey end to end. Add pages from the
+/// camera, take each through crop and enhancement, build the page table,
+/// generate the PDF, and find the result in the library. Every one of those
+/// steps passes in isolation today; this is the flow that proves they still
+/// work when assembled, which is the gap that let a broken journey ship
+/// alongside 118 green test files.
 ///
-/// Crop and enhance are reached by *tapping* their rows, not by URL, because
-/// `openPageCrop` and `openPageEnhance` are imperative `Navigator.push` calls
-/// that no route addresses (`design.md` D5).
+/// Crop and enhance are reached by *continuing through them*, not by URL,
+/// because `openPageCrop` and `openPageEnhance` are imperative
+/// `Navigator.push` calls that no route addresses (`design.md` D5).
 library;
 
 import 'package:flutter_test/flutter_test.dart';
@@ -23,25 +24,22 @@ import '../support/robots/creation_robots.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('captured pages become a document that opens in the viewer', (
+  testWidgets('captured pages become a document in the library', (
     tester,
   ) async {
     final app = await bootDocForge(tester);
-    final pageOne = await app.fixtures.pageOne();
-    expect(pageOne, isNotEmpty);
 
     await DashboardRobot(tester).waitUntilLoaded();
     await TabShellRobot(tester).startCreation();
 
     final pageTable = PageTableRobot(tester);
     await pageTable.waitUntilLoaded();
-    await pageTable.addFromCamera();
 
-    final capture = CaptureRobot(tester);
-    await capture.capturePages(2);
-    await capture.finish();
+    // Two pages, each through the crop-then-enhance loop a new page goes
+    // through before it becomes a row.
+    await pageTable.addPageFromCamera();
+    await pageTable.addPageFromCamera();
 
-    await pageTable.waitUntilLoaded();
     expect(
       pageTable.pageCount,
       2,
@@ -55,7 +53,8 @@ void main() {
 
     await pageTable.save('Captured document');
 
-    // The document the user just made, in the library they can see.
+    // Saving returns the user to Home, and the document they just made is in
+    // the library they can see.
     final dashboard = DashboardRobot(tester);
     await dashboard.waitUntilLoaded();
     expect(
@@ -64,36 +63,40 @@ void main() {
       reason: 'The saved document should appear in Recent without a reload.',
     );
 
-    // And genuinely on disk, in the folder another application could read.
+    // And genuinely in the folder another application could read, which is what
+    // the public library folder exists for.
     final listed = await app.publicStore.list(const []);
+    expect(listed.isSuccess, isTrue);
     expect(
-      listed.isSuccess,
-      isTrue,
-      reason: 'The library folder should be readable after a save.',
+      listed.valueOrNull,
+      isNotEmpty,
+      reason: 'A saved document must leave a file behind, not only a row.',
     );
   });
 
-  testWidgets('a captured page can be cropped and enhanced before saving', (
-    tester,
-  ) async {
-    await bootDocForge(tester);
+  testWidgets('a page abandoned at crop is not added', (tester) async {
+    final app = await bootDocForge(tester);
 
     await DashboardRobot(tester).waitUntilLoaded();
     await TabShellRobot(tester).startCreation();
 
     final pageTable = PageTableRobot(tester);
     await pageTable.waitUntilLoaded();
-    await pageTable.addFromCamera();
 
-    final capture = CaptureRobot(tester);
-    await capture.capturePages(1);
-    await capture.finish();
+    await pageTable.beginAddingPageFromCamera();
+    await CropRobot(tester).cancel();
 
     await pageTable.waitUntilLoaded();
-    expect(pageTable.pageCount, 1);
+    expect(
+      pageTable.pageCount,
+      0,
+      reason:
+          'Leaving crop without continuing must add nothing — the spec treats '
+          'it as "keep what you had", not as a failure.',
+    );
 
-    // Reached by tapping the row, which is how a user reaches them and the only
-    // way a test can: neither screen has a route.
-    await pageTable.waitUntilVisible();
+    // The capture still happened, which is what makes this worth asserting: the
+    // page was staged and then discarded rather than never taken.
+    expect(app.platform.scanner.captures, hasLength(1));
   });
 }

@@ -26,7 +26,23 @@ class CapturePage {
   /// Only a path is ever held. The bytes are read by whichever step needs them
   /// and released again, which is what lets a long batch run on a low-end
   /// device without exhausting memory (`design.md` §7).
+  ///
+  /// Opens the camera first when it is not already open. The capture screen
+  /// opens it on mount, but the page table captures through this use case
+  /// without ever showing that screen — so leaving it to the caller meant "Add
+  /// page → Camera" failed with "capture before initialise" every time, staged
+  /// nothing, and added no page without saying why.
   Future<Result<CapturedPage>> call() async {
+    if (!_scanner.isReady) {
+      final opened = await _scanner.initialise();
+      // A permission refusal or an unopenable camera is reported as itself:
+      // the two lead to different recovery actions and must not be collapsed
+      // into a generic capture failure.
+      if (opened case Failed(:final failure)) {
+        return Result<CapturedPage>.failure(failure);
+      }
+    }
+
     final captured = await _scanner.capture();
 
     return captured.flatMapAsync((result) async {
