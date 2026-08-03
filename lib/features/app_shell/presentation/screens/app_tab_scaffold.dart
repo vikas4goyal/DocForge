@@ -44,6 +44,19 @@ class AppTabScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final labelPainter = TextPainter(
+      text: TextSpan(
+        text: ShellSemantics.dashboardTab,
+        style: theme.textTheme.labelSmall,
+      ),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+      maxLines: 1,
+    );
+    final labelHeight = labelPainter.preferredLineHeight;
+    labelPainter.dispose();
+
     return Scaffold(
       key: ShellKeys.tabScaffold,
       body: child,
@@ -58,6 +71,11 @@ class AppTabScaffold extends StatelessWidget {
         // A notched bar with the create control docked into it: the middle
         // position is what the specification asks for, and a third
         // NavigationDestination would make Create look like a place.
+        // Material's bar padding (24), our button padding (16), and the icon
+        // (24) consume 64 logical pixels. Let the final part follow the
+        // system-scaled label instead of assuming its default 16-pixel line
+        // height; otherwise iOS accessibility text can overflow the tab.
+        height: 64 + labelHeight,
         shape: const CircularNotchedRectangle(),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,

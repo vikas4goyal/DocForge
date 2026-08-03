@@ -20,10 +20,17 @@ void main() {
     WidgetTester tester, {
     AppTab tab = AppTab.dashboard,
     Brightness brightness = Brightness.light,
+    double textScale = 1,
   }) async {
     await tester.pumpWidget(
       MaterialApp(
         theme: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: AppTabScaffold(
           tab: tab,
           onTabSelected: selected.add,
@@ -148,6 +155,15 @@ void main() {
       await expectLater(tester, meetsGuideline(iOSTapTargetGuideline));
 
       handle.dispose();
+    });
+
+    testWidgets('scaled destination labels do not overflow the bar', (
+      tester,
+    ) async {
+      await pumpScaffold(tester, textScale: 3);
+
+      expect(tester.takeException(), isNull);
+      expect(tester.getSize(find.byType(BottomAppBar)).height, greaterThan(80));
     });
 
     testWidgets('passes the contrast guideline in light mode', (tester) async {
