@@ -135,7 +135,10 @@ void main() {
           secure,
         ),
       ),
-      child: DocumentDetailScreen(onClose: () => context.pop()),
+      child: DocumentDetailScreen(
+        onClose: () => context.pop(),
+        onOpenViewer: () => context.push(AppRoutes.documentView(id)),
+      ),
     ),
     documentEdit: (_, _) => _placeholder('documentEdit'),
     folders: (context) => BlocProvider(
@@ -301,6 +304,22 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(LibraryKeys.documentDetailScreen), findsOneWidget);
+    });
+
+    testWidgets('the detail Open action pushes the same document viewer', (
+      tester,
+    ) async {
+      documents.documents[sampleDocument.id] = sampleDocument;
+      pages.pages[sampleDocument.id] = samplePages(2);
+
+      await pumpAt(tester, AppRoutes.documentDetail(sampleDocument.id));
+      await tester.tap(find.byKey(LibraryKeys.documentOpenButton));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(Key('placeholder_viewer:${sampleDocument.id.value}')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('deleting a document returns to the list', (tester) async {

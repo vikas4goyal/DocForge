@@ -2,10 +2,9 @@
 ///
 /// Precondition: onboarding is complete and one document has been imported.
 ///
-/// What it proves: a document in the library opens, renders, and returns the
-/// user to where they came from. The return matters as much as the opening: the
-/// viewer is pushed over whichever list the user was on, and a back that landed
-/// somewhere else would lose their place in a library of a hundred documents.
+/// What it proves: a dashboard document opens its detail, the detail's explicit
+/// Open control reaches the real PDF viewer, and Back returns through detail to
+/// the same dashboard. This is the production route chain a user follows.
 library;
 
 import 'dart:io';
@@ -23,7 +22,7 @@ import '../support/seed.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('a document opens from the library and comes back to it', (
+  testWidgets('a dashboard document opens through detail and comes back', (
     tester,
   ) async {
     final staging = await Directory.systemTemp.createTemp('docforge_browse_');
@@ -35,18 +34,31 @@ void main() {
     await bootDocForge(tester, pickedFiles: [importable]);
     await seedDocumentByImport(tester);
 
-    // Into the document list, which is the route a user reaches from the
-    // dashboard's "Documents" destination.
-    final list = DocumentListRobot(tester);
     final dashboard = DashboardRobot(tester);
     await dashboard.waitUntilLoaded();
     expect(dashboard.isEmpty, isFalse);
+
+    // Read the stable row identifier from what the user can see, then drive the
+    // same dashboard → detail → Open route that production composition owns.
+    final visibleIds = DocumentListRobot(tester).visibleDocumentIds;
+    expect(visibleIds, hasLength(1));
+    await dashboard.openDocument(visibleIds.single);
+
+    final detail = DocumentDetailRobot(tester);
+    await detail.waitUntilVisible();
+    await detail.open();
 
     // The viewer renders through the real pdfrx surface, so reaching a page
     // view means the renderer genuinely parsed the file the import produced —
     // which no host test could establish.
     final viewer = ViewerRobot(tester);
+    await viewer.waitUntilOpen();
     expect(viewer.hasFailed, isFalse);
-    expect(list.isVisible || dashboard.isVisible, isTrue);
+
+    await viewer.goBack();
+    await detail.waitUntilVisible();
+    await tester.pageBack();
+    await dashboard.waitUntilLoaded();
+    expect(dashboard.isEmpty, isFalse);
   });
 }

@@ -95,6 +95,24 @@ abstract interface class PageRepository {
   Future<Result<void>> deleteForDocument(DocumentId documentId);
 }
 
+/// Stores thumbnail-sized images derived from an authoritative document PDF.
+///
+/// The cache accepts a resolved path because device-path materialisation and
+/// secret lookup are application concerns. Implementations must treat entries
+/// as disposable derived data rather than document records.
+abstract interface class DocumentThumbnailCache {
+  /// Returns a current thumbnail path, rendering and caching it when absent.
+  Future<Result<String>> thumbnailFor(
+    Document document, {
+    required String filePath,
+    required int pageNumber,
+    String? password,
+  });
+
+  /// Removes every cached thumbnail for [id].
+  Future<Result<void>> evict(DocumentId id);
+}
+
 /// Stores recoverable Trash entries independently from active folders.
 abstract interface class TrashRepository {
   /// Returns [id], or `Failure.notFound` when absent.

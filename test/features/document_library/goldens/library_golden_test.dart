@@ -10,6 +10,7 @@ import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
 import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
@@ -17,10 +18,13 @@ import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
 import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
+import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
+import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_state.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_list_state.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/folder_state.dart';
+import 'package:doc_forge/features/document_library/presentation/screens/document_detail_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
 import 'package:flutter/material.dart';
@@ -115,6 +119,42 @@ class _SeededFolderCubit extends FolderCubit {
   Future<void> load() async {}
 }
 
+/// A detail Cubit frozen at a chosen ready state.
+class _SeededDetailCubit extends DocumentDetailCubit {
+  _SeededDetailCubit(this._seeded)
+    : super(
+        _seeded.document!.id,
+        LoadDocumentDetail(_documents, _pages),
+        RenameDocument(_documents, _clock, InMemoryPublicFileStore()),
+        MoveDocument(_documents, _clock),
+        ToggleFavourite(_documents, _clock),
+        ArchiveDocument(_documents, _clock),
+        RestoreDocument(_documents, _clock),
+        DuplicateDocument(
+          _documents,
+          _pages,
+          InMemoryPublicFileStore(),
+          _clock,
+          SequentialIdGenerator(),
+        ),
+        PurgeDocument(
+          _documents,
+          _pages,
+          InMemoryPublicFileStore(),
+          _files,
+          InMemorySecureStore(),
+        ),
+      );
+
+  final DocumentDetailState _seeded;
+
+  @override
+  DocumentDetailState get state => _seeded;
+
+  @override
+  Future<void> load() async {}
+}
+
 void main() {
   Future<void> pumpList(
     WidgetTester tester,
@@ -174,6 +214,30 @@ void main() {
     await tester.pump();
   }
 
+  Future<void> pumpDetail(
+    WidgetTester tester,
+    Size size,
+    DocumentDetailState state,
+  ) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final cubit = _SeededDetailCubit(state);
+    addTearDown(cubit.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: BlocProvider<DocumentDetailCubit>.value(
+          value: cubit,
+          child: DocumentDetailScreen(onClose: () {}, onOpenViewer: () {}),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+  }
+
   final documents = const DocumentListState.initial().copyWith(
     status: LoadStatus.ready,
     documents: [for (var i = 0; i < 6; i++) _document(i)],
@@ -183,6 +247,23 @@ void main() {
     status: LoadStatus.ready,
     folders: [for (var i = 1; i <= 4; i++) _folder(i)],
   );
+
+  final detail = const DocumentDetailState.initial().copyWith(
+    status: LoadStatus.ready,
+    document: _document(0),
+    pages: samplePages(4),
+  );
+
+  group('document detail goldens', () {
+    testWidgets('phone, light', (tester) async {
+      await pumpDetail(tester, _phone, detail);
+
+      await expectLater(
+        find.byType(DocumentDetailScreen),
+        matchesGoldenFile('document_detail_phone_light.png'),
+      );
+    });
+  });
 
   group('document list goldens', () {
     testWidgets('phone, light', (tester) async {

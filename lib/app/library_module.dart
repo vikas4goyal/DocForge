@@ -12,17 +12,21 @@ import 'dart:io';
 
 import 'package:doc_forge/core/contracts/contracts.dart';
 import 'package:doc_forge/core/storage/key_value_store.dart';
+import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_forge/core/time/clock.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
+import 'package:doc_forge/features/document_library/application/usecases/document_thumbnails.dart';
 import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
 import 'package:doc_forge/features/document_library/application/usecases/library_folder_usecases.dart';
 import 'package:doc_forge/features/document_library/application/usecases/reconcile_library.dart';
 import 'package:doc_forge/features/document_library/application/usecases/trash_usecases.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/document_file_store.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
+import 'package:doc_forge/features/document_library/infrastructure/datasource/derived_thumbnail_cache.dart';
 import 'package:doc_forge/features/document_library/infrastructure/datasource/document_file_store.dart';
+import 'package:doc_forge/features/document_library/infrastructure/datasource/pdfrx_thumbnail_renderer.dart';
 import 'package:doc_forge/features/document_library/infrastructure/document_title_index.dart';
 import 'package:doc_forge/features/document_library/infrastructure/library_contracts_impl.dart';
 import 'package:doc_forge/features/document_library/infrastructure/library_storage_migration.dart';
@@ -47,6 +51,7 @@ class LibraryModule {
     required this.documentsDirectory,
     required this.loadDocuments,
     required this.loadDocumentDetail,
+    required this.loadDocumentPageThumbnail,
     required this.loadFolderOptions,
     required this.renameDocument,
     required this.moveDocument,
@@ -83,6 +88,9 @@ class LibraryModule {
 
   /// Loads one document with its pages.
   final LoadDocumentDetail loadDocumentDetail;
+
+  /// Lazily derives one page preview from the authoritative PDF.
+  final LoadDocumentPageThumbnail loadDocumentPageThumbnail;
 
   /// Loads folders for the move picker.
   final LoadFolderOptions loadFolderOptions;
@@ -260,6 +268,7 @@ LibraryModule buildLibraryModuleOver({
   required Clock clock,
   required IdGenerator ids,
   required SecureStore secureStorage,
+  ThumbnailRenderer thumbnailRenderer = renderPdfrxThumbnail,
 }) {
   final documents = IsarDocumentRepository(isar);
   final folders = IsarFolderRepository(isar);
@@ -268,6 +277,18 @@ LibraryModule buildLibraryModuleOver({
   // Narrowed to derived data: the PDFs themselves live in `store`, and this
   // holds only the thumbnails rendered from them (`design.md` D4a).
   final DocumentFileStore derived = LocalDocumentFileStore(documentsDirectory);
+  final thumbnailCache = DerivedThumbnailCache(
+    cacheDirectory: documentsDirectory,
+    // PurgeDocument already removes this per-document directory, so previews
+    // cannot outlive a permanent deletion.
+    directoryName: LocalDocumentFileStore.documentsDirectoryName,
+    render: thumbnailRenderer,
+  );
+  final loadThumbnail = LoadDocumentPageThumbnail(
+    thumbnailCache,
+    PublicStoreDocumentFileResolver(store),
+    secureStorage,
+  );
 
   final move = MoveDocument(documents, clock);
   final purge = PurgeDocument(documents, pages, store, derived, secureStorage);
@@ -284,6 +305,7 @@ LibraryModule buildLibraryModuleOver({
     documentsDirectory: documentsDirectory,
     loadDocuments: LoadDocuments(documents),
     loadDocumentDetail: LoadDocumentDetail(documents, pages),
+    loadDocumentPageThumbnail: loadThumbnail,
     loadFolderOptions: LoadFolderOptions(folders),
     renameDocument: RenameDocument(documents, clock, store),
     moveDocument: move,

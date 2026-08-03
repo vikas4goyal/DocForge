@@ -3,6 +3,7 @@ library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/formatting/display_formatting.dart';
 import 'package:doc_forge/core/widgets/app_state_views.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
@@ -26,6 +27,7 @@ class DocumentDetailScreen extends StatefulWidget {
     this.folders = const [],
     this.onOpenViewer,
     this.onOpenDocument,
+    this.loadPageThumbnail,
   });
 
   /// Called when the document is gone and the screen must leave.
@@ -39,6 +41,10 @@ class DocumentDetailScreen extends StatefulWidget {
 
   /// Called with a newly created duplicate, so the caller can navigate to it.
   final void Function(Document document)? onOpenDocument;
+
+  /// Lazily derives a private preview for one page of a [Document].
+  final Future<Result<String>> Function(Document document, int pageNumber)?
+  loadPageThumbnail;
 
   @override
   State<DocumentDetailScreen> createState() => _DocumentDetailScreenState();
@@ -95,6 +101,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           LoadStatus.ready || LoadStatus.empty => _Body(
             state: state,
             onOpenViewer: widget.onOpenViewer,
+            loadPageThumbnail: widget.loadPageThumbnail,
           ),
         },
       ),
@@ -104,10 +111,16 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
 
 /// The metadata block, favourite control and page strip.
 class _Body extends StatelessWidget {
-  const _Body({required this.state, required this.onOpenViewer});
+  const _Body({
+    required this.state,
+    required this.onOpenViewer,
+    required this.loadPageThumbnail,
+  });
 
   final DocumentDetailState state;
   final VoidCallback? onOpenViewer;
+  final Future<Result<String>> Function(Document document, int pageNumber)?
+  loadPageThumbnail;
 
   @override
   Widget build(BuildContext context) {
@@ -168,8 +181,15 @@ class _Body extends StatelessWidget {
                   scrollDirection: Axis.horizontal,
                   itemCount: state.pages.length,
                   separatorBuilder: (_, _) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) =>
-                      PageThumbnail(page: state.pages[index]),
+                  itemBuilder: (context, index) {
+                    final page = state.pages[index];
+                    return PageThumbnail(
+                      page: page,
+                      loadThumbnail: loadPageThumbnail == null
+                          ? null
+                          : () => loadPageThumbnail!(document, page.pageNumber),
+                    );
+                  },
                 ),
         ),
       ],

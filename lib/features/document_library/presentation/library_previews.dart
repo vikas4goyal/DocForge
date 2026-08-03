@@ -7,6 +7,7 @@
 /// (`design.md` §15).
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:doc_forge/core/contracts/models/document.dart';
@@ -410,6 +411,34 @@ Widget folderTileDark() => previewSurface(
 )
 Widget pageThumbnailPlaceholder() =>
     previewSurface(PageThumbnail(page: samplePages(1).first, onTap: () {}));
+
+/// A page thumbnail while its PDF-derived image is being generated.
+@Preview(
+  name: 'PageThumbnail — loading phone',
+  group: 'Library',
+  theme: appPreviewTheme,
+  size: PreviewSize.phone,
+)
+Widget pageThumbnailLoading() => previewSurface(
+  PageThumbnail(
+    page: samplePages(1).first,
+    loadThumbnail: () => Completer<Result<String>>().future,
+  ),
+);
+
+/// A page thumbnail whose PDF could not be rendered, in dark mode.
+@Preview(
+  name: 'PageThumbnail — fallback dark',
+  group: 'Library',
+  theme: appPreviewTheme,
+  brightness: Brightness.dark,
+)
+Widget pageThumbnailFallback() => previewSurface(
+  PageThumbnail(
+    page: samplePages(1).first,
+    loadThumbnail: () async => const Result<String>.failure(Failure.pdf()),
+  ),
+);
 
 /// A row of page thumbnails.
 @Preview(

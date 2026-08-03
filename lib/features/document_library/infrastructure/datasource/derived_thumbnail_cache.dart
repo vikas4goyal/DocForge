@@ -16,6 +16,7 @@ import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
 
 /// Renders one page of a PDF to thumbnail-sized image bytes.
 typedef ThumbnailRenderer =
@@ -27,7 +28,7 @@ typedef ThumbnailRenderer =
     });
 
 /// A thumbnail store that renders what it does not already hold.
-class DerivedThumbnailCache {
+class DerivedThumbnailCache implements DocumentThumbnailCache {
   /// Creates a cache rooted at [cacheDirectory].
   const DerivedThumbnailCache({
     required this.cacheDirectory,
@@ -69,6 +70,7 @@ class DerivedThumbnailCache {
   ///
   /// [password] is required for a protected document; without it the render
   /// fails and the caller shows a placeholder rather than a broken row.
+  @override
   Future<Result<String>> thumbnailFor(
     Document document, {
     required String filePath,
@@ -102,6 +104,7 @@ class DerivedThumbnailCache {
   /// Called when a document is deleted, and when reconciliation finds its file
   /// gone: a thumbnail of something that no longer exists is worse than none,
   /// because a list would keep rendering it.
+  @override
   Future<Result<void>> evict(DocumentId id) async {
     try {
       final directory = Directory('${root.path}/${id.value}');

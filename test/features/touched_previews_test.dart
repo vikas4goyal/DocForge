@@ -47,6 +47,8 @@ void main() {
       'folderTileEmpty': folderTileEmpty,
       'folderTileDark': folderTileDark,
       'pageThumbnailPlaceholder': pageThumbnailPlaceholder,
+      'pageThumbnailLoading': pageThumbnailLoading,
+      'pageThumbnailFallback': pageThumbnailFallback,
       'pageThumbnailStrip': pageThumbnailStrip,
       'documentCardDefault': documentCardDefault,
       'documentCardDark': documentCardDark,

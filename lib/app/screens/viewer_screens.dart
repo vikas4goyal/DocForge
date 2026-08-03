@@ -25,6 +25,7 @@ import 'package:doc_forge/features/document_viewer/application/usecases/viewer_u
 import 'package:doc_forge/features/document_viewer/domain/repositories/pdf_renderer.dart';
 import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_cubit.dart';
 import 'package:doc_forge/features/document_viewer/presentation/screens/viewer_screen.dart';
+import 'package:doc_forge/features/document_viewer/presentation/viewer_keys.dart';
 import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
 import 'package:doc_forge/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
 import 'package:flutter/material.dart';
@@ -95,11 +96,14 @@ ViewerScreens buildViewerScreens({
               required password,
               required page,
               required onPageChanged,
-            }) => PdfViewer.file(
-              filePath,
-              passwordProvider: () => password,
-              params: PdfViewerParams(
-                onPageChanged: (page) => onPageChanged(page ?? 1),
+            }) => KeyedSubtree(
+              key: ViewerKeys.pageView,
+              child: PdfViewer.file(
+                filePath,
+                passwordProvider: () => password,
+                params: PdfViewerParams(
+                  onPageChanged: (page) => onPageChanged(page ?? 1),
+                ),
               ),
             ),
         onBack: () => context.pop(),

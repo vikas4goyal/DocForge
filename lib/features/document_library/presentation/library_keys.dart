@@ -121,6 +121,10 @@ abstract final class LibraryKeys {
   /// A page thumbnail on the document detail screen.
   static Key pageThumbnail(String pageId) => Key('page_thumbnail_$pageId');
 
+  /// Loading indicator for a derived page thumbnail.
+  static Key pageThumbnailLoading(String pageId) =>
+      Key('page_thumbnail_loading_$pageId');
+
   /// Root of the folder detail screen.
   ///
   /// Distinct from [documentListScreen] even though the folder view is built
@@ -205,7 +209,7 @@ abstract final class LibrarySemantics {
   static const passwordProtected = 'Password protected';
 
   /// Announces a page thumbnail by its position in the document.
-  static String pageThumbnail(int pageNumber) => 'Page $pageNumber';
+  static String pageThumbnail(int pageNumber) => 'Page $pageNumber thumbnail';
 
   /// Announces a folder's action menu, naming the folder it acts on.
   static String folderActions(String folderName) => 'Actions for $folderName';
