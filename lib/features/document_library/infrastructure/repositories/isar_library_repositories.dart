@@ -9,6 +9,7 @@ library;
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/trash.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
@@ -110,12 +111,26 @@ class IsarDocumentRepository implements DocumentRepository {
     final base = _isar.documentEntitys.filter();
 
     return switch (filter) {
-      DocumentFilter.all => base.isArchivedEqualTo(false),
+      DocumentFilter.all => base.trashUuidIsNull().and().isArchivedEqualTo(
+        false,
+      ),
       DocumentFilter.favourites =>
-        base.isArchivedEqualTo(false).and().isFavouriteEqualTo(true),
-      DocumentFilter.archived => base.isArchivedEqualTo(true),
+        base
+            .trashUuidIsNull()
+            .and()
+            .isArchivedEqualTo(false)
+            .and()
+            .isFavouriteEqualTo(true),
+      DocumentFilter.archived => base.trashUuidIsNull().and().isArchivedEqualTo(
+        true,
+      ),
       DocumentFilter.folder =>
-        base.isArchivedEqualTo(false).and().folderUuidEqualTo(folderId?.value),
+        base
+            .trashUuidIsNull()
+            .and()
+            .isArchivedEqualTo(false)
+            .and()
+            .folderUuidEqualTo(folderId?.value),
     };
   }
 
@@ -142,7 +157,11 @@ class IsarFolderRepository implements FolderRepository {
 
   @override
   Future<Result<List<Folder>>> all() => _guard(() async {
-    final entities = await _isar.folderEntitys.where().sortByName().findAll();
+    final entities = await _isar.folderEntitys
+        .filter()
+        .trashUuidIsNull()
+        .sortByName()
+        .findAll();
 
     // Counts are computed here rather than stored, so they cannot drift out of
     // sync with the documents themselves.
@@ -150,6 +169,8 @@ class IsarFolderRepository implements FolderRepository {
       entities.map((entity) async {
         final count = await _isar.documentEntitys
             .filter()
+            .trashUuidIsNull()
+            .and()
             .isArchivedEqualTo(false)
             .and()
             .folderUuidEqualTo(entity.uuid)
@@ -170,6 +191,8 @@ class IsarFolderRepository implements FolderRepository {
 
       final count = await _isar.documentEntitys
           .filter()
+          .trashUuidIsNull()
+          .and()
           .isArchivedEqualTo(false)
           .and()
           .folderUuidEqualTo(entity.uuid)
@@ -188,7 +211,12 @@ class IsarFolderRepository implements FolderRepository {
   @override
   Future<Result<Folder?>> findByName(String name) async {
     final result = await _guard(
-      () => _isar.folderEntitys.filter().nameEqualTo(name).findFirst(),
+      () => _isar.folderEntitys
+          .filter()
+          .trashUuidIsNull()
+          .and()
+          .nameEqualTo(name)
+          .findFirst(),
     );
 
     return result.map((entity) => entity?.toDomain());
@@ -199,6 +227,8 @@ class IsarFolderRepository implements FolderRepository {
     final result = await _guard(
       () => _isar.folderEntitys
           .filter()
+          .trashUuidIsNull()
+          .and()
           .relativePathEqualTo(relativePath)
           .findFirst(),
     );
@@ -223,6 +253,64 @@ class IsarFolderRepository implements FolderRepository {
       () => _isar.folderEntitys.filter().uuidEqualTo(id.value).deleteAll(),
     ),
   );
+}
+
+/// Stores recoverable Trash metadata in Isar.
+class IsarTrashRepository implements TrashRepository {
+  /// Creates the repository over an open [_isar] instance.
+  const IsarTrashRepository(this._isar);
+
+  final Isar _isar;
+
+  @override
+  Future<Result<TrashEntry>> findById(TrashId id) async {
+    final result = await _guard(
+      () => _isar.trashEntitys.filter().uuidEqualTo(id.value).findFirst(),
+    );
+    return result.flatMap(
+      (entity) => entity == null
+          ? const Result<TrashEntry>.failure(Failure.notFound())
+          : Result<TrashEntry>.success(entity.toDomain()),
+    );
+  }
+
+  @override
+  Future<Result<List<TrashEntry>>> all() => _guard(() async {
+    final rows = await _isar.trashEntitys
+        .where()
+        .sortByDeletedAtDesc()
+        .findAll();
+    return rows.map((row) => row.toDomain()).toList();
+  });
+
+  @override
+  Future<Result<TrashEntry>> save(TrashEntry entry) async {
+    final result = await _guard(
+      () => _isar.writeTxn(
+        () => _isar.trashEntitys.put(TrashEntity.fromDomain(entry)),
+      ),
+    );
+    return result.map((_) => entry);
+  }
+
+  @override
+  Future<Result<void>> delete(TrashId id) => _guard(
+    () => _isar.writeTxn(
+      () => _isar.trashEntitys.filter().uuidEqualTo(id.value).deleteAll(),
+    ),
+  );
+
+  @override
+  Future<Result<List<TrashEntry>>> expiredAt(DateTime now) => _guard(() async {
+    final rows = await _isar.trashEntitys
+        .filter()
+        .expiresAtLessThan(now.toUtc(), include: true)
+        .findAll();
+    return rows.map((row) => row.toDomain()).toList();
+  });
+
+  @override
+  Future<Result<int>> count() => _guard(() => _isar.trashEntitys.count());
 }
 
 /// Stores pages in Isar.

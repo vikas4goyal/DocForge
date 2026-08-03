@@ -39,6 +39,7 @@ void main() {
       AppRoutes.search: 'search',
       AppRoutes.favourites: 'favourites',
       AppRoutes.archive: 'archive',
+      AppRoutes.trash: 'trash',
       AppRoutes.settings: 'settings',
       AppRoutes.about: 'about',
       AppRoutes.privacy: 'privacy',

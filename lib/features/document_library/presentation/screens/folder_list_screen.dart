@@ -83,7 +83,6 @@ class _FolderListScreenState extends State<FolderListScreen> {
                 folder: folder,
                 onTap: () => widget.onOpenFolder(folder.id),
                 onRename: () => _rename(context, folder),
-                onDelete: () => _delete(context, folder),
               );
             },
           ),
@@ -125,19 +124,5 @@ class _FolderListScreenState extends State<FolderListScreen> {
 
     if (name == null) return;
     await cubit.rename(folder.id, name);
-  }
-
-  /// Asks what happens to the folder's documents, then deletes it.
-  ///
-  /// Nothing happens when the user cancels: the strategy has no default,
-  /// because a folder deletion must never silently decide the fate of the
-  /// documents inside it.
-  Future<void> _delete(BuildContext context, Folder folder) async {
-    final cubit = context.read<FolderCubit>();
-
-    final strategy = await askFolderDeletionStrategy(context, folder: folder);
-    if (strategy == null) return;
-
-    await cubit.delete(folder.id, strategy);
   }
 }

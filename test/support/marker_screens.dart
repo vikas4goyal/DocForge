@@ -52,6 +52,9 @@ abstract final class RouteMarkers {
   /// The archive.
   static const archive = 'archive';
 
+  /// Recoverable Trash.
+  static const trash = 'trash';
+
   /// Settings.
   static const settings = 'settings';
 
@@ -94,6 +97,7 @@ AppScreens markerScreens() => AppScreens(
   search: (_) => markerScreen(RouteMarkers.search),
   favourites: (_) => markerScreen(RouteMarkers.favourites),
   archive: (_) => markerScreen(RouteMarkers.archive),
+  trash: (_) => markerScreen(RouteMarkers.trash),
   settings: (_) => markerScreen(RouteMarkers.settings),
   about: (_) => markerScreen(RouteMarkers.about),
   privacy: (_) => markerScreen(RouteMarkers.privacy),

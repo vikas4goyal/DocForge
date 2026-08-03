@@ -13,10 +13,12 @@ import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
+import 'package:doc_forge/features/document_library/presentation/cubit/trash_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/document_detail_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/folder_detail_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
+import 'package:doc_forge/features/document_library/presentation/screens/trash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -31,6 +33,7 @@ class LibraryScreens {
     required this.folderDetail,
     required this.favourites,
     required this.archive,
+    required this.trash,
   });
 
   /// Every document.
@@ -50,6 +53,9 @@ class LibraryScreens {
 
   /// Documents the user archived.
   final ScreenBuilder archive;
+
+  /// Recoverable Trash.
+  final ScreenBuilder trash;
 }
 
 /// Builds the library screens over an already-constructed [library] module.
@@ -101,6 +107,7 @@ LibraryScreens buildLibraryScreens({required LibraryModule library}) {
         library.restoreDocument,
         library.duplicateDocument,
         library.purgeDocument,
+        moveToTrash: library.moveDocumentToTrash,
       ),
       child: DocumentDetailScreen(
         onClose: () => context.pop(),
@@ -151,6 +158,15 @@ LibraryScreens buildLibraryScreens({required LibraryModule library}) {
       emptyTitle: 'Nothing archived',
       emptyMessage: 'Archived documents are kept here, out of your main list.',
       offerScan: false,
+    ),
+    trash: (context) => BlocProvider(
+      create: (_) => TrashCubit(
+        loadTrash: library.loadTrash,
+        restoreTrash: library.restoreTrashEntry,
+        purgeTrash: library.purgeTrashEntry,
+        emptyTrash: library.emptyTrash,
+      )..load(),
+      child: const TrashScreen(),
     ),
   );
 }

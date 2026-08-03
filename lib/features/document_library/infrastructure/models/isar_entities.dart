@@ -23,6 +23,7 @@ import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/trash.dart';
 import 'package:isar_community/isar.dart';
 
 part 'isar_entities.g.dart';
@@ -34,7 +35,7 @@ part 'isar_entities.g.dart';
 /// Version 2 replaced `filePath` — an absolute device path into app-private
 /// storage — with `folderPath` and `fileName`, which address the file inside
 /// the user-visible library folder. See `LibraryStorageMigration`.
-const librarySchemaVersion = 2;
+const librarySchemaVersion = 3;
 
 /// Isar row for a document.
 @collection
@@ -98,6 +99,13 @@ class DocumentEntity {
   /// Whether recognised text has been stored for this document.
   late bool hasRecognisedText;
 
+  /// UUID of the Trash entry holding this document, when deleted.
+  @Index()
+  String? trashUuid;
+
+  /// When this document was moved to Trash.
+  DateTime? trashedAt;
+
   /// Schema version this row was written with.
   late int schemaVersion;
 
@@ -127,6 +135,8 @@ class DocumentEntity {
     ..isArchived = document.isArchived
     ..isProtected = document.isProtected
     ..hasRecognisedText = document.hasRecognisedText
+    ..trashUuid = document.trashId?.value
+    ..trashedAt = document.trashedAt?.toUtc()
     ..schemaVersion = librarySchemaVersion;
 
   /// Converts this row to its domain type.
@@ -152,6 +162,94 @@ class DocumentEntity {
     isArchived: isArchived,
     isProtected: isProtected,
     hasRecognisedText: hasRecognisedText,
+    trashId: trashUuid == null ? null : TrashId(trashUuid!),
+    trashedAt: trashedAt?.toUtc(),
+  );
+}
+
+/// Isar row for a recoverable Trash entry.
+@collection
+class TrashEntity {
+  /// Isar's local primary key.
+  Id id = Isar.autoIncrement;
+
+  /// Stable Trash identifier.
+  @Index(unique: true, replace: true)
+  late String uuid;
+
+  /// Stored [TrashEntryKind] name.
+  late String kind;
+
+  /// Human-readable name shown in Trash.
+  late String displayName;
+
+  /// Location before deletion, relative to the library root.
+  late String originalRelativePath;
+
+  /// Deletion instant, indexed for newest-first presentation.
+  @Index()
+  late DateTime deletedAt;
+
+  /// Automatic permanent-deletion boundary.
+  @Index()
+  late DateTime expiresAt;
+
+  /// Recursive inventory values.
+  late int documentCount;
+
+  /// Recursive non-document files.
+  late int otherFileCount;
+
+  /// Recursive descendant folders.
+  late int folderCount;
+
+  /// Recursive file bytes.
+  late int sizeInBytes;
+
+  /// Documents whose metadata must be restored or purged with this payload.
+  late List<String> documentUuids;
+
+  /// Folder records belonging to this tree.
+  late List<String> folderUuids;
+
+  /// Schema version this row was written with.
+  late int schemaVersion;
+
+  /// Builds a row from [entry].
+  static TrashEntity fromDomain(TrashEntry entry) => TrashEntity()
+    ..uuid = entry.id.value
+    ..kind = entry.kind.name
+    ..displayName = entry.displayName
+    ..originalRelativePath = entry.originalRelativePath
+    ..deletedAt = entry.deletedAt.toUtc()
+    ..expiresAt = entry.expiresAt.toUtc()
+    ..documentCount = entry.inventory.documentCount
+    ..otherFileCount = entry.inventory.otherFileCount
+    ..folderCount = entry.inventory.folderCount
+    ..sizeInBytes = entry.inventory.sizeInBytes
+    ..documentUuids = entry.documentIds.map((id) => id.value).toList()
+    ..folderUuids = entry.folderIds.map((id) => id.value).toList()
+    ..schemaVersion = librarySchemaVersion;
+
+  /// Converts this row to its domain type.
+  TrashEntry toDomain() => TrashEntry(
+    id: TrashId(uuid),
+    kind: TrashEntryKind.values.firstWhere(
+      (value) => value.name == kind,
+      orElse: () => TrashEntryKind.document,
+    ),
+    displayName: displayName,
+    originalRelativePath: originalRelativePath,
+    deletedAt: deletedAt.toUtc(),
+    expiresAt: expiresAt.toUtc(),
+    inventory: TrashInventory(
+      documentCount: documentCount,
+      otherFileCount: otherFileCount,
+      folderCount: folderCount,
+      sizeInBytes: sizeInBytes,
+    ),
+    documentIds: documentUuids.map(DocumentId.new).toList(),
+    folderIds: folderUuids.map(FolderId.new).toList(),
   );
 }
 
@@ -178,6 +276,13 @@ class FolderEntity {
   /// When the folder was created.
   late DateTime createdAt;
 
+  /// UUID of the Trash entry holding this folder tree.
+  @Index()
+  String? trashUuid;
+
+  /// When the folder tree moved to Trash.
+  DateTime? trashedAt;
+
   /// Schema version this row was written with.
   late int schemaVersion;
 
@@ -190,6 +295,8 @@ class FolderEntity {
     ..name = folder.name
     ..relativePath = folder.relativePath
     ..createdAt = folder.createdAt.toUtc()
+    ..trashUuid = folder.trashId?.value
+    ..trashedAt = folder.trashedAt?.toUtc()
     ..schemaVersion = librarySchemaVersion;
 
   /// Converts this row to its domain type, reporting [documentCount].
@@ -201,6 +308,8 @@ class FolderEntity {
     relativePath: relativePath,
     createdAt: createdAt.toUtc(),
     documentCount: documentCount,
+    trashId: trashUuid == null ? null : TrashId(trashUuid!),
+    trashedAt: trashedAt?.toUtc(),
   );
 }
 

@@ -68,6 +68,9 @@ abstract final class AppRoutes {
   /// Archived documents.
   static const archive = '/archive';
 
+  /// Recoverable items waiting for automatic permanent deletion.
+  static const trash = '/trash';
+
   /// Settings.
   static const settings = '/settings';
 
@@ -103,6 +106,7 @@ abstract final class AppRoutes {
     search,
     favourites,
     archive,
+    trash,
     settings,
     about,
     privacy,

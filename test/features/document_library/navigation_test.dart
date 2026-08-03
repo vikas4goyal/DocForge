@@ -174,6 +174,7 @@ void main() {
     ),
     archive: (context) =>
         listRoute(context, title: 'Archive', filter: DocumentFilter.archived),
+    trash: (_) => _placeholder('trash'),
     settings: (_) => _placeholder('settings'),
     about: (_) => _placeholder('about'),
     privacy: (_) => _placeholder('privacy'),

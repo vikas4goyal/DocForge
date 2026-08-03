@@ -17,6 +17,9 @@ abstract final class DashboardKeys {
   /// The path from the library root to the open folder.
   static const breadcrumb = Key('dashboard_breadcrumb');
 
+  /// Root breadcrumb control.
+  static const breadcrumbRoot = Key('dashboard_breadcrumb_root');
+
   /// Creates a folder inside the open folder.
   static const createFolderButton = Key('dashboard_create_folder_button');
 
@@ -49,6 +52,36 @@ abstract final class DashboardKeys {
 
   /// Confirms creating the folder.
   static const createFolderConfirm = Key('dashboard_create_folder_confirm');
+
+  /// Collections section at the library root.
+  static const collections = Key('dashboard_collections');
+
+  /// Opens favourites.
+  static const favouritesCollection = Key('dashboard_collection_favourites');
+
+  /// Opens Archive.
+  static const archiveCollection = Key('dashboard_collection_archive');
+
+  /// Opens recoverable Trash.
+  static const trashCollection = Key('dashboard_trash_collection');
+
+  /// Folder action menu.
+  static Key folderMenu(String name) => Key('dashboard_folder_menu_$name');
+
+  /// Rename action in an open folder menu.
+  static const folderRename = Key('dashboard_folder_rename');
+
+  /// Move-to-Trash action in an open folder menu.
+  static const folderTrash = Key('dashboard_folder_trash');
+
+  /// Recursive Trash confirmation dialog.
+  static const trashConfirmDialog = Key('trash_move_confirmation');
+
+  /// Confirms moving a folder tree to Trash.
+  static const trashConfirm = Key('trash_move_confirm');
+
+  /// Reports that a requested folder move could not be completed.
+  static const trashMoveFailure = Key('dashboard_trash_move_failure');
 
   /// A folder row, keyed by name.
   static Key folderRow(String name) => Key('dashboard_folder_$name');

@@ -63,6 +63,15 @@ class FakeMediaStoreChannel extends MediaStoreChannel {
       });
 
   @override
+  Future<void> moveFolder(
+    String fromRelativePath,
+    String toRelativePath,
+  ) async => _record('moveFolder', {
+    'fromRelativePath': fromRelativePath,
+    'toRelativePath': toRelativePath,
+  });
+
+  @override
   Future<List<MediaStoreItem>> list(
     String relativePath, {
     bool recursive = false,
@@ -310,6 +319,74 @@ void main() {
         'Invoices',
         '2026',
       });
+    });
+
+    test('excludes the reserved Trash namespace', () async {
+      channel.items['Documents/DocForge/.docforge-trash/trash-1/payload/'] = [
+        const MediaStoreItem(
+          relativePath: 'Documents/DocForge/.docforge-trash/trash-1/payload/',
+          displayName: 'Receipt.pdf',
+          sizeBytes: 10,
+          modifiedAt: null,
+        ),
+      ];
+      channel.folders['Documents/DocForge/'] = ['.docforge-trash', 'Invoices'];
+
+      expect((await store.listRecursive(const [])).valueOrNull, isEmpty);
+      expect(
+        (await store.list(const [])).valueOrNull!.map((entry) => entry.name),
+        ['Invoices'],
+      );
+    });
+  });
+
+  group('Trash lifecycle', () {
+    test('moves and restores a file through reserved RELATIVE_PATHs', () async {
+      final path = LibraryPath.parse('Invoices/Receipt.pdf');
+
+      await store.moveFileToTrash('trash-1', path);
+      final moved = channel.calls.lastWhere(
+        (call) => call.method == 'moveFile',
+      );
+      expect(moved['fromRelativePath'], 'Documents/DocForge/Invoices/');
+      expect(
+        moved['toRelativePath'],
+        'Documents/DocForge/.docforge-trash/trash-1/payload/',
+      );
+
+      await store.restoreFileFromTrash(
+        'trash-1',
+        'Receipt.pdf',
+        LibraryPath.parse('Invoices/Receipt (Recovered 1).pdf'),
+      );
+      final restored = channel.calls.lastWhere(
+        (call) => call.method == 'moveFile',
+      );
+      expect(restored['toDisplayName'], 'Receipt (Recovered 1).pdf');
+    });
+
+    test('moves and restores a complete folder tree', () async {
+      await store.moveFolderToTrash('trash-2', const ['Projects']);
+      var call = channel.callTo('moveFolder');
+      expect(call['fromRelativePath'], 'Documents/DocForge/Projects/');
+      expect(
+        call['toRelativePath'],
+        'Documents/DocForge/.docforge-trash/trash-2/payload/Projects/',
+      );
+
+      await store.restoreFolderFromTrash('trash-2', 'Projects', const [
+        'Recovered Projects',
+      ]);
+      call = channel.calls.lastWhere((value) => value.method == 'moveFolder');
+      expect(call['toRelativePath'], 'Documents/DocForge/Recovered Projects/');
+    });
+
+    test('purge delegates to idempotent folder deletion', () async {
+      await store.purgeTrashPayload('trash-1');
+      expect(
+        channel.callTo('deleteFolder')['relativePath'],
+        'Documents/DocForge/.docforge-trash/trash-1/',
+      );
     });
   });
 

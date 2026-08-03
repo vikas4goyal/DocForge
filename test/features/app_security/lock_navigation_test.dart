@@ -41,6 +41,7 @@ AppScreens _screens() => AppScreens(
   folderDetail: (_, _) => _documentContent('folder'),
   favourites: (_) => _documentContent('favourites'),
   archive: (_) => _documentContent('archive'),
+  trash: (_) => _documentContent('trash'),
   search: (_) => _documentContent('search'),
   settings: (_) => _documentContent('settings'),
   about: (_) => _documentContent('about'),

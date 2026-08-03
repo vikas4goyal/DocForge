@@ -62,7 +62,7 @@ abstract final class LibraryKeys {
   static const documentDuplicateButton = Key('document_duplicate_button');
 
   /// Control that starts permanent removal of a document.
-  static const documentDeleteButton = Key('document_delete_button');
+  static const documentDeleteButton = Key('document_move_to_trash_button');
 
   /// Confirmation dialog shown before a document is permanently removed.
   static const documentDeleteConfirmDialog = Key(

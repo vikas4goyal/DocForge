@@ -189,6 +189,57 @@ void main() {
         '2026',
       });
     });
+
+    test('never exposes reserved Trash payloads', () async {
+      final path = LibraryPath.parse('Receipt.pdf');
+      await store.writeFile(path, await sourceFile('trash.pdf'));
+      await store.moveFileToTrash('trash-1', path);
+
+      expect((await store.list(const [])).valueOrNull, isEmpty);
+      expect((await store.listRecursive(const [])).valueOrNull, isEmpty);
+      expect((await store.totalBytes()).valueOrNull, greaterThan(0));
+    });
+  });
+
+  group('Trash lifecycle', () {
+    test(
+      'inventories and restores a recursive tree including unknown files',
+      () async {
+        await store.createFolder(const ['Projects', 'Empty']);
+        await store.writeFile(
+          LibraryPath.parse('Projects/Scan.pdf'),
+          await sourceFile('scan.pdf', contents: '123'),
+        );
+        File('${root().path}/Projects/readme.txt').writeAsStringSync('abcd');
+
+        final inventory = await store.inventory(folder: const ['Projects']);
+        expect(inventory.valueOrNull!.documentCount, 1);
+        expect(inventory.valueOrNull!.otherFileCount, 1);
+        expect(inventory.valueOrNull!.folderCount, 1);
+        expect(inventory.valueOrNull!.sizeInBytes, 7);
+
+        await store.moveFolderToTrash('tree-1', const ['Projects']);
+        expect(Directory('${root().path}/Projects').existsSync(), isFalse);
+        expect((await store.trashPayloadExists('tree-1')).valueOrNull, isTrue);
+
+        await store.restoreFolderFromTrash('tree-1', 'Projects', const [
+          'Recovered Projects',
+        ]);
+        expect(
+          File('${root().path}/Recovered Projects/readme.txt').existsSync(),
+          isTrue,
+        );
+        expect(
+          Directory('${root().path}/Recovered Projects/Empty').existsSync(),
+          isTrue,
+        );
+      },
+    );
+
+    test('purge is idempotent', () async {
+      await store.purgeTrashPayload('absent');
+      expect((await store.purgeTrashPayload('absent')).isSuccess, isTrue);
+    });
   });
 
   group('createFolder', () {

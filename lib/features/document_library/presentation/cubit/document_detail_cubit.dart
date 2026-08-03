@@ -6,6 +6,7 @@ import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
 import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
+import 'package:doc_forge/features/document_library/application/usecases/trash_usecases.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_state.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/document_list_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -26,8 +27,9 @@ class DocumentDetailCubit extends Cubit<DocumentDetailState> {
     this._archive,
     this._restore,
     this._duplicate,
-    this._purge,
-  ) : super(const DocumentDetailState.initial());
+    this._purge, {
+    this.moveToTrash,
+  }) : super(const DocumentDetailState.initial());
 
   /// The document this screen shows.
   final DocumentId documentId;
@@ -40,6 +42,9 @@ class DocumentDetailCubit extends Cubit<DocumentDetailState> {
   final RestoreDocument _restore;
   final DuplicateDocument _duplicate;
   final PurgeDocument _purge;
+
+  /// Recoverable deletion used by production; null only in legacy unit fakes.
+  final MoveDocumentToTrash? moveToTrash;
 
   /// Loads the document and its pages.
   Future<void> load() async {
@@ -107,7 +112,7 @@ class DocumentDetailCubit extends Cubit<DocumentDetailState> {
     }
   }
 
-  /// Permanently removes the document and everything belonging to it.
+  /// Moves the document to recoverable Trash.
   ///
   /// The caller confirms first — this method does not ask. On success it sets
   /// `isDeleted` rather than reloading, because there is nothing left to load
@@ -115,7 +120,9 @@ class DocumentDetailCubit extends Cubit<DocumentDetailState> {
   Future<void> delete() async {
     emit(state.copyWith(isWorking: true));
 
-    final result = await _purge(documentId);
+    final result = moveToTrash == null
+        ? await _purge(documentId)
+        : await moveToTrash!(documentId);
 
     switch (result) {
       case Success():

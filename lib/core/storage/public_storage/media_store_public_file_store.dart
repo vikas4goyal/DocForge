@@ -91,11 +91,12 @@ class MediaStorePublicFileStore implements PublicFileStore {
 
       return [
         for (final name in folderNames)
-          PublicEntry(
-            kind: PublicEntryKind.folder,
-            name: name,
-            folders: List.unmodifiable(folders),
-          ),
+          if (name != publicTrashFolderName)
+            PublicEntry(
+              kind: PublicEntryKind.folder,
+              name: name,
+              folders: List.unmodifiable(folders),
+            ),
         for (final item in items)
           if (!item.displayName.startsWith('.'))
             PublicEntry(
@@ -124,6 +125,7 @@ class MediaStorePublicFileStore implements PublicFileStore {
           if (item.displayName.startsWith('.')) continue;
 
           final segments = _segmentsOf(item.relativePath);
+          if (segments.contains(publicTrashFolderName)) continue;
           entries.add(
             PublicEntry(
               kind: PublicEntryKind.file,
@@ -153,6 +155,133 @@ class MediaStorePublicFileStore implements PublicFileStore {
         }
 
         return entries;
+      });
+
+  @override
+  Future<Result<PublicTreeInventory>> inventory({
+    LibraryPath? file,
+    List<String>? folder,
+  }) {
+    if ((file == null) == (folder == null)) {
+      return Future.value(
+        const Result<PublicTreeInventory>.failure(
+          Failure.validation(
+            issue: ValidationIssue.illegalName,
+            debugDetail: 'choose exactly one inventory target',
+          ),
+        ),
+      );
+    }
+    return _guardValue(() async {
+      if (file != null) {
+        final items = await channel.list(_relativePathFor(file.folders));
+        final item = items
+            .where((row) => row.displayName == file.fileName)
+            .firstOrNull;
+        if (item == null) {
+          throw const MediaStoreException('not_found', 'file is absent');
+        }
+        final isPdf = file.fileName.toLowerCase().endsWith('.pdf');
+        return PublicTreeInventory(
+          documentCount: isPdf ? 1 : 0,
+          otherFileCount: isPdf ? 0 : 1,
+          sizeInBytes: item.sizeBytes,
+        );
+      }
+      final items = await channel.list(
+        _relativePathFor(folder!),
+        recursive: true,
+      );
+      var documents = 0;
+      var others = 0;
+      var bytes = 0;
+      final descendantFolders = <String>{};
+      for (final item in items) {
+        item.displayName.toLowerCase().endsWith('.pdf')
+            ? documents++
+            : others++;
+        bytes += item.sizeBytes;
+        final segments = _segmentsOf(item.relativePath);
+        for (var depth = folder.length + 1; depth <= segments.length; depth++) {
+          descendantFolders.add(segments.take(depth).join('/'));
+        }
+      }
+      return PublicTreeInventory(
+        documentCount: documents,
+        otherFileCount: others,
+        folderCount: descendantFolders.length,
+        sizeInBytes: bytes,
+      );
+    });
+  }
+
+  @override
+  Future<Result<void>> moveFileToTrash(String trashId, LibraryPath path) =>
+      _guard(() async {
+        final payload = _trashPayloadFolders(trashId);
+        await channel.createFolder(_relativePathFor(payload));
+        await channel.moveFile(
+          fromRelativePath: _relativePathFor(_effectiveFolders(path.folders)),
+          fromDisplayName: path.fileName,
+          toRelativePath: _relativePathFor(payload),
+          toDisplayName: path.fileName,
+        );
+        await releaseMaterialised(path);
+      });
+
+  @override
+  Future<Result<void>> moveFolderToTrash(
+    String trashId,
+    List<String> folders,
+  ) => _guard(() async {
+    final payload = _trashPayloadFolders(trashId);
+    await channel.createFolder(_relativePathFor(payload));
+    await channel.moveFolder(
+      _relativePathFor(folders),
+      _relativePathFor([...payload, folders.last]),
+    );
+  });
+
+  @override
+  Future<Result<void>> restoreFileFromTrash(
+    String trashId,
+    String originalName,
+    LibraryPath destination,
+  ) => _guard(
+    () => channel.moveFile(
+      fromRelativePath: _relativePathFor(_trashPayloadFolders(trashId)),
+      fromDisplayName: originalName,
+      toRelativePath: _relativePathFor(destination.folders),
+      toDisplayName: destination.fileName,
+    ),
+  );
+
+  @override
+  Future<Result<void>> restoreFolderFromTrash(
+    String trashId,
+    String originalName,
+    List<String> destinationFolders,
+  ) => _guard(
+    () => channel.moveFolder(
+      _relativePathFor([..._trashPayloadFolders(trashId), originalName]),
+      _relativePathFor(destinationFolders),
+    ),
+  );
+
+  @override
+  Future<Result<void>> purgeTrashPayload(String trashId) => _guard(
+    () => channel.deleteFolder(
+      _relativePathFor([publicTrashFolderName, trashId]),
+    ),
+  );
+
+  @override
+  Future<Result<bool>> trashPayloadExists(String trashId) =>
+      _guardValue(() async {
+        final root = _relativePathFor([publicTrashFolderName, trashId]);
+        final files = await channel.list(root, recursive: true);
+        final folders = await channel.listFolders(root);
+        return files.isNotEmpty || folders.isNotEmpty;
       });
 
   @override
@@ -320,6 +449,12 @@ class MediaStorePublicFileStore implements PublicFileStore {
   /// the dashboard shows the document where they put it.
   List<String> _effectiveFolders(List<String> folders) =>
       _nestedFoldersUnsupported ? const [] : folders;
+
+  List<String> _trashPayloadFolders(String trashId) => [
+    publicTrashFolderName,
+    trashId,
+    'payload',
+  ];
 
   /// Where a materialised copy of [path] lives.
   ///

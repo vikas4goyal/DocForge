@@ -201,7 +201,7 @@ context: |
   rather than raw `tester` calls, so a screen change breaks one robot, not every
   flow.
   Catalogue: first launch; capture to document; page table creation; import;
-  browse and view; search; organise (rename/favourite/move/archive/delete);
+  browse and view; search; organise (rename/favourite/move/archive/trash/restore/purge);
   edit; share; settings and app lock.
 
   ### Additional requirements

@@ -50,6 +50,41 @@ void main() {
     expect(dashboard.isVisible, isTrue);
   });
 
+  testWidgets('a nested folder tree can be cancelled, restored and purged', (
+    tester,
+  ) async {
+    await bootDocForge(tester);
+    final dashboard = DashboardRobot(tester);
+    await dashboard.waitUntilLoaded();
+    await dashboard.createFolder('Receipts');
+    await dashboard.openFolder('Receipts');
+    await dashboard.createFolder('Nested');
+    await dashboard.openRoot();
+    await dashboard.moveFolderToTrash('Receipts', confirm: false);
+    expect(dashboard.containsFolder('Receipts'), isTrue);
+
+    await dashboard.moveFolderToTrash('Receipts');
+    expect(dashboard.containsFolder('Receipts'), isFalse);
+    await dashboard.openTrash();
+    final trash = TrashRobot(tester);
+    final firstId = trash.visibleEntryIds.single;
+    await trash.restore(firstId);
+
+    await tester.pageBack();
+    await dashboard.waitUntilLoaded();
+    expect(dashboard.containsFolder('Receipts'), isTrue);
+
+    await dashboard.moveFolderToTrash('Receipts');
+    await dashboard.openTrash();
+    final secondId = trash.visibleEntryIds.single;
+    await trash.purge(secondId);
+    expect(trash.visibleEntryIds, isEmpty);
+
+    await tester.pageBack();
+    await dashboard.waitUntilLoaded();
+    expect(dashboard.containsFolder('Receipts'), isFalse);
+  });
+
   testWidgets('a document survives being organised', (tester) async {
     final app = await bootWithOneDocument(tester);
 

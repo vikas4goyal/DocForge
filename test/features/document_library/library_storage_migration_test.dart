@@ -32,6 +32,7 @@ void main() {
       DocumentEntitySchema,
       FolderEntitySchema,
       PageEntitySchema,
+      TrashEntitySchema,
       OcrTextEntitySchema,
     ], directory: databaseDirectory.path);
 

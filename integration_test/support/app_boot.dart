@@ -126,6 +126,7 @@ Future<FlowApp> bootDocForge(
       DocumentEntitySchema,
       FolderEntitySchema,
       PageEntitySchema,
+      TrashEntitySchema,
       OcrTextEntitySchema,
     ],
     directory: databaseDirectory.path,

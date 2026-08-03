@@ -136,6 +136,13 @@ class MediaStoreChannel {
         'newName': newName,
       });
 
+  /// Moves a folder tree to a different [toRelativePath].
+  Future<void> moveFolder(String fromRelativePath, String toRelativePath) =>
+      _invoke<void>('moveFolder', {
+        'fromRelativePath': fromRelativePath,
+        'toRelativePath': toRelativePath,
+      });
+
   /// Lists items whose relative path is exactly [relativePath].
   ///
   /// Set [recursive] to include everything beneath it as well, which is what

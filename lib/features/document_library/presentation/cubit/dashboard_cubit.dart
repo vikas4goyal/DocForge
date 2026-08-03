@@ -6,9 +6,14 @@
 library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
+import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/library_path.dart';
+import 'package:doc_forge/core/contracts/models/trash.dart';
+import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/failures/result.dart';
 import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_forge/features/document_library/application/usecases/library_folder_usecases.dart';
+import 'package:doc_forge/features/document_library/application/usecases/trash_usecases.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -16,8 +21,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// Drives the dashboard.
 class DashboardCubit extends Cubit<DashboardState> {
   /// Creates the Cubit over the library folder and its index.
-  DashboardCubit({required this.store, required this.index})
-    : super(const DashboardState.initial());
+  DashboardCubit({
+    required this.store,
+    required this.index,
+    this.inspectTrashCandidate,
+    this.moveFolderTreeToTrash,
+    this.restoreTrashEntry,
+    this.renameLibraryFolder,
+    this.loadTrash,
+  }) : super(const DashboardState.initial());
 
   /// The library folder being browsed.
   final PublicFileStore store;
@@ -27,6 +39,65 @@ class DashboardCubit extends Cubit<DashboardState> {
   /// Named for what it is rather than for what it holds: the folder is the
   /// source of truth, and this describes what is in it.
   final DocumentRepository index;
+
+  /// Measures a candidate, when recoverable deletion is enabled.
+  final InspectTrashCandidate? inspectTrashCandidate;
+
+  /// Moves a folder tree, when recoverable deletion is enabled.
+  final MoveFolderTreeToTrash? moveFolderTreeToTrash;
+
+  /// Restores a just-moved entry for Undo.
+  final RestoreTrashEntry? restoreTrashEntry;
+
+  /// Renames a real child folder.
+  final RenameLibraryFolder? renameLibraryFolder;
+
+  /// Loads the root Collections count.
+  final LoadTrash? loadTrash;
+
+  /// Measures the named child folder for confirmation.
+  Future<Result<TrashInventory>> inspectFolder(String name) {
+    final useCase = inspectTrashCandidate;
+    if (useCase == null) {
+      return Future.value(
+        const Result<TrashInventory>.failure(Failure.unexpected()),
+      );
+    }
+    return useCase(folder: [...state.path, name]);
+  }
+
+  /// Moves the named child folder to recoverable Trash and reloads.
+  Future<Result<TrashEntry>> trashFolder(String name) async {
+    final useCase = moveFolderTreeToTrash;
+    if (useCase == null) {
+      return const Result<TrashEntry>.failure(Failure.unexpected());
+    }
+    final result = await useCase([...state.path, name]);
+    if (result.isSuccess) await load();
+    return result;
+  }
+
+  /// Undoes a just-completed move to Trash.
+  Future<Result<String>> undoTrash(TrashId id) async {
+    final useCase = restoreTrashEntry;
+    if (useCase == null) {
+      return const Result<String>.failure(Failure.unexpected());
+    }
+    final result = await useCase(id);
+    if (result.isSuccess) await load();
+    return result;
+  }
+
+  /// Renames the named child folder and reloads.
+  Future<Result<void>> renameFolder(String name, String newName) async {
+    final useCase = renameLibraryFolder;
+    if (useCase == null) {
+      return const Result<void>.failure(Failure.unexpected());
+    }
+    final result = await useCase([...state.path, name], newName);
+    if (result.isSuccess) await load();
+    return result;
+  }
 
   /// How many recent documents the strip shows.
   ///
@@ -146,6 +217,10 @@ class DashboardCubit extends Cubit<DashboardState> {
             ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt)))
         : const <Document>[];
 
+    final favourites = await index.count(filter: DocumentFilter.favourites);
+    final archived = await index.count(filter: DocumentFilter.archived);
+    final trashEntries = path.isEmpty ? await loadTrash?.call() : null;
+
     emit(
       state.copyWith(
         status: DashboardStatus.ready,
@@ -153,6 +228,9 @@ class DashboardCubit extends Cubit<DashboardState> {
         documents: documents,
         recents: recents.take(maxRecents).toList(),
         storageBytes: bytes.valueOrNull ?? state.storageBytes,
+        favouritesCount: favourites.valueOrNull ?? state.favouritesCount,
+        archiveCount: archived.valueOrNull ?? state.archiveCount,
+        trashCount: trashEntries?.valueOrNull?.length ?? state.trashCount,
       ),
     );
   }

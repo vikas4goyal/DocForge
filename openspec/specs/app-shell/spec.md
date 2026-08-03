@@ -3,9 +3,7 @@
 ## Purpose
 
 Define the application's top-level navigation and the Dashboard that sits at its centre: a persistent three-destination tab bar, the composition of the Dashboard's folder-browsing home screen, its empty, loading and error states, and the shell-wide guarantees every screen inherits — typed routes, Material 3 theming, responsive layout, accessibility and offline operation.
-
 ## Requirements
-
 ### Requirement: Tab bar navigation
 The application SHALL present a persistent bottom tab bar with three destinations — Dashboard, Create PDF and Settings — with Create PDF in the middle, and every destination SHALL be reachable from every other in one tap.
 
@@ -46,28 +44,35 @@ The application SHALL present a persistent bottom tab bar with three destination
 - **THEN** the tab bar renders in the dark theme with the selected destination distinguishable by more than colour alone
 
 ### Requirement: Home screen composition
-The Dashboard SHALL be the application's primary destination and SHALL display a search control, the contents of the currently open folder, a storage summary, and actions to create a folder, import a PDF and create a PDF in that folder.
+The Dashboard SHALL be the application's primary destination and SHALL display search, the currently open folder, storage usage, a root Collections section, and actions to create a folder, import a PDF and create a PDF.
 
 #### Scenario: Dashboard displays all sections
-- **WHEN** the dashboard is displayed and at least one document exists
-- **THEN** the search control (`dashboard_search_field`), the folder and document list (`dashboard_content_list`), the storage summary (`dashboard_storage_summary`), the create-folder action (`dashboard_create_folder_button`) and the import-PDF action (`dashboard_import_pdf_button`) are all present
+- **WHEN** the dashboard root is displayed and at least one document exists
+- **THEN** the search control (`dashboard_search_field`), folder/document list (`dashboard_content_list`), storage summary (`dashboard_storage_summary`), Collections section (`dashboard_collections`), create-folder action (`dashboard_create_folder_button`) and import-PDF action (`dashboard_import_pdf_button`) are present
+
+#### Scenario: Collections are discoverable
+- **WHEN** the dashboard root is displayed
+- **THEN** Favourites, Archive and Trash are reachable through `Key('dashboard_favourites_collection')`, `Key('dashboard_archive_collection')` and `Key('dashboard_trash_collection')` with semantics “Open Favourites,” “Open Archive” and “Open Trash”
 
 #### Scenario: Recent documents ordering
 - **WHEN** the dashboard shows the root of the library
-- **THEN** a recent documents section lists documents ordered by modified date descending
-- **AND** archived documents are excluded
+- **THEN** recent documents are ordered by modified date descending and archived or trashed documents are excluded
 
 #### Scenario: Newly saved document appears
 - **WHEN** a document is saved and the user returns to the dashboard
-- **THEN** that document appears in the folder it was saved into, and at the top of the recent documents section, without requiring an app restart
+- **THEN** that document appears in its folder and at the top of recents without an app restart
 
 #### Scenario: Folder contents shown
 - **WHEN** the user opens a folder
-- **THEN** the child folders and the PDFs of that folder are listed, and a breadcrumb with key `dashboard_breadcrumb` shows the path from the library root
+- **THEN** child folders and active PDFs are listed, and `dashboard_breadcrumb` shows the path from the library root
+
+#### Scenario: Folder actions are discoverable
+- **WHEN** a dashboard folder row is displayed
+- **THEN** tapping the row opens it and its keyed action menu provides Rename and Move to Trash without relying on a separate legacy folder screen
 
 #### Scenario: Only application folders are browsable
 - **WHEN** the user browses the dashboard
-- **THEN** only folders inside the application's own library folder are reachable, and no other location on the device can be browsed
+- **THEN** only active folders inside the application's library are reachable and the reserved Trash payload namespace is never listed
 
 ### Requirement: Home empty state
 When the open folder contains no documents and no subfolders, the Dashboard SHALL display an empty state that encourages the user to create their first PDF.
@@ -97,12 +102,19 @@ The Dashboard SHALL present distinct loading and error states, and the error sta
 - **THEN** the dashboard data is loaded again and the error view is replaced by the resulting content
 
 ### Requirement: Storage summary
-The Dashboard SHALL display a summary of storage consumed by the application's documents, and the summary SHALL update after documents are added or permanently removed.
+The Dashboard SHALL display total storage consumed by active and recoverable Trash payloads and SHALL update after additions or permanent removal.
 
 #### Scenario: Storage summary displayed
 - **WHEN** the dashboard loads
-- **THEN** the storage summary shows the total size used by stored documents in a human-readable unit
-- **AND** it exposes a semantics label stating the value
+- **THEN** the summary shows total stored bytes in a human-readable unit and exposes a semantics label stating the value
+
+#### Scenario: Moving to Trash does not free storage
+- **WHEN** an item moves to Trash or is restored
+- **THEN** the storage summary remains unchanged after refresh
+
+#### Scenario: Storage summary updates after purge
+- **WHEN** an item is permanently removed or expires and the dashboard refreshes
+- **THEN** the storage summary reflects the reduced usage
 
 #### Scenario: Storage summary updates
 - **WHEN** a document is permanently removed and the user returns to the dashboard
@@ -174,3 +186,4 @@ The dashboard and all navigation SHALL function fully with no network connectivi
 #### Scenario: Dashboard with no connectivity
 - **WHEN** the device has no network connection
 - **THEN** the dashboard loads all of its sections from local storage and no network request is made
+

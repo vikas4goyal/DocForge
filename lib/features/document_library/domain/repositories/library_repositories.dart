@@ -9,6 +9,7 @@ library;
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/trash.dart';
 import 'package:doc_forge/core/failures/result.dart';
 
 /// Stores and queries documents.
@@ -92,4 +93,25 @@ abstract interface class PageRepository {
 
   /// Removes every page of [documentId].
   Future<Result<void>> deleteForDocument(DocumentId documentId);
+}
+
+/// Stores recoverable Trash entries independently from active folders.
+abstract interface class TrashRepository {
+  /// Returns [id], or `Failure.notFound` when absent.
+  Future<Result<TrashEntry>> findById(TrashId id);
+
+  /// Returns newest-deleted entries first.
+  Future<Result<List<TrashEntry>>> all();
+
+  /// Creates or replaces [entry].
+  Future<Result<TrashEntry>> save(TrashEntry entry);
+
+  /// Removes only the Trash metadata row.
+  Future<Result<void>> delete(TrashId id);
+
+  /// Returns entries whose expiry is at or before [now].
+  Future<Result<List<TrashEntry>>> expiredAt(DateTime now);
+
+  /// Number of recoverable entries.
+  Future<Result<int>> count();
 }

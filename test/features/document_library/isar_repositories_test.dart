@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/contracts/models/ids.dart';
 import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_forge/core/contracts/models/trash.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
 import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
@@ -19,6 +20,7 @@ void main() {
   late IsarDocumentRepository documents;
   late IsarFolderRepository folders;
   late IsarPageRepository pages;
+  late IsarTrashRepository trash;
 
   setUpAll(() async {
     // Isar needs its native binaries; on a test VM they are downloaded once to
@@ -32,10 +34,12 @@ void main() {
       DocumentEntitySchema,
       FolderEntitySchema,
       PageEntitySchema,
+      TrashEntitySchema,
     ], directory: directory.path);
     documents = IsarDocumentRepository(isar);
     folders = IsarFolderRepository(isar);
     pages = IsarPageRepository(isar);
+    trash = IsarTrashRepository(isar);
   });
 
   tearDown(() async {
@@ -85,6 +89,27 @@ void main() {
       expect(visible.valueOrNull, hasLength(1));
       expect(visible.valueOrNull!.single.id, sampleDocument.id);
     });
+
+    test(
+      'excludes trashed documents from every active filter and folder count',
+      () async {
+        await folders.save(sampleFolder);
+        await documents.save(
+          sampleDocument.copyWith(
+            folderId: sampleFolder.id,
+            trashId: const TrashId('trash-1'),
+            trashedAt: DateTime.utc(2026),
+          ),
+        );
+
+        expect((await documents.query()).valueOrNull, isEmpty);
+        expect(
+          (await documents.query(filter: DocumentFilter.archived)).valueOrNull,
+          isEmpty,
+        );
+        expect((await folders.all()).valueOrNull!.single.documentCount, 0);
+      },
+    );
 
     test('returns only archived documents for the archive filter', () async {
       await documents.save(sampleDocument);
@@ -212,6 +237,53 @@ void main() {
     });
   });
 
+  group('TrashRepository', () {
+    final deletedAt = DateTime.utc(2026, 8, 3);
+    late TrashEntry entry;
+
+    setUp(() {
+      entry = TrashEntry(
+        id: const TrashId('trash-1'),
+        kind: TrashEntryKind.document,
+        displayName: 'Receipt',
+        originalRelativePath: 'Receipt.pdf',
+        deletedAt: deletedAt,
+        expiresAt: TrashEntry.expiryFor(deletedAt),
+        inventory: const TrashInventory(documentCount: 1, sizeInBytes: 12),
+        documentIds: const [DocumentId('doc-1')],
+      );
+    });
+
+    test('round-trips, replaces by uuid and deletes idempotently', () async {
+      await trash.save(entry);
+      await trash.save(entry.copyWith(displayName: 'Renamed'));
+      expect((await trash.all()).valueOrNull, hasLength(1));
+      expect(
+        (await trash.findById(entry.id)).valueOrNull!.displayName,
+        'Renamed',
+      );
+      await trash.delete(entry.id);
+      expect((await trash.delete(entry.id)).isSuccess, isTrue);
+    });
+
+    test('orders newest first and expires inclusively', () async {
+      await trash.save(entry);
+      await trash.save(
+        entry.copyWith(
+          id: const TrashId('trash-2'),
+          deletedAt: deletedAt.add(const Duration(hours: 1)),
+          expiresAt: entry.expiresAt.add(const Duration(hours: 1)),
+        ),
+      );
+      expect(
+        (await trash.all()).valueOrNull!.first.id,
+        const TrashId('trash-2'),
+      );
+      expect((await trash.expiredAt(entry.expiresAt)).valueOrNull, [entry]);
+      expect((await trash.count()).valueOrNull, 2);
+    });
+  });
+
   group('FolderRepository', () {
     test('saves and reads back a folder', () async {
       await folders.save(sampleFolder);
@@ -269,6 +341,24 @@ void main() {
       final all = await folders.all();
 
       expect(all.valueOrNull!.single.documentCount, 1);
+    });
+
+    test('excludes trashed folders from lists and duplicate checks', () async {
+      await folders.save(
+        sampleFolder.copyWith(
+          trashId: const TrashId('trash-1'),
+          trashedAt: DateTime.utc(2026),
+        ),
+      );
+
+      expect((await folders.all()).valueOrNull, isEmpty);
+      expect((await folders.findByName(sampleFolder.name)).valueOrNull, isNull);
+      expect(
+        (await folders.findByRelativePath(
+          sampleFolder.relativePath,
+        )).valueOrNull,
+        isNull,
+      );
     });
 
     test('reports a count that updates as documents move', () async {

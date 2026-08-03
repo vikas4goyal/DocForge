@@ -50,6 +50,9 @@ class DashboardState extends Equatable {
     required this.query,
     this.recents = const [],
     this.storageBytes = 0,
+    this.favouritesCount = 0,
+    this.archiveCount = 0,
+    this.trashCount = 0,
     this.failure,
   });
 
@@ -89,6 +92,15 @@ class DashboardState extends Equatable {
 
   /// How much space the library occupies.
   final int storageBytes;
+
+  /// Number of active favourites.
+  final int favouritesCount;
+
+  /// Number of archived documents.
+  final int archiveCount;
+
+  /// Number of recoverable Trash entries.
+  final int trashCount;
 
   /// What went wrong, when something did.
   final Failure? failure;
@@ -131,6 +143,9 @@ class DashboardState extends Equatable {
     String? query,
     List<Document>? recents,
     int? storageBytes,
+    int? favouritesCount,
+    int? archiveCount,
+    int? trashCount,
     Failure? failure,
   }) => DashboardState._(
     status: status ?? this.status,
@@ -140,6 +155,9 @@ class DashboardState extends Equatable {
     query: query ?? this.query,
     recents: recents ?? this.recents,
     storageBytes: storageBytes ?? this.storageBytes,
+    favouritesCount: favouritesCount ?? this.favouritesCount,
+    archiveCount: archiveCount ?? this.archiveCount,
+    trashCount: trashCount ?? this.trashCount,
     failure: failure,
   );
 
@@ -152,6 +170,9 @@ class DashboardState extends Equatable {
     query,
     recents,
     storageBytes,
+    favouritesCount,
+    archiveCount,
+    trashCount,
     failure,
   ];
 }

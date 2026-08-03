@@ -8,6 +8,7 @@ import 'package:doc_forge/features/app_shell/presentation/shell_keys.dart';
 import 'package:doc_forge/features/document_import/presentation/import_keys.dart';
 import 'package:doc_forge/features/document_library/presentation/library_dashboard_keys.dart';
 import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
+import 'package:doc_forge/features/document_library/presentation/trash_keys.dart';
 import 'package:doc_forge/features/onboarding/presentation/onboarding_keys.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -157,6 +158,50 @@ class DashboardRobot extends Robot {
         await tap(DashboardKeys.folderRow(folderId));
       });
 
+  /// Returns to the library root through the stable breadcrumb control.
+  Future<void> openRoot() => step('returning to the library root', () async {
+    await tap(DashboardKeys.breadcrumbRoot);
+    await waitUntilLoaded();
+  });
+
+  /// Moves [name] to Trash, or cancels at the mandatory confirmation.
+  Future<void> moveFolderToTrash(String name, {bool confirm = true}) => step(
+    '${confirm ? 'moving' : 'not moving'} folder $name to Trash',
+    () async {
+      await tap(DashboardKeys.folderMenu(name));
+      await tap(DashboardKeys.folderTrash);
+      await waitFor(DashboardKeys.trashConfirmDialog);
+      if (confirm) {
+        await tap(DashboardKeys.trashConfirm);
+        await waitUntilGone(DashboardKeys.trashConfirmDialog);
+        final failure = find.byKey(DashboardKeys.trashMoveFailure);
+        if (failure.evaluate().isNotEmpty) {
+          final messages = tester
+              .widgetList<Text>(
+                find.descendant(of: failure, matching: find.byType(Text)),
+              )
+              .map((text) => text.data)
+              .whereType<String>()
+              .join(' ');
+          fail('Moving $name to Trash failed: $messages');
+        }
+        await waitUntilGone(DashboardKeys.folderRow(name));
+      } else {
+        await tester.tap(find.text('Cancel'));
+        await waitUntilGone(DashboardKeys.trashConfirmDialog);
+      }
+    },
+  );
+
+  /// Opens recoverable Trash from Collections.
+  Future<void> openTrash() => step('opening Trash', () async {
+    await tap(DashboardKeys.trashCollection);
+    await waitFor(TrashKeys.screen);
+  });
+
+  /// Whether a named folder is currently visible.
+  bool containsFolder(String name) => has(DashboardKeys.folderRow(name));
+
   /// Opens the import sources sheet.
   Future<void> openImportSheet() => step('opening the import sheet', () async {
     await waitUntilVisible();
@@ -190,6 +235,46 @@ class DashboardRobot extends Robot {
 
   /// Whether the dashboard is showing its empty state.
   bool get isEmpty => has(DashboardKeys.emptyState);
+}
+
+/// Drives recoverable Trash.
+class TrashRobot extends Robot {
+  /// Creates the robot.
+  const TrashRobot(super.tester);
+
+  @override
+  Key get screenKey => TrashKeys.screen;
+
+  /// Restores [trashId].
+  Future<void> restore(String trashId) => step('restoring $trashId', () async {
+    await tap(TrashKeys.restore(trashId));
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
+  /// Permanently removes [trashId], explicitly confirming the warning.
+  Future<void> purge(String trashId) =>
+      step('permanently deleting $trashId', () async {
+        await tap(TrashKeys.purge(trashId));
+        await waitFor(TrashKeys.purgeDialog(trashId));
+        await tester.tap(find.text('Delete permanently'));
+        await tester.pump(const Duration(milliseconds: 200));
+      });
+
+  /// Identifiers of visible Trash rows.
+  List<String> get visibleEntryIds => find
+      .byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith('trash_row_'),
+      )
+      .evaluate()
+      .map(
+        (element) => (element.widget.key! as ValueKey<String>).value.substring(
+          'trash_row_'.length,
+        ),
+      )
+      .toSet()
+      .toList();
 }
 
 /// Drives the import sources sheet.

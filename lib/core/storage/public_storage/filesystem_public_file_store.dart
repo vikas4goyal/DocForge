@@ -86,6 +86,7 @@ class FilesystemPublicFileStore implements PublicFileStore {
         // detail no library path is allowed to carry.
         final relative = entity.path.substring(directory.path.length + 1);
         final parts = relative.split(Platform.pathSeparator);
+        if (folders.isEmpty && parts.first == publicTrashFolderName) continue;
         final parents = [...folders, ...parts.sublist(0, parts.length - 1)];
 
         final entry = _entryFor(entity, parents);
@@ -94,6 +95,174 @@ class FilesystemPublicFileStore implements PublicFileStore {
       return Result<List<PublicEntry>>.success(entries);
     } on Object catch (error) {
       return Result<List<PublicEntry>>.failure(mapFileSystemError(error));
+    }
+  }
+
+  @override
+  Future<Result<PublicTreeInventory>> inventory({
+    LibraryPath? file,
+    List<String>? folder,
+  }) async {
+    if ((file == null) == (folder == null)) {
+      return const Result<PublicTreeInventory>.failure(
+        Failure.validation(
+          issue: ValidationIssue.illegalName,
+          debugDetail: 'choose exactly one inventory target',
+        ),
+      );
+    }
+    try {
+      if (file != null) {
+        final target = _fileFor(file);
+        if (!target.existsSync()) {
+          return const Result<PublicTreeInventory>.failure(Failure.notFound());
+        }
+        final isPdf = file.fileName.toLowerCase().endsWith('.pdf');
+        return Result<PublicTreeInventory>.success(
+          PublicTreeInventory(
+            documentCount: isPdf ? 1 : 0,
+            otherFileCount: isPdf ? 0 : 1,
+            sizeInBytes: target.lengthSync(),
+          ),
+        );
+      }
+
+      final target = _directoryFor(folder!);
+      if (!target.existsSync()) {
+        return const Result<PublicTreeInventory>.failure(Failure.notFound());
+      }
+      var documents = 0;
+      var others = 0;
+      var folders = 0;
+      var bytes = 0;
+      await for (final entity in target.list(recursive: true)) {
+        if (entity is Directory) {
+          folders++;
+        } else if (entity is File) {
+          final isPdf = entity.path.toLowerCase().endsWith('.pdf');
+          isPdf ? documents++ : others++;
+          bytes += entity.lengthSync();
+        }
+      }
+      return Result<PublicTreeInventory>.success(
+        PublicTreeInventory(
+          documentCount: documents,
+          otherFileCount: others,
+          folderCount: folders,
+          sizeInBytes: bytes,
+        ),
+      );
+    } on Object catch (error) {
+      return Result<PublicTreeInventory>.failure(mapFileSystemError(error));
+    }
+  }
+
+  @override
+  Future<Result<void>> moveFileToTrash(String trashId, LibraryPath path) async {
+    try {
+      final source = _fileFor(path);
+      final destination = File(
+        '${_trashPayload(trashId).path}/${path.fileName}',
+      );
+      if (!source.existsSync()) {
+        return destination.existsSync()
+            ? const Result<void>.success(null)
+            : const Result<void>.failure(Failure.notFound());
+      }
+      destination.parent.createSync(recursive: true);
+      await source.rename(destination.path);
+      return const Result<void>.success(null);
+    } on Object catch (error) {
+      return Result<void>.failure(mapFileSystemError(error));
+    }
+  }
+
+  @override
+  Future<Result<void>> moveFolderToTrash(
+    String trashId,
+    List<String> folders,
+  ) async {
+    try {
+      final source = _directoryFor(folders);
+      final destination = Directory(
+        '${_trashPayload(trashId).path}/${folders.last}',
+      );
+      if (!source.existsSync()) {
+        return destination.existsSync()
+            ? const Result<void>.success(null)
+            : const Result<void>.failure(Failure.notFound());
+      }
+      destination.parent.createSync(recursive: true);
+      await source.rename(destination.path);
+      return const Result<void>.success(null);
+    } on Object catch (error) {
+      return Result<void>.failure(mapFileSystemError(error));
+    }
+  }
+
+  @override
+  Future<Result<void>> restoreFileFromTrash(
+    String trashId,
+    String originalName,
+    LibraryPath destination,
+  ) async {
+    try {
+      final source = File('${_trashPayload(trashId).path}/$originalName');
+      final target = _fileFor(destination);
+      if (!source.existsSync()) {
+        return target.existsSync()
+            ? const Result<void>.success(null)
+            : const Result<void>.failure(Failure.notFound());
+      }
+      target.parent.createSync(recursive: true);
+      await source.rename(target.path);
+      await _removeTrashContainerIfEmpty(trashId);
+      return const Result<void>.success(null);
+    } on Object catch (error) {
+      return Result<void>.failure(mapFileSystemError(error));
+    }
+  }
+
+  @override
+  Future<Result<void>> restoreFolderFromTrash(
+    String trashId,
+    String originalName,
+    List<String> destinationFolders,
+  ) async {
+    try {
+      final source = Directory('${_trashPayload(trashId).path}/$originalName');
+      final target = _directoryFor(destinationFolders);
+      if (!source.existsSync()) {
+        return target.existsSync()
+            ? const Result<void>.success(null)
+            : const Result<void>.failure(Failure.notFound());
+      }
+      target.parent.createSync(recursive: true);
+      await source.rename(target.path);
+      await _removeTrashContainerIfEmpty(trashId);
+      return const Result<void>.success(null);
+    } on Object catch (error) {
+      return Result<void>.failure(mapFileSystemError(error));
+    }
+  }
+
+  @override
+  Future<Result<void>> purgeTrashPayload(String trashId) async {
+    try {
+      final container = _trashContainer(trashId);
+      if (container.existsSync()) await container.delete(recursive: true);
+      return const Result<void>.success(null);
+    } on Object catch (error) {
+      return Result<void>.failure(mapFileSystemError(error));
+    }
+  }
+
+  @override
+  Future<Result<bool>> trashPayloadExists(String trashId) async {
+    try {
+      return Result<bool>.success(_trashContainer(trashId).existsSync());
+    } on Object catch (error) {
+      return Result<bool>.failure(mapFileSystemError(error));
     }
   }
 
@@ -266,6 +435,19 @@ class FilesystemPublicFileStore implements PublicFileStore {
   /// The file at [path], without creating it.
   File _fileFor(LibraryPath path) =>
       File([_root.path, ...path.folders, path.fileName].join('/'));
+
+  Directory _trashContainer(String trashId) =>
+      Directory('${_root.path}/$publicTrashFolderName/$trashId');
+
+  Directory _trashPayload(String trashId) =>
+      Directory('${_trashContainer(trashId).path}/payload');
+
+  Future<void> _removeTrashContainerIfEmpty(String trashId) async {
+    final payload = _trashPayload(trashId);
+    if (payload.existsSync() && payload.listSync().isEmpty) {
+      await _trashContainer(trashId).delete(recursive: true);
+    }
+  }
 
   /// Builds an entry for [entity], or null when it should not be listed.
   ///

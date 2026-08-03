@@ -19,6 +19,7 @@ import 'package:doc_forge/features/document_library/application/usecases/documen
 import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
 import 'package:doc_forge/features/document_library/application/usecases/library_folder_usecases.dart';
 import 'package:doc_forge/features/document_library/application/usecases/reconcile_library.dart';
+import 'package:doc_forge/features/document_library/application/usecases/trash_usecases.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/document_file_store.dart';
 import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
 import 'package:doc_forge/features/document_library/infrastructure/datasource/document_file_store.dart';
@@ -66,6 +67,15 @@ class LibraryModule {
     required this.documents,
     required this.publicStore,
     required this.createLibraryFolder,
+    required this.renameLibraryFolder,
+    required this.inspectTrashCandidate,
+    required this.moveDocumentToTrash,
+    required this.moveFolderTreeToTrash,
+    required this.loadTrash,
+    required this.restoreTrashEntry,
+    required this.purgeTrashEntry,
+    required this.emptyTrash,
+    required this.expireTrash,
   });
 
   /// Loads a page of documents.
@@ -131,6 +141,33 @@ class LibraryModule {
   /// Creates a folder inside the library.
   final CreateLibraryFolder createLibraryFolder;
 
+  /// Renames a real folder and re-paths its indexed documents.
+  final RenameLibraryFolder renameLibraryFolder;
+
+  /// Measures candidates before confirmation.
+  final InspectTrashCandidate inspectTrashCandidate;
+
+  /// Moves one document into recoverable Trash.
+  final MoveDocumentToTrash moveDocumentToTrash;
+
+  /// Moves a complete folder tree into recoverable Trash.
+  final MoveFolderTreeToTrash moveFolderTreeToTrash;
+
+  /// Loads recoverable Trash entries.
+  final LoadTrash loadTrash;
+
+  /// Restores one recoverable entry.
+  final RestoreTrashEntry restoreTrashEntry;
+
+  /// Permanently removes one Trash entry.
+  final PurgeTrashEntry purgeTrashEntry;
+
+  /// Permanently removes every Trash entry.
+  final EmptyTrash emptyTrash;
+
+  /// Purges entries at or beyond the retention boundary.
+  final ExpireTrash expireTrash;
+
   /// Brings the index back into step with the library folder.
   ///
   /// The folder is the user's: they can add, rename and delete files in it
@@ -181,6 +218,7 @@ Future<LibraryModule> buildLibraryModule({
     DocumentEntitySchema,
     FolderEntitySchema,
     PageEntitySchema,
+    TrashEntitySchema,
     // Recognised text lives in the same database as the documents it belongs
     // to: search queries both indexes together, and two databases could not be
     // kept consistent across a permanent deletion.
@@ -226,6 +264,7 @@ LibraryModule buildLibraryModuleOver({
   final documents = IsarDocumentRepository(isar);
   final folders = IsarFolderRepository(isar);
   final pages = IsarPageRepository(isar);
+  final trash = IsarTrashRepository(isar);
   // Narrowed to derived data: the PDFs themselves live in `store`, and this
   // holds only the thumbnails rendered from them (`design.md` D4a).
   final DocumentFileStore derived = LocalDocumentFileStore(documentsDirectory);
@@ -233,6 +272,7 @@ LibraryModule buildLibraryModuleOver({
   final move = MoveDocument(documents, clock);
   final purge = PurgeDocument(documents, pages, store, derived, secureStorage);
   final storageSummary = ComputeStorageSummary(documents, store);
+  final purgeTrash = PurgeTrashEntry(trash, folders, store, purge);
 
   return LibraryModule(
     search: IndexedSearchRepository(
@@ -263,6 +303,28 @@ LibraryModule buildLibraryModuleOver({
     documents: documents,
     publicStore: store,
     createLibraryFolder: CreateLibraryFolder(store, folders, clock, ids),
+    renameLibraryFolder: RenameLibraryFolder(store, folders, documents),
+    inspectTrashCandidate: InspectTrashCandidate(store),
+    moveDocumentToTrash: MoveDocumentToTrash(
+      documents,
+      trash,
+      store,
+      clock,
+      ids,
+    ),
+    moveFolderTreeToTrash: MoveFolderTreeToTrash(
+      documents,
+      folders,
+      trash,
+      store,
+      clock,
+      ids,
+    ),
+    loadTrash: LoadTrash(trash),
+    restoreTrashEntry: RestoreTrashEntry(trash, documents, folders, store),
+    purgeTrashEntry: purgeTrash,
+    emptyTrash: EmptyTrash(trash, purgeTrash),
+    expireTrash: ExpireTrash(trash, purgeTrash, clock),
     reconcile: ReconcileLibrary(
       store: store,
       documents: documents,

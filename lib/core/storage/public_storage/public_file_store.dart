@@ -24,6 +24,35 @@ enum PublicEntryKind {
   file,
 }
 
+/// Reserved folder containing recoverable payloads.
+///
+/// It is deliberately excluded from normal listing and reconciliation.
+const publicTrashFolderName = '.docforge-trash';
+
+/// Recursive facts used by the destructive-action confirmation.
+@immutable
+class PublicTreeInventory {
+  /// Creates an inventory.
+  const PublicTreeInventory({
+    this.documentCount = 0,
+    this.otherFileCount = 0,
+    this.folderCount = 0,
+    this.sizeInBytes = 0,
+  });
+
+  /// Number of PDF files.
+  final int documentCount;
+
+  /// Number of files not indexed as DocForge PDFs.
+  final int otherFileCount;
+
+  /// Number of descendant folders, including empty folders.
+  final int folderCount;
+
+  /// Recursive file bytes.
+  final int sizeInBytes;
+}
+
 /// One entry found in the public folder.
 ///
 /// Carries the fingerprint fields the reconciler diffs on — [sizeBytes] and
@@ -125,6 +154,38 @@ abstract interface class PublicFileStore {
   /// Used by the reconciler, which needs the whole tree in one pass; calling
   /// [list] recursively would be one platform round trip per directory.
   Future<Result<List<PublicEntry>>> listRecursive(List<String> folders);
+
+  /// Measures a file or folder tree before it is moved to Trash.
+  Future<Result<PublicTreeInventory>> inventory({
+    LibraryPath? file,
+    List<String>? folder,
+  });
+
+  /// Moves [path] into the reserved payload for [trashId].
+  Future<Result<void>> moveFileToTrash(String trashId, LibraryPath path);
+
+  /// Moves [folders] and every descendant into the reserved payload.
+  Future<Result<void>> moveFolderToTrash(String trashId, List<String> folders);
+
+  /// Restores a file payload to [destination].
+  Future<Result<void>> restoreFileFromTrash(
+    String trashId,
+    String originalName,
+    LibraryPath destination,
+  );
+
+  /// Restores a folder payload to [destinationFolders].
+  Future<Result<void>> restoreFolderFromTrash(
+    String trashId,
+    String originalName,
+    List<String> destinationFolders,
+  );
+
+  /// Permanently removes [trashId]'s reserved payload.
+  Future<Result<void>> purgeTrashPayload(String trashId);
+
+  /// Whether [trashId]'s reserved payload still exists.
+  Future<Result<bool>> trashPayloadExists(String trashId);
 
   /// Creates the folder at [folders], including any missing parents.
   ///

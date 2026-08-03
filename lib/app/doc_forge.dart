@@ -417,7 +417,13 @@ Future<Widget> buildDocForge({
       // The library folder is visible in the user's file browser, so it can
       // change while DocForge is in the background. Reconciling on resume is
       // what makes that change appear when they come back.
-      reconcile: library.reconcile.call,
+      reconcile: () async {
+        // Expiry is best-effort: a failed purge stays represented in Trash and
+        // is retried on the next launch/resume, while reconciliation can still
+        // adopt user-visible file changes immediately.
+        await library.expireTrash();
+        await library.reconcile();
+      },
       child: DocForgeApp(
         dependencies: resolvedDependencies,
         router: router,

@@ -58,6 +58,12 @@ abstract class Document with _$Document {
 
     /// Whether text recognition has been run and produced a stored result.
     @Default(false) bool hasRecognisedText,
+
+    /// Trash entry holding the PDF, or null while the document is active.
+    TrashId? trashId,
+
+    /// UTC instant at which this document was moved to Trash.
+    DateTime? trashedAt,
   }) = _Document;
 
   /// Creates a document from JSON.
@@ -71,7 +77,7 @@ abstract class Document with _$Document {
   /// Archived documents are excluded from recents, lists and search unless
   /// explicitly requested, so this predicate is the single definition of
   /// "visible" that every list shares.
-  bool get isVisibleInLibrary => !isArchived;
+  bool get isVisibleInLibrary => !isArchived && trashId == null;
 
   /// Whether this document is unfiled.
   bool get isUnfiled => folderId == null;
@@ -104,6 +110,12 @@ abstract class Folder with _$Folder {
     /// Computed at read time rather than stored, so it cannot drift out of
     /// sync with the documents themselves.
     @Default(0) int documentCount,
+
+    /// Trash entry holding this folder tree, or null while active.
+    TrashId? trashId,
+
+    /// UTC instant at which this folder moved to Trash.
+    DateTime? trashedAt,
   }) = _Folder;
 
   /// Creates a folder from JSON.
@@ -113,6 +125,9 @@ abstract class Folder with _$Folder {
 
   /// Whether the folder currently holds no visible documents.
   bool get isEmpty => documentCount == 0;
+
+  /// Whether this folder appears in active folder pickers and lists.
+  bool get isVisibleInLibrary => trashId == null;
 }
 
 /// A summary of the storage consumed by stored documents.

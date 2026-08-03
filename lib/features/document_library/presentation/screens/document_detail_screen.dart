@@ -285,7 +285,7 @@ class _ActionMenu extends StatelessWidget {
         PopupMenuItem<void>(
           key: LibraryKeys.documentDeleteButton,
           onTap: () => _delete(context, cubit),
-          child: const Text('Delete permanently'),
+          child: const Text('Move to Trash'),
         ),
       ],
     );
@@ -330,19 +330,37 @@ class _ActionMenu extends StatelessWidget {
     });
   }
 
-  /// Confirms, then permanently removes.
+  /// Confirms, then moves the document to recoverable Trash.
   ///
   /// The confirmation is mandatory and lives here rather than in the Cubit:
   /// asking is a UI concern, and a Cubit that showed a dialog could not be
   /// unit-tested.
   void _delete(BuildContext context, DocumentDetailCubit cubit) {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final confirmed = await confirmPermanentRemoval(
-        context,
-        title: document.title,
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          key: LibraryKeys.documentDeleteConfirmDialog,
+          title: Text('Move ${document.title} to Trash?'),
+          content: const Text(
+            'You can restore this document for 30 days. After that it will be permanently deleted.',
+          ),
+          actions: [
+            TextButton(
+              key: LibraryKeys.documentDeleteCancelButton,
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              key: LibraryKeys.documentDeleteConfirmButton,
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Move to Trash'),
+            ),
+          ],
+        ),
       );
 
-      if (confirmed) await cubit.delete();
+      if (confirmed ?? false) await cubit.delete();
     });
   }
 }

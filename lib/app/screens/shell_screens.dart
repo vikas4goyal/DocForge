@@ -64,9 +64,15 @@ ScreenBuilder buildHomeScreen({
     // dashboard rather than a route that comes and goes, so a share arriving
     // while the user is deep in another flow is not dropped.
     dashboard: BlocProvider(
-      create: (_) =>
-          DashboardCubit(store: library.publicStore, index: library.documents)
-            ..load(),
+      create: (_) => DashboardCubit(
+        store: library.publicStore,
+        index: library.documents,
+        inspectTrashCandidate: library.inspectTrashCandidate,
+        moveFolderTreeToTrash: library.moveFolderTreeToTrash,
+        restoreTrashEntry: library.restoreTrashEntry,
+        renameLibraryFolder: library.renameLibraryFolder,
+        loadTrash: library.loadTrash,
+      )..load(),
       child: Builder(
         builder: (dashboardContext) => HomeRefreshListener(
           observer: routeObserver,
@@ -99,6 +105,9 @@ ScreenBuilder buildHomeScreen({
                   creationFlow,
                   permissions,
                 ),
+                onOpenFavourites: () => context.push(AppRoutes.favourites),
+                onOpenArchive: () => context.push(AppRoutes.archive),
+                onOpenTrash: () => context.push(AppRoutes.trash),
               ),
             ),
           ),

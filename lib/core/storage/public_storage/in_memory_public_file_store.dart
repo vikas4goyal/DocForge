@@ -68,14 +68,16 @@ class InMemoryPublicFileStore implements PublicFileStore {
 
     return Result<List<PublicEntry>>.success([
       for (final folder in folderPaths)
-        if (folder.isNotEmpty && _isChildOf(folder, prefix))
+        if (folder.isNotEmpty &&
+            !_isReserved(folder) &&
+            _isChildOf(folder, prefix))
           PublicEntry(
             kind: PublicEntryKind.folder,
             name: folder.split('/').last,
             folders: List.unmodifiable(folders),
           ),
       for (final entry in files.entries)
-        if (_folderOf(entry.key) == prefix)
+        if (!_isReserved(entry.key) && _folderOf(entry.key) == prefix)
           PublicEntry(
             kind: PublicEntryKind.file,
             name: entry.key.split('/').last,
@@ -94,14 +96,16 @@ class InMemoryPublicFileStore implements PublicFileStore {
     final prefix = folders.join('/');
     return Result<List<PublicEntry>>.success([
       for (final folder in folderPaths)
-        if (folder.isNotEmpty && folder.startsWith(prefix))
+        if (folder.isNotEmpty &&
+            !_isReserved(folder) &&
+            _atOrBelow(folder, prefix))
           PublicEntry(
             kind: PublicEntryKind.folder,
             name: folder.split('/').last,
             folders: List.unmodifiable(_segmentsOf(folder)),
           ),
       for (final entry in files.entries)
-        if (entry.key.startsWith(prefix))
+        if (!_isReserved(entry.key) && _atOrBelow(entry.key, prefix))
           PublicEntry(
             kind: PublicEntryKind.file,
             name: entry.key.split('/').last,
@@ -110,6 +114,163 @@ class InMemoryPublicFileStore implements PublicFileStore {
             modifiedAt: DateTime.utc(2026),
           ),
     ]);
+  }
+
+  @override
+  Future<Result<PublicTreeInventory>> inventory({
+    LibraryPath? file,
+    List<String>? folder,
+  }) async {
+    final pending = _pendingFailure<PublicTreeInventory>('inventory');
+    if (pending != null) return pending;
+    if ((file == null) == (folder == null)) {
+      return const Result<PublicTreeInventory>.failure(
+        Failure.validation(
+          issue: ValidationIssue.illegalName,
+          debugDetail: 'choose exactly one inventory target',
+        ),
+      );
+    }
+    if (file != null) {
+      final contents = files[file.relative];
+      if (contents == null) {
+        return const Result<PublicTreeInventory>.failure(Failure.notFound());
+      }
+      return Result<PublicTreeInventory>.success(
+        PublicTreeInventory(
+          documentCount: file.fileName.toLowerCase().endsWith('.pdf') ? 1 : 0,
+          otherFileCount: file.fileName.toLowerCase().endsWith('.pdf') ? 0 : 1,
+          sizeInBytes: contents.length,
+        ),
+      );
+    }
+    final prefix = folder!.join('/');
+    if (!folderPaths.contains(prefix)) {
+      return const Result<PublicTreeInventory>.failure(Failure.notFound());
+    }
+    final matchingFiles = files.entries.where(
+      (entry) => _atOrBelow(entry.key, prefix),
+    );
+    var documents = 0;
+    var others = 0;
+    var bytes = 0;
+    for (final entry in matchingFiles) {
+      if (entry.key.toLowerCase().endsWith('.pdf')) {
+        documents++;
+      } else {
+        others++;
+      }
+      bytes += entry.value.length;
+    }
+    return Result<PublicTreeInventory>.success(
+      PublicTreeInventory(
+        documentCount: documents,
+        otherFileCount: others,
+        folderCount: folderPaths
+            .where((path) => path != prefix && _atOrBelow(path, prefix))
+            .length,
+        sizeInBytes: bytes,
+      ),
+    );
+  }
+
+  @override
+  Future<Result<void>> moveFileToTrash(String trashId, LibraryPath path) async {
+    final pending = _pendingFailure<void>('moveFileToTrash');
+    if (pending != null) return pending;
+    final contents = files.remove(path.relative);
+    if (contents == null) {
+      if (files.containsKey(_trashFile(trashId, path.fileName))) {
+        return const Result<void>.success(null);
+      }
+      return const Result<void>.failure(Failure.notFound());
+    }
+    _ensureTrashParents(trashId);
+    files[_trashFile(trashId, path.fileName)] = contents;
+    return const Result<void>.success(null);
+  }
+
+  @override
+  Future<Result<void>> moveFolderToTrash(
+    String trashId,
+    List<String> folders,
+  ) async {
+    final pending = _pendingFailure<void>('moveFolderToTrash');
+    if (pending != null) return pending;
+    final source = folders.join('/');
+    final name = folders.last;
+    final destination = '${_trashPayload(trashId)}/$name';
+    if (!folderPaths.contains(source)) {
+      return folderPaths.contains(destination)
+          ? const Result<void>.success(null)
+          : const Result<void>.failure(Failure.notFound());
+    }
+    _ensureTrashParents(trashId);
+    _moveTree(source, destination);
+    return const Result<void>.success(null);
+  }
+
+  @override
+  Future<Result<void>> restoreFileFromTrash(
+    String trashId,
+    String originalName,
+    LibraryPath destination,
+  ) async {
+    final pending = _pendingFailure<void>('restoreFileFromTrash');
+    if (pending != null) return pending;
+    final source = _trashFile(trashId, originalName);
+    final contents = files.remove(source);
+    if (contents == null) {
+      return files.containsKey(destination.relative)
+          ? const Result<void>.success(null)
+          : const Result<void>.failure(Failure.notFound());
+    }
+    for (var depth = 1; depth <= destination.folders.length; depth++) {
+      folderPaths.add(destination.folders.sublist(0, depth).join('/'));
+    }
+    files[destination.relative] = contents;
+    _removeEmptyTrash(trashId);
+    return const Result<void>.success(null);
+  }
+
+  @override
+  Future<Result<void>> restoreFolderFromTrash(
+    String trashId,
+    String originalName,
+    List<String> destinationFolders,
+  ) async {
+    final pending = _pendingFailure<void>('restoreFolderFromTrash');
+    if (pending != null) return pending;
+    final source = '${_trashPayload(trashId)}/$originalName';
+    final destination = destinationFolders.join('/');
+    if (!folderPaths.contains(source)) {
+      return folderPaths.contains(destination)
+          ? const Result<void>.success(null)
+          : const Result<void>.failure(Failure.notFound());
+    }
+    for (var depth = 1; depth < destinationFolders.length; depth++) {
+      folderPaths.add(destinationFolders.sublist(0, depth).join('/'));
+    }
+    _moveTree(source, destination);
+    _removeEmptyTrash(trashId);
+    return const Result<void>.success(null);
+  }
+
+  @override
+  Future<Result<void>> purgeTrashPayload(String trashId) async {
+    final prefix = '$publicTrashFolderName/$trashId';
+    folderPaths.removeWhere((path) => _atOrBelow(path, prefix));
+    files.removeWhere((path, _) => _atOrBelow(path, prefix));
+    return const Result<void>.success(null);
+  }
+
+  @override
+  Future<Result<bool>> trashPayloadExists(String trashId) async {
+    final prefix = '$publicTrashFolderName/$trashId';
+    return Result<bool>.success(
+      folderPaths.any((path) => _atOrBelow(path, prefix)) ||
+          files.keys.any((path) => _atOrBelow(path, prefix)),
+    );
   }
 
   @override
@@ -261,5 +422,50 @@ class InMemoryPublicFileStore implements PublicFileStore {
     if (parent.isEmpty) return !folder.contains('/');
     if (!folder.startsWith('$parent/')) return false;
     return !folder.substring(parent.length + 1).contains('/');
+  }
+
+  bool _isReserved(String path) =>
+      path == publicTrashFolderName ||
+      path.startsWith('$publicTrashFolderName/');
+
+  bool _atOrBelow(String path, String prefix) =>
+      prefix.isEmpty || path == prefix || path.startsWith('$prefix/');
+
+  String _trashPayload(String trashId) =>
+      '$publicTrashFolderName/$trashId/payload';
+
+  String _trashFile(String trashId, String name) =>
+      '${_trashPayload(trashId)}/$name';
+
+  void _ensureTrashParents(String trashId) {
+    folderPaths
+      ..add(publicTrashFolderName)
+      ..add('$publicTrashFolderName/$trashId')
+      ..add(_trashPayload(trashId));
+  }
+
+  void _moveTree(String source, String destination) {
+    for (final folder in folderPaths.toList()) {
+      if (_atOrBelow(folder, source)) {
+        folderPaths
+          ..remove(folder)
+          ..add('$destination${folder.substring(source.length)}');
+      }
+    }
+    for (final path in files.keys.toList()) {
+      if (_atOrBelow(path, source)) {
+        files['$destination${path.substring(source.length)}'] = files.remove(
+          path,
+        )!;
+      }
+    }
+  }
+
+  void _removeEmptyTrash(String trashId) {
+    final root = '$publicTrashFolderName/$trashId';
+    final occupied =
+        files.keys.any((path) => _atOrBelow(path, root)) ||
+        folderPaths.any((path) => path != root && _atOrBelow(path, root));
+    if (!occupied) folderPaths.remove(root);
   }
 }

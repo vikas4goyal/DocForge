@@ -48,6 +48,7 @@ class AppScreens {
     required this.search,
     required this.favourites,
     required this.archive,
+    required this.trash,
     required this.settings,
     required this.about,
     required this.privacy,
@@ -91,6 +92,9 @@ class AppScreens {
 
   /// Archive.
   final ScreenBuilder archive;
+
+  /// Recoverable Trash.
+  final ScreenBuilder trash;
 
   /// Settings.
   final ScreenBuilder settings;
@@ -190,6 +194,10 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.archive,
         builder: (context, state) => screens.archive(context),
+      ),
+      GoRoute(
+        path: AppRoutes.trash,
+        builder: (context, state) => screens.trash(context),
       ),
       GoRoute(
         path: AppRoutes.settings,

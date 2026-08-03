@@ -59,6 +59,7 @@ void main() {
       DocumentEntitySchema,
       FolderEntitySchema,
       PageEntitySchema,
+      TrashEntitySchema,
       OcrTextEntitySchema,
     ], directory: root.path);
 

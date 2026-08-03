@@ -7,6 +7,9 @@ import 'package:doc_forge/core/contracts/models/library_path.dart';
 import 'package:doc_forge/core/failures/failure.dart';
 import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
+import 'package:doc_forge/core/time/clock.dart';
+import 'package:doc_forge/features/document_library/application/usecases/library_folder_usecases.dart';
+import 'package:doc_forge/features/document_library/application/usecases/trash_usecases.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_forge/features/document_library/presentation/library_dashboard_keys.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/dashboard_screen.dart';
@@ -100,6 +103,9 @@ void main() {
       expect(find.byKey(DashboardKeys.storageSummary), findsOneWidget);
       expect(find.byKey(DashboardKeys.createFolderButton), findsOneWidget);
       expect(find.byKey(DashboardKeys.importPdfButton), findsOneWidget);
+      expect(find.byKey(DashboardKeys.favouritesCollection), findsOneWidget);
+      expect(find.byKey(DashboardKeys.archiveCollection), findsOneWidget);
+      expect(find.byKey(DashboardKeys.trashCollection), findsOneWidget);
     });
 
     testWidgets('lists documents and folders', (tester) async {
@@ -109,6 +115,74 @@ void main() {
 
       expect(inList('Invoices'), findsOneWidget);
       expect(inList('Statement'), findsOneWidget);
+    });
+  });
+
+  group('recoverable folder deletion', () {
+    testWidgets('confirms recursive contents and supports Undo', (
+      tester,
+    ) async {
+      given('Projects/Scan.pdf');
+      store.folderPaths.add('Projects/Empty');
+      store.files['Projects/readme.txt'] = 'unknown';
+      final trash = FakeTrashRepository();
+      final folders = FakeFolderRepository();
+      final clock = FixedClock(DateTime.utc(2026, 8, 3));
+      final ids = SequentialIdGenerator(prefix: 'trash');
+      final cubit = DashboardCubit(
+        store: store,
+        index: documents,
+        inspectTrashCandidate: InspectTrashCandidate(store),
+        moveFolderTreeToTrash: MoveFolderTreeToTrash(
+          documents,
+          folders,
+          trash,
+          store,
+          clock,
+          ids,
+        ),
+        restoreTrashEntry: RestoreTrashEntry(trash, documents, folders, store),
+        renameLibraryFolder: RenameLibraryFolder(store, folders, documents),
+        loadTrash: LoadTrash(trash),
+      );
+      addTearDown(cubit.close);
+      tester.view.physicalSize = const Size(800, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.light,
+          home: BlocProvider.value(
+            value: cubit,
+            child: DashboardScreen(
+              actions: DashboardActions(
+                onOpenDocument: opened.add,
+                onCreateFolder: createdFolders.add,
+                onImportPdf: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+      await cubit.load();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(DashboardKeys.folderMenu('Projects')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(DashboardKeys.folderTrash));
+      await tester.pumpAndSettle();
+      expect(find.byKey(DashboardKeys.trashConfirmDialog), findsOneWidget);
+      expect(find.textContaining('2 files and 1 subfolders'), findsOneWidget);
+
+      await tester.tap(find.byKey(DashboardKeys.trashConfirm));
+      await tester.pumpAndSettle();
+      expect(find.text('Moved to Trash'), findsOneWidget);
+      expect(find.byKey(DashboardKeys.folderRow('Projects')), findsNothing);
+
+      await tester.tap(find.text('Undo'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(DashboardKeys.folderRow('Projects')), findsOneWidget);
     });
   });
 

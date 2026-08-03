@@ -69,6 +69,7 @@ void main() {
         DocumentEntitySchema,
         FolderEntitySchema,
         PageEntitySchema,
+        TrashEntitySchema,
         OcrTextEntitySchema,
       ],
       directory: databaseDirectory.path,
@@ -326,6 +327,44 @@ class _CountingPublicFileStore implements PublicFileStore {
   @override
   Future<Result<List<PublicEntry>>> listRecursive(List<String> folders) =>
       _inner.listRecursive(folders);
+
+  @override
+  Future<Result<PublicTreeInventory>> inventory({
+    LibraryPath? file,
+    List<String>? folder,
+  }) => _inner.inventory(file: file, folder: folder);
+
+  @override
+  Future<Result<void>> moveFileToTrash(String trashId, LibraryPath path) =>
+      _inner.moveFileToTrash(trashId, path);
+
+  @override
+  Future<Result<void>> moveFolderToTrash(
+    String trashId,
+    List<String> folders,
+  ) => _inner.moveFolderToTrash(trashId, folders);
+
+  @override
+  Future<Result<void>> restoreFileFromTrash(
+    String trashId,
+    String originalName,
+    LibraryPath destination,
+  ) => _inner.restoreFileFromTrash(trashId, originalName, destination);
+
+  @override
+  Future<Result<void>> restoreFolderFromTrash(
+    String trashId,
+    String originalName,
+    List<String> destinationFolders,
+  ) => _inner.restoreFolderFromTrash(trashId, originalName, destinationFolders);
+
+  @override
+  Future<Result<void>> purgeTrashPayload(String trashId) =>
+      _inner.purgeTrashPayload(trashId);
+
+  @override
+  Future<Result<bool>> trashPayloadExists(String trashId) =>
+      _inner.trashPayloadExists(trashId);
 
   @override
   Future<Result<void>> createFolder(List<String> folders) =>

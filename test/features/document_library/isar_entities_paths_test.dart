@@ -79,7 +79,7 @@ void main() {
         DocumentEntity.fromDomain(documentAt('A.pdf')).schemaVersion,
         librarySchemaVersion,
       );
-      expect(librarySchemaVersion, 2);
+      expect(librarySchemaVersion, 3);
     });
   });
 

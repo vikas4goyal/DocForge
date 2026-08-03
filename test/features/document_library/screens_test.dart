@@ -466,29 +466,7 @@ void main() {
       expect(folders.folders, hasLength(1));
     });
 
-    testWidgets('deleting a folder asks what happens to its documents', (
-      tester,
-    ) async {
-      folders.folders[sampleFolder.id] = sampleFolder.copyWith(
-        documentCount: 2,
-      );
-      await tester.pumpWidget(build());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.byKey(LibraryKeys.folderDeleteStrategyDialog),
-        findsOneWidget,
-      );
-      expect(find.byKey(LibraryKeys.folderDeleteMoveOut), findsOneWidget);
-      expect(find.byKey(LibraryKeys.folderDeleteWithDocuments), findsOneWidget);
-    });
-
-    testWidgets('cancelling the deletion dialog keeps the folder', (
+    testWidgets('the legacy list exposes no permanent folder deletion', (
       tester,
     ) async {
       folders.folders[sampleFolder.id] = sampleFolder;
@@ -497,33 +475,11 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
 
+      expect(find.text('Rename'), findsOneWidget);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.byKey(LibraryKeys.folderMenuDelete), findsNothing);
       expect(folders.folders, hasLength(1));
-    });
-
-    testWidgets('keeping the documents deletes only the folder', (
-      tester,
-    ) async {
-      folders.folders[sampleFolder.id] = sampleFolder;
-      documents.documents[sampleDocument.id] = sampleDocument.copyWith(
-        folderId: sampleFolder.id,
-      );
-      await tester.pumpWidget(build());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(LibraryKeys.folderDeleteMoveOut));
-      await tester.pumpAndSettle();
-
-      expect(folders.folders, isEmpty);
-      expect(documents.documents[sampleDocument.id]?.folderId, isNull);
     });
 
     testWidgets('a folder row announces its name and count', (tester) async {

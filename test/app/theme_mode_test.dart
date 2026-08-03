@@ -27,6 +27,7 @@ AppScreens _screens() {
     search: (_) => page('search'),
     favourites: (_) => page('favourites'),
     archive: (_) => page('archive'),
+    trash: (_) => page('trash'),
     settings: (_) => page('settings'),
     about: (_) => page('about'),
     privacy: (_) => page('privacy'),

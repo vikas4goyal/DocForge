@@ -62,6 +62,13 @@ class MediaStorePlugin(private val context: Context) : MethodChannel.MethodCallH
                     )
                     result.success(null)
                 }
+                "moveFolder" -> {
+                    moveFolder(
+                        call.argument<String>("fromRelativePath")!!,
+                        call.argument<String>("toRelativePath")!!,
+                    )
+                    result.success(null)
+                }
                 "list" -> result.success(
                     list(
                         call.argument<String>("relativePath")!!,
@@ -178,6 +185,33 @@ class MediaStorePlugin(private val context: Context) : MethodChannel.MethodCallH
             oldPrefix.trimEnd('/').substringBeforeLast('/') + "/" + newName
         )
         for (item in queryItems(oldPrefix, recursive = true)) {
+            val id = item["id"] as Long
+            val itemPath = item["relativePath"] as String
+            val values = ContentValues().apply {
+                put(
+                    MediaStore.MediaColumns.RELATIVE_PATH,
+                    newPrefix + itemPath.removePrefix(oldPrefix),
+                )
+            }
+            context.contentResolver.update(itemUri(id), values, null, null)
+        }
+    }
+
+    private fun moveFolder(fromRelativePath: String, toRelativePath: String) {
+        val source = directoryFor(fromRelativePath)
+        val destination = directoryFor(toRelativePath)
+        if (!source.exists()) {
+            if (destination.exists()) return
+            throw FileNotFoundException(fromRelativePath)
+        }
+        destination.parentFile?.mkdirs()
+        val items = queryItems(fromRelativePath, recursive = true)
+        if (!source.renameTo(destination)) {
+            throw IOException("cannot move $fromRelativePath to $toRelativePath")
+        }
+        val oldPrefix = normalise(fromRelativePath)
+        val newPrefix = normalise(toRelativePath)
+        for (item in items) {
             val id = item["id"] as Long
             val itemPath = item["relativePath"] as String
             val values = ContentValues().apply {

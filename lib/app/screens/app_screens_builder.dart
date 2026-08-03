@@ -142,6 +142,7 @@ AppScreens buildAppScreens({
     search: buildSearchScreen(library: library),
     favourites: libraryScreens.favourites,
     archive: libraryScreens.archive,
+    trash: libraryScreens.trash,
     settings: settingsScreens.settings,
     about: settingsScreens.about,
     privacy: settingsScreens.privacy,

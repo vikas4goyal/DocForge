@@ -64,11 +64,13 @@ abstract final class DocumentRules {
     FolderMatcher? folderMatcher,
   }) {
     return switch (filter) {
-      DocumentFilter.all => !document.isArchived,
-      DocumentFilter.favourites => !document.isArchived && document.isFavourite,
-      DocumentFilter.archived => document.isArchived,
+      DocumentFilter.all => document.isVisibleInLibrary,
+      DocumentFilter.favourites =>
+        document.isVisibleInLibrary && document.isFavourite,
+      DocumentFilter.archived =>
+        document.trashId == null && document.isArchived,
       DocumentFilter.folder =>
-        !document.isArchived && (folderMatcher?.call(document) ?? false),
+        document.isVisibleInLibrary && (folderMatcher?.call(document) ?? false),
     };
   }
 

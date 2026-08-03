@@ -3,6 +3,7 @@ library;
 
 import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_forge/core/failures/failure_messages.dart';
 import 'package:doc_forge/core/formatting/display_formatting.dart';
 import 'package:doc_forge/core/widgets/app_state_views.dart';
 import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
@@ -21,6 +22,9 @@ class DashboardActions {
     required this.onOpenDocument,
     required this.onCreateFolder,
     required this.onImportPdf,
+    this.onOpenFavourites,
+    this.onOpenArchive,
+    this.onOpenTrash,
   });
 
   /// Opens a document.
@@ -31,6 +35,15 @@ class DashboardActions {
 
   /// Brings an external PDF into the open folder.
   final VoidCallback onImportPdf;
+
+  /// Opens favourites.
+  final VoidCallback? onOpenFavourites;
+
+  /// Opens Archive.
+  final VoidCallback? onOpenArchive;
+
+  /// Opens recoverable Trash.
+  final VoidCallback? onOpenTrash;
 }
 
 /// Browses the library folder.
@@ -77,6 +90,8 @@ class DashboardScreen extends StatelessWidget {
                 if (!state.isSearching) _Breadcrumb(state: state, cubit: cubit),
                 if (state.showsRecents)
                   _Recents(state: state, actions: actions),
+                if (state.isAtRoot && !state.isSearching)
+                  _Collections(state: state, actions: actions),
                 Expanded(
                   child: _Body(state: state, actions: actions),
                 ),
@@ -125,6 +140,78 @@ class DashboardScreen extends StatelessWidget {
     // Validation is the use case's, not the dialog's: a name the filesystem
     // will refuse has to be refused the same way wherever it is entered.
     if (confirmed ?? false) actions.onCreateFolder(name);
+  }
+}
+
+class _Collections extends StatelessWidget {
+  const _Collections({required this.state, required this.actions});
+
+  final DashboardState state;
+  final DashboardActions actions;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Collections',
+      child: SizedBox(
+        key: DashboardKeys.collections,
+        height: 72,
+        child: ListView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          children: [
+            _CollectionChip(
+              key: DashboardKeys.favouritesCollection,
+              icon: Icons.star_outline,
+              label: 'Favourites',
+              count: state.favouritesCount,
+              onTap: actions.onOpenFavourites,
+            ),
+            _CollectionChip(
+              key: DashboardKeys.archiveCollection,
+              icon: Icons.archive_outlined,
+              label: 'Archive',
+              count: state.archiveCount,
+              onTap: actions.onOpenArchive,
+            ),
+            _CollectionChip(
+              key: DashboardKeys.trashCollection,
+              icon: Icons.delete_outline,
+              label: 'Trash',
+              count: state.trashCount,
+              onTap: actions.onOpenTrash,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CollectionChip extends StatelessWidget {
+  const _CollectionChip({
+    required this.icon,
+    required this.label,
+    required this.count,
+    required this.onTap,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final int count;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: ActionChip(
+        avatar: Icon(icon, size: 18),
+        label: Text('$label ($count)'),
+        onPressed: onTap,
+      ),
+    );
   }
 }
 
@@ -184,6 +271,7 @@ class _Breadcrumb extends StatelessWidget {
 
           return Center(
             child: TextButton(
+              key: index == 0 ? DashboardKeys.breadcrumbRoot : null,
               // The root crumb is index 0 and names the library itself, so a
               // path of n segments is the crumb list minus that one.
               onPressed: isLast
@@ -292,7 +380,34 @@ class _Body extends StatelessWidget {
               subtitle: Text(
                 DisplayFormatting.documentCount(folder.documentCount),
               ),
-              trailing: const Icon(Icons.chevron_right),
+              trailing: PopupMenuButton<_FolderAction>(
+                key: DashboardKeys.folderMenu(folder.name),
+                tooltip: 'Actions for ${folder.name}',
+                onSelected: (action) => switch (action) {
+                  _FolderAction.rename => _renameFolder(
+                    context,
+                    cubit,
+                    folder.name,
+                  ),
+                  _FolderAction.trash => _moveFolderToTrash(
+                    context,
+                    cubit,
+                    folder.name,
+                  ),
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(
+                    key: DashboardKeys.folderRename,
+                    value: _FolderAction.rename,
+                    child: Text('Rename'),
+                  ),
+                  PopupMenuItem(
+                    key: DashboardKeys.folderTrash,
+                    value: _FolderAction.trash,
+                    child: Text('Move to Trash'),
+                  ),
+                ],
+              ),
               onTap: () => cubit.openFolder(folder.name),
             );
           }
@@ -306,7 +421,134 @@ class _Body extends StatelessWidget {
       ),
     );
   }
+
+  Future<void> _renameFolder(
+    BuildContext context,
+    DashboardCubit cubit,
+    String name,
+  ) async {
+    var newName = name;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Rename $name'),
+        content: TextField(
+          autofocus: true,
+          controller: TextEditingController(text: name),
+          onChanged: (value) => newName = value,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Rename'),
+          ),
+        ],
+      ),
+    );
+    if (!(confirmed ?? false) || !context.mounted) return;
+    final result = await cubit.renameFolder(name, newName);
+    if (!context.mounted || result.isSuccess) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(result.failureOrNull!.presentation.message)),
+    );
+  }
+
+  Future<void> _moveFolderToTrash(
+    BuildContext context,
+    DashboardCubit cubit,
+    String name,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final inspected = cubit.inspectFolder(name);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        key: DashboardKeys.trashConfirmDialog,
+        title: Text('Move $name to Trash?'),
+        content: FutureBuilder(
+          future: inspected,
+          builder: (context, snapshot) {
+            final result = snapshot.data;
+            if (result == null) {
+              return const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 12),
+                  Flexible(child: Text('Checking folder contents…')),
+                ],
+              );
+            }
+            if (result.isFailure) {
+              return Text(result.failureOrNull!.presentation.message);
+            }
+            final inventory = result.valueOrNull!;
+            return Text(
+              '${inventory.fileCount} files and '
+              '${inventory.folderCount} subfolders will move together. '
+              'You can restore them for 30 days; after that they are '
+              'permanently deleted.',
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FutureBuilder(
+            future: inspected,
+            builder: (context, snapshot) {
+              final result = snapshot.data;
+              if (result == null || result.isFailure) {
+                return const FilledButton(
+                  onPressed: null,
+                  child: Text('Move to Trash'),
+                );
+              }
+              return FilledButton(
+                key: DashboardKeys.trashConfirm,
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Move to Trash'),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+    if (!(confirmed ?? false)) return;
+    final moved = await cubit.trashFolder(name);
+    if (!messenger.mounted) return;
+    if (moved.isFailure) {
+      messenger.showSnackBar(
+        SnackBar(
+          key: DashboardKeys.trashMoveFailure,
+          content: Text(moved.failureOrNull!.presentation.message),
+        ),
+      );
+      return;
+    }
+    final entry = moved.valueOrNull!;
+    messenger.showSnackBar(
+      SnackBar(
+        content: const Text('Moved to Trash'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () => cubit.undoTrash(entry.id),
+        ),
+      ),
+    );
+  }
 }
+
+enum _FolderAction { rename, trash }
 
 /// How much space the library occupies.
 class _StorageSummary extends StatelessWidget {

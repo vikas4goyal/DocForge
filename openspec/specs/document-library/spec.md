@@ -3,9 +3,7 @@
 ## Purpose
 
 Define the library: what a document record carries, how folders are managed as real directories in the library folder, how external PDFs are brought in by copying, the lifecycle operations and favourites the user can apply to a document, how document lists present themselves, and the rule that every library operation acts on the file identified by the document's library-relative path so that the index and the folder contents can never disagree.
-
 ## Requirements
-
 ### Requirement: Document record
 Every document SHALL carry a title, creation date, modified date, number of pages, file size, folder path relative to the library root, favourite status, archive status and whether it is password protected.
 
@@ -30,7 +28,7 @@ Every document SHALL carry a title, creation date, modified date, number of page
 - **THEN** the document's title matches the file name
 
 ### Requirement: Folder management
-The application SHALL allow the user to create, rename and delete folders inside the library folder, move documents between them, and see the document count for each folder. Folders SHALL be real directories in the library folder, and SHALL be visible to the operating system's file browser.
+The application SHALL allow the user to create, rename and move folders inside the library folder to recoverable Trash, move documents between them, and see the recursive document count for each folder. Folders SHALL be real directories in the library folder and SHALL be visible to the operating system's file browser while active.
 
 #### Scenario: Create a folder
 - **WHEN** the user creates a folder with a non-empty name via the control with key `dashboard_create_folder_button`
@@ -49,20 +47,20 @@ The application SHALL allow the user to create, rename and delete folders inside
 - **THEN** the creation is refused with a validation message and nothing is written
 
 #### Scenario: Rename a folder
-- **WHEN** the user renames a folder
+- **WHEN** the user selects Rename from `Key('dashboard_folder_menu_<path-token>')` with semantics “Actions for <folder>” and confirms a valid name
 - **THEN** the directory is renamed, the documents it contains keep their contents, and every affected document's recorded path is updated in the same operation
 
 #### Scenario: Delete a folder containing documents
-- **WHEN** the user deletes a folder that contains documents
-- **THEN** the user is asked whether to move the documents out or delete them, and no document is silently lost
+- **WHEN** the user selects Move to Trash from the dashboard folder action menu and confirms the recursive inventory
+- **THEN** the complete folder subtree becomes one recoverable Trash entry and no child is silently lost
 
 #### Scenario: Document counts
 - **WHEN** the dashboard lists folders
-- **THEN** each folder shows the number of non-archived documents it contains, and the count updates when documents are moved in or out
+- **THEN** each folder shows the number of non-archived, non-trashed documents it contains recursively, and the count updates when documents move, enter Trash or are restored
 
 #### Scenario: Folders outside the library are not reachable
 - **WHEN** the user browses folders in the application
-- **THEN** only the library folder and its descendants are reachable
+- **THEN** only the library folder and its active descendants are reachable
 
 ### Requirement: Importing an external PDF into the library
 The application SHALL allow the user to bring a PDF from anywhere on the device into the library by copying it into the currently open folder, and SHALL NOT modify any file outside the library folder.
@@ -100,15 +98,23 @@ The application SHALL allow the user to bring a PDF from anywhere on the device 
 - **THEN** an error message explains what went wrong, nothing is added to the library, and no partial file is left in the folder
 
 ### Requirement: Documents are addressed by library path
-Every library operation SHALL act on the file in the library folder identified by the document's path, so that the library and the folder contents can never disagree.
+Every library and Trash operation SHALL act on the file identified by its library-relative active or reserved payload path, so that active lists, Trash manifests and storage contents cannot disagree.
 
 #### Scenario: Rename moves the file
 - **WHEN** the user renames a document in the application
 - **THEN** the file in the library folder is renamed to match
 
+#### Scenario: Move to Trash hides the public file
+- **WHEN** the user moves a document to Trash
+- **THEN** its bytes move to the reserved payload path, its original path is retained in the Trash manifest, and it no longer appears in active public-folder browsing
+
+#### Scenario: Permanent removal deletes all data
+- **WHEN** the user permanently deletes a Trash entry
+- **THEN** its payload is removed along with thumbnails, pages, recognised text and credentials
+
 #### Scenario: Delete removes the file
-- **WHEN** the user permanently deletes a document
-- **THEN** the file is removed from the library folder, along with its thumbnails and recognised text
+- **WHEN** the user permanently deletes a document from Trash
+- **THEN** the file is removed from the reserved payload, along with its thumbnails and recognised text
 
 #### Scenario: Duplicate creates a second file
 - **WHEN** the user duplicates a document
@@ -116,10 +122,10 @@ Every library operation SHALL act on the file in the library folder identified b
 
 #### Scenario: Archive does not hide the file
 - **WHEN** the user archives a document
-- **THEN** the document is excluded from the main lists but its file remains in the folder where the user put it
+- **THEN** the document is excluded from the main lists but its file remains in the folder where the user put it and no Trash entry is created
 
 ### Requirement: Document lifecycle operations
-The application SHALL allow the user to rename, move, duplicate, archive, restore, delete and permanently remove documents.
+The application SHALL allow the user to rename, move, duplicate, archive, restore from Archive, move to Trash, restore from Trash and permanently remove documents.
 
 #### Scenario: Rename
 - **WHEN** the user renames a document via the control with key `document_rename_button` and confirms a non-empty name
@@ -143,19 +149,23 @@ The application SHALL allow the user to rename, move, duplicate, archive, restor
 
 #### Scenario: Restore
 - **WHEN** the user restores an archived document via the control with key `document_restore_button`
-- **THEN** the document returns to its previous folder and reappears in the main document list
+- **THEN** the document returns to active lists at its unchanged public path
 
 #### Scenario: Delete
-- **WHEN** the user deletes a document
-- **THEN** the document is removed from the main list and is recoverable until it is permanently removed
+- **WHEN** the user deletes a document through `Key('document_move_to_trash_button')`
+- **THEN** the document is excluded from active and Archive views and is recoverable from Trash for up to 30 days
+
+#### Scenario: Restore from Trash
+- **WHEN** the user restores a trashed document
+- **THEN** its identity, metadata, content and protection return at a collision-safe active path
 
 #### Scenario: Permanent removal
-- **WHEN** the user permanently removes a document and confirms in the dialog with key `document_delete_confirm_dialog`
-- **THEN** the record, the PDF file, all page images and all recognised text for that document are deleted from storage, and the storage summary decreases accordingly
+- **WHEN** the user permanently removes a document from Trash and confirms in the dialog with key `trash_permanent_delete_dialog`
+- **THEN** the record, PDF payload, page records, derived images, recognised text and password are deleted, and storage usage decreases accordingly
 
 #### Scenario: Destructive actions require confirmation
-- **WHEN** the user initiates deletion or permanent removal
-- **THEN** a confirmation is required before the operation proceeds
+- **WHEN** the user initiates moving non-empty content to Trash, Empty Trash or permanent removal
+- **THEN** a confirmation names the affected content and recovery consequence before the operation proceeds
 
 ### Requirement: Favourites
 The application SHALL allow a document to be marked and unmarked as a favourite, and SHALL provide a favourites view.
@@ -201,3 +211,4 @@ Library and folder screens SHALL support screen readers, dark mode, phone and ta
 #### Scenario: Library offline
 - **WHEN** the device has no network connection
 - **THEN** every library and folder operation completes successfully against local storage with no network request
+

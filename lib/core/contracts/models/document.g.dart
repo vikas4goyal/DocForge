@@ -31,6 +31,14 @@ _Document _$DocumentFromJson(
       'hasRecognisedText',
       (v) => v as bool? ?? false,
     ),
+    trashId: $checkedConvert(
+      'trashId',
+      (v) => v == null ? null : TrashId.fromJson(v as String),
+    ),
+    trashedAt: $checkedConvert(
+      'trashedAt',
+      (v) => v == null ? null : DateTime.parse(v as String),
+    ),
   );
   return val;
 });
@@ -48,6 +56,8 @@ Map<String, dynamic> _$DocumentToJson(_Document instance) => <String, dynamic>{
   'isArchived': instance.isArchived,
   'isProtected': instance.isProtected,
   'hasRecognisedText': instance.hasRecognisedText,
+  'trashId': instance.trashId?.toJson(),
+  'trashedAt': instance.trashedAt?.toIso8601String(),
 };
 
 _Folder _$FolderFromJson(
@@ -62,6 +72,14 @@ _Folder _$FolderFromJson(
       'documentCount',
       (v) => (v as num?)?.toInt() ?? 0,
     ),
+    trashId: $checkedConvert(
+      'trashId',
+      (v) => v == null ? null : TrashId.fromJson(v as String),
+    ),
+    trashedAt: $checkedConvert(
+      'trashedAt',
+      (v) => v == null ? null : DateTime.parse(v as String),
+    ),
   );
   return val;
 });
@@ -72,6 +90,8 @@ Map<String, dynamic> _$FolderToJson(_Folder instance) => <String, dynamic>{
   'createdAt': instance.createdAt.toIso8601String(),
   'relativePath': instance.relativePath,
   'documentCount': instance.documentCount,
+  'trashId': instance.trashId?.toJson(),
+  'trashedAt': instance.trashedAt?.toIso8601String(),
 };
 
 _StorageSummary _$StorageSummaryFromJson(Map<String, dynamic> json) =>
