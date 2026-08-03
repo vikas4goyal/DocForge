@@ -72,6 +72,11 @@ void main() {
       DashboardFolder(name: 'Receipts', documentCount: 3),
     ],
     documents: [_document('Statement'), _document('Contract')],
+    recents: [
+      _document('Statement'),
+      _document('Contract'),
+      _document('Receipt'),
+    ],
     storageBytes: 4 * 1024 * 1024,
   );
 

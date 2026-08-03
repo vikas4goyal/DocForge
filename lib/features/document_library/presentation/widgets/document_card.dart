@@ -5,6 +5,7 @@ import 'package:doc_forge/core/contracts/models/document.dart';
 import 'package:doc_forge/core/formatting/display_formatting.dart';
 import 'package:doc_forge/core/theme/app_theme.dart';
 import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
+import 'package:doc_forge/features/document_library/presentation/widgets/document_thumbnail.dart';
 import 'package:flutter/material.dart';
 
 /// A single document in a list.
@@ -19,6 +20,7 @@ class DocumentCard extends StatelessWidget {
     super.key,
     this.onTap,
     this.onToggleFavourite,
+    this.loadThumbnail,
   });
 
   /// The document to present.
@@ -29,6 +31,9 @@ class DocumentCard extends StatelessWidget {
 
   /// Called when the favourite control is activated.
   final VoidCallback? onToggleFavourite;
+
+  /// Lazily resolves the document's first-page preview.
+  final DocumentThumbnailLoader? loadThumbnail;
 
   @override
   Widget build(BuildContext context) {
@@ -44,9 +49,9 @@ class DocumentCard extends StatelessWidget {
         child: ListTile(
           key: LibraryKeys.documentListItem(document.id.value),
           onTap: onTap,
-          leading: Icon(
-            Icons.description_outlined,
-            color: theme.colorScheme.primary,
+          leading: DocumentThumbnail(
+            document: document,
+            loadThumbnail: loadThumbnail,
           ),
           title: Row(
             children: [

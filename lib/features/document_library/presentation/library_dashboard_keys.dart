@@ -8,6 +8,9 @@ abstract final class DashboardKeys {
   /// Root of the dashboard.
   static const screen = Key('dashboard_screen');
 
+  /// The single vertical scroll surface holding dashboard sections and items.
+  static const scrollView = Key('dashboard_scroll_view');
+
   /// Searches across the whole library.
   static const searchField = Key('dashboard_search_field');
 
@@ -31,6 +34,10 @@ abstract final class DashboardKeys {
 
   /// The recently modified documents, shown at the library root.
   static const recents = Key('dashboard_recents');
+
+  /// A recently modified document tile.
+  static Key recentDocument(String documentId) =>
+      Key('dashboard_recent_$documentId');
 
   /// Shown when the open folder holds nothing.
   static const emptyState = Key('dashboard_empty_state');

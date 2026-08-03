@@ -92,14 +92,15 @@ void main() {
   }
 
   group('composition', () {
-    testWidgets('shows search, breadcrumb, storage and both actions', (
+    testWidgets('shows compact root controls without a redundant breadcrumb', (
       tester,
     ) async {
       given('Invoice.pdf');
       await pumpDashboard(tester);
 
       expect(find.byKey(DashboardKeys.searchField), findsOneWidget);
-      expect(find.byKey(DashboardKeys.breadcrumb), findsOneWidget);
+      expect(find.byKey(DashboardKeys.scrollView), findsOneWidget);
+      expect(find.byKey(DashboardKeys.breadcrumb), findsNothing);
       expect(find.byKey(DashboardKeys.storageSummary), findsOneWidget);
       expect(find.byKey(DashboardKeys.createFolderButton), findsOneWidget);
       expect(find.byKey(DashboardKeys.importPdfButton), findsOneWidget);
@@ -115,6 +116,25 @@ void main() {
 
       expect(inList('Invoices'), findsOneWidget);
       expect(inList('Statement'), findsOneWidget);
+    });
+
+    testWidgets('keeps no more than five recents in one horizontal lane', (
+      tester,
+    ) async {
+      for (var index = 0; index < 7; index++) {
+        given('Document $index.pdf');
+      }
+      await pumpDashboard(tester);
+
+      final lane = tester.widget<ListView>(find.byKey(DashboardKeys.recents));
+      expect(lane.scrollDirection, Axis.horizontal);
+      expect(
+        find.descendant(
+          of: find.byKey(DashboardKeys.recents),
+          matching: find.byType(InkWell),
+        ),
+        findsNWidgets(DashboardCubit.maxRecents),
+      );
     });
   });
 
@@ -204,6 +224,7 @@ void main() {
       await cubit.openFolder('Invoices');
       await tester.pumpAndSettle();
 
+      expect(find.byKey(DashboardKeys.breadcrumb), findsOneWidget);
       expect(find.text('DocForge'), findsWidgets);
       expect(find.text('Invoices'), findsWidgets);
     });

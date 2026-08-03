@@ -52,6 +52,8 @@ void main() {
       'pageThumbnailStrip': pageThumbnailStrip,
       'documentCardDefault': documentCardDefault,
       'documentCardDark': documentCardDark,
+      'documentThumbnailLoading': documentThumbnailLoading,
+      'documentThumbnailFallback': documentThumbnailFallback,
       'documentListReady': documentListReady,
       'documentListEmpty': documentListEmpty,
       'documentListError': documentListError,

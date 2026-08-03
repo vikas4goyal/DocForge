@@ -88,6 +88,7 @@ ScreenBuilder buildHomeScreen({
             onContent: (paths) =>
                 importShared(dashboardContext, paths, importing, creationFlow),
             child: DashboardScreen(
+              loadThumbnail: library.loadDocumentPageThumbnail.call,
               actions: DashboardActions(
                 onOpenDocument: (document) =>
                     context.push(AppRoutes.documentDetail(document.id)),

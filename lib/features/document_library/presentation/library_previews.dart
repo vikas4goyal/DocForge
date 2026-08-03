@@ -44,6 +44,7 @@ import 'package:doc_forge/features/document_library/presentation/screens/documen
 import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/screens/trash_screen.dart';
 import 'package:doc_forge/features/document_library/presentation/widgets/document_card.dart';
+import 'package:doc_forge/features/document_library/presentation/widgets/document_thumbnail.dart';
 import 'package:doc_forge/features/document_library/presentation/widgets/folder_tile.dart';
 import 'package:doc_forge/features/document_library/presentation/widgets/page_thumbnail.dart';
 import 'package:flutter/material.dart';
@@ -373,6 +374,33 @@ Widget documentCardDark() => previewSurface(
     document: sampleDocument,
     onTap: () {},
     onToggleFavourite: () {},
+  ),
+);
+
+/// A document cover while its first page is being derived.
+@Preview(
+  name: 'DocumentThumbnail — loading',
+  group: 'Library',
+  theme: appPreviewTheme,
+)
+Widget documentThumbnailLoading() => previewSurface(
+  DocumentThumbnail(
+    document: sampleDocument,
+    loadThumbnail: (_, _) => Completer<Result<String>>().future,
+  ),
+);
+
+/// A document cover whose source PDF could not be rendered.
+@Preview(
+  name: 'DocumentThumbnail — fallback dark',
+  group: 'Library',
+  theme: appPreviewTheme,
+  brightness: Brightness.dark,
+)
+Widget documentThumbnailFallback() => previewSurface(
+  DocumentThumbnail(
+    document: sampleDocument,
+    loadThumbnail: (_, _) async => const Result<String>.failure(Failure.pdf()),
   ),
 );
 
@@ -735,6 +763,7 @@ class _SeededDashboardCubit extends DashboardCubit
 Widget _dashboard(DashboardState state) => BlocProvider<DashboardCubit>(
   create: (_) => _SeededDashboardCubit(state),
   child: DashboardScreen(
+    loadThumbnail: (_, _) async => const Result<String>.failure(Failure.pdf()),
     actions: DashboardActions(
       onOpenDocument: (_) {},
       onCreateFolder: (_) {},
@@ -751,9 +780,8 @@ DashboardState _dashboardState({int documents = 3, int folders = 2}) =>
         for (var index = 0; index < folders; index++)
           DashboardFolder(name: 'Folder $index', documentCount: index * 2),
       ],
-      documents: [
-        for (var index = 0; index < documents; index++) sampleDocument,
-      ],
+      documents: sampleDocuments(documents),
+      recents: sampleDocuments(documents > 5 ? 5 : documents),
       storageBytes: 4 * 1024 * 1024,
     );
 

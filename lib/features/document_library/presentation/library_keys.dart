@@ -22,6 +22,14 @@ abstract final class LibraryKeys {
   /// The shared prefix of every document row key.
   static const documentListItemPrefix = 'document_list_item';
 
+  /// A bounded first-page preview for a document.
+  static Key documentThumbnail(String documentId) =>
+      Key('document_thumbnail_$documentId');
+
+  /// Loading indicator shown while a document preview is derived.
+  static Key documentThumbnailLoading(String documentId) =>
+      Key('document_thumbnail_loading_$documentId');
+
   /// Empty state shown when a document list has nothing to show.
   static const documentListEmptyState = Key('document_list_empty_state');
 
@@ -210,6 +218,9 @@ abstract final class LibrarySemantics {
 
   /// Announces a page thumbnail by its position in the document.
   static String pageThumbnail(int pageNumber) => 'Page $pageNumber thumbnail';
+
+  /// Announces a document's first-page preview.
+  static String documentThumbnail(String title) => '$title preview';
 
   /// Announces a folder's action menu, naming the folder it acts on.
   static String folderActions(String folderName) => 'Actions for $folderName';

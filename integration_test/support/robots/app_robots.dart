@@ -140,6 +140,12 @@ class DashboardRobot extends Robot {
         await tap(LibraryKeys.documentListItem(documentId));
       });
 
+  /// Waits for the visible document's bounded first-page preview surface.
+  Future<void> waitForDocumentThumbnail(String documentId) => step(
+    'loading the dashboard thumbnail for $documentId',
+    () => waitFor(LibraryKeys.documentThumbnail(documentId)),
+  );
+
   /// Creates a folder named [name].
   Future<void> createFolder(String name) =>
       step('creating folder "$name"', () async {

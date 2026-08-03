@@ -42,6 +42,7 @@ void main() {
     // same dashboard → detail → Open route that production composition owns.
     final visibleIds = DocumentListRobot(tester).visibleDocumentIds;
     expect(visibleIds, hasLength(1));
+    await dashboard.waitForDocumentThumbnail(visibleIds.single);
     await dashboard.openDocument(visibleIds.single);
 
     final detail = DocumentDetailRobot(tester);

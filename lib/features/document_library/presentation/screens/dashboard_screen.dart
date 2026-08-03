@@ -11,6 +11,7 @@ import 'package:doc_forge/features/document_library/presentation/cubit/dashboard
 import 'package:doc_forge/features/document_library/presentation/library_dashboard_keys.dart';
 import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
 import 'package:doc_forge/features/document_library/presentation/widgets/document_card.dart';
+import 'package:doc_forge/features/document_library/presentation/widgets/document_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -53,10 +54,13 @@ class DashboardActions {
 /// in the path type: nothing on this screen can address anything outside it.
 class DashboardScreen extends StatelessWidget {
   /// Creates the dashboard.
-  const DashboardScreen({required this.actions, super.key});
+  const DashboardScreen({required this.actions, super.key, this.loadThumbnail});
 
   /// What each control does.
   final DashboardActions actions;
+
+  /// Lazily resolves bounded first-page previews for visible documents.
+  final DocumentThumbnailLoader? loadThumbnail;
 
   @override
   Widget build(BuildContext context) {
@@ -84,19 +88,40 @@ class DashboardScreen extends StatelessWidget {
             ],
           ),
           body: SafeArea(
-            child: Column(
-              children: [
-                _SearchField(state: state, cubit: cubit),
-                if (!state.isSearching) _Breadcrumb(state: state, cubit: cubit),
-                if (state.showsRecents)
-                  _Recents(state: state, actions: actions),
-                if (state.isAtRoot && !state.isSearching)
-                  _Collections(state: state, actions: actions),
-                Expanded(
-                  child: _Body(state: state, actions: actions),
-                ),
-                if (!state.isSearching) _StorageSummary(state: state),
-              ],
+            child: RefreshIndicator(
+              onRefresh: cubit.load,
+              child: CustomScrollView(
+                key: DashboardKeys.scrollView,
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: _SearchField(state: state, cubit: cubit),
+                  ),
+                  if (!state.isSearching && !state.isAtRoot)
+                    SliverToBoxAdapter(
+                      child: _Breadcrumb(state: state, cubit: cubit),
+                    ),
+                  if (state.isAtRoot && !state.isSearching)
+                    SliverToBoxAdapter(
+                      child: _Collections(state: state, actions: actions),
+                    ),
+                  if (state.showsRecents)
+                    SliverToBoxAdapter(
+                      child: _Recents(
+                        state: state,
+                        actions: actions,
+                        loadThumbnail: loadThumbnail,
+                      ),
+                    ),
+                  _Body(
+                    state: state,
+                    actions: actions,
+                    loadThumbnail: loadThumbnail,
+                  ),
+                  if (!state.isSearching)
+                    SliverToBoxAdapter(child: _StorageSummary(state: state)),
+                ],
+              ),
             ),
           ),
         );
@@ -155,7 +180,7 @@ class _Collections extends StatelessWidget {
       label: 'Collections',
       child: SizedBox(
         key: DashboardKeys.collections,
-        height: 72,
+        height: 56,
         child: ListView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -205,7 +230,7 @@ class _CollectionChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: ActionChip(
         avatar: Icon(icon, size: 18),
         label: Text('$label ($count)'),
@@ -288,137 +313,220 @@ class _Breadcrumb extends StatelessWidget {
 
 /// The most recently modified documents, from anywhere in the library.
 class _Recents extends StatelessWidget {
-  const _Recents({required this.state, required this.actions});
+  const _Recents({
+    required this.state,
+    required this.actions,
+    required this.loadThumbnail,
+  });
 
   final DashboardState state;
   final DashboardActions actions;
+  final DocumentThumbnailLoader? loadThumbnail;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: Text('Recent', style: Theme.of(context).textTheme.titleSmall),
-        ),
-        SizedBox(
-          height: 40,
-          child: ListView.separated(
-            key: DashboardKeys.recents,
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: state.recents.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (context, index) {
-              final document = state.recents[index];
-              return ActionChip(
-                avatar: const Icon(Icons.description_outlined, size: 16),
-                label: Text(document.title),
-                onPressed: () => actions.onOpenDocument(document),
-              );
-            },
+    return SizedBox(
+      height: 72,
+      child: Row(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 16, right: 8),
+            child: Text(
+              'Recent',
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+          ),
+          Expanded(
+            child: Semantics(
+              label: 'Recently modified documents',
+              child: ListView.separated(
+                key: DashboardKeys.recents,
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.only(right: 16, top: 8, bottom: 8),
+                itemCount: state.recents.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final document = state.recents[index];
+                  return _RecentDocument(
+                    document: document,
+                    loadThumbnail: loadThumbnail,
+                    onTap: () => actions.onOpenDocument(document),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentDocument extends StatelessWidget {
+  const _RecentDocument({
+    required this.document,
+    required this.onTap,
+    required this.loadThumbnail,
+  });
+
+  final Document document;
+  final VoidCallback onTap;
+  final DocumentThumbnailLoader? loadThumbnail;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Semantics(
+      button: true,
+      label: DisplayFormatting.documentSemanticsLabel(document),
+      child: ExcludeSemantics(
+        child: Material(
+          color: theme.colorScheme.surfaceContainerLow,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+            side: BorderSide(color: theme.colorScheme.outlineVariant),
+          ),
+          child: InkWell(
+            key: DashboardKeys.recentDocument(document.id.value),
+            borderRadius: BorderRadius.circular(10),
+            onTap: onTap,
+            child: SizedBox(
+              width: 156,
+              child: Padding(
+                padding: const EdgeInsets.all(4),
+                child: Row(
+                  children: [
+                    DocumentThumbnail(
+                      document: document,
+                      loadThumbnail: loadThumbnail,
+                      width: 34,
+                      height: 44,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        document.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelLarge,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
-      ],
+      ),
     );
   }
 }
 
 /// The folders and documents, or whatever stands in for them.
 class _Body extends StatelessWidget {
-  const _Body({required this.state, required this.actions});
+  const _Body({
+    required this.state,
+    required this.actions,
+    required this.loadThumbnail,
+  });
 
   final DashboardState state;
   final DashboardActions actions;
+  final DocumentThumbnailLoader? loadThumbnail;
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<DashboardCubit>();
 
     if (state.status == DashboardStatus.failure) {
-      return AppErrorView(
-        key: DashboardKeys.errorView,
-        failure: state.failure ?? const Failure.unexpected(),
-        retryKey: DashboardKeys.errorRetryButton,
-        onRetry: cubit.load,
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: AppErrorView(
+          key: DashboardKeys.errorView,
+          failure: state.failure ?? const Failure.unexpected(),
+          retryKey: DashboardKeys.errorRetryButton,
+          onRetry: cubit.load,
+        ),
       );
     }
 
     if (state.isLoading) {
-      return const AppLoadingIndicator(key: DashboardKeys.loadingIndicator);
-    }
-
-    if (state.isEmpty) {
-      return AppEmptyState(
-        key: DashboardKeys.emptyState,
-        icon: state.isSearching ? Icons.search_off : Icons.folder_open_outlined,
-        title: state.isSearching ? 'No matches' : 'Nothing here yet',
-        message: state.isSearching
-            ? 'No document matches what you typed.'
-            : 'Create a PDF or import one to get started. '
-                  'Everything you save lives in a folder you can also open '
-                  'from your files app.',
+      return const SliverFillRemaining(
+        hasScrollBody: false,
+        child: AppLoadingIndicator(key: DashboardKeys.loadingIndicator),
       );
     }
 
-    return RefreshIndicator(
-      // Forced, because a pull-to-refresh is the user saying they know
-      // something changed and the throttle should not swallow it.
-      onRefresh: cubit.load,
-      child: ListView.builder(
-        key: DashboardKeys.contentList,
-        physics: const AlwaysScrollableScrollPhysics(),
-        itemCount: state.folders.length + state.documents.length,
-        itemBuilder: (context, index) {
-          if (index < state.folders.length) {
-            final folder = state.folders[index];
-            return ListTile(
-              key: DashboardKeys.folderRow(folder.name),
-              leading: const Icon(Icons.folder_outlined),
-              title: Text(folder.name),
-              subtitle: Text(
-                DisplayFormatting.documentCount(folder.documentCount),
-              ),
-              trailing: PopupMenuButton<_FolderAction>(
-                key: DashboardKeys.folderMenu(folder.name),
-                tooltip: 'Actions for ${folder.name}',
-                onSelected: (action) => switch (action) {
-                  _FolderAction.rename => _renameFolder(
-                    context,
-                    cubit,
-                    folder.name,
-                  ),
-                  _FolderAction.trash => _moveFolderToTrash(
-                    context,
-                    cubit,
-                    folder.name,
-                  ),
-                },
-                itemBuilder: (_) => const [
-                  PopupMenuItem(
-                    key: DashboardKeys.folderRename,
-                    value: _FolderAction.rename,
-                    child: Text('Rename'),
-                  ),
-                  PopupMenuItem(
-                    key: DashboardKeys.folderTrash,
-                    value: _FolderAction.trash,
-                    child: Text('Move to Trash'),
-                  ),
-                ],
-              ),
-              onTap: () => cubit.openFolder(folder.name),
-            );
-          }
+    if (state.isEmpty) {
+      return SliverFillRemaining(
+        hasScrollBody: false,
+        child: AppEmptyState(
+          key: DashboardKeys.emptyState,
+          icon: state.isSearching
+              ? Icons.search_off
+              : Icons.folder_open_outlined,
+          title: state.isSearching ? 'No matches' : 'Nothing here yet',
+          message: state.isSearching
+              ? 'No document matches what you typed.'
+              : 'Create a PDF or import one to get started. '
+                    'Everything you save lives in a folder you can also open '
+                    'from your files app.',
+        ),
+      );
+    }
 
-          final document = state.documents[index - state.folders.length];
-          return DocumentCard(
-            document: document,
-            onTap: () => actions.onOpenDocument(document),
+    return SliverList(
+      key: DashboardKeys.contentList,
+      delegate: SliverChildBuilderDelegate((context, index) {
+        if (index < state.folders.length) {
+          final folder = state.folders[index];
+          return ListTile(
+            key: DashboardKeys.folderRow(folder.name),
+            leading: const Icon(Icons.folder_outlined),
+            title: Text(folder.name),
+            subtitle: Text(
+              DisplayFormatting.documentCount(folder.documentCount),
+            ),
+            trailing: PopupMenuButton<_FolderAction>(
+              key: DashboardKeys.folderMenu(folder.name),
+              tooltip: 'Actions for ${folder.name}',
+              onSelected: (action) => switch (action) {
+                _FolderAction.rename => _renameFolder(
+                  context,
+                  cubit,
+                  folder.name,
+                ),
+                _FolderAction.trash => _moveFolderToTrash(
+                  context,
+                  cubit,
+                  folder.name,
+                ),
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  key: DashboardKeys.folderRename,
+                  value: _FolderAction.rename,
+                  child: Text('Rename'),
+                ),
+                PopupMenuItem(
+                  key: DashboardKeys.folderTrash,
+                  value: _FolderAction.trash,
+                  child: Text('Move to Trash'),
+                ),
+              ],
+            ),
+            onTap: () => cubit.openFolder(folder.name),
           );
-        },
-      ),
+        }
+
+        final document = state.documents[index - state.folders.length];
+        return DocumentCard(
+          document: document,
+          loadThumbnail: loadThumbnail,
+          onTap: () => actions.onOpenDocument(document),
+        );
+      }, childCount: state.folders.length + state.documents.length),
     );
   }
 

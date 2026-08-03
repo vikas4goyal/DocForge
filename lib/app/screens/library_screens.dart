@@ -91,6 +91,7 @@ LibraryScreens buildLibraryScreens({required LibraryModule library}) {
       // your first document" is not what an empty archive should suggest.
       onScan: offerScan ? () => context.push(AppRoutes.scan) : null,
       onOpenDocument: (id) => context.push(AppRoutes.documentDetail(id)),
+      loadThumbnail: library.loadDocumentPageThumbnail.call,
     ),
   );
 
@@ -141,6 +142,7 @@ LibraryScreens buildLibraryScreens({required LibraryModule library}) {
       ),
       child: FolderDetailScreen(
         folderName: 'Folder',
+        loadThumbnail: library.loadDocumentPageThumbnail.call,
         onOpenDocument: (documentId) =>
             context.push(AppRoutes.documentDetail(documentId)),
       ),
