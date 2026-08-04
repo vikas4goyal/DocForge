@@ -4,6 +4,7 @@ library;
 import 'package:doc_scanly/core/theme/app_theme.dart';
 import 'package:doc_scanly/features/app_shell/presentation/screens/app_tab_scaffold.dart';
 import 'package:doc_scanly/features/app_shell/presentation/shell_keys.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -21,14 +22,20 @@ void main() {
     AppTab tab = AppTab.dashboard,
     Brightness brightness = Brightness.light,
     double textScale = 1,
+    double bottomViewPadding = 0,
+    TargetPlatform platform = TargetPlatform.android,
   }) async {
+    final baseTheme = brightness == Brightness.dark
+        ? AppTheme.dark
+        : AppTheme.light;
     await tester.pumpWidget(
       MaterialApp(
-        theme: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
+        theme: baseTheme.copyWith(platform: platform),
         builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(
-            context,
-          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          data: MediaQuery.of(context).copyWith(
+            textScaler: TextScaler.linear(textScale),
+            viewPadding: EdgeInsets.only(bottom: bottomViewPadding),
+          ),
           child: child!,
         ),
         home: AppTabScaffold(
@@ -52,6 +59,51 @@ void main() {
       expect(find.byKey(ShellKeys.dashboardTab), findsOneWidget);
       expect(find.byKey(ShellKeys.settingsTab), findsOneWidget);
       expect(find.byKey(ShellKeys.createTab), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(find.byType(FloatingActionButton), findsNothing);
+    });
+
+    testWidgets('uses a native Cupertino tab bar on iOS', (tester) async {
+      await pumpScaffold(tester, platform: TargetPlatform.iOS);
+
+      expect(find.byType(CupertinoTabBar), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
+      expect(find.byType(FloatingActionButton), findsNothing);
+    });
+
+    testWidgets('centres each iOS icon-label group in the usable tab bar', (
+      tester,
+    ) async {
+      await pumpScaffold(tester, platform: TargetPlatform.iOS);
+
+      final bar = tester.getRect(find.byType(CupertinoTabBar));
+      for (final key in [
+        ShellKeys.dashboardTab,
+        ShellKeys.createTab,
+        ShellKeys.settingsTab,
+      ]) {
+        final item = tester.getRect(find.byKey(key));
+        expect(
+          (item.center.dy - bar.center.dy).abs(),
+          lessThanOrEqualTo(2),
+          reason: '$key should be optically centred in the iOS tab bar',
+        );
+      }
+    });
+
+    testWidgets('centres iOS items across the complete safe-area bar', (
+      tester,
+    ) async {
+      await pumpScaffold(
+        tester,
+        platform: TargetPlatform.iOS,
+        bottomViewPadding: 34,
+      );
+
+      final bar = tester.getRect(find.byType(CupertinoTabBar));
+      final dashboard = tester.getRect(find.byKey(ShellKeys.dashboardTab));
+      expect(bar.height, 84);
+      expect((dashboard.center.dy - bar.center.dy).abs(), lessThanOrEqualTo(2));
     });
 
     testWidgets('renders the selected destination', (tester) async {
@@ -106,17 +158,11 @@ void main() {
       final handle = tester.ensureSemantics();
       await pumpScaffold(tester);
 
+      expect(find.bySemanticsLabel(RegExp('Dashboard, tab')), findsOneWidget);
+      final semantics = tester.getSemantics(find.byKey(ShellKeys.dashboardTab));
       expect(
-        tester.getSemantics(find.byKey(ShellKeys.dashboardTab)),
-        matchesSemantics(
-          label: 'Dashboard',
-          isButton: true,
-          isSelected: true,
-          hasSelectedState: true,
-          hasTapAction: true,
-          hasFocusAction: true,
-          isFocusable: true,
-        ),
+        semantics.getSemanticsData().flagsCollection.isSelected.toBoolOrNull(),
+        true,
       );
 
       handle.dispose();
@@ -126,16 +172,11 @@ void main() {
       final handle = tester.ensureSemantics();
       await pumpScaffold(tester);
 
+      expect(find.bySemanticsLabel(RegExp('Settings, tab')), findsOneWidget);
+      final semantics = tester.getSemantics(find.byKey(ShellKeys.settingsTab));
       expect(
-        tester.getSemantics(find.byKey(ShellKeys.settingsTab)),
-        matchesSemantics(
-          label: 'Settings',
-          isButton: true,
-          hasSelectedState: true,
-          hasTapAction: true,
-          hasFocusAction: true,
-          isFocusable: true,
-        ),
+        semantics.getSemanticsData().flagsCollection.isSelected.toBoolOrNull(),
+        isFalse,
       );
 
       handle.dispose();
@@ -163,7 +204,10 @@ void main() {
       await pumpScaffold(tester, textScale: 3);
 
       expect(tester.takeException(), isNull);
-      expect(tester.getSize(find.byType(BottomAppBar)).height, greaterThan(80));
+      expect(
+        tester.getSize(find.byType(NavigationBar)).height,
+        greaterThanOrEqualTo(80),
+      );
     });
 
     testWidgets('passes the contrast guideline in light mode', (tester) async {

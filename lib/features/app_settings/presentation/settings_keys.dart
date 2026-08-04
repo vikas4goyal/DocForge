@@ -16,6 +16,16 @@ abstract final class SettingsKeys {
   /// The recognition-language entry.
   static const ocrLanguage = Key('settings_ocr_language');
 
+  /// Root of the pushed recognition-language screen.
+  static const ocrLanguageScreen = Key('settings_ocr_language_screen');
+
+  /// Scrollable recognition-language choices.
+  static const ocrLanguageList = Key('settings_ocr_language_list');
+
+  /// Identifies one recognition-language choice by enum name.
+  static Key ocrLanguageOption(String language) =>
+      Key('settings_ocr_language_option_$language');
+
   /// The PDF-quality entry.
   static const pdfQuality = Key('settings_pdf_quality');
 
@@ -28,6 +38,19 @@ abstract final class SettingsKeys {
   /// The default-save-location entry.
   static const saveLocation = Key('settings_save_location');
 
+  /// Root of the pushed default-save-location screen.
+  static const saveLocationScreen = Key('settings_save_location_screen');
+
+  /// Keeps the export destination prompt enabled for every export.
+  static const saveLocationAskEachTime = Key(
+    'settings_save_location_ask_each_time',
+  );
+
+  /// Opens the platform directory picker.
+  static const saveLocationChooseFolder = Key(
+    'settings_save_location_choose_folder',
+  );
+
   /// The biometric-lock entry.
   static const biometricLock = Key('settings_biometric_lock');
 
@@ -36,6 +59,15 @@ abstract final class SettingsKeys {
 
   /// The storage-information entry.
   static const storageInfo = Key('settings_storage_info');
+
+  /// Root of the pushed storage-details screen.
+  static const storageScreen = Key('settings_storage_screen');
+
+  /// Re-reads storage usage.
+  static const storageRefresh = Key('settings_storage_refresh');
+
+  /// Opens iOS library storage management from storage details.
+  static const storageManageLocation = Key('settings_storage_manage_location');
 
   /// iOS-only storage-location entry.
   static const storageLocation = Key('settings_storage_location');
@@ -91,6 +123,23 @@ abstract final class SettingsSemantics {
   /// Announces a choice setting as its name and its current value.
   static String choiceTile(String title, String valueLabel) =>
       '$title, $valueLabel';
+
+  /// Announces a recognition-language option.
+  static String ocrLanguageOption(String language) =>
+      '$language, recognition language';
+
+  /// Announces the ask-each-time save option and its selection state.
+  static String askEachTime({required bool selected}) =>
+      'Ask each time${selected ? ', selected' : ''}';
+
+  /// Announces the folder picker action.
+  static const chooseFolder = 'Choose a folder';
+
+  /// Announces the storage refresh action.
+  static const refreshStorage = 'Refresh storage usage';
+
+  /// Announces iOS storage-location management.
+  static const manageStorageLocation = 'Manage storage location';
 
   /// Announces a switch setting as its name and whether it is on.
   static String switchTile(String title, {required bool on}) =>

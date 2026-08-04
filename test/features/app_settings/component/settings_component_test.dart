@@ -12,11 +12,13 @@ import 'package:doc_scanly/core/contracts/contracts.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_screen.dart';
 import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -36,6 +38,18 @@ class _FixedStorageReader implements StorageSummaryReader {
       );
 }
 
+class _CountingStorageReader implements StorageSummaryReader {
+  var reads = 0;
+
+  @override
+  Future<Result<StorageSummary>> summary() async {
+    reads++;
+    return Result<StorageSummary>.success(
+      StorageSummary(documentCount: reads, totalBytes: reads * 1024),
+    );
+  }
+}
+
 void main() {
   late InMemoryPreferenceStore preferences;
   late List<AppThemeChoice> published;
@@ -45,10 +59,14 @@ void main() {
     published = [];
   });
 
-  Future<void> pumpSettings(WidgetTester tester) async {
+  Future<void> pumpSettings(
+    WidgetTester tester, {
+    StorageSummaryReader storageReader = const _FixedStorageReader(),
+    VoidCallback? onStorageLocation,
+  }) async {
     final module = buildSettingsModule(
       preferences: preferences,
-      storageReader: const _FixedStorageReader(),
+      storageReader: storageReader,
       clock: FixedClock(DateTime.utc(2026, 7, 26)),
     );
 
@@ -56,9 +74,11 @@ void main() {
       tester,
       SettingsScreen(
         onBack: () {},
+        pickSaveLocation: () async => '/Exports',
         onAbout: () {},
         onPrivacyPolicy: () {},
         onToggleAppLock: (_) {},
+        onStorageLocation: onStorageLocation,
       ),
       providers: [
         BlocProvider(
@@ -131,6 +151,67 @@ void main() {
       // "Sequential" tells the user nothing about whether they will get
       // "Scan 1" or "Scan 0001", which is why the spec requires the example.
       expectVisible(SettingsKeys.namingPreview);
+    });
+
+    testWidgets('recognition selection persists through the real repository', (
+      tester,
+    ) async {
+      await pumpSettings(tester);
+
+      await tester.tap(find.byKey(SettingsKeys.ocrLanguage));
+      await tester.pumpAndSettle();
+      final option = find.byKey(
+        SettingsKeys.ocrLanguageOption(OcrScript.japanese.name),
+      );
+      await tester.ensureVisible(option);
+      await tester.tap(option);
+      await tester.pumpAndSettle();
+
+      expect(
+        (await preferences.readString(PreferenceKeys.ocrLanguage)).valueOrNull,
+        OcrScript.japanese.languageTag,
+      );
+    });
+
+    testWidgets('a selected export folder persists through the real use case', (
+      tester,
+    ) async {
+      await pumpSettings(tester);
+
+      await tester.ensureVisible(find.byKey(SettingsKeys.saveLocation));
+      await tester.tap(find.byKey(SettingsKeys.saveLocation));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(SettingsKeys.saveLocationChooseFolder));
+      await tester.pumpAndSettle();
+
+      expect(
+        (await preferences.readString(
+          PreferenceKeys.defaultSaveLocation,
+        )).valueOrNull,
+        '/Exports',
+      );
+    });
+
+    testWidgets('storage details refresh through the real use case', (
+      tester,
+    ) async {
+      final reader = _CountingStorageReader();
+      var managed = false;
+      await pumpSettings(
+        tester,
+        storageReader: reader,
+        onStorageLocation: () => managed = true,
+      );
+
+      await tester.ensureVisible(find.byKey(SettingsKeys.storageInfo));
+      await tester.tap(find.byKey(SettingsKeys.storageInfo));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(SettingsKeys.storageRefresh));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(SettingsKeys.storageManageLocation));
+
+      expect(reader.reads, greaterThanOrEqualTo(3));
+      expect(managed, isTrue);
     });
   });
 }

@@ -40,6 +40,9 @@ void main() {
     VoidCallback? onAbout,
     VoidCallback? onPrivacy,
     VoidCallback? onStorageLocation,
+    Future<String?> Function()? pickSaveLocation,
+    bool isTab = false,
+    double textScale = 1,
   }) async {
     tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1;
@@ -70,15 +73,17 @@ void main() {
           darkTheme: AppTheme.dark,
           themeMode: mode,
           builder: (context, child) => MediaQuery(
-            data: MediaQuery.of(
-              context,
-            ).copyWith(platformBrightness: brightness),
+            data: MediaQuery.of(context).copyWith(
+              platformBrightness: brightness,
+              textScaler: TextScaler.linear(textScale),
+            ),
             child: child!,
           ),
           home: BlocProvider<SettingsCubit>.value(
             value: cubit,
             child: SettingsScreen(
-              onBack: () {},
+              onBack: isTab ? null : () {},
+              pickSaveLocation: pickSaveLocation ?? () async => null,
               onAbout: onAbout ?? () {},
               onPrivacyPolicy: onPrivacy ?? () {},
               onToggleAppLock: onToggleAppLock,
@@ -97,6 +102,22 @@ void main() {
   }
 
   group('composition', () {
+    testWidgets('the settings tab has no meaningless back control', (
+      tester,
+    ) async {
+      await pump(tester, isTab: true);
+
+      expect(find.byType(BackButton), findsNothing);
+    });
+
+    testWidgets('a pushed settings screen retains its back control', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      expect(find.byType(BackButton), findsOneWidget);
+    });
+
     testWidgets('shows every entry the spec names', (tester) async {
       await pump(tester);
 
@@ -160,6 +181,114 @@ void main() {
   });
 
   group('changing a setting', () {
+    testWidgets('recognition language opens a pushed scrollable screen', (
+      tester,
+    ) async {
+      final cubit = await pump(tester);
+
+      await tester.tap(find.byKey(SettingsKeys.ocrLanguage));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(SettingsKeys.ocrLanguageScreen), findsOneWidget);
+      expect(find.byKey(SettingsKeys.ocrLanguageList), findsOneWidget);
+
+      final option = find.byKey(
+        SettingsKeys.ocrLanguageOption(OcrScript.japanese.name),
+      );
+      await tester.ensureVisible(option);
+      await tester.tap(option);
+      await tester.pumpAndSettle();
+
+      expect(cubit.state.settings.ocrScript, OcrScript.japanese);
+      expect(find.byKey(SettingsKeys.ocrLanguageScreen), findsNothing);
+    });
+
+    testWidgets('recognition choices remain reachable at large text', (
+      tester,
+    ) async {
+      await pump(tester, viewport: const Size(390, 600), textScale: 3);
+
+      await tester.tap(find.byKey(SettingsKeys.ocrLanguage));
+      await tester.pumpAndSettle();
+      final lastOption = find.byKey(
+        SettingsKeys.ocrLanguageOption(OcrScript.korean.name),
+      );
+      await tester.scrollUntilVisible(
+        lastOption,
+        200,
+        scrollable: find.descendant(
+          of: find.byKey(SettingsKeys.ocrLanguageList),
+          matching: find.byType(Scrollable),
+        ),
+      );
+
+      expect(lastOption, findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('Ask each time can be opened and changed to a folder', (
+      tester,
+    ) async {
+      final cubit = await pump(
+        tester,
+        pickSaveLocation: () async => '/Exports',
+      );
+
+      await tester.ensureVisible(find.byKey(SettingsKeys.saveLocation));
+      await tester.tap(find.byKey(SettingsKeys.saveLocation));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(SettingsKeys.saveLocationScreen), findsOneWidget);
+      expect(find.byKey(SettingsKeys.saveLocationAskEachTime), findsOneWidget);
+      await tester.tap(find.byKey(SettingsKeys.saveLocationChooseFolder));
+      await tester.pumpAndSettle();
+
+      expect(cubit.state.settings.saveLocation, '/Exports');
+    });
+
+    testWidgets('cancelling the folder picker changes nothing', (tester) async {
+      final cubit = await pump(tester, pickSaveLocation: () async => null);
+
+      await tester.ensureVisible(find.byKey(SettingsKeys.saveLocation));
+      await tester.tap(find.byKey(SettingsKeys.saveLocation));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(SettingsKeys.saveLocationChooseFolder));
+      await tester.pumpAndSettle();
+
+      expect(cubit.state.settings.saveLocation, isNull);
+      expect(find.byKey(SettingsKeys.saveLocationScreen), findsOneWidget);
+    });
+
+    testWidgets('storage opens visible details and iOS management', (
+      tester,
+    ) async {
+      var managed = false;
+      await pump(tester, onStorageLocation: () => managed = true);
+
+      await tester.ensureVisible(find.byKey(SettingsKeys.storageInfo));
+      await tester.tap(find.byKey(SettingsKeys.storageInfo));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(SettingsKeys.storageScreen), findsOneWidget);
+      expect(find.textContaining('2.0 MB'), findsOneWidget);
+      await tester.tap(find.byKey(SettingsKeys.storageManageLocation));
+      expect(managed, isTrue);
+    });
+
+    testWidgets('Android storage details omit iCloud management', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      await tester.ensureVisible(find.byKey(SettingsKeys.storageInfo));
+      await tester.tap(find.byKey(SettingsKeys.storageInfo));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(SettingsKeys.storageScreen), findsOneWidget);
+      expect(find.byKey(SettingsKeys.storageRefresh), findsOneWidget);
+      expect(find.byKey(SettingsKeys.storageManageLocation), findsNothing);
+    });
+
     testWidgets('choosing a PDF quality shows its trade-off first', (
       tester,
     ) async {
@@ -363,6 +492,7 @@ void main() {
             value: cubit,
             child: SettingsScreen(
               onBack: () {},
+              pickSaveLocation: () async => null,
               onAbout: () {},
               onPrivacyPolicy: () {},
             ),

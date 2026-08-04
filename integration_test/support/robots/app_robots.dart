@@ -361,6 +361,52 @@ class SettingsRobot extends Robot {
         await waitUntilGone(SettingsKeys.choiceSheet);
       });
 
+  /// Chooses a recognition-language enum value by [optionName].
+  Future<void> chooseRecognitionLanguage(String optionName) =>
+      step('choosing recognition language $optionName', () async {
+        await waitUntilVisible();
+        await tap(SettingsKeys.ocrLanguage);
+        await waitFor(SettingsKeys.ocrLanguageScreen);
+        await tap(SettingsKeys.ocrLanguageOption(optionName));
+        await waitUntilGone(SettingsKeys.ocrLanguageScreen);
+      });
+
+  /// Selects the deterministic folder supplied by the platform fake.
+  Future<void> chooseDefaultSaveFolder() =>
+      step('choosing a default save folder', () async {
+        await waitUntilVisible();
+        await tap(SettingsKeys.saveLocation);
+        await waitFor(SettingsKeys.saveLocationScreen);
+        await tap(SettingsKeys.saveLocationChooseFolder);
+        await waitUntilGone(SettingsKeys.saveLocationScreen);
+      });
+
+  /// Keeps destination prompting enabled for every export.
+  Future<void> askForSaveLocationEachTime() =>
+      step('asking for a save location each time', () async {
+        await waitUntilVisible();
+        await tap(SettingsKeys.saveLocation);
+        await waitFor(SettingsKeys.saveLocationScreen);
+        await tap(SettingsKeys.saveLocationAskEachTime);
+        await waitUntilGone(SettingsKeys.saveLocationScreen);
+      });
+
+  /// Opens storage details and refreshes the visible summary.
+  Future<void> openStorageDetails() =>
+      step('opening storage details', () async {
+        await waitUntilVisible();
+        await tap(SettingsKeys.storageInfo);
+        await waitFor(SettingsKeys.storageScreen);
+        await tap(SettingsKeys.storageRefresh);
+      });
+
+  /// Returns from a pushed Settings detail screen.
+  Future<void> closeDetails() => step('closing settings details', () async {
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await waitUntilVisible();
+  });
+
   /// Toggles the application lock.
   ///
   /// Authentication happens inside the use case in both directions, so this
@@ -384,6 +430,8 @@ class SettingsRobot extends Robot {
   Future<void> openStorageLocation() =>
       step('opening storage location', () async {
         await waitUntilVisible();
-        await tap(SettingsKeys.storageLocation);
+        await tap(SettingsKeys.storageInfo);
+        await waitFor(SettingsKeys.storageScreen);
+        await tap(SettingsKeys.storageManageLocation);
       });
 }

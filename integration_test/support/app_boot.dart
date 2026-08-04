@@ -117,6 +117,7 @@ Future<FlowApp> bootDocScanly(
   bool? isIOS,
   StorageLocation? storageLocation,
   Directory? cloudRootDirectory,
+  String? saveLocationDirectory,
 }) async {
   if (!_isarReady) {
     await Isar.initializeIsarCore(download: true);
@@ -235,6 +236,7 @@ Future<FlowApp> bootDocScanly(
     sharedContent: platform.sharedContent,
     iCloudPlatform: iCloudPlatform,
     isIOS: isIOS,
+    pickSaveLocation: () async => saveLocationDirectory,
   );
 
   addTearDown(() async {

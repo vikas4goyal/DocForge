@@ -84,6 +84,7 @@ void main() {
           value: cubit,
           child: SettingsScreen(
             onBack: () {},
+            pickSaveLocation: () async => null,
             onAbout: () {},
             onPrivacyPolicy: () {},
             onToggleAppLock: (_) {},

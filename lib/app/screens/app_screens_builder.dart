@@ -30,6 +30,7 @@ import 'package:doc_scanly/core/theme/theme_mode_controller.dart';
 import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
 import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_repository.dart';
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
 import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
 import 'package:doc_scanly/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
 import 'package:flutter/material.dart';
@@ -91,6 +92,7 @@ AppScreens buildAppScreens({
   ScreenBuilder? storageLocation,
   Future<void> Function()? onLibraryRefresh,
   Key? libraryRefreshKey,
+  DirectoryPicker? pickSaveLocation,
 }) {
   final securityScreens = buildSecurityScreens(
     permissions: permissions,
@@ -111,6 +113,7 @@ AppScreens buildAppScreens({
     lockConfiguration: lockConfiguration,
     authenticator: authenticator,
     supportsCloudStorage: storageLocation != null,
+    pickSaveLocation: pickSaveLocation,
   );
 
   final viewerScreens = buildViewerScreens(
@@ -133,7 +136,7 @@ AppScreens buildAppScreens({
       importing: importing,
       creationFlow: creationFlow,
       permissions: permissions,
-      settings: settingsScreens.settings,
+      settings: settingsScreens.settingsTab,
       routeObserver: routeObserver,
       onLibraryRefresh: onLibraryRefresh,
       libraryRefreshKey: libraryRefreshKey,

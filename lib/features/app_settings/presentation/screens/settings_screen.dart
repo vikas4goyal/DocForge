@@ -5,6 +5,7 @@ import 'package:doc_scanly/core/formatting/display_formatting.dart';
 import 'package:doc_scanly/core/widgets/app_state_views.dart';
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
 import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
 import 'package:doc_scanly/features/app_settings/presentation/widgets/settings_widgets.dart';
 import 'package:flutter/material.dart';
@@ -17,16 +18,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class SettingsScreen extends StatelessWidget {
   /// Creates the settings screen.
   const SettingsScreen({
-    required this.onBack,
     required this.onAbout,
     required this.onPrivacyPolicy,
+    required this.pickSaveLocation,
     super.key,
+    this.onBack,
     this.onToggleAppLock,
     this.onStorageLocation,
   });
 
   /// Invoked when the user leaves settings.
-  final VoidCallback onBack;
+  final VoidCallback? onBack;
+
+  /// Opens the platform directory picker used by export defaults.
+  final DirectoryPicker pickSaveLocation;
 
   /// Invoked when the About entry is chosen.
   final VoidCallback onAbout;
@@ -54,7 +59,11 @@ class SettingsScreen extends StatelessWidget {
           key: SettingsKeys.screen,
           appBar: AppBar(
             title: const Text('Settings'),
-            leading: BackButton(onPressed: onBack),
+            // A tab switch creates no route history, so automatic leading
+            // controls are deliberately suppressed unless composition gives
+            // this pushed instance a real back action.
+            automaticallyImplyLeading: false,
+            leading: onBack == null ? null : BackButton(onPressed: onBack),
           ),
           body: state.status == SettingsStatus.loading
               ? const AppLoadingIndicator()
@@ -95,15 +104,16 @@ class SettingsScreen extends StatelessWidget {
           labelFor: (choice) => choice.label,
           onSelected: cubit.setTheme,
         ),
-        SettingsChoiceTile<OcrScript>(
+        SettingsValueTile(
           key: SettingsKeys.ocrLanguage,
           title: 'Recognition language',
-          value: settings.ocrScript,
-          valueLabel: settings.ocrScript.label,
-          options: OcrScript.values,
-          labelFor: (script) => script.label,
-          descriptionFor: SettingsCopy.ocrScriptDescription,
-          onSelected: cubit.setOcrScript,
+          value: settings.ocrScript.label,
+          onTap: () => Navigator.of(context).push<void>(
+            SettingsDetailRoutes.recognitionLanguage(
+              value: settings.ocrScript,
+              onSelected: cubit.setOcrScript,
+            ),
+          ),
         ),
         SettingsChoiceTile<PdfQuality>(
           key: SettingsKeys.pdfQuality,
@@ -143,11 +153,13 @@ class SettingsScreen extends StatelessWidget {
           key: SettingsKeys.saveLocation,
           title: 'Default save location',
           value: state.saveLocationLabel,
-          // Clearing is the only change offered here: choosing a directory
-          // opens the system picker, which belongs to the export flow.
-          onTap: settings.saveLocation == null
-              ? null
-              : () => cubit.setSaveLocation(null),
+          onTap: () => Navigator.of(context).push<void>(
+            SettingsDetailRoutes.saveLocation(
+              currentPath: settings.saveLocation,
+              pickDirectory: pickSaveLocation,
+              onSelected: cubit.setSaveLocation,
+            ),
+          ),
         ),
         SettingsSwitchTile(
           key: SettingsKeys.biometricLock,
@@ -165,7 +177,12 @@ class SettingsScreen extends StatelessWidget {
                   DisplayFormatting.fileSize(state.storage!.totalBytes),
                   state.storage!.documentCount,
                 ),
-          onTap: cubit.refreshStorage,
+          onTap: () => Navigator.of(context).push<void>(
+            SettingsDetailRoutes.storage(
+              settings: cubit,
+              onManageLocation: onStorageLocation,
+            ),
+          ),
         ),
         if (onStorageLocation != null)
           SettingsValueTile(

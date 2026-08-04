@@ -16,6 +16,7 @@ import 'package:doc_scanly/features/app_settings/application/usecases/settings_u
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
 import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_screen.dart';
 import 'package:doc_scanly/features/app_settings/presentation/widgets/settings_widgets.dart';
 import 'package:flutter/material.dart';
@@ -80,17 +81,21 @@ class _PreviewSettingsCubit extends SettingsCubit {
   Future<void> refreshStorage() async {}
 }
 
-Widget _screen(SettingsState state, {bool supportsCloudStorage = false}) =>
-    BlocProvider<SettingsCubit>(
-      create: (_) => _PreviewSettingsCubit(state),
-      child: SettingsScreen(
-        onBack: () {},
-        onAbout: () {},
-        onPrivacyPolicy: () {},
-        onToggleAppLock: (_) {},
-        onStorageLocation: supportsCloudStorage ? () {} : null,
-      ),
-    );
+Widget _screen(
+  SettingsState state, {
+  bool supportsCloudStorage = false,
+  bool isTab = false,
+}) => BlocProvider<SettingsCubit>(
+  create: (_) => _PreviewSettingsCubit(state),
+  child: SettingsScreen(
+    onBack: isTab ? null : () {},
+    pickSaveLocation: () async => null,
+    onAbout: () {},
+    onPrivacyPolicy: () {},
+    onToggleAppLock: (_) {},
+    onStorageLocation: supportsCloudStorage ? () {} : null,
+  ),
+);
 
 const _storage = StorageSummary(totalBytes: 2_097_152, documentCount: 8);
 
@@ -108,6 +113,14 @@ final _ready = const SettingsState.initial().copyWith(
 /// Settings at their defaults.
 @Preview(name: 'Settings — default', group: 'Settings', theme: appPreviewTheme)
 Widget settingsDefault() => _screen(_ready);
+
+/// Settings as the top-level tab, without a back affordance.
+@Preview(
+  name: 'Settings — tab destination',
+  group: 'Settings',
+  theme: appPreviewTheme,
+)
+Widget settingsTabDestination() => _screen(_ready, isTab: true);
 
 /// Settings still being read.
 @Preview(name: 'Settings — loading', group: 'Settings', theme: appPreviewTheme)
@@ -206,6 +219,96 @@ Widget settingsTabletDark() => _screen(_ready);
   theme: appPreviewTheme,
 )
 Widget settingsICloudStorage() => _screen(_ready, supportsCloudStorage: true);
+
+// ---------------------------------------------------------------------------
+// Pushed Settings details
+// ---------------------------------------------------------------------------
+
+/// The scrollable recognition-language selector.
+@Preview(
+  name: 'Recognition language — phone, light',
+  group: 'Settings details',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget recognitionLanguagePhone() =>
+    RecognitionLanguageScreen(value: OcrScript.latin, onSelected: (_) async {});
+
+/// Recognition language on a dark tablet with a non-default value.
+@Preview(
+  name: 'Recognition language — tablet, dark',
+  group: 'Settings details',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget recognitionLanguageTabletDark() => RecognitionLanguageScreen(
+  value: OcrScript.japanese,
+  onSelected: (_) async {},
+);
+
+/// Default save location while exports ask every time.
+@Preview(
+  name: 'Save location — ask each time',
+  group: 'Settings details',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget saveLocationAskEachTime() => DefaultSaveLocationScreen(
+  currentPath: null,
+  pickDirectory: () async => null,
+  onSelected: (_) async {},
+);
+
+/// Default save location with a long selected folder on a dark tablet.
+@Preview(
+  name: 'Save location — long path, tablet dark',
+  group: 'Settings details',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget saveLocationLongPath() => DefaultSaveLocationScreen(
+  currentPath:
+      '/storage/emulated/0/Documents/Exports/Quarterly/Reviewed documents',
+  pickDirectory: () async => null,
+  onSelected: (_) async {},
+);
+
+Widget _storageDetails(SettingsState state, {bool iCloud = false}) =>
+    BlocProvider<SettingsCubit>(
+      create: (_) => _PreviewSettingsCubit(state),
+      child: StorageDetailsScreen(onManageLocation: iCloud ? () {} : null),
+    );
+
+/// Storage details with a current summary.
+@Preview(
+  name: 'Storage details — ready',
+  group: 'Settings details',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget storageDetailsReady() => _storageDetails(_ready, iCloud: true);
+
+/// Storage details while refreshing in dark tablet layout.
+@Preview(
+  name: 'Storage details — refreshing, tablet dark',
+  group: 'Settings details',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget storageDetailsRefreshing() =>
+    _storageDetails(_ready.copyWith(isRefreshingStorage: true));
+
+/// Storage details when a read failed.
+@Preview(
+  name: 'Storage details — error',
+  group: 'Settings details',
+  theme: appPreviewTheme,
+)
+Widget storageDetailsError() =>
+    _storageDetails(_ready.copyWith(storageFailure: const Failure.storage()));
 
 // ---------------------------------------------------------------------------
 // About and Privacy Policy

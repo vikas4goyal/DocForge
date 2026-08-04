@@ -28,10 +28,10 @@ abstract final class ShellKeys {
 /// until a flow stops finding it.
 abstract final class ShellSemantics {
   /// The dashboard destination.
-  static const dashboardTab = 'Dashboard';
+  static const dashboardTab = 'Dashboard, tab';
 
   /// The settings destination.
-  static const settingsTab = 'Settings';
+  static const settingsTab = 'Settings, tab';
 
   /// The control that starts a new document.
   static const createButton = 'Create PDF';

@@ -10,6 +10,8 @@
 /// user had switched on.
 library;
 
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,7 +26,7 @@ void main() {
   testWidgets('a changed setting is still there after leaving the screen', (
     tester,
   ) async {
-    await bootDocScanly(tester);
+    final app = await bootDocScanly(tester, saveLocationDirectory: '/Exports');
 
     await DashboardRobot(tester).waitUntilLoaded();
     final shell = TabShellRobot(tester);
@@ -33,6 +35,23 @@ void main() {
     final settings = SettingsRobot(tester);
     await settings.waitUntilVisible();
     await settings.choose(SettingsKeys.theme, 'dark');
+    await settings.chooseRecognitionLanguage(OcrScript.japanese.name);
+    await settings.chooseDefaultSaveFolder();
+    expect(
+      (await app.dependencies.preferences.readString(
+        PreferenceKeys.defaultSaveLocation,
+      )).valueOrNull,
+      '/Exports',
+    );
+    await settings.askForSaveLocationEachTime();
+    expect(
+      (await app.dependencies.preferences.readString(
+        PreferenceKeys.defaultSaveLocation,
+      )).valueOrNull,
+      isNull,
+    );
+    await settings.openStorageDetails();
+    await settings.closeDetails();
 
     // The theme is published to the application root, so choosing it is
     // visible immediately and everywhere — which is what the spec means by

@@ -19,6 +19,14 @@ Widget _shell(AppTab tab, Widget body) => previewScreen(
 /// A placeholder destination that names what it is standing in for.
 Widget _destination(String label) => Center(child: Text(label));
 
+Widget _platformShell(TargetPlatform platform, AppTab tab, Widget body) =>
+    Builder(
+      builder: (context) => Theme(
+        data: Theme.of(context).copyWith(platform: platform),
+        child: _shell(tab, body),
+      ),
+    );
+
 /// The shell showing the dashboard destination.
 @Preview(name: 'Shell — default', group: 'Shell', theme: appPreviewTheme)
 Widget shellDefault() => _shell(AppTab.dashboard, _destination('Dashboard'));
@@ -26,6 +34,33 @@ Widget shellDefault() => _shell(AppTab.dashboard, _destination('Dashboard'));
 /// The shell with the settings destination selected.
 @Preview(name: 'Shell — settings', group: 'Shell', theme: appPreviewTheme)
 Widget shellSettings() => _shell(AppTab.settings, _destination('Settings'));
+
+/// The native iOS shell with Settings selected.
+@Preview(
+  name: 'Shell — iOS phone, settings',
+  group: 'Shell',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget shellIosSettings() => _platformShell(
+  TargetPlatform.iOS,
+  AppTab.settings,
+  _destination('Settings'),
+);
+
+/// The Material 3 Android shell on a dark tablet.
+@Preview(
+  name: 'Shell — Android tablet, dark',
+  group: 'Shell',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget shellAndroidTabletDark() => _platformShell(
+  TargetPlatform.android,
+  AppTab.dashboard,
+  _destination('Dashboard'),
+);
 
 /// The shell while its destination is loading.
 @Preview(name: 'Shell — loading', group: 'Shell', theme: appPreviewTheme)

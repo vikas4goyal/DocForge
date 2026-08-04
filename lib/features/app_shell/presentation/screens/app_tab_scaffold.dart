@@ -2,6 +2,7 @@
 library;
 
 import 'package:doc_scanly/features/app_shell/presentation/shell_keys.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 /// Which destination the tab bar is showing.
@@ -44,130 +45,240 @@ class AppTabScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final labelPainter = TextPainter(
-      text: TextSpan(
-        text: ShellSemantics.dashboardTab,
-        style: theme.textTheme.labelSmall,
-      ),
-      textDirection: Directionality.of(context),
-      textScaler: MediaQuery.textScalerOf(context),
-      maxLines: 1,
-    );
-    final labelHeight = labelPainter.preferredLineHeight;
-    labelPainter.dispose();
+    final usesCupertinoBar = Theme.of(context).platform == TargetPlatform.iOS;
 
     return Scaffold(
       key: ShellKeys.tabScaffold,
       body: child,
-      floatingActionButton: FloatingActionButton(
-        key: ShellKeys.createTab,
-        onPressed: onCreate,
-        tooltip: ShellSemantics.createButton,
-        child: const Icon(Icons.add),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        // A notched bar with the create control docked into it: the middle
-        // position is what the specification asks for, and a third
-        // NavigationDestination would make Create look like a place.
-        // Material's bar padding (24), our button padding (16), and the icon
-        // (24) consume 64 logical pixels. Let the final part follow the
-        // system-scaled label instead of assuming its default 16-pixel line
-        // height; otherwise iOS accessibility text can overflow the tab.
-        height: 64 + labelHeight,
-        shape: const CircularNotchedRectangle(),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _TabButton(
-              buttonKey: ShellKeys.dashboardTab,
-              icon: Icons.folder_outlined,
-              selectedIcon: Icons.folder,
-              label: ShellSemantics.dashboardTab,
-              selected: tab == AppTab.dashboard,
-              onPressed: () => onTabSelected(AppTab.dashboard),
+      bottomNavigationBar: usesCupertinoBar
+          ? _CupertinoAppTabBar(
+              tab: tab,
+              onTabSelected: onTabSelected,
+              onCreate: onCreate,
+            )
+          : _MaterialAppTabBar(
+              tab: tab,
+              onTabSelected: onTabSelected,
+              onCreate: onCreate,
             ),
-            const SizedBox(width: 48),
-            _TabButton(
-              buttonKey: ShellKeys.settingsTab,
-              icon: Icons.settings_outlined,
-              selectedIcon: Icons.settings,
-              label: ShellSemantics.settingsTab,
-              selected: tab == AppTab.settings,
-              onPressed: () => onTabSelected(AppTab.settings),
-            ),
-          ],
+    );
+  }
+}
+
+/// Renders the native iOS tab-bar treatment.
+class _CupertinoAppTabBar extends StatelessWidget {
+  const _CupertinoAppTabBar({
+    required this.tab,
+    required this.onTabSelected,
+    required this.onCreate,
+  });
+
+  final AppTab tab;
+  final ValueChanged<AppTab> onTabSelected;
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final bottomInset = mediaQuery.viewPadding.bottom;
+
+    // CupertinoTabBar normally reserves the home-indicator inset below its
+    // 50pt content row. On taller iPhone insets that makes the controls appear
+    // pinned to the top of the complete visible bar. Give the bar the same
+    // total height but let its full-width tap regions and visual groups use
+    // that height, keeping them optically centred with clearance below.
+    return MediaQuery(
+      data: mediaQuery.copyWith(
+        viewPadding: EdgeInsets.fromLTRB(
+          mediaQuery.viewPadding.left,
+          mediaQuery.viewPadding.top,
+          mediaQuery.viewPadding.right,
+          0,
         ),
+      ),
+      child: CupertinoTabBar(
+        height: 50 + bottomInset,
+        // Create is an action, not navigation state. Keeping the selected index
+        // on 0 or 2 prevents it from looking selected after a cancelled scan.
+        currentIndex: tab == AppTab.dashboard ? 0 : 2,
+        activeColor: CupertinoColors.activeBlue.resolveFrom(context),
+        iconSize: 25,
+        onTap: (index) {
+          switch (index) {
+            case 0:
+              onTabSelected(AppTab.dashboard);
+            case 1:
+              onCreate();
+            case 2:
+              onTabSelected(AppTab.settings);
+          }
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: _CupertinoTabItem(
+              icon: CupertinoIcons.folder,
+              label: 'Dashboard',
+              key: ShellKeys.dashboardTab,
+              semanticsLabel: ShellSemantics.dashboardTab,
+            ),
+            activeIcon: _CupertinoTabItem(
+              icon: CupertinoIcons.folder_fill,
+              label: 'Dashboard',
+              key: ShellKeys.dashboardTab,
+              semanticsLabel: ShellSemantics.dashboardTab,
+              selected: true,
+            ),
+          ),
+          BottomNavigationBarItem(
+            icon: _CupertinoTabItem(
+              icon: CupertinoIcons.add_circled,
+              label: 'Create',
+              key: ShellKeys.createTab,
+              semanticsLabel: ShellSemantics.createButton,
+            ),
+          ),
+          BottomNavigationBarItem(
+            icon: _CupertinoTabItem(
+              icon: CupertinoIcons.gear,
+              label: 'Settings',
+              key: ShellKeys.settingsTab,
+              semanticsLabel: ShellSemantics.settingsTab,
+            ),
+            activeIcon: _CupertinoTabItem(
+              icon: CupertinoIcons.gear_solid,
+              label: 'Settings',
+              key: ShellKeys.settingsTab,
+              semanticsLabel: ShellSemantics.settingsTab,
+              selected: true,
+            ),
+          ),
+        ],
       ),
     );
   }
 }
 
-/// One destination in the bar.
-class _TabButton extends StatelessWidget {
-  const _TabButton({
-    required this.buttonKey,
+/// Centers an iOS tab icon and label as one visual unit.
+///
+/// `CupertinoTabBar` normally lays out its icon in an expanding region above
+/// a separately bottom-aligned label. Keeping the pair in one compact column
+/// gives all three items the same optical vertical centre while the tab bar
+/// continues to own its native safe-area inset and separator.
+class _CupertinoTabItem extends StatelessWidget {
+  const _CupertinoTabItem({
     required this.icon,
-    required this.selectedIcon,
     required this.label,
-    required this.selected,
-    required this.onPressed,
+    required this.semanticsLabel,
+    super.key,
+    this.selected = false,
   });
 
-  final Key buttonKey;
   final IconData icon;
-  final IconData selectedIcon;
   final String label;
+  final String semanticsLabel;
   final bool selected;
-  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: semanticsLabel,
+    selected: selected,
+    button: true,
+    excludeSemantics: true,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [Icon(icon), const SizedBox(height: 2), Text(label)],
+    ),
+  );
+}
+
+/// Renders the native Material 3 Android navigation treatment.
+class _MaterialAppTabBar extends StatelessWidget {
+  const _MaterialAppTabBar({
+    required this.tab,
+    required this.onTabSelected,
+    required this.onCreate,
+  });
+
+  final AppTab tab;
+  final ValueChanged<AppTab> onTabSelected;
+  final VoidCallback onCreate;
 
   @override
   Widget build(BuildContext context) {
-    final colours = Theme.of(context).colorScheme;
-
-    return Expanded(
-      // The label and the selected state come from here; the tap action comes
-      // from the InkWell beneath. Excluding the InkWell instead would announce
-      // a button a screen reader could not activate, and only the *content* is
-      // redundant once the label is set.
-      child: Semantics(
-        button: true,
-        selected: selected,
-        label: label,
-        child: InkWell(
-          key: buttonKey,
-          onTap: onPressed,
-          child: ExcludeSemantics(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // The icon changes as well as the colour: distinguishing the
-                  // selected destination by colour alone fails for anyone who
-                  // cannot see the difference.
-                  Icon(
-                    selected ? selectedIcon : icon,
-                    color: selected
-                        ? colours.primary
-                        : colours.onSurfaceVariant,
-                  ),
-                  Text(
-                    label,
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: selected
-                          ? colours.primary
-                          : colours.onSurfaceVariant,
-                      fontWeight: selected ? FontWeight.w600 : null,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+    return NavigationBar(
+      selectedIndex: tab == AppTab.dashboard ? 0 : 2,
+      onDestinationSelected: (index) {
+        switch (index) {
+          case 0:
+            onTabSelected(AppTab.dashboard);
+          case 1:
+            onCreate();
+          case 2:
+            onTabSelected(AppTab.settings);
+        }
+      },
+      destinations: const [
+        NavigationDestination(
+          icon: _TabIcon(
+            icon: Icons.folder_outlined,
+            key: ShellKeys.dashboardTab,
+            semanticsLabel: ShellSemantics.dashboardTab,
           ),
+          selectedIcon: _TabIcon(
+            icon: Icons.folder,
+            key: ShellKeys.dashboardTab,
+            semanticsLabel: ShellSemantics.dashboardTab,
+            selected: true,
+          ),
+          label: 'Dashboard',
         ),
-      ),
+        NavigationDestination(
+          icon: _TabIcon(
+            icon: Icons.add_circle_outline,
+            key: ShellKeys.createTab,
+            semanticsLabel: ShellSemantics.createButton,
+          ),
+          label: 'Create',
+          tooltip: ShellSemantics.createButton,
+        ),
+        NavigationDestination(
+          icon: _TabIcon(
+            icon: Icons.settings_outlined,
+            key: ShellKeys.settingsTab,
+            semanticsLabel: ShellSemantics.settingsTab,
+          ),
+          selectedIcon: _TabIcon(
+            icon: Icons.settings,
+            key: ShellKeys.settingsTab,
+            semanticsLabel: ShellSemantics.settingsTab,
+            selected: true,
+          ),
+          label: 'Settings',
+        ),
+      ],
     );
   }
+}
+
+class _TabIcon extends StatelessWidget {
+  const _TabIcon({
+    required this.icon,
+    required this.semanticsLabel,
+    super.key,
+    this.selected = false,
+  });
+
+  final IconData icon;
+  final String semanticsLabel;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    label: semanticsLabel,
+    selected: selected,
+    button: true,
+    excludeSemantics: true,
+    child: Icon(icon),
+  );
 }

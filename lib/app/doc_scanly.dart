@@ -48,6 +48,7 @@ import 'package:doc_scanly/features/app_security/infrastructure/repositories/loc
 import 'package:doc_scanly/features/app_security/presentation/security_keys.dart';
 import 'package:doc_scanly/features/app_security/presentation/widgets/app_lock_observer.dart';
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/ensure_document_downloaded.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/import_existing_cloud_folder.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_location.dart';
@@ -155,6 +156,7 @@ Future<Widget> buildDocScanly({
   SharedContentSource? sharedContent,
   ICloudPlatformApi? iCloudPlatform,
   bool? isIOS,
+  DirectoryPicker? pickSaveLocation,
   String initialLocation = AppRoutes.home,
 }) async {
   // Awaited together rather than one after another: none needs the other, and
@@ -209,6 +211,7 @@ Future<Widget> buildDocScanly({
           sharedContent: sharedContent,
           iCloudPlatform: iCloudPlatform,
           isIOS: true,
+          pickSaveLocation: pickSaveLocation,
           initialLocation: initialLocation,
         ),
       );
@@ -246,6 +249,7 @@ Future<Widget> buildDocScanly({
           sharedContent: sharedContent,
           iCloudPlatform: iCloudPlatform,
           isIOS: true,
+          pickSaveLocation: pickSaveLocation,
           initialLocation: initialLocation,
         ),
       );
@@ -553,6 +557,7 @@ Future<Widget> buildDocScanly({
       libraryRefreshKey: usesICloudAuthority
           ? CloudStorageKeys.libraryRefresh
           : null,
+      pickSaveLocation: pickSaveLocation,
     ),
   );
 

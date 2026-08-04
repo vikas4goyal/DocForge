@@ -13,7 +13,9 @@ import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
 import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_repository.dart';
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_screen.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -23,6 +25,7 @@ class SettingsScreens {
   /// Creates the group.
   const SettingsScreens({
     required this.settings,
+    required this.settingsTab,
     required this.about,
     required this.privacy,
   });
@@ -32,6 +35,9 @@ class SettingsScreens {
   /// Used twice: as the settings tab of the shell and as the `/settings` route.
   /// One builder rather than two, so a change to either reaches both.
   final ScreenBuilder settings;
+
+  /// Settings composed as a tab destination, without a back action.
+  final ScreenBuilder settingsTab;
 
   /// About, as a route.
   ///
@@ -63,60 +69,69 @@ SettingsScreens buildSettingsScreens({
   required AppLockConfiguration lockConfiguration,
   required DeviceAuthenticator authenticator,
   bool supportsCloudStorage = false,
+  DirectoryPicker? pickSaveLocation,
 }) {
-  Widget settingsScreen(BuildContext context) => BlocProvider(
-    create: (_) => SettingsCubit(
-      settings.load,
-      settings.update,
-      settings.previewName,
-      settings.storage,
-      // Published to the root so an explicit theme takes effect without a
-      // restart, which the spec requires.
-      onThemeChanged: (choice) => themeMode.select(themeModeFor(choice)),
-    )..load(),
-    child: Builder(
-      builder: (screenContext) {
-        // Kept in step with what was actually persisted, so the naming
-        // pattern and quality presets a new document uses are the ones on
-        // screen.
-        currentSettings.value = screenContext
-            .watch<SettingsCubit>()
-            .state
-            .settings;
+  final directoryPicker =
+      pickSaveLocation ??
+      () => FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Choose default save location',
+      );
+  Widget settingsScreen(BuildContext context, {required bool isTab}) =>
+      BlocProvider(
+        create: (_) => SettingsCubit(
+          settings.load,
+          settings.update,
+          settings.previewName,
+          settings.storage,
+          // Published to the root so an explicit theme takes effect without a
+          // restart, which the spec requires.
+          onThemeChanged: (choice) => themeMode.select(themeModeFor(choice)),
+        )..load(),
+        child: Builder(
+          builder: (screenContext) {
+            // Kept in step with what was actually persisted, so the naming
+            // pattern and quality presets a new document uses are the ones on
+            // screen.
+            currentSettings.value = screenContext
+                .watch<SettingsCubit>()
+                .state
+                .settings;
 
-        return SettingsScreen(
-          onBack: () => context.pop(),
-          onAbout: () => Navigator.of(context).push<void>(
-            MaterialPageRoute(
-              builder: (routeContext) => AboutScreen(
-                version: appVersion,
-                onBack: () => Navigator.of(routeContext).pop(),
+            return SettingsScreen(
+              onBack: isTab ? null : () => context.pop(),
+              pickSaveLocation: directoryPicker,
+              onAbout: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (routeContext) => AboutScreen(
+                    version: appVersion,
+                    onBack: () => Navigator.of(routeContext).pop(),
+                  ),
+                ),
               ),
-            ),
-          ),
-          onPrivacyPolicy: () => Navigator.of(context).push<void>(
-            MaterialPageRoute(
-              builder: (routeContext) => PrivacyPolicyScreen(
-                onBack: () => Navigator.of(routeContext).pop(),
+              onPrivacyPolicy: () => Navigator.of(context).push<void>(
+                MaterialPageRoute(
+                  builder: (routeContext) => PrivacyPolicyScreen(
+                    onBack: () => Navigator.of(routeContext).pop(),
+                  ),
+                ),
               ),
-            ),
-          ),
-          onToggleAppLock: (requested) => toggleAppLock(
-            context,
-            SetAppLockEnabled(authenticator, lockConfiguration),
-            screenContext.read<SettingsCubit>(),
-            enabled: requested,
-          ),
-          onStorageLocation: supportsCloudStorage
-              ? () => context.push(AppRoutes.storageLocation)
-              : null,
-        );
-      },
-    ),
-  );
+              onToggleAppLock: (requested) => toggleAppLock(
+                context,
+                SetAppLockEnabled(authenticator, lockConfiguration),
+                screenContext.read<SettingsCubit>(),
+                enabled: requested,
+              ),
+              onStorageLocation: supportsCloudStorage
+                  ? () => context.push(AppRoutes.storageLocation)
+                  : null,
+            );
+          },
+        ),
+      );
 
   return SettingsScreens(
-    settings: settingsScreen,
+    settings: (context) => settingsScreen(context, isTab: false),
+    settingsTab: (context) => settingsScreen(context, isTab: true),
     about: (_) => const PlaceholderScreen('About'),
     privacy: (_) => const PlaceholderScreen('Privacy policy'),
   );
