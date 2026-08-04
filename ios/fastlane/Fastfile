@@ -40,7 +40,7 @@ platform :ios do
     BUILD_NUMBER_PATH = "../../Jenkins/build_number"
     BUILD_VERSION_PATH = "../../Jenkins/build_version"
     GSP_PATH = "Runner/GoogleService-Info.plist"
-    FIREBASE_APP_ID = "1:584044317947:ios:ae0bc3d5076e27ed2b745e"
+    FIREBASE_APP_ID = "1:511064978644:ios:ca34e9d09c5bd07a24b741"
     FIREBASE_CLI_TOKEN = ENV["FIREBASE_CLI_TOKEN"]
     FIREBASE_SERVICE_ACCOUNT_JSON_PATH = ENV["FIREBASE_SERVICE_ACCOUNT_JSON_PATH"]
     # Needed on the Jenkins agent so match can run `security set-key-partition-list`
