@@ -26,7 +26,7 @@ platform :ios do
   private_lane :setup_variables do
     APPLE_ID = "6797710684"
     USERNAME = "admin.bruxkey@gmail.com"
-    BUNDLE_ID = "com.bruxkey.mba"
+    BUNDLE_ID = "com.bruxkey.docscanly"
     TEAMID = "85CD8AYN8F"
     PACKAGE_NAME = "Runner"
     WORKSPACE = "Runner.xcworkspace"
@@ -143,30 +143,6 @@ platform :ios do
     fetch_certificates(certificate: "appstore")
   end
 
-  # Private lanes
-#   desc "Build AdHoc IPA"
-#   private_lane :build_ipa_adhoc do
-#     update_build_number
-#     install_pods
-#     fetch_certificates(certificate: "adhoc")
-#     gym(
-#       workspace: WORKSPACE,
-#       scheme: SCHEME,
-#       configuration: CONFIGURATION,
-#       export_method: "ad-hoc",
-#       include_symbols: true,
-#       output_directory: BUILD_OUTPUT_DIRECTORY,
-#       output_name: ipa_name,
-#       clean: true,
-#       xcargs: "ENVIRONMENT=staging",
-#       export_options: {
-#         provisioningProfiles: {
-#           "com.bruxkey.mba" => "match AdHoc com.bruxkey.mba"
-#         }
-#       }
-#     )
-#   end
-
   desc "Upload app to appstore"
   lane :release_appstore do
 #     build_ipa_appstore
@@ -191,29 +167,6 @@ platform :ios do
     )
   end
 
-#   # Private lanes
-#   desc "Build Appstore IPA"
-#   private_lane :build_ipa_appstore do
-#     update_build_number
-#     install_pods
-#     fetch_certificates(certificate: "appstore")
-#     gym(
-#       workspace: WORKSPACE,
-#       scheme: SCHEME,
-#       configuration: CONFIGURATION,
-#       export_method: "app-store",
-#       include_symbols: true,
-#       output_directory: BUILD_OUTPUT_DIRECTORY,
-#       output_name: ipa_name,
-#       clean: true,
-#       xcargs: "ENVIRONMENT=production",
-#       export_options: {
-#          provisioningProfiles: {
-#             "com.bruxkey.mba" => "My Budget Assistant"
-#          }
-#       }
-#     )
-#   end
 
   private_lane :upload_testFlight do |options|
     app_store_connect_api_key(
@@ -234,71 +187,6 @@ platform :ios do
       # changelog: CHANGE_LOG
     )
   end
-
-#   desc "Check if app builds"
-#   lane :build do
-#     # this lane is to check if the app can build before doing anything
-#     # update_certificates
-#     # we are using update_certificates rather than fetch_certificate
-#     # so everytime the CI run, it checks if there is a new device.
-#     # if so it updates the certificates and starts using the new ones.
-#     # other wise, it will download the certificates only without updating them
-#     update_certificates(certificate:"adhoc")
-#     update_build_number
-#     install_pods
-#     gym(
-#       workspace: WORKSPACE,
-#       scheme: SCHEME,
-#       configuration: CONFIGURATION,
-#       output_directory: BUILD_OUTPUT_DIRECTORY,
-#       codesigning_identity: "",
-#       xcargs: "CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO",
-#       skip_package_ipa: true,
-#       skip_profile_detection: true,
-#       clean: true
-#     )
-#     # we are skipping building the ipa because at this step
-#     # all we care about is make sure that the app builds
-#   end
-
-#   desc "Generate a change log"
-#   private_lane :generate_changelog_text do
-#     "#{git_branch}\n#{changelog_from_git_commits( commits_count: "10")}"
-#     # the change log value you will consist of the name of the branch on a line
-#     # followed by the latest 10 commits each on a separate line
-#   end
-
-#   lane :getTeamNames do
-#     require "spaceship"
-#     clientTunes = Spaceship::Tunes.login(APPLE_ID, "{applePassword}")
-#     client = Spaceship::Portal.login("{appleID}", "{applePassword}")
-#
-#     strClientTunes = ""
-#     clientTunes.teams.each do |team|
-#         UI.message "#{team['contentProvider']['name']} (#{team['contentProvider']['contentProviderId']})"
-#         strClientTunes << "#{team['contentProvider']['name']} (#{team['contentProvider']['contentProviderId']})||"
-#     end
-#     File.write('ItunesTeamNames', strClientTunes[0..-3])
-#
-#     strDevPortal = ""
-#     client.teams.each do |team|
-#         UI.message "#{team['name']} (#{team['teamId']})"
-#         strDevPortal << "#{team['name']} (#{team['teamId']})||"
-#     end
-#     File.write('DevTeamNames', strDevPortal[0..-3])
-#   end
-
-#   desc "Check if app builds"
-#   lane :resign_adhoc do
-#     fetch_certificates(method: "adhoc")
-#     resign(
-#       ipa: ipa_path, # can omit if using the `ipa` action
-#       signing_identity: "match AdHoc com.bruxkey.mba",
-# #       provisioning_profile: {
-# #           "com.bruxkey.mba" => "match AdHoc com.bruxkey.mba"
-# #       }
-#     )
-#   end
 
 
   desc "Fetches the certificates and provisioning profiles to run the project on real devices"
