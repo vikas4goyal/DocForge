@@ -1,0 +1,8 @@
+git_url("git@github.com:vikas4goyal/firebase_match.git")
+storage_mode("git")
+
+type("development") # The default type, can be: appstore, adhoc, enterprise or development
+team_id("85CD8AYN8F") # This can be fetched from developer account
+team_name("BRUXKEY PRIVATE LIMITED") # This can be fetched from developer account
+username("admin.bruxkey@gmail.com") # Your Apple Developer Portal username
+app_identifier(["com.bruxkey.docscanly"])

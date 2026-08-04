@@ -1,0 +1,437 @@
+# Maps a match certificate type to the ExportOptions plist the Jenkinsfile passes to
+# `flutter build ipa`. Development builds are never exported, so they have no entry.
+EXPORT_OPTIONS_BY_TYPE = {
+  "adhoc" => { method: "ad-hoc", file: "ad-hoc.plist" },
+  "appstore" => { method: "app-store", file: "app-store.plist" }
+}.freeze
+
+# `flutter build ipa` names the artifact after CFBundleName, which drifts whenever
+# the display name changes. Resolve it by glob so a rename does not break the
+# upload lanes, and fail with the directory listing rather than a bare path.
+def resolve_ipa_path(preferred)
+  return preferred if File.exist?(preferred)
+
+  ipa_dir = File.join(REPO_ROOT, "build/ios/ipa")
+  matches = Dir.glob(File.join(ipa_dir, "*.ipa"))
+  if matches.empty?
+    contents = Dir.exist?(ipa_dir) ? Dir.children(ipa_dir).join(", ") : "directory does not exist"
+    UI.user_error!("No .ipa found in #{ipa_dir} (#{contents}). Did `flutter build ipa` run and export successfully?")
+  end
+  UI.important("Expected #{preferred}, using #{matches.first} instead") if matches.size == 1
+  UI.important("Multiple ipas found, using #{matches.first}: #{matches.join(', ')}") if matches.size > 1
+  matches.first
+end
+
+platform :ios do
+  private_lane :setup_variables do
+    APPLE_ID = "6797710684"
+    USERNAME = "admin.bruxkey@gmail.com"
+    BUNDLE_ID = "com.bruxkey.mba"
+    TEAMID = "85CD8AYN8F"
+    PACKAGE_NAME = "Runner"
+    WORKSPACE = "Runner.xcworkspace"
+    SCHEME = "Runner"
+    CONFIGURATION = "Release"
+    BUILD_DEBUG_SYMBOL_PATH = "../build/ios/archive/Runner.xcarchive/dSYMs/Runner.app.dSYM"
+    # Absolute, because fastlane's working directory is not ios/ for every action
+    # and a relative path here silently misses the artifact.
+    BUILD_BUILD_PATH = File.join(File.expand_path("../..", FastlaneCore::FastlaneFolder.path),
+                                 "build/ios/ipa/My Budget Assistant.ipa")
+    BUILD_NUMBER_PATH = "../../Jenkins/build_number"
+    BUILD_VERSION_PATH = "../../Jenkins/build_version"
+    GSP_PATH = "Runner/GoogleService-Info.plist"
+    FIREBASE_APP_ID = "1:584044317947:ios:ae0bc3d5076e27ed2b745e"
+    FIREBASE_CLI_TOKEN = ENV["FIREBASE_CLI_TOKEN"]
+    FIREBASE_SERVICE_ACCOUNT_JSON_PATH = ENV["FIREBASE_SERVICE_ACCOUNT_JSON_PATH"]
+    # Needed on the Jenkins agent so match can run `security set-key-partition-list`
+    # when it imports a certificate. Without it codesign cannot reach the private
+    # key from a non-GUI session and fails with errSecInternalComponent. Unset
+    # locally, where the GUI keychain grants access interactively.
+    KEYCHAIN_PASSWORD = ENV["MAC_NODE_PASSWORD"]
+    APPSTORE_API_KEY_ID = ENV["APPSTORE_API_KEY_ID"]
+    APPSTORE_ISSUER_ID = ENV["APPSTORE_ISSUER_ID"]
+    # Resolve against the repo root rather than the working directory, which differs
+    # between a local `fastlane` run and the Jenkins pipeline.
+    REPO_ROOT = File.expand_path("../..", FastlaneCore::FastlaneFolder.path)
+    APPSTORE_API_KEY_PATH = ENV["APPSTORE_API_KEY_PATH"] ||
+      File.join(REPO_ROOT, "secure/IOS/API_KEY/AuthKey_#{APPSTORE_API_KEY_ID}.p8")
+
+    # Authenticate with an App Store Connect API key rather than Apple ID + password.
+    # The key belongs to the team, so it survives Apple ID changes and never prompts for 2FA,
+    # which is what lets the Jenkins runs work unattended. match, gym and pilot all pick this
+    # up automatically from the lane context.
+    if APPSTORE_API_KEY_ID && APPSTORE_ISSUER_ID && File.exist?(APPSTORE_API_KEY_PATH)
+      app_store_connect_api_key(
+        key_id: APPSTORE_API_KEY_ID,
+        issuer_id: APPSTORE_ISSUER_ID,
+        key_filepath: APPSTORE_API_KEY_PATH,
+        in_house: false
+      )
+    else
+      UI.important("App Store Connect API key not found, falling back to Apple ID login for #{USERNAME}")
+    end
+    # CHANGE_LOG = ENV["CHANGE_LOG"]
+    # VERSION_CODE = (Time.now.strftime('%s%L').to_i)/60000
+    # VERSION_CODE = ENV["VERSION_CODE"]
+    # BUILD_NUMBER_PATH=ENV["BUILD_NUMBER_PATH"]
+    # GSP_PATH = ENV['GSP_PATH']
+    # ENV['FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD']= 'osdh-nxqw-svhk-gakm'
+  end
+
+  # The before all will make sure to do this step before running the lane
+  before_all do
+    # setting up the variables in order to be used inside the lanes
+    setup_variables
+  end
+
+  # A `firebase login:ci` token is tied to one person's Google account and dies on
+  # password change or revocation -- which is exactly how it failed with
+  # "invalid_grant". A service account has no expiry and belongs to the project, so
+  # prefer it and keep the token only as a fallback until it is fully retired.
+  private_lane :firebase_auth_options do
+    if FIREBASE_SERVICE_ACCOUNT_JSON_PATH.to_s.empty?
+      if FIREBASE_CLI_TOKEN.to_s.empty?
+        UI.user_error!("Set FIREBASE_SERVICE_ACCOUNT_JSON_PATH (preferred) or FIREBASE_CLI_TOKEN to upload to Firebase")
+      end
+      UI.important("Using the deprecated FIREBASE_CLI_TOKEN; set FIREBASE_SERVICE_ACCOUNT_JSON_PATH to switch to a service account")
+      { firebase_cli_token: FIREBASE_CLI_TOKEN }
+    else
+      unless File.exist?(FIREBASE_SERVICE_ACCOUNT_JSON_PATH)
+        UI.user_error!("FIREBASE_SERVICE_ACCOUNT_JSON_PATH points at #{FIREBASE_SERVICE_ACCOUNT_JSON_PATH}, which does not exist")
+      end
+      { service_credentials_file: FIREBASE_SERVICE_ACCOUNT_JSON_PATH }
+    end
+  end
+
+  desc "Upload app to Firebase"
+  lane :release_firebase do
+    # The Flutter plugins resolve through Swift Package Manager now, so
+    # FirebaseCrashlytics no longer lands in ./Pods where the action looks by
+    # default. Prefer the SPM checkout and keep the CocoaPods path as a fallback.
+    upload_symbols_binary = [
+      File.join(REPO_ROOT, "build/ios/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols"),
+      File.join(REPO_ROOT, "ios/Pods/FirebaseCrashlytics/upload-symbols")
+    ].find { |path| File.exist?(path) }
+    UI.user_error!("Could not find the Crashlytics upload-symbols binary") if upload_symbols_binary.nil?
+
+    upload_symbols_to_crashlytics(
+                dsym_path: BUILD_DEBUG_SYMBOL_PATH,
+                 gsp_path: GSP_PATH,
+                 binary_path: upload_symbols_binary,
+                 app_id:FIREBASE_APP_ID)
+    release = firebase_app_distribution({
+                app: FIREBASE_APP_ID,
+                googleservice_info_plist_path: GSP_PATH,
+                ipa_path: resolve_ipa_path(BUILD_BUILD_PATH),
+                debug: true,
+                groups: "QA"
+            }.merge(firebase_auth_options))
+  end
+
+  desc "fetch adhoc certificate"
+  lane :fetch_dev_certificate do
+    fetch_certificates(certificate: "development")
+  end
+
+  desc "fetch adhoc certificate"
+  lane :fetch_adhoc_certificate do
+    fetch_certificates(certificate: "adhoc")
+  end
+
+  desc "fetch appstore certificate"
+  lane :fetch_appstore_certificate do
+    fetch_certificates(certificate: "appstore")
+  end
+
+  # Private lanes
+#   desc "Build AdHoc IPA"
+#   private_lane :build_ipa_adhoc do
+#     update_build_number
+#     install_pods
+#     fetch_certificates(certificate: "adhoc")
+#     gym(
+#       workspace: WORKSPACE,
+#       scheme: SCHEME,
+#       configuration: CONFIGURATION,
+#       export_method: "ad-hoc",
+#       include_symbols: true,
+#       output_directory: BUILD_OUTPUT_DIRECTORY,
+#       output_name: ipa_name,
+#       clean: true,
+#       xcargs: "ENVIRONMENT=staging",
+#       export_options: {
+#         provisioningProfiles: {
+#           "com.bruxkey.mba" => "match AdHoc com.bruxkey.mba"
+#         }
+#       }
+#     )
+#   end
+
+  desc "Upload app to appstore"
+  lane :release_appstore do
+#     build_ipa_appstore
+    app_store_connect_api_key(
+      key_id: APPSTORE_API_KEY_ID,
+      issuer_id: APPSTORE_ISSUER_ID,
+      key_filepath: APPSTORE_API_KEY_PATH,
+      duration: 1200, # optional (maximum 1200)
+      in_house: false # optional but may be required if using match/sigh
+    )
+    upload_to_testflight(
+      apple_id: APPLE_ID,
+      username: USERNAME,
+      team_id: TEAMID,
+      itc_provider:TEAMID,
+      skip_waiting_for_build_processing: true,
+      ipa:resolve_ipa_path(BUILD_BUILD_PATH),
+      distribute_external: true,
+      notify_external_testers: true,
+      groups: ["QA","ExtQA"],
+      changelog: "improvement and bug fixes"
+    )
+  end
+
+#   # Private lanes
+#   desc "Build Appstore IPA"
+#   private_lane :build_ipa_appstore do
+#     update_build_number
+#     install_pods
+#     fetch_certificates(certificate: "appstore")
+#     gym(
+#       workspace: WORKSPACE,
+#       scheme: SCHEME,
+#       configuration: CONFIGURATION,
+#       export_method: "app-store",
+#       include_symbols: true,
+#       output_directory: BUILD_OUTPUT_DIRECTORY,
+#       output_name: ipa_name,
+#       clean: true,
+#       xcargs: "ENVIRONMENT=production",
+#       export_options: {
+#          provisioningProfiles: {
+#             "com.bruxkey.mba" => "My Budget Assistant"
+#          }
+#       }
+#     )
+#   end
+
+  private_lane :upload_testFlight do |options|
+    app_store_connect_api_key(
+      key_id: "37KKTYUXQQ",
+      issuer_id: "c75c6976-77f8-41ac-b734-e18b6133c9a6",
+      key_filepath: "../secure/IOS/API_KEY/AuthKey_37KKTYUXQQ.p8",
+      duration: 1200, # optional (maximum 1200)
+      in_house: false # optional but may be required if using match/sigh
+    )
+    upload_to_testflight(
+      apple_id: APPLE_ID,
+      username: USERNAME,
+      team_id: TEAMID,
+      itc_provider:TEAMID,
+      skip_waiting_for_build_processing: true,
+      # distribute_external: true,
+      # notify_external_testers: true,
+      # changelog: CHANGE_LOG
+    )
+  end
+
+#   desc "Check if app builds"
+#   lane :build do
+#     # this lane is to check if the app can build before doing anything
+#     # update_certificates
+#     # we are using update_certificates rather than fetch_certificate
+#     # so everytime the CI run, it checks if there is a new device.
+#     # if so it updates the certificates and starts using the new ones.
+#     # other wise, it will download the certificates only without updating them
+#     update_certificates(certificate:"adhoc")
+#     update_build_number
+#     install_pods
+#     gym(
+#       workspace: WORKSPACE,
+#       scheme: SCHEME,
+#       configuration: CONFIGURATION,
+#       output_directory: BUILD_OUTPUT_DIRECTORY,
+#       codesigning_identity: "",
+#       xcargs: "CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=NO",
+#       skip_package_ipa: true,
+#       skip_profile_detection: true,
+#       clean: true
+#     )
+#     # we are skipping building the ipa because at this step
+#     # all we care about is make sure that the app builds
+#   end
+
+#   desc "Generate a change log"
+#   private_lane :generate_changelog_text do
+#     "#{git_branch}\n#{changelog_from_git_commits( commits_count: "10")}"
+#     # the change log value you will consist of the name of the branch on a line
+#     # followed by the latest 10 commits each on a separate line
+#   end
+
+#   lane :getTeamNames do
+#     require "spaceship"
+#     clientTunes = Spaceship::Tunes.login(APPLE_ID, "{applePassword}")
+#     client = Spaceship::Portal.login("{appleID}", "{applePassword}")
+#
+#     strClientTunes = ""
+#     clientTunes.teams.each do |team|
+#         UI.message "#{team['contentProvider']['name']} (#{team['contentProvider']['contentProviderId']})"
+#         strClientTunes << "#{team['contentProvider']['name']} (#{team['contentProvider']['contentProviderId']})||"
+#     end
+#     File.write('ItunesTeamNames', strClientTunes[0..-3])
+#
+#     strDevPortal = ""
+#     client.teams.each do |team|
+#         UI.message "#{team['name']} (#{team['teamId']})"
+#         strDevPortal << "#{team['name']} (#{team['teamId']})||"
+#     end
+#     File.write('DevTeamNames', strDevPortal[0..-3])
+#   end
+
+#   desc "Check if app builds"
+#   lane :resign_adhoc do
+#     fetch_certificates(method: "adhoc")
+#     resign(
+#       ipa: ipa_path, # can omit if using the `ipa` action
+#       signing_identity: "match AdHoc com.bruxkey.mba",
+# #       provisioning_profile: {
+# #           "com.bruxkey.mba" => "match AdHoc com.bruxkey.mba"
+# #       }
+#     )
+#   end
+
+
+  desc "Fetches the certificates and provisioning profiles to run the project on real devices"
+  lane :fetch_certificates do |options|
+    bundleIdentifiers = [BUNDLE_ID]
+    match(type: options[:certificate],
+          app_identifier: bundleIdentifiers,
+          readonly: true,
+          keychain_password: KEYCHAIN_PASSWORD)
+    write_export_options(certificate: options[:certificate])
+  end
+
+  # xcodebuild -exportArchive resolves the provisioning profile by name, and match
+  # renames a profile ("... 1785554581") whenever the plain name is already taken on
+  # the portal. A checked-in plist therefore goes stale silently and the export fails
+  # with "profile expired" long after the fact. Write the plist from the profile match
+  # just installed instead, so the two can never disagree.
+  private_lane :write_export_options do |options|
+    spec = EXPORT_OPTIONS_BY_TYPE[options[:certificate]]
+    if spec.nil?
+      UI.message("No ExportOptions plist for '#{options[:certificate]}', skipping")
+      next
+    end
+
+    profile_name = ENV["sigh_#{BUNDLE_ID}_#{options[:certificate]}_profile-name"]
+    if profile_name.to_s.empty?
+      UI.user_error!("match did not report a profile name for #{BUNDLE_ID} (#{options[:certificate]}); cannot write #{spec[:file]}")
+    end
+
+    # These plists are generated, not checked in, so the directory will not exist
+    # after Jenkins wipes the workspace and re-clones.
+    dir = File.join(REPO_ROOT, "Jenkins/ios/export-options")
+    FileUtils.mkdir_p(dir)
+    path = File.join(dir, spec[:file])
+    File.write(path, <<~PLIST)
+      <?xml version="1.0" encoding="UTF-8"?>
+      <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+      <plist version="1.0">
+      <dict>
+      \t<key>method</key>
+      \t<string>#{spec[:method]}</string>
+      \t<key>provisioningProfiles</key>
+      \t<dict>
+      \t\t<key>#{BUNDLE_ID}</key>
+      \t\t<string>#{profile_name}</string>
+      \t</dict>
+      \t<key>signingCertificate</key>
+      \t<string>Apple Distribution</string>
+      \t<key>signingStyle</key>
+      \t<string>manual</string>
+      \t<key>teamID</key>
+      \t<string>#{TEAMID}</string>
+      </dict>
+      </plist>
+    PLIST
+    UI.success("Wrote #{spec[:file]} for profile '#{profile_name}'")
+  end
+
+  desc "Updates the certificates and provisioning profiles"
+  lane :update_certificates do |options|
+    bundleIdentifiers = [BUNDLE_ID]
+    match(type: options[:certificate],
+          app_identifier: bundleIdentifiers,
+          force_for_new_devices: true,
+          keychain_password: KEYCHAIN_PASSWORD)
+  end
+
+  desc "update adhoc certificate"
+  lane :update_adhoc_certificate do
+    update_certificates(certificate: "adhoc")
+  end
+
+  desc "update appstore certificate"
+  lane :update_appstore_certificate do
+    update_certificates(certificate: "appstore")
+  end
+
+  # DESTRUCTIVE. Revokes every certificate and provisioning profile of the given
+  # type on the Dev Portal and clears them from the match repo. Only run this when
+  # the match repo has diverged from the portal beyond repair, and re-run the
+  # update_*_certificate lanes afterwards to regenerate. Everyone else signing with
+  # the revoked certificate has to re-fetch.
+  desc "Revoke and clear certificates of a given type, then regenerate"
+  lane :nuke_certificates do |options|
+    match_nuke(type: options[:certificate])
+  end
+
+  desc "update dev certificate"
+  lane :update_dev_certificate do
+    update_certificates(certificate: "development")
+  end
+#   desc "Install pods via bundle exec"
+#   private_lane :install_pods do
+#     cocoapods(clean_install: true, use_bundle_exec: true, repo_update: true)
+#   end
+
+#   desc "Name of IPA file"
+#   private_lane :ipa_name do
+#     PACKAGE_NAME + ".ipa"
+#   end
+
+#   desc "Path to the IPA file"
+#   private_lane :ipa_path do
+#     BUILD_OUTPUT_DIRECTORY + ipa_name
+#   end
+
+#   desc "Path to the dSYM zip"
+#   private_lane :dsym_path do
+#     BUILD_OUTPUT_DIRECTORY + PACKAGE_NAME + ".app.dSYM.zip"
+#   end
+#
+  private_lane :fetch_build_number do
+    sh(
+      command: "cat #{BUILD_NUMBER_PATH}"
+    )
+  end
+
+  private_lane :fetch_build_version do
+    sh(
+      command: "cat #{BUILD_VERSION_PATH}"
+    )
+  end
+
+  lane :update_build_number do
+    buildNumber = fetch_build_number.to_i
+    buildVersion = fetch_build_version
+    increment_build_number({
+      build_number: buildNumber,
+    })
+    increment_version_number({
+    version_number: buildVersion
+    })
+    # buildNumber = fetch_build_number.to_i + 1
+    # value = sh(command: "echo #{buildNumber} > #{BUILD_NUMBER_PATH}")
+  end
+end
