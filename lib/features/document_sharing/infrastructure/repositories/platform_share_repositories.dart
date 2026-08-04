@@ -9,10 +9,10 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_sharing/domain/repositories/share_repository.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_sharing/domain/repositories/share_repository.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';

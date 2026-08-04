@@ -6,7 +6,7 @@
 /// list of ten settings that is guesswork.
 library;
 
-import 'package:doc_forge/features/app_settings/presentation/settings_keys.dart';
+import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
 import 'package:flutter/material.dart';
 
 /// A setting whose value is chosen from a fixed set.

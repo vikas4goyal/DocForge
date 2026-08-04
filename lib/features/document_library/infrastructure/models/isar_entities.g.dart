@@ -17,83 +17,98 @@ const DocumentEntitySchema = CollectionSchema(
   name: r'DocumentEntity',
   id: 5395616779084000924,
   properties: {
-    r'createdAt': PropertySchema(
+    r'cloudRelativePath': PropertySchema(
       id: 0,
+      name: r'cloudRelativePath',
+      type: IsarType.string,
+    ),
+    r'cloudResourceIdentifier': PropertySchema(
+      id: 1,
+      name: r'cloudResourceIdentifier',
+      type: IsarType.string,
+    ),
+    r'contentAvailability': PropertySchema(
+      id: 2,
+      name: r'contentAvailability',
+      type: IsarType.string,
+    ),
+    r'createdAt': PropertySchema(
+      id: 3,
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
     r'fileName': PropertySchema(
-      id: 1,
+      id: 4,
       name: r'fileName',
       type: IsarType.string,
     ),
     r'folderPath': PropertySchema(
-      id: 2,
+      id: 5,
       name: r'folderPath',
       type: IsarType.string,
     ),
     r'folderUuid': PropertySchema(
-      id: 3,
+      id: 6,
       name: r'folderUuid',
       type: IsarType.string,
     ),
     r'hasRecognisedText': PropertySchema(
-      id: 4,
+      id: 7,
       name: r'hasRecognisedText',
       type: IsarType.bool,
     ),
     r'isArchived': PropertySchema(
-      id: 5,
+      id: 8,
       name: r'isArchived',
       type: IsarType.bool,
     ),
     r'isFavourite': PropertySchema(
-      id: 6,
+      id: 9,
       name: r'isFavourite',
       type: IsarType.bool,
     ),
     r'isProtected': PropertySchema(
-      id: 7,
+      id: 10,
       name: r'isProtected',
       type: IsarType.bool,
     ),
     r'pageCount': PropertySchema(
-      id: 8,
+      id: 11,
       name: r'pageCount',
       type: IsarType.long,
     ),
     r'schemaVersion': PropertySchema(
-      id: 9,
+      id: 12,
       name: r'schemaVersion',
       type: IsarType.long,
     ),
     r'sizeInBytes': PropertySchema(
-      id: 10,
+      id: 13,
       name: r'sizeInBytes',
       type: IsarType.long,
     ),
-    r'title': PropertySchema(id: 11, name: r'title', type: IsarType.string),
+    r'title': PropertySchema(id: 14, name: r'title', type: IsarType.string),
     r'titleWords': PropertySchema(
-      id: 12,
+      id: 15,
       name: r'titleWords',
       type: IsarType.stringList,
     ),
     r'trashUuid': PropertySchema(
-      id: 13,
+      id: 16,
       name: r'trashUuid',
       type: IsarType.string,
     ),
     r'trashedAt': PropertySchema(
-      id: 14,
+      id: 17,
       name: r'trashedAt',
       type: IsarType.dateTime,
     ),
     r'updatedAt': PropertySchema(
-      id: 15,
+      id: 18,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
-    r'uuid': PropertySchema(id: 16, name: r'uuid', type: IsarType.string),
+    r'uuid': PropertySchema(id: 19, name: r'uuid', type: IsarType.string),
   },
 
   estimateSize: _documentEntityEstimateSize,
@@ -167,6 +182,19 @@ const DocumentEntitySchema = CollectionSchema(
         ),
       ],
     ),
+    r'cloudResourceIdentifier': IndexSchema(
+      id: -9186586345970305180,
+      name: r'cloudResourceIdentifier',
+      unique: false,
+      replace: false,
+      properties: [
+        IndexPropertySchema(
+          name: r'cloudResourceIdentifier',
+          type: IndexType.hash,
+          caseSensitive: true,
+        ),
+      ],
+    ),
     r'trashUuid': IndexSchema(
       id: 6959342789773877252,
       name: r'trashUuid',
@@ -196,6 +224,24 @@ int _documentEntityEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.cloudRelativePath;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.cloudResourceIdentifier;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.contentAvailability;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.fileName.length * 3;
   bytesCount += 3 + object.folderPath.length * 3;
   {
@@ -228,23 +274,26 @@ void _documentEntitySerialize(
   List<int> offsets,
   Map<Type, List<int>> allOffsets,
 ) {
-  writer.writeDateTime(offsets[0], object.createdAt);
-  writer.writeString(offsets[1], object.fileName);
-  writer.writeString(offsets[2], object.folderPath);
-  writer.writeString(offsets[3], object.folderUuid);
-  writer.writeBool(offsets[4], object.hasRecognisedText);
-  writer.writeBool(offsets[5], object.isArchived);
-  writer.writeBool(offsets[6], object.isFavourite);
-  writer.writeBool(offsets[7], object.isProtected);
-  writer.writeLong(offsets[8], object.pageCount);
-  writer.writeLong(offsets[9], object.schemaVersion);
-  writer.writeLong(offsets[10], object.sizeInBytes);
-  writer.writeString(offsets[11], object.title);
-  writer.writeStringList(offsets[12], object.titleWords);
-  writer.writeString(offsets[13], object.trashUuid);
-  writer.writeDateTime(offsets[14], object.trashedAt);
-  writer.writeDateTime(offsets[15], object.updatedAt);
-  writer.writeString(offsets[16], object.uuid);
+  writer.writeString(offsets[0], object.cloudRelativePath);
+  writer.writeString(offsets[1], object.cloudResourceIdentifier);
+  writer.writeString(offsets[2], object.contentAvailability);
+  writer.writeDateTime(offsets[3], object.createdAt);
+  writer.writeString(offsets[4], object.fileName);
+  writer.writeString(offsets[5], object.folderPath);
+  writer.writeString(offsets[6], object.folderUuid);
+  writer.writeBool(offsets[7], object.hasRecognisedText);
+  writer.writeBool(offsets[8], object.isArchived);
+  writer.writeBool(offsets[9], object.isFavourite);
+  writer.writeBool(offsets[10], object.isProtected);
+  writer.writeLong(offsets[11], object.pageCount);
+  writer.writeLong(offsets[12], object.schemaVersion);
+  writer.writeLong(offsets[13], object.sizeInBytes);
+  writer.writeString(offsets[14], object.title);
+  writer.writeStringList(offsets[15], object.titleWords);
+  writer.writeString(offsets[16], object.trashUuid);
+  writer.writeDateTime(offsets[17], object.trashedAt);
+  writer.writeDateTime(offsets[18], object.updatedAt);
+  writer.writeString(offsets[19], object.uuid);
 }
 
 DocumentEntity _documentEntityDeserialize(
@@ -254,24 +303,27 @@ DocumentEntity _documentEntityDeserialize(
   Map<Type, List<int>> allOffsets,
 ) {
   final object = DocumentEntity();
-  object.createdAt = reader.readDateTime(offsets[0]);
-  object.fileName = reader.readString(offsets[1]);
-  object.folderPath = reader.readString(offsets[2]);
-  object.folderUuid = reader.readStringOrNull(offsets[3]);
-  object.hasRecognisedText = reader.readBool(offsets[4]);
+  object.cloudRelativePath = reader.readStringOrNull(offsets[0]);
+  object.cloudResourceIdentifier = reader.readStringOrNull(offsets[1]);
+  object.contentAvailability = reader.readStringOrNull(offsets[2]);
+  object.createdAt = reader.readDateTime(offsets[3]);
+  object.fileName = reader.readString(offsets[4]);
+  object.folderPath = reader.readString(offsets[5]);
+  object.folderUuid = reader.readStringOrNull(offsets[6]);
+  object.hasRecognisedText = reader.readBool(offsets[7]);
   object.id = id;
-  object.isArchived = reader.readBool(offsets[5]);
-  object.isFavourite = reader.readBool(offsets[6]);
-  object.isProtected = reader.readBool(offsets[7]);
-  object.pageCount = reader.readLong(offsets[8]);
-  object.schemaVersion = reader.readLong(offsets[9]);
-  object.sizeInBytes = reader.readLong(offsets[10]);
-  object.title = reader.readString(offsets[11]);
-  object.titleWords = reader.readStringList(offsets[12]) ?? [];
-  object.trashUuid = reader.readStringOrNull(offsets[13]);
-  object.trashedAt = reader.readDateTimeOrNull(offsets[14]);
-  object.updatedAt = reader.readDateTime(offsets[15]);
-  object.uuid = reader.readString(offsets[16]);
+  object.isArchived = reader.readBool(offsets[8]);
+  object.isFavourite = reader.readBool(offsets[9]);
+  object.isProtected = reader.readBool(offsets[10]);
+  object.pageCount = reader.readLong(offsets[11]);
+  object.schemaVersion = reader.readLong(offsets[12]);
+  object.sizeInBytes = reader.readLong(offsets[13]);
+  object.title = reader.readString(offsets[14]);
+  object.titleWords = reader.readStringList(offsets[15]) ?? [];
+  object.trashUuid = reader.readStringOrNull(offsets[16]);
+  object.trashedAt = reader.readDateTimeOrNull(offsets[17]);
+  object.updatedAt = reader.readDateTime(offsets[18]);
+  object.uuid = reader.readString(offsets[19]);
   return object;
 }
 
@@ -283,38 +335,44 @@ P _documentEntityDeserializeProp<P>(
 ) {
   switch (propertyId) {
     case 0:
-      return (reader.readDateTime(offset)) as P;
-    case 1:
-      return (reader.readString(offset)) as P;
-    case 2:
-      return (reader.readString(offset)) as P;
-    case 3:
       return (reader.readStringOrNull(offset)) as P;
+    case 1:
+      return (reader.readStringOrNull(offset)) as P;
+    case 2:
+      return (reader.readStringOrNull(offset)) as P;
+    case 3:
+      return (reader.readDateTime(offset)) as P;
     case 4:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readBool(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readBool(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 7:
       return (reader.readBool(offset)) as P;
     case 8:
-      return (reader.readLong(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 9:
-      return (reader.readLong(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readLong(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 11:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 12:
-      return (reader.readStringList(offset) ?? []) as P;
+      return (reader.readLong(offset)) as P;
     case 13:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 14:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 15:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readStringList(offset) ?? []) as P;
     case 16:
+      return (reader.readStringOrNull(offset)) as P;
+    case 17:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 18:
+      return (reader.readDateTime(offset)) as P;
+    case 19:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -940,6 +998,87 @@ extension DocumentEntityQueryWhere
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterWhereClause>
+  cloudResourceIdentifierIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.equalTo(
+          indexName: r'cloudResourceIdentifier',
+          value: [null],
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterWhereClause>
+  cloudResourceIdentifierIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.between(
+          indexName: r'cloudResourceIdentifier',
+          lower: [null],
+          includeLower: false,
+          upper: [],
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterWhereClause>
+  cloudResourceIdentifierEqualTo(String? cloudResourceIdentifier) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(
+        IndexWhereClause.equalTo(
+          indexName: r'cloudResourceIdentifier',
+          value: [cloudResourceIdentifier],
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterWhereClause>
+  cloudResourceIdentifierNotEqualTo(String? cloudResourceIdentifier) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'cloudResourceIdentifier',
+                lower: [],
+                upper: [cloudResourceIdentifier],
+                includeUpper: false,
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'cloudResourceIdentifier',
+                lower: [cloudResourceIdentifier],
+                includeLower: false,
+                upper: [],
+              ),
+            );
+      } else {
+        return query
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'cloudResourceIdentifier',
+                lower: [cloudResourceIdentifier],
+                includeLower: false,
+                upper: [],
+              ),
+            )
+            .addWhereClause(
+              IndexWhereClause.between(
+                indexName: r'cloudResourceIdentifier',
+                lower: [],
+                upper: [cloudResourceIdentifier],
+                includeUpper: false,
+              ),
+            );
+      }
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterWhereClause>
   trashUuidIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
@@ -1017,6 +1156,492 @@ extension DocumentEntityQueryWhere
 
 extension DocumentEntityQueryFilter
     on QueryBuilder<DocumentEntity, DocumentEntity, QFilterCondition> {
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudRelativePathIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'cloudRelativePath'),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudRelativePathIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'cloudRelativePath'),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudRelativePathEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'cloudRelativePath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudRelativePathGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'cloudRelativePath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudRelativePathLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'cloudRelativePath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudRelativePathBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'cloudRelativePath',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudRelativePathStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'cloudRelativePath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudRelativePathEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'cloudRelativePath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudRelativePathContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'cloudRelativePath',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudRelativePathMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'cloudRelativePath',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudRelativePathIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'cloudRelativePath', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudRelativePathIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'cloudRelativePath', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudResourceIdentifierIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'cloudResourceIdentifier'),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudResourceIdentifierIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'cloudResourceIdentifier'),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudResourceIdentifierEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'cloudResourceIdentifier',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudResourceIdentifierGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'cloudResourceIdentifier',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudResourceIdentifierLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'cloudResourceIdentifier',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudResourceIdentifierBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'cloudResourceIdentifier',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudResourceIdentifierStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'cloudResourceIdentifier',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudResourceIdentifierEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'cloudResourceIdentifier',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudResourceIdentifierContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'cloudResourceIdentifier',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudResourceIdentifierMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'cloudResourceIdentifier',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudResourceIdentifierIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'cloudResourceIdentifier',
+          value: '',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  cloudResourceIdentifierIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'cloudResourceIdentifier',
+          value: '',
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  contentAvailabilityIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'contentAvailability'),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  contentAvailabilityIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'contentAvailability'),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  contentAvailabilityEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'contentAvailability',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  contentAvailabilityGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'contentAvailability',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  contentAvailabilityLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'contentAvailability',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  contentAvailabilityBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'contentAvailability',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  contentAvailabilityStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'contentAvailability',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  contentAvailabilityEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'contentAvailability',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  contentAvailabilityContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'contentAvailability',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  contentAvailabilityMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'contentAvailability',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  contentAvailabilityIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'contentAvailability', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
+  contentAvailabilityIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'contentAvailability',
+          value: '',
+        ),
+      );
+    });
+  }
+
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
   createdAtEqualTo(DateTime value) {
     return QueryBuilder.apply(this, (query) {
@@ -2541,6 +3166,48 @@ extension DocumentEntityQueryLinks
 
 extension DocumentEntityQuerySortBy
     on QueryBuilder<DocumentEntity, DocumentEntity, QSortBy> {
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  sortByCloudRelativePath() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cloudRelativePath', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  sortByCloudRelativePathDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cloudRelativePath', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  sortByCloudResourceIdentifier() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cloudResourceIdentifier', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  sortByCloudResourceIdentifierDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cloudResourceIdentifier', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  sortByContentAvailability() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'contentAvailability', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  sortByContentAvailabilityDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'contentAvailability', Sort.desc);
+    });
+  }
+
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy> sortByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2758,6 +3425,48 @@ extension DocumentEntityQuerySortBy
 
 extension DocumentEntityQuerySortThenBy
     on QueryBuilder<DocumentEntity, DocumentEntity, QSortThenBy> {
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  thenByCloudRelativePath() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cloudRelativePath', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  thenByCloudRelativePathDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cloudRelativePath', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  thenByCloudResourceIdentifier() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cloudResourceIdentifier', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  thenByCloudResourceIdentifierDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'cloudResourceIdentifier', Sort.desc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  thenByContentAvailability() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'contentAvailability', Sort.asc);
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
+  thenByContentAvailabilityDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'contentAvailability', Sort.desc);
+    });
+  }
+
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy> thenByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'createdAt', Sort.asc);
@@ -2988,6 +3697,36 @@ extension DocumentEntityQuerySortThenBy
 extension DocumentEntityQueryWhereDistinct
     on QueryBuilder<DocumentEntity, DocumentEntity, QDistinct> {
   QueryBuilder<DocumentEntity, DocumentEntity, QDistinct>
+  distinctByCloudRelativePath({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'cloudRelativePath',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QDistinct>
+  distinctByCloudResourceIdentifier({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'cloudResourceIdentifier',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QDistinct>
+  distinctByContentAvailability({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'contentAvailability',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
+  QueryBuilder<DocumentEntity, DocumentEntity, QDistinct>
   distinctByCreatedAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'createdAt');
@@ -3118,6 +3857,27 @@ extension DocumentEntityQueryProperty
   QueryBuilder<DocumentEntity, int, QQueryOperations> idProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'id');
+    });
+  }
+
+  QueryBuilder<DocumentEntity, String?, QQueryOperations>
+  cloudRelativePathProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'cloudRelativePath');
+    });
+  }
+
+  QueryBuilder<DocumentEntity, String?, QQueryOperations>
+  cloudResourceIdentifierProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'cloudResourceIdentifier');
+    });
+  }
+
+  QueryBuilder<DocumentEntity, String?, QQueryOperations>
+  contentAvailabilityProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'contentAvailability');
     });
   }
 

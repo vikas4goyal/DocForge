@@ -3,13 +3,13 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
-import 'package:doc_forge/features/pdf_generation/presentation/cubit/pdf_generation_cubit.dart';
-import 'package:doc_forge/features/pdf_generation/presentation/cubit/pdf_generation_state.dart';
-import 'package:doc_forge/features/pdf_generation/presentation/pdf_keys.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/presentation/cubit/pdf_generation_cubit.dart';
+import 'package:doc_scanly/features/pdf_generation/presentation/cubit/pdf_generation_state.dart';
+import 'package:doc_scanly/features/pdf_generation/presentation/pdf_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

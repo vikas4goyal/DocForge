@@ -8,8 +8,8 @@
 /// session's cache belongs; nothing here knows that.
 library;
 
-import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
-import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 
 /// Renders a page from its plan.
 abstract interface class PageRenderer {

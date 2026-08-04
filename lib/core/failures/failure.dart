@@ -1,4 +1,4 @@
-/// The single error vocabulary shared by every layer of DocForge.
+/// The single error vocabulary shared by every layer of DocScanly.
 ///
 /// Exceptions never cross a layer boundary in this project. A repository or use
 /// case that cannot complete returns a [Failure] instead, which makes every
@@ -55,7 +55,7 @@ enum ValidationIssue {
   passwordMismatch,
 }
 
-/// Every way an operation in DocForge can fail.
+/// Every way an operation in DocScanly can fail.
 ///
 /// Variants carry only what a caller needs in order to recover or to explain
 /// the problem. Technical detail useful for diagnosis goes in each variant's

@@ -25,13 +25,13 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('nothing is shared until the user asks for it', (tester) async {
-    final staging = await Directory.systemTemp.createTemp('docforge_share_');
+    final staging = await Directory.systemTemp.createTemp('docscanly_share_');
     addTearDown(() {
       if (staging.existsSync()) staging.deleteSync(recursive: true);
     });
     final importable = await Fixtures(staging).importable();
 
-    final app = await bootDocForge(tester, pickedFiles: [importable]);
+    final app = await bootDocScanly(tester, pickedFiles: [importable]);
     await seedDocumentByImport(tester);
 
     await DashboardRobot(tester).waitUntilLoaded();

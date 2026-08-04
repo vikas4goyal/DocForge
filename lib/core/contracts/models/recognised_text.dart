@@ -7,7 +7,7 @@
 /// in the wrong place.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'recognised_text.freezed.dart';

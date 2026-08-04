@@ -11,7 +11,7 @@
 /// depends on no feature and either gate can be faked in a navigation test.
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
 
 /// Routes that must remain reachable regardless of gate state.
 ///

@@ -1,12 +1,12 @@
 /// Platform-backed and fake implementations of the security seams.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/features/app_security/domain/app_lock.dart';
-import 'package:doc_forge/features/app_security/domain/repositories/app_lock_repository.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
+import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_repository.dart';
 import 'package:local_auth/local_auth.dart';
 
 /// A [DeviceAuthenticator] backed by `local_auth`.
@@ -24,7 +24,7 @@ class LocalAuthAuthenticator implements DeviceAuthenticator {
         // `biometricOnly` is left at its default of false, which is what
         // supplies the device-credential fallback the spec requires: the system
         // offers the passcode when biometrics fail or are unavailable, without
-        // DocForge having to detect and orchestrate that itself.
+        // DocScanly having to detect and orchestrate that itself.
         // Keeps the prompt alive when the system backgrounds the app to show
         // its own dialogue, which would otherwise look like a dismissal.
         persistAcrossBackgrounding: true,

@@ -12,11 +12,11 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/capture_staging.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_creation/application/usecases/add_page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/capture_staging.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_creation/application/usecases/add_page.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -27,7 +27,7 @@ void main() {
   const sessionId = 'session-1';
 
   setUp(() async {
-    root = await Directory.systemTemp.createTemp('docforge_add_page_');
+    root = await Directory.systemTemp.createTemp('docscanly_add_page_');
     staging = CaptureStaging(root);
     stage = StagePageImage(staging, SequentialIdGenerator(prefix: 'page'));
     staging.directoryFor(sessionId).createSync(recursive: true);

@@ -16,9 +16,9 @@ library;
 import 'dart:isolate';
 
 import 'package:dartcv4/dartcv.dart' as cv;
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/document_scanning/domain/page_edge_geometry.dart';
-import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/features/document_scanning/domain/page_edge_geometry.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 
 /// Finds the document outline in a capture using OpenCV.
 ///

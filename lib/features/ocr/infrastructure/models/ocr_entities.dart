@@ -11,8 +11,8 @@
 /// `anyStartsWith` can answer a prefix query.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:isar_community/isar.dart';
 
 part 'ocr_entities.g.dart';

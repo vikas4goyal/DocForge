@@ -3,11 +3,11 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
-import 'package:doc_forge/features/document_library/infrastructure/library_storage_migration.dart';
-import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
-import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/library_storage_migration.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 
@@ -24,9 +24,9 @@ void main() {
   });
 
   setUp(() async {
-    databaseDirectory = await Directory.systemTemp.createTemp('docforge_db_');
-    legacyContainer = await Directory.systemTemp.createTemp('docforge_old_');
-    publicContainer = await Directory.systemTemp.createTemp('docforge_pub_');
+    databaseDirectory = await Directory.systemTemp.createTemp('docscanly_db_');
+    legacyContainer = await Directory.systemTemp.createTemp('docscanly_old_');
+    publicContainer = await Directory.systemTemp.createTemp('docscanly_pub_');
 
     isar = await Isar.open([
       DocumentEntitySchema,
@@ -58,7 +58,7 @@ void main() {
   });
 
   Directory legacyRoot() => Directory('${legacyContainer.path}/documents');
-  Directory libraryRoot() => Directory('${publicContainer.path}/DocForge');
+  Directory libraryRoot() => Directory('${publicContainer.path}/DocScanly');
 
   /// Writes a layout-1 document: a record with no library path, and a private
   /// directory holding the PDF, a page image and a thumbnail.
@@ -334,7 +334,7 @@ void main() {
       await seedLegacyDocument(uuid: 'a', title: 'One');
       // The library root is removed, so publishing fails for every document.
       await libraryRoot().delete(recursive: true);
-      File('${publicContainer.path}/DocForge').writeAsStringSync('not a dir');
+      File('${publicContainer.path}/DocScanly').writeAsStringSync('not a dir');
 
       final report = await migration.run();
 

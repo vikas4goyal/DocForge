@@ -1,9 +1,9 @@
 /// The building blocks of the PDF editor.
 library;
 
-import 'package:doc_forge/core/formatting/display_formatting.dart';
-import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/pdf_edit_keys.dart';
+import 'package:doc_scanly/core/formatting/display_formatting.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/pdf_edit_keys.dart';
 import 'package:flutter/material.dart';
 
 /// Builds the thumbnail image for a page.

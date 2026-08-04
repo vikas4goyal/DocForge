@@ -3,12 +3,12 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
-import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cubits.dart';
-import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_states.dart';
-import 'package:doc_forge/features/document_scanning/presentation/scan_keys.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_states.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/scan_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

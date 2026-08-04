@@ -10,13 +10,13 @@
 @Tags(['golden'])
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
-import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_cubit.dart';
-import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_state.dart';
-import 'package:doc_forge/features/document_viewer/presentation/screens/viewer_screen.dart';
-import 'package:doc_forge/features/document_viewer/presentation/viewer_keys.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/cubit/viewer_cubit.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/cubit/viewer_state.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/screens/viewer_screen.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/viewer_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';

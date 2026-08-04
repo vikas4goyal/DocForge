@@ -5,12 +5,12 @@
 /// domain layer and are unit-tested there.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/app_settings/application/usecases/settings_usecases.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/app_settings/application/usecases/settings_usecases.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

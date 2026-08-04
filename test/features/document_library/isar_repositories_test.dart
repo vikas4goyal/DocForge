@@ -3,14 +3,14 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/trash.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
-import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
-import 'package:doc_forge/features/document_library/infrastructure/repositories/isar_library_repositories.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/trash.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/previews/fixtures/fixtures.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/repositories/isar_library_repositories.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 
@@ -29,7 +29,7 @@ void main() {
   });
 
   setUp(() async {
-    directory = await Directory.systemTemp.createTemp('docforge_isar');
+    directory = await Directory.systemTemp.createTemp('docscanly_isar');
     isar = await Isar.open([
       DocumentEntitySchema,
       FolderEntitySchema,
@@ -55,6 +55,21 @@ void main() {
 
       expect(found.valueOrNull, sampleDocument);
     });
+
+    test(
+      'round-trips cloud identity and remote content availability',
+      () async {
+        final remote = sampleDocument.copyWith(
+          cloudResourceIdentifier: 'resource-sample',
+          contentAvailability: DocumentContentAvailability.remote,
+        );
+        await documents.save(remote);
+
+        final found = await documents.findById(remote.id);
+
+        expect(found.valueOrNull, remote);
+      },
+    );
 
     test('reports not found for an unknown id', () async {
       final found = await documents.findById(const DocumentId('nope'));

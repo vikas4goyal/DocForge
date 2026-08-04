@@ -1,8 +1,8 @@
 import 'dart:io';
 
-import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
-import 'package:doc_forge/core/storage/public_storage/media_store_public_file_store.dart';
-import 'package:doc_forge/core/storage/public_storage/public_storage_factory.dart';
+import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/media_store_public_file_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_storage_factory.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -10,8 +10,8 @@ void main() {
   late Directory cache;
 
   setUp(() async {
-    documents = await Directory.systemTemp.createTemp('docforge_docs_');
-    cache = await Directory.systemTemp.createTemp('docforge_cache_');
+    documents = await Directory.systemTemp.createTemp('docscanly_docs_');
+    cache = await Directory.systemTemp.createTemp('docscanly_cache_');
   });
 
   tearDown(() async {
@@ -50,5 +50,22 @@ void main() {
       FilesystemPublicFileStore.defaultLibraryFolderName,
       MediaStorePublicFileStore.defaultLibraryFolderName,
     );
+  });
+
+  test('iCloud uses the supplied document scope without nesting', () async {
+    final cloudRoot = Directory('${documents.path}/iCloud/Documents');
+    final store =
+        buildPublicFileStore(
+              documentsDirectory: documents,
+              cacheDirectory: cache,
+              iosLibraryRoot: cloudRoot,
+              isAndroid: false,
+            )
+            as FilesystemPublicFileStore;
+
+    await store.initialise();
+
+    expect(store.rootDirectory.path, cloudRoot.path);
+    expect(Directory('${cloudRoot.path}/DocScanly').existsSync(), isFalse);
   });
 }

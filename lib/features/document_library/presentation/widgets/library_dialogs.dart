@@ -4,9 +4,9 @@
 /// the operation and the dialog stays trivially testable in isolation.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/features/document_library/domain/library_rules.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/features/document_library/domain/library_rules.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
 import 'package:flutter/material.dart';
 
 /// Prompts for a document title or folder name.

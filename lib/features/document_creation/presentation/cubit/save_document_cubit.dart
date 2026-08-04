@@ -5,12 +5,12 @@
 /// save.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_creation/domain/creation_rules.dart';
-import 'package:doc_forge/features/document_creation/presentation/cubit/save_document_state.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_creation/domain/creation_rules.dart';
+import 'package:doc_scanly/features/document_creation/presentation/cubit/save_document_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Writes the document, returning the record it created.

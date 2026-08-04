@@ -1,5 +1,5 @@
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/trash.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/trash.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

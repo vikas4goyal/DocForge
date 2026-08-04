@@ -9,21 +9,22 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
-import 'package:doc_forge/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
-import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
-import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/pdf_editing/application/atomic_pdf_write.dart';
+import 'package:doc_scanly/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A document store backed by a map, recording what was written.
@@ -107,7 +108,7 @@ void main() {
   /// test that wants to read the bytes resolves it the same way the store
   /// would.
   String pathOf(Document document) =>
-      '${temporary.path}/DocForge/${document.relativePath}';
+      '${temporary.path}/DocScanly/${document.relativePath}';
 
   tearDown(() {
     if (temporary.existsSync()) temporary.deleteSync(recursive: true);
@@ -122,7 +123,7 @@ void main() {
     int padding = 0,
   }) {
     final libraryPath = LibraryPath.parse('$title.pdf');
-    final path = '${temporary.path}/DocForge/${libraryPath.relative}';
+    final path = '${temporary.path}/DocScanly/${libraryPath.relative}';
     Directory(path).parent.createSync(recursive: true);
     final file = writeFakePdf(
       path,
@@ -147,6 +148,7 @@ void main() {
     List<Document> documents, {
     FakePdfEditor? withEditor,
     Failure? writeFailure,
+    DocumentFileResolver? files,
   }) {
     final active = withEditor ?? editor;
     library = _Library({
@@ -162,6 +164,7 @@ void main() {
       ),
       secrets: secrets,
       store: store,
+      files: files ?? PublicStoreDocumentFileResolver(store),
       workingDirectory: Directory('${temporary.path}/work')
         ..createSync(recursive: true),
       clock: FixedClock(DateTime.utc(2026, 6, 1, 12)),
@@ -170,6 +173,29 @@ void main() {
   }
 
   group('RotatePage', () {
+    test('waits for remote iCloud bytes before editing', () async {
+      final document = given().copyWith(
+        contentAvailability: DocumentContentAvailability.remote,
+      );
+      var ensureCalls = 0;
+      final files = DownloadAwareDocumentFileResolver(
+        delegate: PublicStoreDocumentFileResolver(store),
+        ensureReadable: (_, {onProgress}) async {
+          ensureCalls++;
+          onProgress?.call(1);
+          return const Result<void>.success(null);
+        },
+      );
+
+      final result = await RotatePage(contextFor([document], files: files))(
+        id,
+        1,
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(ensureCalls, 1);
+    });
+
     test('rotates the page and leaves the page count alone', () async {
       final document = given();
 

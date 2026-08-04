@@ -1,8 +1,8 @@
 /// The building blocks of the sharing options.
 library;
 
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
-import 'package:doc_forge/features/document_sharing/presentation/share_keys.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/share_keys.dart';
 import 'package:flutter/material.dart';
 
 /// One option in the share sheet.

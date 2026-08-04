@@ -6,7 +6,7 @@ wired in through `dependency_overrides` in the root `pubspec.yaml`.
 ## Why
 
 iOS permission prompts never appeared. Requesting camera access returned
-"denied" immediately, and DocForge never showed up in iOS Settings with a
+"denied" immediately, and DocScanly never showed up in iOS Settings with a
 camera toggle — because iOS had never been asked, so it had nothing to list.
 
 The cause is not in our Dart code. `PluginPermissionService.request()` calls

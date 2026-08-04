@@ -2,18 +2,18 @@
 library;
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/features/document_viewer/application/usecases/viewer_usecases.dart';
-import 'package:doc_forge/features/document_viewer/domain/repositories/pdf_renderer.dart';
-import 'package:doc_forge/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
-import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_cubit.dart';
-import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_state.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/features/document_viewer/application/usecases/viewer_usecases.dart';
+import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
+import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/cubit/viewer_cubit.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/cubit/viewer_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'viewer_test_support.dart';

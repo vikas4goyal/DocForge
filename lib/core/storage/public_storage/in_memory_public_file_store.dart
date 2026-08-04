@@ -6,10 +6,10 @@
 /// or the clock, so a golden rendered over it is byte-stable.
 library;
 
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 
 /// A library folder held entirely in memory.
 class InMemoryPublicFileStore implements PublicFileStore {

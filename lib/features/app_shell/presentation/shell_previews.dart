@@ -6,8 +6,8 @@
 /// failed, and one long enough to scroll under the bar (`design.md` §15).
 library;
 
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/features/app_shell/presentation/screens/app_tab_scaffold.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/features/app_shell/presentation/screens/app_tab_scaffold.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 

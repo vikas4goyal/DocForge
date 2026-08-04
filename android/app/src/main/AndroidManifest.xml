@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Writing into the user-visible Documents/DocForge folder.
+    <!-- Writing into the user-visible Documents/DocScanly folder.
 
          API 29+ needs no permission at all: MediaStore lets an app create and
          own files in a shared collection, which is exactly why MediaStore is
@@ -15,7 +15,7 @@
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <application
-        android:label="doc_forge"
+        android:label="DocScanly"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
@@ -40,7 +40,7 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- Share-sheet registration. DocForge appears as a destination for
+            <!-- Share-sheet registration. DocScanly appears as a destination for
                  a single PDF or image (SEND) and for several at once
                  (SEND_MULTIPLE), which the multiple-files scenario requires.
                  Declared on the launcher activity, whose launchMode is

@@ -1,15 +1,15 @@
 /// The contracts behind text recognition.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/contracts/models/settings_values.dart';
-import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/contracts/models/settings_values.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 
 // Re-exported so every existing consumer of the OCR contracts keeps one
 // import. `OcrScript` itself moved to core/contracts because settings chooses
 // it and a feature may not import another feature (`design.md` §2).
-export 'package:doc_forge/core/contracts/models/settings_values.dart'
+export 'package:doc_scanly/core/contracts/models/settings_values.dart'
     show OcrScript;
 
 /// Reports which recognition scripts can actually be used on this device.

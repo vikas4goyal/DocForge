@@ -6,8 +6,8 @@
 /// that reports a user cancellation as a normal result.
 library;
 
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 
 /// Hands prepared content to the system share sheet.
 abstract interface class ShareRepository {

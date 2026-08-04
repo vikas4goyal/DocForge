@@ -1,9 +1,9 @@
-/// Listens for content another application shared with DocForge.
+/// Listens for content another application shared with DocScanly.
 library;
 
 import 'dart:async';
 
-import 'package:doc_forge/features/document_import/application/usecases/import_usecases.dart';
+import 'package:doc_scanly/features/document_import/application/usecases/import_usecases.dart';
 import 'package:flutter/widgets.dart';
 
 /// Delivers shared content to [onContent], from both routes it can arrive by.

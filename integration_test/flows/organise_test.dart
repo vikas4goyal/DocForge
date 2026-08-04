@@ -24,13 +24,13 @@ void main() {
 
   /// Boots with a document already in the library.
   Future<FlowApp> bootWithOneDocument(WidgetTester tester) async {
-    final staging = await Directory.systemTemp.createTemp('docforge_org_');
+    final staging = await Directory.systemTemp.createTemp('docscanly_org_');
     addTearDown(() {
       if (staging.existsSync()) staging.deleteSync(recursive: true);
     });
     final importable = await Fixtures(staging).importable();
 
-    final app = await bootDocForge(tester, pickedFiles: [importable]);
+    final app = await bootDocScanly(tester, pickedFiles: [importable]);
     await seedDocumentByImport(tester);
     return app;
   }
@@ -38,7 +38,7 @@ void main() {
   testWidgets('a folder created on the dashboard appears there', (
     tester,
   ) async {
-    await bootDocForge(tester);
+    await bootDocScanly(tester);
 
     final dashboard = DashboardRobot(tester);
     await dashboard.waitUntilLoaded();
@@ -53,7 +53,7 @@ void main() {
   testWidgets('a nested folder tree can be cancelled, restored and purged', (
     tester,
   ) async {
-    await bootDocForge(tester);
+    await bootDocScanly(tester);
     final dashboard = DashboardRobot(tester);
     await dashboard.waitUntilLoaded();
     await dashboard.createFolder('Receipts');

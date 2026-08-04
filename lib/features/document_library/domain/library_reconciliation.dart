@@ -6,8 +6,8 @@
 /// tested exhaustively without a device (`design.md` D5).
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:meta/meta.dart';
 
 /// A file as the library folder currently holds it.

@@ -2,16 +2,16 @@
 @Tags(['golden'])
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/trash.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/application/usecases/trash_usecases.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/trash_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/trash_state.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/trash_screen.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/trash.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/trash_usecases.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/trash_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/trash_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/trash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';

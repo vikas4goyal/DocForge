@@ -9,10 +9,10 @@
 /// for, and that what leaves is what was intended.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_sharing/domain/repositories/share_repository.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_sharing/domain/repositories/share_repository.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 
 /// A [ShareRepository] that records payloads instead of sharing them.
 class FakeShareRepository implements ShareRepository {

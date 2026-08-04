@@ -1,7 +1,7 @@
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Document documentAt(String relative, {FolderId? folderId}) => Document(
@@ -58,6 +58,8 @@ void main() {
             isArchived: true,
             isProtected: true,
             hasRecognisedText: true,
+            cloudResourceIdentifier: 'cloud-1',
+            contentAvailability: DocumentContentAvailability.remote,
           );
 
       final restored = DocumentEntity.fromDomain(document).toDomain();
@@ -71,6 +73,8 @@ void main() {
       expect(restored.isArchived, isTrue);
       expect(restored.isProtected, isTrue);
       expect(restored.hasRecognisedText, isTrue);
+      expect(restored.cloudResourceIdentifier, 'cloud-1');
+      expect(restored.contentAvailability, DocumentContentAvailability.remote);
       expect(restored.libraryPath, document.libraryPath);
     });
 
@@ -79,7 +83,19 @@ void main() {
         DocumentEntity.fromDomain(documentAt('A.pdf')).schemaVersion,
         librarySchemaVersion,
       );
-      expect(librarySchemaVersion, 3);
+      expect(librarySchemaVersion, 5);
+    });
+
+    test('version 3 rows default to local content availability', () {
+      final entity = DocumentEntity.fromDomain(documentAt('A.pdf'))
+        ..schemaVersion = 3
+        ..contentAvailability = null
+        ..cloudResourceIdentifier = null;
+
+      final restored = entity.toDomain();
+
+      expect(restored.contentAvailability, DocumentContentAvailability.local);
+      expect(restored.cloudResourceIdentifier, isNull);
     });
   });
 

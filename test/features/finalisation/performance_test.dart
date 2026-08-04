@@ -15,19 +15,19 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/app/library_module.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
-import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
-import 'package:doc_forge/features/document_search/domain/search_query.dart';
-import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
+import 'package:doc_scanly/app/library_module.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_queries.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
+import 'package:doc_scanly/features/document_search/domain/search_query.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 
@@ -51,7 +51,7 @@ void main() {
   });
 
   setUp(() async {
-    root = Directory.systemTemp.createTempSync('docforge_perf');
+    root = Directory.systemTemp.createTempSync('docscanly_perf');
     final documents = Directory('${root.path}/documents')..createSync();
 
     isar = await Isar.open([
@@ -91,7 +91,7 @@ void main() {
   /// index to it, so a library that exists only in Isar would render empty and
   /// the timing would measure nothing.
   Future<void> seed(int count) async {
-    final folder = Directory('${root.path}/documents/DocForge');
+    final folder = Directory('${root.path}/documents/DocScanly');
     for (var index = 0; index < count; index++) {
       File(
         '${folder.path}/doc-$index.pdf',

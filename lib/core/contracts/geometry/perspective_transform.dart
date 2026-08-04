@@ -9,7 +9,7 @@ library;
 
 import 'dart:math' as math;
 
-import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
 
 /// A 3×3 homography mapping output page coordinates to input image coordinates.
 ///

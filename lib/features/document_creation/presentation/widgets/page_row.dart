@@ -3,8 +3,8 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/features/document_creation/presentation/creation_keys.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/features/document_creation/presentation/creation_keys.dart';
 import 'package:flutter/material.dart';
 
 /// A row in the page table: one page, its number, and what can be done to it.

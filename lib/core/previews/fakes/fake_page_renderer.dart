@@ -5,9 +5,9 @@
 /// what a page with neither layer applied renders as anyway.
 library;
 
-import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
-import 'package:doc_forge/core/contracts/page_renderer.dart';
-import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
+import 'package:doc_scanly/core/contracts/page_renderer.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 
 /// Renders every plan to its own original.
 class FakePageRenderer implements PageRenderer {

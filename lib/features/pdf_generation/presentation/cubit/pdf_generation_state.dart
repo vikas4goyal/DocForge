@@ -1,11 +1,11 @@
 /// State for the document preview and save screen.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:equatable/equatable.dart';
 
 /// Where the preview screen is in its lifecycle.

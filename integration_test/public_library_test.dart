@@ -11,10 +11,10 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/storage/capture_staging.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
-import 'package:doc_forge/core/storage/public_storage/public_storage_factory.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/storage/capture_staging.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_storage_factory.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:path_provider/path_provider.dart';
@@ -139,7 +139,7 @@ void main() {
           .where((name) => !name.startsWith('.'))
           .toList();
 
-      expect(entries, ['DocForge']);
+      expect(entries, ['DocScanly']);
     });
   });
 

@@ -11,7 +11,7 @@
 /// straight back into the introduction they just finished.
 library;
 
-import 'package:doc_forge/features/onboarding/presentation/onboarding_keys.dart';
+import 'package:doc_scanly/features/onboarding/presentation/onboarding_keys.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -23,7 +23,7 @@ void main() {
 
   testWidgets('a first-time user completes onboarding and reaches the '
       'dashboard', (tester) async {
-    await bootDocForge(tester, onboardingComplete: false);
+    await bootDocScanly(tester, onboardingComplete: false);
 
     final onboarding = OnboardingRobot(tester);
     await onboarding.complete();
@@ -46,7 +46,7 @@ void main() {
   ) async {
     // The completion flag is what the guard reads, and it is the difference
     // between an introduction and an obstacle.
-    await bootDocForge(tester);
+    await bootDocScanly(tester);
 
     final dashboard = DashboardRobot(tester);
     await dashboard.waitUntilLoaded();
@@ -56,7 +56,7 @@ void main() {
   testWidgets('the privacy step states what the spec requires it to state', (
     tester,
   ) async {
-    await bootDocForge(tester, onboardingComplete: false);
+    await bootDocScanly(tester, onboardingComplete: false);
 
     final onboarding = OnboardingRobot(tester);
     await onboarding.openPrivacyStep();

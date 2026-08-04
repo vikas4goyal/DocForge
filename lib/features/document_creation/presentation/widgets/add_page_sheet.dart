@@ -1,7 +1,7 @@
 /// The sources a page can be added from.
 library;
 
-import 'package:doc_forge/features/document_creation/presentation/creation_keys.dart';
+import 'package:doc_scanly/features/document_creation/presentation/creation_keys.dart';
 import 'package:flutter/material.dart';
 
 /// Where a new page comes from.

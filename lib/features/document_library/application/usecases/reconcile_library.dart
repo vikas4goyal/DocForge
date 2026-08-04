@@ -6,14 +6,14 @@
 /// showing documents that are not there (`design.md` D5).
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/domain/library_reconciliation.dart';
-import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/domain/library_reconciliation.dart';
+import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
 
 /// Reads the page count of a PDF, so a newly discovered file can be indexed.
 ///

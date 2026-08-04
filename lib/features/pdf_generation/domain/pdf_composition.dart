@@ -6,14 +6,14 @@
 /// without producing a PDF and reading it back.
 library;
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/contracts/models/settings_values.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/contracts/models/settings_values.dart';
 
 // Re-exported so every existing consumer of composition keeps one import. The
 // types themselves moved to core/contracts because settings configures them and
 // a feature may not import another feature (`design.md` §2).
-export 'package:doc_forge/core/contracts/models/settings_values.dart'
+export 'package:doc_scanly/core/contracts/models/settings_values.dart'
     show DocumentNaming, NamingPattern, PdfQuality;
 
 /// One page as it will be composed into a PDF.

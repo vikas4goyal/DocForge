@@ -37,15 +37,15 @@ The application SHALL allow the user to bring in content from the camera, the ph
 The application SHALL accept PDFs and images sent to it from other applications, and SHALL route them through the same paths as an in-application import.
 
 #### Scenario: PDF received
-- **WHEN** another application sends a PDF to DocForge
+- **WHEN** another application sends a PDF to DocScanly
 - **THEN** the PDF is copied into the library's root folder, a document record is created, and the document is opened
 
 #### Scenario: Images received
-- **WHEN** another application sends one or more images to DocForge
+- **WHEN** another application sends one or more images to DocScanly
 - **THEN** a creation session is started with those images as rows in the page table, where they can be cropped, enhanced, reordered and saved
 
 #### Scenario: Share received while another flow is open
-- **WHEN** content is shared to DocForge while the user is in another part of the application
+- **WHEN** content is shared to DocScanly while the user is in another part of the application
 - **THEN** the content is not dropped, and the user is taken to the appropriate import result once the current action allows it
 
 #### Scenario: Unsupported type received

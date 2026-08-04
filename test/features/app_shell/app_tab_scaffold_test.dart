@@ -1,9 +1,9 @@
 /// Widget tests for the tab bar.
 library;
 
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/app_shell/presentation/screens/app_tab_scaffold.dart';
-import 'package:doc_forge/features/app_shell/presentation/shell_keys.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/features/app_shell/presentation/screens/app_tab_scaffold.dart';
+import 'package:doc_scanly/features/app_shell/presentation/shell_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

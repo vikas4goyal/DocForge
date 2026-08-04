@@ -1,8 +1,8 @@
 /// The seams between the lock and the platform.
 library;
 
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/app_security/domain/app_lock.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
 
 /// Performs device authentication.
 ///

@@ -15,52 +15,64 @@ library;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:doc_forge/app/app.dart';
-import 'package:doc_forge/app/app_dependencies.dart';
-import 'package:doc_forge/app/composition_root.dart';
-import 'package:doc_forge/app/creation_module.dart';
-import 'package:doc_forge/app/document_creation_module.dart';
-import 'package:doc_forge/app/import_module.dart';
-import 'package:doc_forge/app/library_module.dart';
-import 'package:doc_forge/app/page_render_job.dart';
-import 'package:doc_forge/app/pdf_editing_module.dart';
-import 'package:doc_forge/app/router/app_router.dart';
-import 'package:doc_forge/app/router/app_routes.dart';
-import 'package:doc_forge/app/router/route_gates.dart';
-import 'package:doc_forge/app/scanning_module.dart';
-import 'package:doc_forge/app/screens/app_screens_builder.dart';
-import 'package:doc_forge/app/screens/home_refresh.dart';
-import 'package:doc_forge/app/settings_module.dart';
-import 'package:doc_forge/app/sharing_module.dart';
-import 'package:doc_forge/core/storage/capture_staging.dart';
-import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
-import 'package:doc_forge/core/storage/public_storage/public_storage_factory.dart';
-import 'package:doc_forge/core/theme/theme_mode_controller.dart';
-import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
-import 'package:doc_forge/features/app_security/domain/repositories/app_lock_repository.dart';
-import 'package:doc_forge/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
-import 'package:doc_forge/features/app_security/presentation/security_keys.dart';
-import 'package:doc_forge/features/app_security/presentation/widgets/app_lock_observer.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
-import 'package:doc_forge/features/document_creation/application/usecases/add_page.dart';
-import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
-import 'package:doc_forge/features/document_creation/domain/creation_session.dart';
-import 'package:doc_forge/features/document_import/domain/repositories/import_repository.dart';
-import 'package:doc_forge/features/document_import/infrastructure/repositories/platform_import_sources.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/library_reconciler.dart';
-import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/infrastructure/opencv_edge_detector.dart';
-import 'package:doc_forge/features/document_sharing/domain/repositories/share_repository.dart';
-import 'package:doc_forge/features/document_sharing/infrastructure/repositories/platform_share_repositories.dart';
-import 'package:doc_forge/features/document_viewer/domain/repositories/pdf_renderer.dart';
-import 'package:doc_forge/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
-import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
-import 'package:doc_forge/features/onboarding/application/usecases/onboarding_usecases.dart';
-import 'package:doc_forge/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
-import 'package:doc_forge/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
-import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/pdf_manipulator_editor.dart';
+import 'package:doc_scanly/app/app.dart';
+import 'package:doc_scanly/app/app_dependencies.dart';
+import 'package:doc_scanly/app/cloud_library_reconciler.dart';
+import 'package:doc_scanly/app/cloud_storage_module.dart';
+import 'package:doc_scanly/app/composition_root.dart';
+import 'package:doc_scanly/app/creation_module.dart';
+import 'package:doc_scanly/app/document_creation_module.dart';
+import 'package:doc_scanly/app/import_module.dart';
+import 'package:doc_scanly/app/library_module.dart';
+import 'package:doc_scanly/app/page_render_job.dart';
+import 'package:doc_scanly/app/pdf_editing_module.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/app/router/route_gates.dart';
+import 'package:doc_scanly/app/scanning_module.dart';
+import 'package:doc_scanly/app/screens/app_screens_builder.dart';
+import 'package:doc_scanly/app/screens/home_refresh.dart';
+import 'package:doc_scanly/app/settings_module.dart';
+import 'package:doc_scanly/app/sharing_module.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/capture_staging.dart';
+import 'package:doc_scanly/core/storage/legacy_public_library_migration.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_storage_factory.dart';
+import 'package:doc_scanly/core/theme/theme_mode_controller.dart';
+import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
+import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_repository.dart';
+import 'package:doc_scanly/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
+import 'package:doc_scanly/features/app_security/presentation/security_keys.dart';
+import 'package:doc_scanly/features/app_security/presentation/widgets/app_lock_observer.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/cloud_storage/application/usecases/ensure_document_downloaded.dart';
+import 'package:doc_scanly/features/cloud_storage/application/usecases/import_existing_cloud_folder.dart';
+import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_location.dart';
+import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/ios_icloud_channel.dart';
+import 'package:doc_scanly/features/cloud_storage/presentation/cloud_storage_keys.dart';
+import 'package:doc_scanly/features/document_creation/application/usecases/add_page.dart';
+import 'package:doc_scanly/features/document_creation/application/usecases/render_page.dart';
+import 'package:doc_scanly/features/document_creation/domain/creation_session.dart';
+import 'package:doc_scanly/features/document_import/application/usecases/import_usecases.dart';
+import 'package:doc_scanly/features/document_import/domain/import_rules.dart';
+import 'package:doc_scanly/features/document_import/domain/repositories/import_repository.dart';
+import 'package:doc_scanly/features/document_import/infrastructure/repositories/platform_import_sources.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/library_reconciler.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/infrastructure/opencv_edge_detector.dart';
+import 'package:doc_scanly/features/document_sharing/domain/repositories/share_repository.dart';
+import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/platform_share_repositories.dart';
+import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
+import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
+import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
+import 'package:doc_scanly/features/onboarding/application/usecases/onboarding_usecases.dart';
+import 'package:doc_scanly/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/pdf_manipulator_editor.dart';
 import 'package:flutter/material.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
@@ -118,12 +130,12 @@ const appVersion = '1.0.0';
 /// - [share], [printer] and [exportPicker] — the system share sheet, print
 ///   dialogue and destination picker.
 /// - [gallery], [files] and [sharedContent] — the system pickers and the
-///   channel other applications share into DocForge through.
+///   channel other applications share into DocScanly through.
 ///
 /// [initialLocation] is where the router starts; the guard still redirects from
 /// it, so a flow that wants the dashboard asks for [AppRoutes.home] and lets the
 /// gates decide.
-Future<Widget> buildDocForge({
+Future<Widget> buildDocScanly({
   AppDependencies? dependencies,
   Directory? cacheDirectory,
   Directory? documentsDirectory,
@@ -141,6 +153,8 @@ Future<Widget> buildDocForge({
   GalleryPicker gallery = const SystemGalleryPicker(),
   FileBrowser files = const SystemFileBrowser(),
   SharedContentSource? sharedContent,
+  ICloudPlatformApi? iCloudPlatform,
+  bool? isIOS,
   String initialLocation = AppRoutes.home,
 }) async {
   // Awaited together rather than one after another: none needs the other, and
@@ -159,15 +173,89 @@ Future<Widget> buildDocForge({
         : Future<Directory>.value(documentsDirectory),
   ).wait;
 
+  final supportsICloud = isIOS ?? Platform.isIOS;
+  CloudStorageModule? cloudStorage;
+  if (supportsICloud) {
+    // This is a local compatibility migration and must precede authority
+    // selection. Android performs its corresponding MediaStore migration in
+    // MediaStorePublicFileStore.initialise and never constructs this module.
+    await LegacyPublicLibraryMigration(resolvedDocuments).run();
+    final builtCloud = await buildCloudStorageModule(
+      preferences: resolvedDependencies.preferences,
+      documentsDirectory: resolvedDocuments,
+      platform: iCloudPlatform ?? const IosICloudChannel(),
+    );
+    if (builtCloud case Success(:final value)) {
+      cloudStorage = value;
+    } else {
+      return CloudLibraryUnavailableApp(
+        onRetry: () => buildDocScanly(
+          dependencies: resolvedDependencies,
+          cacheDirectory: resolvedCache,
+          documentsDirectory: resolvedDocuments,
+          publicStore: publicStore,
+          libraryOverride: libraryOverride,
+          scanner: scanner,
+          detector: detector,
+          authenticator: authenticator,
+          pdfRenderer: pdfRenderer,
+          pdfEditor: pdfEditor,
+          recogniser: recogniser,
+          share: share,
+          printer: printer,
+          exportPicker: exportPicker,
+          gallery: gallery,
+          files: files,
+          sharedContent: sharedContent,
+          iCloudPlatform: iCloudPlatform,
+          isIOS: true,
+          initialLocation: initialLocation,
+        ),
+      );
+    }
+  }
+
   // The user-visible library folder, and the only place a finished PDF is
   // written. Built before anything else that touches documents, because every
   // one of them addresses files through it (`design.md` D2).
-  final store =
-      publicStore ??
-      buildPublicFileStore(
-        documentsDirectory: resolvedDocuments,
-        cacheDirectory: resolvedCache,
+  PublicFileStore store;
+  if (publicStore != null) {
+    store = publicStore;
+  } else if (cloudStorage != null) {
+    final authoritative = await cloudStorage.authoritativeStore();
+    if (authoritative case Success(:final value)) {
+      store = value;
+    } else {
+      return CloudLibraryUnavailableApp(
+        onRetry: () => buildDocScanly(
+          dependencies: resolvedDependencies,
+          cacheDirectory: resolvedCache,
+          documentsDirectory: resolvedDocuments,
+          libraryOverride: libraryOverride,
+          scanner: scanner,
+          detector: detector,
+          authenticator: authenticator,
+          pdfRenderer: pdfRenderer,
+          pdfEditor: pdfEditor,
+          recogniser: recogniser,
+          share: share,
+          printer: printer,
+          exportPicker: exportPicker,
+          gallery: gallery,
+          files: files,
+          sharedContent: sharedContent,
+          iCloudPlatform: iCloudPlatform,
+          isIOS: true,
+          initialLocation: initialLocation,
+        ),
       );
+    }
+  } else {
+    store = buildPublicFileStore(
+      documentsDirectory: resolvedDocuments,
+      cacheDirectory: resolvedCache,
+    );
+  }
   await store.initialise();
 
   // Private scratch space for half-built PDFs. Never the library folder: a
@@ -175,7 +263,19 @@ Future<Widget> buildDocForge({
   final workingDirectory = Directory('${resolvedCache.path}/working')
     ..createSync(recursive: true);
 
-  final documentFiles = PublicStoreDocumentFileResolver(store);
+  final localDocumentFiles = PublicStoreDocumentFileResolver(store);
+  final usesICloudAuthority =
+      cloudStorage?.resolution.location == StorageLocation.iCloud;
+  final documentFiles = usesICloudAuthority
+      ? DownloadAwareDocumentFileResolver(
+          delegate: localDocumentFiles,
+          ensureReadable: (document, {onProgress}) =>
+              EnsureDocumentDownloaded(cloudStorage!.cloud)(
+                document.cloudRelativePath ?? document.relativePath,
+                onProgress: onProgress,
+              ),
+        )
+      : localDocumentFiles;
 
   // One renderer for the whole application: everything that shows a page goes
   // through it, so the row thumbnail, the crop screen and the generated PDF
@@ -214,6 +314,7 @@ Future<Widget> buildDocForge({
           clock: resolvedDependencies.clock,
           ids: resolvedDependencies.idGenerator,
           secureStorage: resolvedDependencies.secureStorage,
+          documentFileResolver: documentFiles,
         )
       : buildLibraryModuleOver(
           isar: libraryOverride.isar,
@@ -224,7 +325,27 @@ Future<Widget> buildDocForge({
           clock: resolvedDependencies.clock,
           ids: resolvedDependencies.idGenerator,
           secureStorage: resolvedDependencies.secureStorage,
+          documentFileResolver: documentFiles,
         );
+
+  final cloudReconcile = usesICloudAuthority
+      ? ReconcileCloudLibrary(
+          cloud: cloudStorage!.cloud,
+          documents: library.documents,
+          folders: library.folders,
+          pages: library.pages,
+          clock: resolvedDependencies.clock,
+          ids: resolvedDependencies.idGenerator,
+        )
+      : null;
+
+  Future<void> reconcileLibrary({bool force = false}) async {
+    if (cloudReconcile == null) {
+      await library.reconcile(force: force);
+    } else {
+      await cloudReconcile();
+    }
+  }
 
   final settings = buildSettingsModule(
     preferences: resolvedDependencies.preferences,
@@ -326,6 +447,7 @@ Future<Widget> buildDocForge({
     documentWriter: library.documentWriter,
     secureStorage: resolvedDependencies.secureStorage,
     store: store,
+    documentFiles: documentFiles,
     workingDirectory: workingDirectory,
     clock: resolvedDependencies.clock,
     ids: resolvedDependencies.idGenerator,
@@ -399,6 +521,38 @@ Future<Widget> buildDocForge({
       authenticator: authenticator,
       pdfRenderer: pdfRenderer,
       routeObserver: routeObserver,
+      storageLocation: cloudStorage?.screen(
+        onImportFolder: () async {
+          await ImportExistingCloudFolder(
+            cloud: cloudStorage!.cloud,
+            importPath: (path) async {
+              await for (final event in importing.importFiles([
+                path,
+              ], source: ImportSource.files)) {
+                switch (event) {
+                  case ImportedDocument():
+                    return const Result<void>.success(null);
+                  case ImportFailed(:final failure):
+                    return Result<void>.failure(failure);
+                  case ImportNeedsPassword():
+                    return const Result<void>.failure(
+                      Failure.auth(debugDetail: 'pdf_password_required'),
+                    );
+                  case ImportProgressed() || ImportReadyForReview():
+                    continue;
+                }
+              }
+              return const Result<void>.failure(
+                Failure.import(unsupportedType: true),
+              );
+            },
+          )();
+        },
+      ),
+      onLibraryRefresh: () => reconcileLibrary(force: true),
+      libraryRefreshKey: usesICloudAuthority
+          ? CloudStorageKeys.libraryRefresh
+          : null,
     ),
   );
 
@@ -415,16 +569,19 @@ Future<Widget> buildDocForge({
     child: LibraryReconciler(
       key: LibraryKeys.libraryReconciler,
       // The library folder is visible in the user's file browser, so it can
-      // change while DocForge is in the background. Reconciling on resume is
+      // change while DocScanly is in the background. Reconciling on resume is
       // what makes that change appear when they come back.
       reconcile: () async {
         // Expiry is best-effort: a failed purge stays represented in Trash and
         // is retried on the next launch/resume, while reconciliation can still
         // adopt user-visible file changes immediately.
         await library.expireTrash();
-        await library.reconcile();
+        await reconcileLibrary();
       },
-      child: DocForgeApp(
+      externalTriggers: usesICloudAuthority
+          ? cloudStorage!.cloud.identityChanges
+          : null,
+      child: DocScanlyApp(
         dependencies: resolvedDependencies,
         router: router,
         themeMode: themeMode,

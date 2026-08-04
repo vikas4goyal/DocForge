@@ -1,18 +1,18 @@
 /// Widget tests for the dashboard.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/library_folder_usecases.dart';
-import 'package:doc_forge/features/document_library/application/usecases/trash_usecases.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/library_dashboard_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/dashboard_screen.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/library_folder_usecases.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/trash_usecases.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_dashboard_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -63,7 +63,11 @@ void main() {
     documents.documents[document.id] = document;
   }
 
-  Future<DashboardCubit> pumpDashboard(WidgetTester tester) async {
+  Future<DashboardCubit> pumpDashboard(
+    WidgetTester tester, {
+    Future<void> Function()? onLibraryRefresh,
+    Key? libraryRefreshKey,
+  }) async {
     tester.view.physicalSize = const Size(800, 1600);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -77,6 +81,8 @@ void main() {
         home: BlocProvider<DashboardCubit>.value(
           value: cubit,
           child: DashboardScreen(
+            onLibraryRefresh: onLibraryRefresh,
+            libraryRefreshKey: libraryRefreshKey,
             actions: DashboardActions(
               onOpenDocument: opened.add,
               onCreateFolder: createdFolders.add,
@@ -135,6 +141,37 @@ void main() {
         ),
         findsNWidgets(DashboardCubit.maxRecents),
       );
+    });
+
+    testWidgets('pull refresh reconciles storage before reloading the index', (
+      tester,
+    ) async {
+      final order = <String>[];
+      await pumpDashboard(
+        tester,
+        onLibraryRefresh: () async {
+          order.add('reconcile');
+          documents.documents[const DocumentId('added')] = Document(
+            id: const DocumentId('added'),
+            title: 'Added',
+            createdAt: DateTime.utc(2026),
+            updatedAt: DateTime.utc(2026),
+            pageCount: 1,
+            sizeInBytes: 1,
+            libraryPath: LibraryPath.parse('Added.pdf'),
+          );
+        },
+        libraryRefreshKey: const Key('library_cloud_refresh'),
+      );
+
+      final indicator = tester.widget<RefreshIndicator>(
+        find.byKey(const Key('library_cloud_refresh')),
+      );
+      await indicator.onRefresh();
+      order.add('loaded');
+      await tester.pump();
+
+      expect(order, ['reconcile', 'loaded']);
     });
   });
 
@@ -225,7 +262,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(DashboardKeys.breadcrumb), findsOneWidget);
-      expect(find.text('DocForge'), findsWidgets);
+      expect(find.text('DocScanly'), findsWidgets);
       expect(find.text('Invoices'), findsWidgets);
     });
 
@@ -236,7 +273,7 @@ void main() {
       await cubit.openFolder('Invoices');
       await tester.pumpAndSettle();
 
-      await tester.tap(find.widgetWithText(TextButton, 'DocForge'));
+      await tester.tap(find.widgetWithText(TextButton, 'DocScanly'));
       await tester.pumpAndSettle();
 
       expect(cubit.state.isAtRoot, isTrue);
@@ -254,7 +291,7 @@ void main() {
       // The path is relative to the library root and cannot name anything
       // above it — the line between a document app and a file manager.
       expect(cubit.state.path, ['Invoices']);
-      expect(cubit.state.breadcrumb.first, 'DocForge');
+      expect(cubit.state.breadcrumb.first, 'DocScanly');
     });
   });
 

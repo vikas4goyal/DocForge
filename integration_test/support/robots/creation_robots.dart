@@ -8,11 +8,11 @@
 /// to accommodate the suite (`design.md` D5).
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/features/document_creation/presentation/creation_keys.dart';
-import 'package:doc_forge/features/document_scanning/presentation/scan_keys.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/enhance_keys.dart';
-import 'package:doc_forge/features/pdf_generation/presentation/pdf_keys.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/features/document_creation/presentation/creation_keys.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/scan_keys.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/enhance_keys.dart';
+import 'package:doc_scanly/features/pdf_generation/presentation/pdf_keys.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';

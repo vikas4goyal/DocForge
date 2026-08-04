@@ -1,4 +1,4 @@
-import 'package:doc_forge/features/document_library/presentation/widgets/library_reconciler.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/library_reconciler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -47,7 +47,7 @@ void main() {
 
     await resume(tester);
 
-    // The user most often changes the folder by leaving DocForge to do it, so
+    // The user most often changes the folder by leaving DocScanly to do it, so
     // resume is the moment the change has to be noticed.
     expect(runs, 2);
   });

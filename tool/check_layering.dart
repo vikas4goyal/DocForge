@@ -67,12 +67,12 @@ String? featureOf(String path) {
   return match?.group(1);
 }
 
-/// Extracts the feature name from a `package:doc_forge/features/<name>/...` URI.
+/// Extracts the feature name from a `package:doc_scanly/features/<name>/...` URI.
 ///
 /// Returns `null` for any URI that does not target a feature.
 String? importedFeatureOf(String importPath) {
   final match = RegExp(
-    r'^package:doc_forge/features/([^/]+)/',
+    r'^package:doc_scanly/features/([^/]+)/',
   ).firstMatch(importPath);
   return match?.group(1);
 }
@@ -146,13 +146,13 @@ List<LayeringViolation> checkFile(String path, String content) {
   return violations;
 }
 
-/// Converts a `package:doc_forge/...` URI to its path under `lib/`.
+/// Converts a `package:doc_scanly/...` URI to its path under `lib/`.
 ///
 /// Returns null for a URI that leaves the package — `dart:`, another package,
 /// or a relative import — because those are not part of the graph this rule
 /// walks.
 String? libPathOf(String importPath) {
-  const prefix = 'package:doc_forge/';
+  const prefix = 'package:doc_scanly/';
   if (!importPath.startsWith(prefix)) return null;
   return 'lib/${importPath.substring(prefix.length)}';
 }
@@ -243,7 +243,7 @@ List<LayeringViolation> checkProductionEntrypoint({
       final directive = _directive.firstMatch(lines[i]);
       if (directive != null) {
         final target = directive.group(1)!;
-        if (target.startsWith('package:doc_forge/') ||
+        if (target.startsWith('package:doc_scanly/') ||
             target.startsWith('dart:') ||
             target.startsWith('package:')) {
           continue;

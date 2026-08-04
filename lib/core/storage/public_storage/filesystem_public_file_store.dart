@@ -9,10 +9,10 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 
 /// The user-visible library folder, backed by a directory.
 class FilesystemPublicFileStore implements PublicFileStore {
@@ -21,13 +21,24 @@ class FilesystemPublicFileStore implements PublicFileStore {
   /// The container is resolved once by the composition root rather than looked
   /// up per call, so no ambient path lookup happens inside a repository — the
   /// same shape the previous `LocalDocumentFileStore` used.
-  const FilesystemPublicFileStore(
+  FilesystemPublicFileStore(
     this.containerDirectory, {
     this.libraryFolderName = defaultLibraryFolderName,
-  });
+  }) : rootDirectory = Directory(
+         '${containerDirectory.path}/$libraryFolderName',
+       );
+
+  /// Creates a store whose library is exactly [rootDirectory].
+  ///
+  /// The iCloud container already appears in Files as “DocScanly”, so its
+  /// `Documents` directory is the library root. Creating another named child
+  /// would expose the confusing `DocScanly/DocScanly` nesting.
+  FilesystemPublicFileStore.atRoot(this.rootDirectory)
+    : containerDirectory = rootDirectory,
+      libraryFolderName = '';
 
   /// The name of the library folder as the user sees it in the file browser.
-  static const defaultLibraryFolderName = 'DocForge';
+  static const defaultLibraryFolderName = 'DocScanly';
 
   /// The directory the library folder sits in.
   ///
@@ -38,9 +49,11 @@ class FilesystemPublicFileStore implements PublicFileStore {
   /// The library folder's name.
   final String libraryFolderName;
 
+  /// The directory that directly contains active library entries.
+  final Directory rootDirectory;
+
   /// The root of the library tree.
-  Directory get _root =>
-      Directory('${containerDirectory.path}/$libraryFolderName');
+  Directory get _root => rootDirectory;
 
   @override
   Future<Result<void>> initialise() async {

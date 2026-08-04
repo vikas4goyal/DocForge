@@ -9,9 +9,9 @@
 /// feature to reach them (`design.md` D9).
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
 
 /// The rules the page table applies to its list.
 abstract final class CreationSession {

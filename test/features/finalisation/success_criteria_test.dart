@@ -20,32 +20,32 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/app/document_creation_module.dart';
-import 'package:doc_forge/app/library_module.dart';
-import 'package:doc_forge/app/pdf_editing_module.dart';
-import 'package:doc_forge/app/sharing_module.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
-import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
-import 'package:doc_forge/features/document_search/domain/search_query.dart';
-import 'package:doc_forge/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
-import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
-import 'package:doc_forge/features/image_enhancement/infrastructure/enhancement_job.dart';
-import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
-import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
-import 'package:doc_forge/features/pdf_generation/infrastructure/pdf_composer.dart';
+import 'package:doc_scanly/app/document_creation_module.dart';
+import 'package:doc_scanly/app/library_module.dart';
+import 'package:doc_scanly/app/pdf_editing_module.dart';
+import 'package:doc_scanly/app/sharing_module.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
+import 'package:doc_scanly/features/document_search/domain/search_query.dart';
+import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
+import 'package:doc_scanly/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_scanly/features/image_enhancement/infrastructure/enhancement_job.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/infrastructure/pdf_composer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:isar_community/isar.dart';
@@ -113,7 +113,7 @@ void main() {
   setUp(() async {
     HttpOverrides.global = _AirplaneMode();
 
-    root = Directory.systemTemp.createTempSync('docforge_success');
+    root = Directory.systemTemp.createTempSync('docscanly_success');
     documents = Directory('${root.path}/documents')..createSync();
 
     isar = await Isar.open([
@@ -191,7 +191,7 @@ void main() {
     // Published into the user's own library folder, which is the point: it has
     // to be reachable from the Files app and from other applications.
     expect(
-      File('${documents.path}/DocForge/${document.relativePath}').existsSync(),
+      File('${documents.path}/DocScanly/${document.relativePath}').existsSync(),
       isTrue,
     );
     // Searchable: recognition ran and its text is stored.
@@ -234,7 +234,7 @@ void main() {
     // this step proves is that the *pipeline* reaches editing with a document
     // the editor can act on, and that the record is updated afterwards.
     // Written into the library folder, which is where a document lives now.
-    final editable = '${documents.path}/DocForge/Editable.pdf';
+    final editable = '${documents.path}/DocScanly/Editable.pdf';
     Directory(editable).parent.createSync(recursive: true);
     writeFakePdf(editable, pageCount: 3);
 
@@ -305,7 +305,7 @@ void main() {
     'the whole flow needs no account and stores nothing but documents',
     () async {
       // The secure store is the only place a secret could be, and nothing in the
-      // happy path puts one there: DocForge has no account and this document is
+      // happy path puts one there: DocScanly has no account and this document is
       // not protected.
       final capturePath = '${root.path}/capture.jpg';
       _writeCapture(capturePath);

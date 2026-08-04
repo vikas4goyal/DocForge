@@ -1,11 +1,11 @@
 /// The title-search index, exposed to `document-search`.
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:isar_community/isar.dart';
 
 /// Finds documents by a prefix of a word in their title.

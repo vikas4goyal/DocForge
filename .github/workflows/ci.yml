@@ -1,4 +1,4 @@
-# CI pipeline for DocForge.
+# CI pipeline for DocScanly.
 #
 # Runs the gate sequence mandated by the project context, in order, and fails on
 # any formatting, analysis, layering, test or coverage violation. Platform builds

@@ -7,31 +7,31 @@
 /// the screens `main.dart` does rather than a second set that can drift.
 library;
 
-import 'package:doc_forge/app/creation_module.dart';
-import 'package:doc_forge/app/document_creation_module.dart';
-import 'package:doc_forge/app/import_module.dart';
-import 'package:doc_forge/app/library_module.dart';
-import 'package:doc_forge/app/pdf_editing_module.dart';
-import 'package:doc_forge/app/router/app_router.dart';
-import 'package:doc_forge/app/screens/creation_screens.dart';
-import 'package:doc_forge/app/screens/home_refresh.dart';
-import 'package:doc_forge/app/screens/library_screens.dart';
-import 'package:doc_forge/app/screens/search_screens.dart';
-import 'package:doc_forge/app/screens/security_screens.dart';
-import 'package:doc_forge/app/screens/settings_screens.dart';
-import 'package:doc_forge/app/screens/shell_screens.dart';
-import 'package:doc_forge/app/screens/viewer_screens.dart';
-import 'package:doc_forge/app/settings_module.dart';
-import 'package:doc_forge/app/sharing_module.dart';
-import 'package:doc_forge/core/permissions/permission_service.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
-import 'package:doc_forge/core/theme/theme_mode_controller.dart';
-import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
-import 'package:doc_forge/features/app_security/domain/repositories/app_lock_repository.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
-import 'package:doc_forge/features/document_viewer/domain/repositories/pdf_renderer.dart';
-import 'package:doc_forge/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
+import 'package:doc_scanly/app/creation_module.dart';
+import 'package:doc_scanly/app/document_creation_module.dart';
+import 'package:doc_scanly/app/import_module.dart';
+import 'package:doc_scanly/app/library_module.dart';
+import 'package:doc_scanly/app/pdf_editing_module.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/screens/creation_screens.dart';
+import 'package:doc_scanly/app/screens/home_refresh.dart';
+import 'package:doc_scanly/app/screens/library_screens.dart';
+import 'package:doc_scanly/app/screens/search_screens.dart';
+import 'package:doc_scanly/app/screens/security_screens.dart';
+import 'package:doc_scanly/app/screens/settings_screens.dart';
+import 'package:doc_scanly/app/screens/shell_screens.dart';
+import 'package:doc_scanly/app/screens/viewer_screens.dart';
+import 'package:doc_scanly/app/settings_module.dart';
+import 'package:doc_scanly/app/sharing_module.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/core/theme/theme_mode_controller.dart';
+import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
+import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_repository.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
+import 'package:doc_scanly/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
 import 'package:flutter/material.dart';
 
 /// Builds every screen the router renders.
@@ -88,6 +88,9 @@ AppScreens buildAppScreens({
   required DeviceAuthenticator authenticator,
   required PdfRenderer pdfRenderer,
   required HomeRefreshObserver routeObserver,
+  ScreenBuilder? storageLocation,
+  Future<void> Function()? onLibraryRefresh,
+  Key? libraryRefreshKey,
 }) {
   final securityScreens = buildSecurityScreens(
     permissions: permissions,
@@ -107,6 +110,7 @@ AppScreens buildAppScreens({
     appVersion: appVersion,
     lockConfiguration: lockConfiguration,
     authenticator: authenticator,
+    supportsCloudStorage: storageLocation != null,
   );
 
   final viewerScreens = buildViewerScreens(
@@ -131,6 +135,8 @@ AppScreens buildAppScreens({
       permissions: permissions,
       settings: settingsScreens.settings,
       routeObserver: routeObserver,
+      onLibraryRefresh: onLibraryRefresh,
+      libraryRefreshKey: libraryRefreshKey,
     ),
     scan: buildCreationScreen(creationFlow: creationFlow),
     documents: libraryScreens.documents,
@@ -146,5 +152,6 @@ AppScreens buildAppScreens({
     settings: settingsScreens.settings,
     about: settingsScreens.about,
     privacy: settingsScreens.privacy,
+    storageLocation: storageLocation,
   );
 }

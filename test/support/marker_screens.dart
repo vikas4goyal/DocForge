@@ -12,7 +12,7 @@
 /// feature's widgets, Cubits or use cases.
 library;
 
-import 'package:doc_forge/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -82,7 +82,7 @@ abstract final class RouteMarkers {
 /// The parameterised routes render the identifier they were given as well, so a
 /// test can prove not only that the right route resolved but that it resolved
 /// with the right argument — which is the half a bare route assertion misses.
-AppScreens markerScreens() => AppScreens(
+AppScreens markerScreens({bool includeStorageLocation = false}) => AppScreens(
   onboarding: (_) => markerScreen(RouteMarkers.onboarding),
   unlock: (_) => markerScreen(RouteMarkers.unlock),
   home: (_) => markerScreen(RouteMarkers.home),
@@ -101,6 +101,9 @@ AppScreens markerScreens() => AppScreens(
   settings: (_) => markerScreen(RouteMarkers.settings),
   about: (_) => markerScreen(RouteMarkers.about),
   privacy: (_) => markerScreen(RouteMarkers.privacy),
+  storageLocation: includeStorageLocation
+      ? (_) => markerScreen('storageLocation')
+      : null,
 );
 
 /// Asserts that the route rendering [name] is the one on screen.

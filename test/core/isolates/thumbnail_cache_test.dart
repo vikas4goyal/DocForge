@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 
-import 'package:doc_forge/core/isolates/thumbnail_cache.dart';
+import 'package:doc_scanly/core/isolates/thumbnail_cache.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Returns a thumbnail of [size] bytes.

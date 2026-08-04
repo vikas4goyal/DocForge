@@ -1,8 +1,8 @@
 /// Booting the real application for one flow.
 ///
-/// A flow calls [bootDocForge] and gets the application `main.dart` runs, with
+/// A flow calls [bootDocScanly] and gets the application `main.dart` runs, with
 /// only the platform edge substituted. It is deliberately *not* a second wiring
-/// of the app: it calls [buildDocForge], the same function `main` calls, so the
+/// of the app: it calls [buildDocScanly], the same function `main` calls, so the
 /// harness cannot drift from what a user actually launches. That drift is the
 /// standard way an end-to-end suite rots into proving something nobody runs.
 ///
@@ -15,14 +15,17 @@ library;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:doc_forge/app/app_dependencies.dart';
-import 'package:doc_forge/app/doc_forge.dart';
-import 'package:doc_forge/app/fake_dependencies.dart';
-import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
-import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
+import 'package:doc_scanly/app/app_dependencies.dart';
+import 'package:doc_scanly/app/doc_scanly.dart';
+import 'package:doc_scanly/app/fake_dependencies.dart';
+import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_location.dart';
+import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/ios_icloud_channel.dart';
+import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/scripted_icloud_platform.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 
@@ -44,6 +47,8 @@ class FlowApp {
     required this.publicStore,
     required this.libraryFolder,
     required this.isar,
+    this.iCloudPlatform,
+    this.cloudLibraryFolder,
   });
 
   /// The substituted platform edges, for boundary assertions.
@@ -63,6 +68,12 @@ class FlowApp {
 
   /// The flow's own database.
   final Isar isar;
+
+  /// Deterministic iCloud edge used by an iOS cloud flow, when supplied.
+  final ICloudPlatformApi? iCloudPlatform;
+
+  /// App-owned iCloud Documents root used by the flow, when supplied.
+  final Directory? cloudLibraryFolder;
 }
 
 /// Whether Isar's native library has been resolved for this process.
@@ -93,7 +104,7 @@ var _instanceCount = 0;
 ///
 /// Registers its own teardown: the database is closed and the temporary
 /// directory removed when the test ends, however it ends.
-Future<FlowApp> bootDocForge(
+Future<FlowApp> bootDocScanly(
   WidgetTester tester, {
   bool onboardingComplete = true,
   bool appLockEnabled = false,
@@ -102,6 +113,10 @@ Future<FlowApp> bootDocForge(
   List<String> pickedFiles = const [],
   List<String> pendingSharedContent = const [],
   String? exportDestination,
+  ICloudPlatformApi? iCloudPlatform,
+  bool? isIOS,
+  StorageLocation? storageLocation,
+  Directory? cloudRootDirectory,
 }) async {
   if (!_isarReady) {
     await Isar.initializeIsarCore(download: true);
@@ -111,12 +126,24 @@ Future<FlowApp> bootDocForge(
   // One root per flow, deleted in teardown. Everything the flow writes — the
   // database, the library folder, captures, the working directory — lives under
   // it, so "clean up after yourself" is one deletion rather than six.
-  final root = await Directory.systemTemp.createTemp('docforge_flow_');
+  final root = await Directory.systemTemp.createTemp('docscanly_flow_');
   final cacheDirectory = await Directory('${root.path}/cache').create();
   final libraryFolder = await Directory('${root.path}/library').create();
   final derivedDirectory = await Directory('${root.path}/derived').create();
   final databaseDirectory = await Directory('${root.path}/db').create();
   final fixtureDirectory = await Directory('${root.path}/fixtures').create();
+  Directory? cloudLibraryFolder;
+  if (iCloudPlatform != null) {
+    cloudLibraryFolder =
+        cloudRootDirectory ??
+        await Directory(
+          '${root.path}/icloud/Documents',
+        ).create(recursive: true);
+    await cloudLibraryFolder.create(recursive: true);
+    if (iCloudPlatform is ScriptedICloudPlatform) {
+      iCloudPlatform.rootPath = cloudLibraryFolder.path;
+    }
+  }
 
   // A distinct instance name per flow: a previous flow's database may still be
   // closing when this one opens, and Isar will not reuse a name until it has.
@@ -130,7 +157,7 @@ Future<FlowApp> bootDocForge(
       OcrTextEntitySchema,
     ],
     directory: databaseDirectory.path,
-    name: 'docforge_flow_$_instanceCount',
+    name: 'docscanly_flow_$_instanceCount',
   );
 
   // Deterministic by construction: a fixed clock, sequential ids and an inline
@@ -148,6 +175,12 @@ Future<FlowApp> bootDocForge(
     await dependencies.secureStorage.write(
       SecureStorageKeys.appLockEnabled,
       'true',
+    );
+  }
+  if (storageLocation != null) {
+    await dependencies.preferences.writeString(
+      PreferenceKeys.libraryStorageLocation,
+      storageLocation.id,
     );
   }
 
@@ -171,13 +204,21 @@ Future<FlowApp> bootDocForge(
   // A real filesystem store over a directory the flow owns, rather than the
   // device's actual library folder: the flow gets genuine file behaviour
   // without writing into somewhere a user would see.
-  final publicStore = FilesystemPublicFileStore(libraryFolder);
+  final startsInICloud =
+      storageLocation == StorageLocation.iCloud ||
+      (storageLocation == null &&
+          iCloudPlatform is ScriptedICloudPlatform &&
+          iCloudPlatform.marker != null);
+  final activeLibraryFolder = startsInICloud
+      ? cloudLibraryFolder!
+      : libraryFolder;
+  final publicStore = FilesystemPublicFileStore.atRoot(activeLibraryFolder);
 
-  final app = await buildDocForge(
+  final app = await buildDocScanly(
     dependencies: dependencies,
     cacheDirectory: cacheDirectory,
     documentsDirectory: libraryFolder,
-    publicStore: publicStore,
+    publicStore: startsInICloud ? null : publicStore,
     libraryOverride: LibraryOverride(
       isar: isar,
       documentsDirectory: derivedDirectory,
@@ -192,6 +233,8 @@ Future<FlowApp> bootDocForge(
     gallery: platform.gallery,
     files: platform.files,
     sharedContent: platform.sharedContent,
+    iCloudPlatform: iCloudPlatform,
+    isIOS: isIOS,
   );
 
   addTearDown(() async {
@@ -218,7 +261,9 @@ Future<FlowApp> bootDocForge(
     fixtures: fixtures,
     dependencies: dependencies,
     publicStore: publicStore,
-    libraryFolder: libraryFolder,
+    libraryFolder: activeLibraryFolder,
     isar: isar,
+    iCloudPlatform: iCloudPlatform,
+    cloudLibraryFolder: cloudLibraryFolder,
   );
 }

@@ -11,8 +11,8 @@
 /// knowing which it is talking to.
 library;
 
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 import 'package:meta/meta.dart';
 
 /// What kind of thing an entry in the public folder is.
@@ -27,7 +27,7 @@ enum PublicEntryKind {
 /// Reserved folder containing recoverable payloads.
 ///
 /// It is deliberately excluded from normal listing and reconciliation.
-const publicTrashFolderName = '.docforge-trash';
+const publicTrashFolderName = '.docscanly-trash';
 
 /// Recursive facts used by the destructive-action confirmation.
 @immutable
@@ -43,7 +43,7 @@ class PublicTreeInventory {
   /// Number of PDF files.
   final int documentCount;
 
-  /// Number of files not indexed as DocForge PDFs.
+  /// Number of files not indexed as DocScanly PDFs.
   final int otherFileCount;
 
   /// Number of descendant folders, including empty folders.
@@ -123,7 +123,7 @@ class PublicEntry {
   }
 }
 
-/// Reads and writes the user-visible `DocForge` folder.
+/// Reads and writes the user-visible `DocScanly` folder.
 ///
 /// Every method returns a [Result] rather than throwing, and every one of them
 /// works with no network: the folder is local storage on both platforms, so

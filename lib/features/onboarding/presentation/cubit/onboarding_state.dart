@@ -1,7 +1,7 @@
 /// State for the onboarding flow.
 library;
 
-import 'package:doc_forge/core/permissions/permission_service.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
 import 'package:equatable/equatable.dart';
 
 /// Which step of the onboarding flow is showing.

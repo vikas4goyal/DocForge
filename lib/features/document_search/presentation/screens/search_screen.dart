@@ -1,13 +1,13 @@
 /// The search screen and its result row.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/formatting/display_formatting.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/document_search/domain/search_query.dart';
-import 'package:doc_forge/features/document_search/presentation/bloc/search_bloc.dart';
-import 'package:doc_forge/features/document_search/presentation/search_keys.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/formatting/display_formatting.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/document_search/domain/search_query.dart';
+import 'package:doc_scanly/features/document_search/presentation/bloc/search_bloc.dart';
+import 'package:doc_scanly/features/document_search/presentation/search_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

@@ -4,11 +4,11 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/isar_ocr_text_store.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/isar_ocr_text_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 
@@ -51,7 +51,7 @@ void main() {
   });
 
   setUp(() async {
-    directory = await Directory.systemTemp.createTemp('docforge_ocr_isar');
+    directory = await Directory.systemTemp.createTemp('docscanly_ocr_isar');
     isar = await Isar.open([OcrTextEntitySchema], directory: directory.path);
     store = IsarOcrTextStore(isar);
   });

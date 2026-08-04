@@ -3,9 +3,9 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_viewer/domain/repositories/pdf_renderer.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 /// Opens PDFs with pdfrx's PDFium binding.

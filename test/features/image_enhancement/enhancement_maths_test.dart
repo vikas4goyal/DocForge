@@ -6,10 +6,10 @@
 /// traversal that feeds these functions is covered in `enhancement_job_test`.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_maths.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_maths.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

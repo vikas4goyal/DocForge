@@ -118,6 +118,11 @@ const hostStages = <Stage>[
     executable: 'dart',
     arguments: ['run', 'tool/check_platforms.dart'],
   ),
+  Stage(
+    name: 'branding',
+    executable: 'dart',
+    arguments: ['run', 'tool/check_branding.dart'],
+  ),
   // Tier 1 and Tier 2 run together: both live under `test/`, both are host
   // tests, and splitting the invocation would double the compile.
   Stage(

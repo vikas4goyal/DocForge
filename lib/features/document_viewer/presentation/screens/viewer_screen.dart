@@ -1,11 +1,11 @@
 /// The document viewer screen.
 library;
 
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/document_viewer/domain/repositories/pdf_renderer.dart';
-import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_cubit.dart';
-import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_state.dart';
-import 'package:doc_forge/features/document_viewer/presentation/viewer_keys.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/cubit/viewer_cubit.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/cubit/viewer_state.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/viewer_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

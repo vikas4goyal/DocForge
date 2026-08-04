@@ -7,8 +7,8 @@
 /// vocabulary, which is what keeps features from importing each other.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'document.freezed.dart';
@@ -59,6 +59,24 @@ abstract class Document with _$Document {
     /// Whether text recognition has been run and produced a stored result.
     @Default(false) bool hasRecognisedText,
 
+    /// Stable iCloud resource identity, when Foundation supplied one.
+    ///
+    /// This is metadata only. Local and Android documents leave it null.
+    String? cloudResourceIdentifier,
+
+    /// Original path reported by iCloud for byte operations.
+    ///
+    /// Usually this equals [libraryPath]. A simultaneous same-name conflict is
+    /// indexed under a deterministic non-overwriting display path while this
+    /// field retains the actual container path that Foundation must download.
+    String? cloudRelativePath,
+
+    /// Whether the authoritative PDF bytes are readable on this device.
+    ///
+    /// Android documents always retain the default [DocumentContentAvailability.local].
+    @Default(DocumentContentAvailability.local)
+    DocumentContentAvailability contentAvailability,
+
     /// Trash entry holding the PDF, or null while the document is active.
     TrashId? trashId,
 
@@ -87,6 +105,24 @@ abstract class Document with _$Document {
 
   /// The document's location relative to the library folder.
   String get relativePath => libraryPath.relative;
+}
+
+/// Availability of a document's authoritative PDF bytes on this device.
+enum DocumentContentAvailability {
+  /// The document belongs to the device-local library.
+  local,
+
+  /// iCloud metadata is known but the PDF has not been downloaded.
+  remote,
+
+  /// iCloud is currently materialising the PDF.
+  downloading,
+
+  /// The cloud-backed PDF is readable locally.
+  available,
+
+  /// The latest materialisation attempt failed and can be retried.
+  failed,
 }
 
 /// A folder grouping documents.

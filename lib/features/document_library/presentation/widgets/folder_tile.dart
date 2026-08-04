@@ -1,9 +1,9 @@
 /// A folder row in the folder list.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/formatting/display_formatting.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/formatting/display_formatting.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
 import 'package:flutter/material.dart';
 
 /// A single folder in a list, showing its current document count.

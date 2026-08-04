@@ -11,7 +11,7 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
 import 'package:image/image.dart' as img;
 
 /// JPEG quality used for a corrected page.

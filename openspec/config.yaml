@@ -4,7 +4,7 @@ schema: spec-driven
 # This is shown to AI when creating artifacts.
 # Add your tech stack, conventions, style guides, domain knowledge, etc.
 context: |
-  # doc_forge — Project Context
+  # doc_scanly — Project Context
 
   ## General
   - Project type: Flutter (production application)
@@ -202,7 +202,7 @@ context: |
   flow.
   Catalogue: first launch; capture to document; page table creation; import;
   browse and view; search; organise (rename/favourite/move/archive/trash/restore/purge);
-  edit; share; settings and app lock.
+  edit; share; settings and app lock; iCloud library sync.
 
   ### Additional requirements
   - Major screens additionally require golden tests.

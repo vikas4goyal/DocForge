@@ -19,7 +19,7 @@
 /// previews are fed by fixtures alone (`design.md` §15).
 library;
 
-import 'package:doc_forge/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 

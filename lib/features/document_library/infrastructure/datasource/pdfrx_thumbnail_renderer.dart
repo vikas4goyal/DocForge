@@ -4,8 +4,8 @@ library;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 import 'package:pdfrx/pdfrx.dart';
 
 /// Renders one page of [filePath] into PNG bytes no wider than [width].

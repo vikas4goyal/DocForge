@@ -6,14 +6,14 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
-import 'package:doc_forge/features/document_sharing/application/usecases/sharing_usecases.dart';
-import 'package:doc_forge/features/document_sharing/domain/repositories/share_repository.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
-import 'package:doc_forge/features/document_sharing/infrastructure/repositories/platform_share_repositories.dart';
-import 'package:doc_forge/features/document_sharing/infrastructure/share_page_job.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/features/document_sharing/application/usecases/sharing_usecases.dart';
+import 'package:doc_scanly/features/document_sharing/domain/repositories/share_repository.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/platform_share_repositories.dart';
+import 'package:doc_scanly/features/document_sharing/infrastructure/share_page_job.dart';
 
 /// Everything the sharing feature exposes to the rest of the application.
 class SharingModule {

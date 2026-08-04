@@ -34,7 +34,7 @@ class InvalidLibraryPath implements Exception {
 /// has been validated somewhere is indistinguishable from one that has not
 /// (`design.md` D1).
 ///
-/// Paths are always relative to the library root — `DocForge/` — and never
+/// Paths are always relative to the library root — `DocScanly/` — and never
 /// carry a device-absolute prefix, which is what lets the same value address a
 /// file on iOS, an entry in Android's MediaStore, and one day a remote object.
 @immutable

@@ -31,6 +31,20 @@ _Document _$DocumentFromJson(
       'hasRecognisedText',
       (v) => v as bool? ?? false,
     ),
+    cloudResourceIdentifier: $checkedConvert(
+      'cloudResourceIdentifier',
+      (v) => v as String?,
+    ),
+    cloudRelativePath: $checkedConvert(
+      'cloudRelativePath',
+      (v) => v as String?,
+    ),
+    contentAvailability: $checkedConvert(
+      'contentAvailability',
+      (v) =>
+          $enumDecodeNullable(_$DocumentContentAvailabilityEnumMap, v) ??
+          DocumentContentAvailability.local,
+    ),
     trashId: $checkedConvert(
       'trashId',
       (v) => v == null ? null : TrashId.fromJson(v as String),
@@ -56,8 +70,20 @@ Map<String, dynamic> _$DocumentToJson(_Document instance) => <String, dynamic>{
   'isArchived': instance.isArchived,
   'isProtected': instance.isProtected,
   'hasRecognisedText': instance.hasRecognisedText,
+  'cloudResourceIdentifier': instance.cloudResourceIdentifier,
+  'cloudRelativePath': instance.cloudRelativePath,
+  'contentAvailability':
+      _$DocumentContentAvailabilityEnumMap[instance.contentAvailability]!,
   'trashId': instance.trashId?.toJson(),
   'trashedAt': instance.trashedAt?.toIso8601String(),
+};
+
+const _$DocumentContentAvailabilityEnumMap = {
+  DocumentContentAvailability.local: 'local',
+  DocumentContentAvailability.remote: 'remote',
+  DocumentContentAvailability.downloading: 'downloading',
+  DocumentContentAvailability.available: 'available',
+  DocumentContentAvailability.failed: 'failed',
 };
 
 _Folder _$FolderFromJson(

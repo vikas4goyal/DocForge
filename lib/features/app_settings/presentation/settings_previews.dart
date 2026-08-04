@@ -5,19 +5,19 @@
 /// (`design.md` §15).
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/app_settings/application/usecases/settings_usecases.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
-import 'package:doc_forge/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
-import 'package:doc_forge/features/app_settings/presentation/cubit/settings_cubit.dart';
-import 'package:doc_forge/features/app_settings/presentation/screens/settings_screen.dart';
-import 'package:doc_forge/features/app_settings/presentation/widgets/settings_widgets.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/app_settings/application/usecases/settings_usecases.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
+import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/settings_screen.dart';
+import 'package:doc_scanly/features/app_settings/presentation/widgets/settings_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -80,15 +80,17 @@ class _PreviewSettingsCubit extends SettingsCubit {
   Future<void> refreshStorage() async {}
 }
 
-Widget _screen(SettingsState state) => BlocProvider<SettingsCubit>(
-  create: (_) => _PreviewSettingsCubit(state),
-  child: SettingsScreen(
-    onBack: () {},
-    onAbout: () {},
-    onPrivacyPolicy: () {},
-    onToggleAppLock: (_) {},
-  ),
-);
+Widget _screen(SettingsState state, {bool supportsCloudStorage = false}) =>
+    BlocProvider<SettingsCubit>(
+      create: (_) => _PreviewSettingsCubit(state),
+      child: SettingsScreen(
+        onBack: () {},
+        onAbout: () {},
+        onPrivacyPolicy: () {},
+        onToggleAppLock: (_) {},
+        onStorageLocation: supportsCloudStorage ? () {} : null,
+      ),
+    );
 
 const _storage = StorageSummary(totalBytes: 2_097_152, documentCount: 8);
 
@@ -144,7 +146,7 @@ Widget settingsLongContent() => _screen(
       imageQuality: ImageQuality.high,
       namingPattern: NamingPattern.sequential,
       saveLocation:
-          '/storage/emulated/0/Android/data/com.example.docforge/files/'
+          '/storage/emulated/0/Android/data/com.example.docscanly/files/'
           'Documents/Exports/Quarterly',
       isAppLockEnabled: true,
     ),
@@ -195,6 +197,15 @@ Widget settingsTabletLight() => _screen(_ready);
   theme: appPreviewTheme,
 )
 Widget settingsTabletDark() => _screen(_ready);
+
+/// Settings on iOS, where storage location is an explicit option.
+@Preview(
+  name: 'Settings — iOS storage',
+  group: 'Settings',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget settingsICloudStorage() => _screen(_ready, supportsCloudStorage: true);
 
 // ---------------------------------------------------------------------------
 // About and Privacy Policy
@@ -325,7 +336,7 @@ Widget valueTileEmpty() =>
 Widget valueTileLongContent() => const SettingsValueTile(
   title: 'Default save location',
   value:
-      '/storage/emulated/0/Android/data/com.example.docforge/files/Documents/'
+      '/storage/emulated/0/Android/data/com.example.docscanly/files/Documents/'
       'Exports/Quarterly',
 );
 
@@ -339,7 +350,7 @@ Widget valueTileLongContent() => const SettingsValueTile(
 Widget switchTileDefault() => SettingsSwitchTile(
   title: 'App lock',
   value: false,
-  subtitle: 'Require authentication to open DocForge',
+  subtitle: 'Require authentication to open DocScanly',
   onChanged: (_) {},
 );
 
@@ -353,7 +364,7 @@ Widget switchTileDefault() => SettingsSwitchTile(
 Widget switchTileOn() => SettingsSwitchTile(
   title: 'App lock',
   value: true,
-  subtitle: 'Require authentication to open DocForge',
+  subtitle: 'Require authentication to open DocScanly',
   onChanged: (_) {},
 );
 

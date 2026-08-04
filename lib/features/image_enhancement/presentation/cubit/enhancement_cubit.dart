@@ -13,12 +13,12 @@ library;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
-import 'package:doc_forge/core/contracts/page_renderer.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
+import 'package:doc_scanly/core/contracts/page_renderer.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Drives the enhancement screen for one page.

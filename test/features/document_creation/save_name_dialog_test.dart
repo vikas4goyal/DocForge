@@ -1,11 +1,11 @@
 /// Widget tests for the save dialog.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/document_creation/presentation/creation_keys.dart';
-import 'package:doc_forge/features/document_creation/presentation/cubit/save_document_state.dart';
-import 'package:doc_forge/features/document_creation/presentation/screens/save_name_dialog.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/features/document_creation/presentation/creation_keys.dart';
+import 'package:doc_scanly/features/document_creation/presentation/cubit/save_document_state.dart';
+import 'package:doc_scanly/features/document_creation/presentation/screens/save_name_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

@@ -8,25 +8,25 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/previews/fakes/fake_document_file_resolver.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
-import 'package:doc_forge/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
-import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
-import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/pdf_editing/application/atomic_pdf_write.dart';
+import 'package:doc_scanly/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -89,6 +89,7 @@ class _SeededCubit extends PdfEditCubit {
       ),
       secrets: InMemorySecureStore(),
       store: InMemoryPublicFileStore(),
+      files: const FakeDocumentFileResolver(),
       workingDirectory: Directory.systemTemp,
       clock: FixedClock(DateTime.utc(2026, 3, 14)),
       ids: SequentialIdGenerator(),

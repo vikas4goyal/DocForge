@@ -5,12 +5,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:camera/camera.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/permissions/permission_service.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:flutter/material.dart';
 
 /// A staging area under the application's cache directory.

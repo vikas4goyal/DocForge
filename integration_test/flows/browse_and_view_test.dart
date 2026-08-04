@@ -25,13 +25,13 @@ void main() {
   testWidgets('a dashboard document opens through detail and comes back', (
     tester,
   ) async {
-    final staging = await Directory.systemTemp.createTemp('docforge_browse_');
+    final staging = await Directory.systemTemp.createTemp('docscanly_browse_');
     addTearDown(() {
       if (staging.existsSync()) staging.deleteSync(recursive: true);
     });
     final importable = await Fixtures(staging).importable();
 
-    await bootDocForge(tester, pickedFiles: [importable]);
+    await bootDocScanly(tester, pickedFiles: [importable]);
     await seedDocumentByImport(tester);
 
     final dashboard = DashboardRobot(tester);

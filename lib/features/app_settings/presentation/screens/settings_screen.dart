@@ -1,12 +1,12 @@
 /// The settings screen and the two screens it opens.
 library;
 
-import 'package:doc_forge/core/formatting/display_formatting.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
-import 'package:doc_forge/features/app_settings/presentation/cubit/settings_cubit.dart';
-import 'package:doc_forge/features/app_settings/presentation/settings_keys.dart';
-import 'package:doc_forge/features/app_settings/presentation/widgets/settings_widgets.dart';
+import 'package:doc_scanly/core/formatting/display_formatting.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
+import 'package:doc_scanly/features/app_settings/presentation/widgets/settings_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -22,6 +22,7 @@ class SettingsScreen extends StatelessWidget {
     required this.onPrivacyPolicy,
     super.key,
     this.onToggleAppLock,
+    this.onStorageLocation,
   });
 
   /// Invoked when the user leaves settings.
@@ -39,6 +40,9 @@ class SettingsScreen extends StatelessWidget {
   /// authentication first, which is the security feature's business — and the
   /// flag lives in secure storage, not in preferences.
   final ValueChanged<bool>? onToggleAppLock;
+
+  /// Opens iOS storage selection; null keeps cloud UI absent on Android.
+  final VoidCallback? onStorageLocation;
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +153,7 @@ class SettingsScreen extends StatelessWidget {
           key: SettingsKeys.biometricLock,
           title: 'App lock',
           value: settings.isAppLockEnabled,
-          subtitle: 'Require authentication to open DocForge',
+          subtitle: 'Require authentication to open DocScanly',
           onChanged: onToggleAppLock,
         ),
         SettingsValueTile(
@@ -163,6 +167,13 @@ class SettingsScreen extends StatelessWidget {
                 ),
           onTap: cubit.refreshStorage,
         ),
+        if (onStorageLocation != null)
+          SettingsValueTile(
+            key: SettingsKeys.storageLocation,
+            title: 'Storage location',
+            value: 'On this device or iCloud Drive',
+            onTap: onStorageLocation,
+          ),
         // Stated plainly rather than left to be discovered. Saved PDFs are
         // deliberately visible to other applications — that is what makes them
         // reachable from the Files app — and a user who assumes otherwise has
@@ -172,7 +183,7 @@ class SettingsScreen extends StatelessWidget {
           leading: Icon(Icons.folder_shared_outlined),
           title: Text('Where your PDFs are kept'),
           subtitle: Text(
-            'Saved PDFs live in a DocForge folder other apps can see, so you '
+            'Saved PDFs live in a DocScanly folder other apps can see, so you '
             'can open them from Files and share them anywhere. '
             'Password-protected PDFs cannot be read without their password. '
             'Page images you capture stay private and are deleted once the '
@@ -242,7 +253,7 @@ class AboutScreen extends StatelessWidget {
     required this.version,
     required this.onBack,
     super.key,
-    this.appName = 'DocForge',
+    this.appName = 'DocScanly',
   });
 
   /// The application's version string.
@@ -281,7 +292,8 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'A document scanner that keeps your documents on your device.',
+            'A private document scanner with device-local storage and optional '
+            'iCloud Drive storage on iOS.',
             style: theme.textTheme.bodyMedium,
           ),
         ],

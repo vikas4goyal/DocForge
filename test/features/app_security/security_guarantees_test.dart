@@ -64,7 +64,7 @@ void main() {
         for (final path in forbidden) {
           // The export path deliberately writes wherever the user pointed the
           // system picker, which is a user-initiated action rather than a
-          // storage-location decision DocForge makes.
+          // storage-location decision DocScanly makes.
           if (code.contains(path)) offenders.add('${file.path}: $path');
         }
       }

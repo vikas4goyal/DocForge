@@ -15,20 +15,20 @@ library;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_import/domain/import_rules.dart';
-import 'package:doc_forge/features/document_import/domain/repositories/import_repository.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_import/domain/import_rules.dart';
+import 'package:doc_scanly/features/document_import/domain/repositories/import_repository.dart';
 
 /// Decides where imported content is copied to.
 ///
@@ -443,7 +443,7 @@ class ImportFiles {
   }
 }
 
-/// Reads content shared to DocForge while it was closed.
+/// Reads content shared to DocScanly while it was closed.
 class TakePendingSharedContent {
   /// Creates the use case.
   const TakePendingSharedContent(this._source);
@@ -460,7 +460,7 @@ class TakePendingSharedContent {
   }
 }
 
-/// Watches for content shared while DocForge is running.
+/// Watches for content shared while DocScanly is running.
 class WatchSharedContent {
   /// Creates the use case.
   const WatchSharedContent(this._source);

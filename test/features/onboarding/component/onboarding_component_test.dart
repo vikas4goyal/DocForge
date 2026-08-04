@@ -7,14 +7,14 @@
 /// the user back at the welcome screen forever.
 library;
 
-import 'package:doc_forge/core/permissions/permission_service.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/features/onboarding/application/usecases/onboarding_usecases.dart';
-import 'package:doc_forge/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
-import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_cubit.dart';
-import 'package:doc_forge/features/onboarding/presentation/onboarding_keys.dart';
-import 'package:doc_forge/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/features/onboarding/application/usecases/onboarding_usecases.dart';
+import 'package:doc_scanly/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
+import 'package:doc_scanly/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:doc_scanly/features/onboarding/presentation/onboarding_keys.dart';
+import 'package:doc_scanly/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 

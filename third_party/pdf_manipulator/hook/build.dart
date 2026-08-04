@@ -308,16 +308,10 @@ Future<void> _relinkStaticToDylib({
 }) async {
   final simulator = code.iOS.targetSdk == IOSSdk.iPhoneSimulator;
   final sdk = simulator ? 'iphonesimulator' : 'iphoneos';
-  final arch = code.targetArchitecture == Architecture.x64
-      ? 'x86_64'
-      : 'arm64';
+  final arch = code.targetArchitecture == Architecture.x64 ? 'x86_64' : 'arm64';
   final minVersion = code.iOS.targetVersion;
 
-  final sdkPath = await Process.run('xcrun', [
-    '--sdk',
-    sdk,
-    '--show-sdk-path',
-  ]);
+  final sdkPath = await Process.run('xcrun', ['--sdk', sdk, '--show-sdk-path']);
   if (sdkPath.exitCode != 0) {
     throw StateError(
       'Could not locate the $sdk SDK. Is Xcode installed and selected '

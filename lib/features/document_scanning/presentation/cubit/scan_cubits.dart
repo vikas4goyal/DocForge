@@ -7,17 +7,17 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
-import 'package:doc_forge/core/contracts/page_renderer.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
-import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_states.dart';
+import 'package:doc_scanly/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
+import 'package:doc_scanly/core/contracts/page_renderer.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_states.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Drives the camera capture screen.

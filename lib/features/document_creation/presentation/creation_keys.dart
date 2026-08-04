@@ -5,7 +5,7 @@
 /// anything.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:flutter/widgets.dart';
 
 /// Keys for the page table and its dialogs.

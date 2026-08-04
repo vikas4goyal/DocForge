@@ -3,14 +3,14 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/document_card.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/document_thumbnail.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_card.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -108,6 +108,56 @@ void main() {
     );
     expect(find.bySemanticsLabel(RegExp('Invoice.*2 pages')), findsOneWidget);
     expect(find.bySemanticsLabel('Invoice preview'), findsNothing);
+    semantics.dispose();
+  });
+
+  testWidgets('cloud-backed row exposes status without changing local rows', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final remote = _document.copyWith(
+      cloudResourceIdentifier: 'resource-invoice',
+      contentAvailability: DocumentContentAvailability.remote,
+    );
+
+    await tester.pumpWidget(_host(DocumentCard(document: remote)));
+
+    expect(
+      find.byKey(LibraryKeys.documentCloudStatus('invoice')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(RegExp('Invoice.*stored in iCloud')),
+      findsOneWidget,
+    );
+
+    await tester.pumpWidget(_host(DocumentCard(document: _document)));
+    expect(
+      find.byKey(LibraryKeys.documentCloudStatus('invoice')),
+      findsNothing,
+    );
+    semantics.dispose();
+  });
+
+  testWidgets('downloading row exposes item-scoped progress and semantics', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    final downloading = _document.copyWith(
+      cloudResourceIdentifier: 'resource-invoice',
+      contentAvailability: DocumentContentAvailability.downloading,
+    );
+
+    await tester.pumpWidget(_host(DocumentCard(document: downloading)));
+
+    expect(
+      find.byKey(LibraryKeys.documentCloudDownload('invoice')),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel(RegExp('Downloading Invoice from iCloud')),
+      findsOneWidget,
+    );
     semantics.dispose();
   });
 }

@@ -10,8 +10,8 @@
 /// and previews run without a platform binding.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 
 /// The outcome of a permission request or query.
@@ -29,7 +29,7 @@ enum PermissionState {
   restricted,
 }
 
-/// Queries and requests the permissions DocForge needs.
+/// Queries and requests the permissions DocScanly needs.
 abstract interface class PermissionService {
   /// Returns the current state of [kind] without prompting.
   Future<PermissionState> status(PermissionKind kind);

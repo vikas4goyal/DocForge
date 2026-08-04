@@ -11,16 +11,16 @@
 /// it mapped wrongly, fails here and nowhere else below Tier 3.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_queries.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_list_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -32,6 +32,7 @@ Document document(
   String id, {
   String title = 'Invoice',
   bool archived = false,
+  DocumentContentAvailability availability = DocumentContentAvailability.local,
 }) => Document(
   id: DocumentId(id),
   title: title,
@@ -41,6 +42,10 @@ Document document(
   sizeInBytes: 2048,
   libraryPath: LibraryPath.parse('$title.pdf'),
   isArchived: archived,
+  cloudResourceIdentifier: availability == DocumentContentAvailability.local
+      ? null
+      : 'cloud-$id',
+  contentAvailability: availability,
 );
 
 void main() {
@@ -154,6 +159,50 @@ void main() {
       // rendered whatever it was handed could not tell these two apart.
       expectVisible(LibraryKeys.documentListItem('old'));
       expectNotVisible(LibraryKeys.documentListItem('live'));
+    });
+
+    testWidgets('cloud states and download progress stay item-scoped', (
+      tester,
+    ) async {
+      const states = [
+        DocumentContentAvailability.remote,
+        DocumentContentAvailability.downloading,
+        DocumentContentAvailability.available,
+        DocumentContentAvailability.failed,
+      ];
+      for (final state in states) {
+        final id = state.name;
+        documents.documents[DocumentId(id)] = document(
+          id,
+          title: state.name,
+          availability: state,
+        );
+      }
+
+      final semantics = tester.ensureSemantics();
+      await pumpList(tester);
+
+      for (final state in states) {
+        expectVisible(LibraryKeys.documentCloudStatus(state.name));
+      }
+      expectVisible(
+        LibraryKeys.documentCloudDownload(
+          DocumentContentAvailability.downloading.name,
+        ),
+      );
+      expect(
+        find.byKey(
+          LibraryKeys.documentCloudDownload(
+            DocumentContentAvailability.remote.name,
+          ),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.bySemanticsLabel(RegExp('Downloading downloading from iCloud')),
+        findsOneWidget,
+      );
+      semantics.dispose();
     });
   });
 }

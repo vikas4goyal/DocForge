@@ -8,18 +8,18 @@
 /// and would fail entirely in CI, where no such file exists.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/previews/fakes/fake_cubit.dart';
-import 'package:doc_forge/core/previews/fakes/fake_page_renderer.dart';
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/screens/enhancement_screen.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/widgets/enhancement_widgets.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_cubit.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_page_renderer.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_state.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/screens/enhancement_screen.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/widgets/enhancement_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

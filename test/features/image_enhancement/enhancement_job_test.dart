@@ -9,10 +9,10 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_maths.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
-import 'package:doc_forge/features/image_enhancement/infrastructure/enhancement_job.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_maths.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/features/image_enhancement/infrastructure/enhancement_job.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 

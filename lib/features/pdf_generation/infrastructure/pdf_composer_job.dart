@@ -9,9 +9,9 @@ library;
 import 'dart:io';
 import 'dart:math' as math;
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
-import 'package:doc_forge/features/pdf_generation/domain/repositories/pdf_repository.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/repositories/pdf_repository.dart';
 import 'package:image/image.dart' as img;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;

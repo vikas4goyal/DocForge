@@ -25,13 +25,13 @@ void main() {
   testWidgets('an edited document is written back to the library folder', (
     tester,
   ) async {
-    final staging = await Directory.systemTemp.createTemp('docforge_edit_');
+    final staging = await Directory.systemTemp.createTemp('docscanly_edit_');
     addTearDown(() {
       if (staging.existsSync()) staging.deleteSync(recursive: true);
     });
     final importable = await Fixtures(staging).importable();
 
-    final app = await bootDocForge(tester, pickedFiles: [importable]);
+    final app = await bootDocScanly(tester, pickedFiles: [importable]);
     await seedDocumentByImport(tester);
 
     await DashboardRobot(tester).waitUntilLoaded();

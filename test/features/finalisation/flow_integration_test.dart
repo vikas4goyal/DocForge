@@ -10,29 +10,29 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/app/import_module.dart';
-import 'package:doc_forge/app/library_module.dart';
-import 'package:doc_forge/app/pdf_editing_module.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
-import 'package:doc_forge/features/app_security/domain/app_lock.dart';
-import 'package:doc_forge/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
-import 'package:doc_forge/features/document_import/application/usecases/import_usecases.dart';
-import 'package:doc_forge/features/document_import/domain/import_rules.dart';
-import 'package:doc_forge/features/document_import/infrastructure/repositories/fake_import_sources.dart';
-import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
-import 'package:doc_forge/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
-import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
-import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
+import 'package:doc_scanly/app/import_module.dart';
+import 'package:doc_scanly/app/library_module.dart';
+import 'package:doc_scanly/app/pdf_editing_module.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
+import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
+import 'package:doc_scanly/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
+import 'package:doc_scanly/features/document_import/application/usecases/import_usecases.dart';
+import 'package:doc_scanly/features/document_import/domain/import_rules.dart';
+import 'package:doc_scanly/features/document_import/infrastructure/repositories/fake_import_sources.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 
@@ -51,7 +51,7 @@ void main() {
   });
 
   setUp(() async {
-    root = Directory.systemTemp.createTempSync('docforge_flows');
+    root = Directory.systemTemp.createTempSync('docscanly_flows');
     documents = Directory('${root.path}/documents')..createSync();
     secrets = InMemorySecureStore();
 
@@ -161,7 +161,7 @@ void main() {
       // The real engine cannot load here, so the fake supplies page semantics.
       // What this proves is the round trip: library → editor → library.
       // Written into the library folder, which is where a document lives now.
-      final path = '${documents.path}/DocForge/editable.pdf';
+      final path = '${documents.path}/DocScanly/editable.pdf';
       Directory(path).parent.createSync(recursive: true);
       writeFakePdf(path, pageCount: 4);
 
@@ -211,7 +211,7 @@ void main() {
 
     test('a failed edit leaves the stored document untouched', () async {
       // Written into the library folder, which is where a document lives now.
-      final path = '${documents.path}/DocForge/editable.pdf';
+      final path = '${documents.path}/DocScanly/editable.pdf';
       Directory(path).parent.createSync(recursive: true);
       writeFakePdf(path, pageCount: 4);
       final before = File(path).readAsStringSync();
@@ -324,7 +324,7 @@ void main() {
     );
 
     test('a purged document takes its password with it', () async {
-      final path = '${documents.path}/DocForge/protected.pdf';
+      final path = '${documents.path}/DocScanly/protected.pdf';
       File(path)
         ..parent.createSync(recursive: true)
         ..writeAsStringSync('%PDF');

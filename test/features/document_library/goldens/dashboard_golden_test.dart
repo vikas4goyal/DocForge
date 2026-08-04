@@ -6,14 +6,14 @@
 @Tags(['golden'])
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_state.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/dashboard_screen.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -62,7 +62,11 @@ void main() {
     addTearDown(tester.view.reset);
 
     await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+    // Downloading cloud rows contain an intentionally indeterminate progress
+    // indicator, so settling can never complete. Two fixed frames render the
+    // same deterministic animation position for every golden run.
+    await tester.pump();
+    await tester.pump();
   }
 
   final base = const DashboardState.initial().copyWith(
@@ -132,6 +136,37 @@ void main() {
       await expectLater(
         find.byType(DashboardScreen),
         matchesGoldenFile('dashboard_empty_light.png'),
+      );
+    });
+
+    testWidgets('iCloud availability states', (tester) async {
+      final values = [
+        DocumentContentAvailability.remote,
+        DocumentContentAvailability.downloading,
+        DocumentContentAvailability.available,
+        DocumentContentAvailability.failed,
+      ];
+      final cloud = const DashboardState.initial().copyWith(
+        status: DashboardStatus.ready,
+        documents: [
+          for (var index = 0; index < values.length; index++)
+            _document('Cloud ${index + 1}').copyWith(
+              cloudResourceIdentifier: 'resource-$index',
+              contentAvailability: values[index],
+            ),
+        ],
+        recents: [
+          _document('Cloud 1').copyWith(
+            cloudResourceIdentifier: 'resource-0',
+            contentAvailability: DocumentContentAvailability.remote,
+          ),
+        ],
+      );
+      await pumpAt(tester, host(cloud, Brightness.light), _phone);
+
+      await expectLater(
+        find.byType(DashboardScreen),
+        matchesGoldenFile('dashboard_icloud_statuses.png'),
       );
     });
   });

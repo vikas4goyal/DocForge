@@ -1,7 +1,7 @@
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/settings_values.dart';
-import 'package:doc_forge/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/settings_values.dart';
+import 'package:doc_scanly/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'pdf_test_support.dart';

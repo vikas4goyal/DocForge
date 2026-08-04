@@ -7,9 +7,9 @@
 /// stops the platform difference reaching a use case (`design.md` D2).
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 
 /// Resolves readable paths for documents.
 ///
@@ -30,6 +30,55 @@ abstract interface class DocumentFileResolver {
   /// A no-op on iOS. Callers should not treat a failure here as fatal: a cache
   /// copy that will not delete is reclaimed by the operating system anyway.
   Future<Result<void>> release(Document document);
+}
+
+/// Ensures cloud-backed bytes are readable before a resolver exposes a path.
+typedef EnsureReadableDocument =
+    Future<Result<void>> Function(
+      Document document, {
+      void Function(double progress)? onProgress,
+    });
+
+/// A resolver decorator that lazily materialises remote iCloud documents.
+///
+/// Composition installs this only for the iOS iCloud authority. Android and
+/// local iOS continue to use [PublicStoreDocumentFileResolver] directly.
+class DownloadAwareDocumentFileResolver implements DocumentFileResolver {
+  /// Creates a resolver around [delegate].
+  const DownloadAwareDocumentFileResolver({
+    required this.delegate,
+    required this.ensureReadable,
+    this.onProgress,
+  });
+
+  /// Resolves the final device-readable path.
+  final DocumentFileResolver delegate;
+
+  /// Materialises remote bytes when needed.
+  final EnsureReadableDocument ensureReadable;
+
+  /// Optional operation progress observer.
+  final void Function(Document document, double progress)? onProgress;
+
+  @override
+  Future<Result<String>> pathFor(Document document) async {
+    if (document.contentAvailability == DocumentContentAvailability.remote ||
+        document.contentAvailability ==
+            DocumentContentAvailability.downloading ||
+        document.contentAvailability == DocumentContentAvailability.failed) {
+      final ensured = await ensureReadable(
+        document,
+        onProgress: (progress) => onProgress?.call(document, progress),
+      );
+      if (ensured case Failed(:final failure)) {
+        return Result<String>.failure(failure);
+      }
+    }
+    return delegate.pathFor(document);
+  }
+
+  @override
+  Future<Result<void>> release(Document document) => delegate.release(document);
 }
 
 /// A [DocumentFileResolver] over a [PublicFileStore].

@@ -11,11 +11,11 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
-import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
-import 'package:doc_forge/core/contracts/page_renderer.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_scanly/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
+import 'package:doc_scanly/core/contracts/page_renderer.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 
 /// Produces the pixels for one plan, off the UI thread.
 ///

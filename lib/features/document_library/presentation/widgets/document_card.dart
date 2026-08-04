@@ -1,11 +1,11 @@
 /// A document row in a library list.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/formatting/display_formatting.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/document_thumbnail.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/formatting/display_formatting.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_thumbnail.dart';
 import 'package:flutter/material.dart';
 
 /// A single document in a list.
@@ -44,7 +44,12 @@ class DocumentCard extends StatelessWidget {
     // making the user swipe through four fragments to learn what the row is.
     return Semantics(
       button: true,
-      label: DisplayFormatting.documentSemanticsLabel(document),
+      label:
+          document.contentAvailability ==
+              DocumentContentAvailability.downloading
+          ? 'Downloading ${document.title} from iCloud, '
+                '${DisplayFormatting.documentSemanticsLabel(document)}'
+          : DisplayFormatting.documentSemanticsLabel(document),
       child: ExcludeSemantics(
         child: ListTile(
           key: LibraryKeys.documentListItem(document.id.value),
@@ -78,12 +83,32 @@ class DocumentCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              if (document.contentAvailability !=
+                  DocumentContentAvailability.local)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: _CloudStatusIcon(document: document),
+                ),
             ],
           ),
-          subtitle: Text(
-            DisplayFormatting.documentSubtitle(document),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                DisplayFormatting.documentSubtitle(document),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (document.contentAvailability ==
+                  DocumentContentAvailability.downloading)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: LinearProgressIndicator(
+                    key: LibraryKeys.documentCloudDownload(document.id.value),
+                  ),
+                ),
+            ],
           ),
           trailing: switch (onToggleFavourite) {
             null => null,
@@ -93,6 +118,47 @@ class DocumentCard extends StatelessWidget {
             ),
           },
         ),
+      ),
+    );
+  }
+}
+
+class _CloudStatusIcon extends StatelessWidget {
+  const _CloudStatusIcon({required this.document});
+
+  final Document document;
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, label) = switch (document.contentAvailability) {
+      DocumentContentAvailability.remote => (
+        Icons.cloud_outlined,
+        'Stored in iCloud',
+      ),
+      DocumentContentAvailability.downloading => (
+        Icons.cloud_download_outlined,
+        'Downloading from iCloud',
+      ),
+      DocumentContentAvailability.failed => (
+        Icons.cloud_off_outlined,
+        'iCloud download failed',
+      ),
+      DocumentContentAvailability.available => (
+        Icons.cloud_done_outlined,
+        'Available from iCloud',
+      ),
+      DocumentContentAvailability.local => (
+        Icons.description_outlined,
+        'Stored on this device',
+      ),
+    };
+    return Tooltip(
+      message: label,
+      child: Icon(
+        key: LibraryKeys.documentCloudStatus(document.id.value),
+        icon,
+        size: 17,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
     );
   }

@@ -1,10 +1,10 @@
 /// The dialog that names — and optionally protects — a document being saved.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/features/document_creation/presentation/creation_keys.dart';
-import 'package:doc_forge/features/document_creation/presentation/cubit/save_document_state.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/features/document_creation/presentation/creation_keys.dart';
+import 'package:doc_scanly/features/document_creation/presentation/cubit/save_document_state.dart';
 import 'package:flutter/material.dart';
 
 /// Asks for a name before anything is written.

@@ -10,7 +10,7 @@
 /// user had switched on.
 library;
 
-import 'package:doc_forge/features/app_settings/presentation/settings_keys.dart';
+import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -24,7 +24,7 @@ void main() {
   testWidgets('a changed setting is still there after leaving the screen', (
     tester,
   ) async {
-    await bootDocForge(tester);
+    await bootDocScanly(tester);
 
     await DashboardRobot(tester).waitUntilLoaded();
     final shell = TabShellRobot(tester);
@@ -67,7 +67,7 @@ void main() {
     // The screen prompts on mount and the substituted authenticator answers at
     // once, so the assertion is that the user *arrives* — waiting for the
     // unlock screen itself would be racing an animation that is already over.
-    await bootDocForge(tester, appLockEnabled: true);
+    await bootDocScanly(tester, appLockEnabled: true);
 
     final dashboard = DashboardRobot(tester);
     await dashboard.waitUntilLoaded();
@@ -84,7 +84,7 @@ void main() {
   testWidgets('a refused unlock leaves the application locked', (tester) async {
     // A rejected fingerprint is the mechanism working, not an error: the lock
     // stays on and the retry control stays available.
-    await bootDocForge(
+    await bootDocScanly(
       tester,
       appLockEnabled: true,
       unlocksSuccessfully: false,

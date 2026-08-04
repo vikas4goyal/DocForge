@@ -1,16 +1,16 @@
 import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_creation/application/usecases/render_page.dart';
-import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cubits.dart';
-import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_states.dart';
+import 'package:doc_scanly/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_creation/application/usecases/render_page.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_states.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 PageQuad box(double left, double top, double right, double bottom) => PageQuad(
@@ -38,7 +38,7 @@ void main() {
   );
 
   setUp(() async {
-    cache = await Directory.systemTemp.createTemp('docforge_crop_');
+    cache = await Directory.systemTemp.createTemp('docscanly_crop_');
     renders = [];
     renderFailure = null;
 

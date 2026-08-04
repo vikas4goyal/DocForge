@@ -10,32 +10,32 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_thumbnails.dart';
-import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
-import 'package:doc_forge/features/document_library/application/usecases/library_folder_usecases.dart';
-import 'package:doc_forge/features/document_library/application/usecases/reconcile_library.dart';
-import 'package:doc_forge/features/document_library/application/usecases/trash_usecases.dart';
-import 'package:doc_forge/features/document_library/domain/repositories/document_file_store.dart';
-import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
-import 'package:doc_forge/features/document_library/infrastructure/datasource/derived_thumbnail_cache.dart';
-import 'package:doc_forge/features/document_library/infrastructure/datasource/document_file_store.dart';
-import 'package:doc_forge/features/document_library/infrastructure/datasource/pdfrx_thumbnail_renderer.dart';
-import 'package:doc_forge/features/document_library/infrastructure/document_title_index.dart';
-import 'package:doc_forge/features/document_library/infrastructure/library_contracts_impl.dart';
-import 'package:doc_forge/features/document_library/infrastructure/library_storage_migration.dart';
-import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
-import 'package:doc_forge/features/document_library/infrastructure/repositories/isar_library_repositories.dart';
-import 'package:doc_forge/features/document_search/domain/repositories/search_repository.dart';
-import 'package:doc_forge/features/document_search/infrastructure/repositories/indexed_search_repository.dart';
-import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
-import 'package:doc_forge/features/ocr/infrastructure/ocr_search_index.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_queries.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_thumbnails.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/folder_usecases.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/library_folder_usecases.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/reconcile_library.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/trash_usecases.dart';
+import 'package:doc_scanly/features/document_library/domain/repositories/document_file_store.dart';
+import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/datasource/derived_thumbnail_cache.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/datasource/document_file_store.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/datasource/pdfrx_thumbnail_renderer.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/document_title_index.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/library_contracts_impl.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/library_storage_migration.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/repositories/isar_library_repositories.dart';
+import 'package:doc_scanly/features/document_search/domain/repositories/search_repository.dart';
+import 'package:doc_scanly/features/document_search/infrastructure/repositories/indexed_search_repository.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/ocr_search_index.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -70,6 +70,8 @@ class LibraryModule {
     required this.storageSummaryReader,
     required this.reconcile,
     required this.documents,
+    required this.folders,
+    required this.pages,
     required this.publicStore,
     required this.createLibraryFolder,
     required this.renameLibraryFolder,
@@ -142,6 +144,12 @@ class LibraryModule {
 
   /// The document index, for screens that join it to the folder.
   final DocumentRepository documents;
+
+  /// The folder index, exposed to the iOS-only cloud reconciler.
+  final FolderRepository folders;
+
+  /// Page rows removed when cloud reconciliation observes external deletion.
+  final PageRepository pages;
 
   /// The user-visible library folder.
   final PublicFileStore publicStore;
@@ -216,6 +224,7 @@ Future<LibraryModule> buildLibraryModule({
   required Clock clock,
   required IdGenerator ids,
   required SecureStore secureStorage,
+  DocumentFileResolver? documentFileResolver,
 }) async {
   // Application Support, not Documents: on iOS the Documents container is now
   // exposed to the Files app, so the database and the derived caches have to
@@ -251,6 +260,7 @@ Future<LibraryModule> buildLibraryModule({
     clock: clock,
     ids: ids,
     secureStorage: secureStorage,
+    documentFileResolver: documentFileResolver,
   );
 }
 
@@ -268,6 +278,7 @@ LibraryModule buildLibraryModuleOver({
   required Clock clock,
   required IdGenerator ids,
   required SecureStore secureStorage,
+  DocumentFileResolver? documentFileResolver,
   ThumbnailRenderer thumbnailRenderer = renderPdfrxThumbnail,
 }) {
   final documents = IsarDocumentRepository(isar);
@@ -284,9 +295,11 @@ LibraryModule buildLibraryModuleOver({
     directoryName: LocalDocumentFileStore.documentsDirectoryName,
     render: thumbnailRenderer,
   );
+  final fileResolver =
+      documentFileResolver ?? PublicStoreDocumentFileResolver(store);
   final loadThumbnail = LoadDocumentPageThumbnail(
     thumbnailCache,
-    PublicStoreDocumentFileResolver(store),
+    fileResolver,
     secureStorage,
   );
 
@@ -323,6 +336,8 @@ LibraryModule buildLibraryModuleOver({
     folderReader: LibraryFolderReader(folders),
     storageSummaryReader: LibraryStorageSummaryReader(storageSummary),
     documents: documents,
+    folders: folders,
+    pages: pages,
     publicStore: store,
     createLibraryFolder: CreateLibraryFolder(store, folders, clock, ids),
     renameLibraryFolder: RenameLibraryFolder(store, folders, documents),

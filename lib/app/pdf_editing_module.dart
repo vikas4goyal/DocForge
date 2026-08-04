@@ -6,15 +6,16 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
-import 'package:doc_forge/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
-import 'package:doc_forge/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
-import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/pdf_manipulator_editor.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/pdf_editing/application/atomic_pdf_write.dart';
+import 'package:doc_scanly/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/pdf_manipulator_editor.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
 
 /// Everything PDF editing exposes to the rest of the application.
 class PdfEditingModule {
@@ -37,6 +38,7 @@ PdfEditingModule buildPdfEditingModule({
   required DocumentWriter documentWriter,
   required SecureStore secureStorage,
   required PublicFileStore store,
+  DocumentFileResolver? documentFiles,
   required Directory workingDirectory,
   required Clock clock,
   required IdGenerator ids,
@@ -53,6 +55,7 @@ PdfEditingModule buildPdfEditingModule({
     ),
     secrets: secureStorage,
     store: store,
+    files: documentFiles ?? PublicStoreDocumentFileResolver(store),
     workingDirectory: workingDirectory,
     clock: clock,
     ids: ids,

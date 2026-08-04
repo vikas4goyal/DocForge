@@ -9,7 +9,7 @@
 /// file that changes.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 
 /// The recovery action offered alongside a failure message.
 enum RecoveryAction {
@@ -62,11 +62,11 @@ extension FailurePresentationX on Failure {
       FailurePresentation(
         message: switch (kind) {
           PermissionKind.camera =>
-            'DocForge needs camera access to scan documents.',
+            'DocScanly needs camera access to scan documents.',
           PermissionKind.photos =>
-            'DocForge needs photo access to import images.',
+            'DocScanly needs photo access to import images.',
           PermissionKind.files =>
-            'DocForge needs file access to import documents.',
+            'DocScanly needs file access to import documents.',
         },
         // A permanently denied permission cannot be re-requested in-app, so
         // offering a retry would silently do nothing.

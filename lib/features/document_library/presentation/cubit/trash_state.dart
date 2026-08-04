@@ -1,9 +1,9 @@
 /// Immutable presentation state for recoverable Trash.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/trash.dart';
-import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/trash.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:equatable/equatable.dart';
 
 /// Trash screen lifecycle.

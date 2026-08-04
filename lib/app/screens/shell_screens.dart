@@ -4,26 +4,26 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/app/creation_module.dart';
-import 'package:doc_forge/app/import_module.dart';
-import 'package:doc_forge/app/library_module.dart';
-import 'package:doc_forge/app/router/app_router.dart';
-import 'package:doc_forge/app/router/app_routes.dart';
-import 'package:doc_forge/app/screens/home_refresh.dart';
-import 'package:doc_forge/app/screens/screen_support.dart';
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/permissions/permission_service.dart';
-import 'package:doc_forge/features/app_shell/presentation/screens/app_tab_scaffold.dart';
-import 'package:doc_forge/features/document_import/presentation/cubit/import_cubit.dart';
-import 'package:doc_forge/features/document_import/presentation/import_keys.dart';
-import 'package:doc_forge/features/document_import/presentation/screens/import_options_sheet.dart';
-import 'package:doc_forge/features/document_import/presentation/widgets/shared_content_watcher.dart';
-import 'package:doc_forge/features/document_library/application/usecases/library_folder_usecases.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/dashboard_screen.dart';
+import 'package:doc_scanly/app/creation_module.dart';
+import 'package:doc_scanly/app/import_module.dart';
+import 'package:doc_scanly/app/library_module.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/app/screens/home_refresh.dart';
+import 'package:doc_scanly/app/screens/screen_support.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
+import 'package:doc_scanly/features/app_shell/presentation/screens/app_tab_scaffold.dart';
+import 'package:doc_scanly/features/document_import/presentation/cubit/import_cubit.dart';
+import 'package:doc_scanly/features/document_import/presentation/import_keys.dart';
+import 'package:doc_scanly/features/document_import/presentation/screens/import_options_sheet.dart';
+import 'package:doc_scanly/features/document_import/presentation/widgets/shared_content_watcher.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/library_folder_usecases.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/dashboard_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -32,7 +32,7 @@ import 'package:go_router/go_router.dart';
 ///
 /// [library] backs the dashboard's contents and its folder creation.
 /// [importing] supplies both import paths: the sheet the user opens deliberately
-/// and the content another application shares into DocForge. [creationFlow] is
+/// and the content another application shares into DocScanly. [creationFlow] is
 /// where imported images land, so cropping and enhancement are available to them
 /// — which the gallery scenario requires explicitly. [permissions] backs the
 /// sheet's "open settings" escape hatch when access was refused.
@@ -50,6 +50,8 @@ ScreenBuilder buildHomeScreen({
   required PermissionService permissions,
   required ScreenBuilder settings,
   required HomeRefreshObserver routeObserver,
+  Future<void> Function()? onLibraryRefresh,
+  Key? libraryRefreshKey,
 }) {
   return (context) => _TabShell(
     onCreate: () => context.push(AppRoutes.scan),
@@ -89,6 +91,8 @@ ScreenBuilder buildHomeScreen({
                 importShared(dashboardContext, paths, importing, creationFlow),
             child: DashboardScreen(
               loadThumbnail: library.loadDocumentPageThumbnail.call,
+              onLibraryRefresh: onLibraryRefresh,
+              libraryRefreshKey: libraryRefreshKey,
               actions: DashboardActions(
                 onOpenDocument: (document) =>
                     context.push(AppRoutes.documentDetail(document.id)),
@@ -158,7 +162,7 @@ class _TabShellState extends State<_TabShell> {
   }
 }
 
-/// Imports [paths] handed to DocForge by another application.
+/// Imports [paths] handed to DocScanly by another application.
 ///
 /// Goes straight to importing rather than showing the sources: the user already
 /// chose what to send and where to send it, and asking them again would be a

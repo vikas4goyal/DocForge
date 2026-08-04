@@ -4,8 +4,8 @@
 /// renders it — neither decides what a legal name or a matching password is.
 library;
 
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 
 /// What is wrong with a document name, or null when nothing is.
 typedef NameProblem = ValidationIssue?;

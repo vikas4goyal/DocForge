@@ -14,19 +14,20 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
-import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
-import 'package:doc_forge/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/pdf_editing/application/atomic_pdf_write.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
 
 /// Produces a PDF at [destinationPath] from the file at [sourcePath].
 ///
@@ -50,6 +51,7 @@ class PdfEditContext {
     required this.atomic,
     required this.secrets,
     required this.store,
+    required this.files,
     required this.workingDirectory,
     required this.clock,
     required this.ids,
@@ -72,6 +74,9 @@ class PdfEditContext {
 
   /// The user-visible library every edit reads from and writes back to.
   final PublicFileStore store;
+
+  /// Resolves readable bytes, including lazy iCloud download when installed.
+  final DocumentFileResolver files;
 
   /// Where an edit's working file is written before it is published.
   ///
@@ -110,11 +115,11 @@ abstract class PdfEditUseCase {
   /// reachable by path, so it is materialised into the cache first. Callers
   /// release it through [releaseSource] once the edit is done.
   Future<Result<String>> sourcePathFor(Document document) =>
-      context.store.materialise(document.libraryPath);
+      context.files.pathFor(document);
 
   /// Releases a path returned by [sourcePathFor].
   Future<void> releaseSource(Document document) async {
-    await context.store.releaseMaterialised(document.libraryPath);
+    await context.files.release(document);
   }
 
   /// A private working path an edit can write to before publishing.

@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:doc_forge/core/storage/capture_staging.dart';
+import 'package:doc_scanly/core/storage/capture_staging.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -8,7 +8,7 @@ void main() {
   late CaptureStaging staging;
 
   setUp(() async {
-    cache = await Directory.systemTemp.createTemp('docforge_staging_');
+    cache = await Directory.systemTemp.createTemp('docscanly_staging_');
     staging = CaptureStaging(cache);
   });
 

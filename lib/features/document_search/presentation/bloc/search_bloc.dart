@@ -10,12 +10,12 @@
 library;
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_search/domain/repositories/search_repository.dart';
-import 'package:doc_forge/features/document_search/domain/search_query.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_search/domain/repositories/search_repository.dart';
+import 'package:doc_scanly/features/document_search/domain/search_query.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:stream_transform/stream_transform.dart';

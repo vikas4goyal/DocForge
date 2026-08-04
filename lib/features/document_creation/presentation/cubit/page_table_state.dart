@@ -1,10 +1,10 @@
 /// State for the page table screen.
 library;
 
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/features/document_creation/domain/creation_session.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/features/document_creation/domain/creation_session.dart';
 import 'package:equatable/equatable.dart';
 
 /// A page removed from the table, retained so the removal can be undone.

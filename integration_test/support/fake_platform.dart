@@ -23,13 +23,13 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/features/app_security/domain/app_lock.dart';
-import 'package:doc_forge/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
-import 'package:doc_forge/features/document_import/infrastructure/repositories/fake_import_sources.dart';
-import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';
-import 'package:doc_forge/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
+import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
+import 'package:doc_scanly/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
+import 'package:doc_scanly/features/document_import/infrastructure/repositories/fake_import_sources.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
+import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
 
 /// Every substituted platform edge, held together so a flow can assert on them.
 ///

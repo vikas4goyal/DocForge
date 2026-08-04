@@ -36,9 +36,9 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
 
 /// Produces a PDF at the given path.
 ///

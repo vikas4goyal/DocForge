@@ -1,20 +1,20 @@
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
-import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cubits.dart';
-import 'package:doc_forge/features/document_scanning/presentation/scan_keys.dart';
-import 'package:doc_forge/features/document_scanning/presentation/screens/page_review_screen.dart';
-import 'package:doc_forge/features/document_scanning/presentation/screens/scan_capture_screen.dart';
+import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
+import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/scan_keys.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/screens/page_review_screen.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/screens/scan_capture_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -86,7 +86,7 @@ void main() {
   late _Recorder recorder;
 
   setUp(() {
-    workspace = Directory.systemTemp.createTempSync('docforge_scan_screens');
+    workspace = Directory.systemTemp.createTempSync('docscanly_scan_screens');
     // No directory: the fake then returns synthetic paths and writes nothing.
     // testWidgets runs in a fake-async zone, where a real file write never
     // completes, so a writing fake would hang every pumpAndSettle here. The

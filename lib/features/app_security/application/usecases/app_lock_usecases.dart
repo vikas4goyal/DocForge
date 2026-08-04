@@ -3,12 +3,12 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/features/app_security/domain/app_lock.dart';
-import 'package:doc_forge/features/app_security/domain/repositories/app_lock_repository.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
+import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_repository.dart';
 
 /// Authenticates the current session.
 class AuthenticateAppLock {

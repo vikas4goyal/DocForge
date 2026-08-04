@@ -9,11 +9,11 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/public_storage/media_store_channel.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/public_storage/media_store_channel.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 
 /// The user-visible library folder, backed by MediaStore.
 class MediaStorePublicFileStore implements PublicFileStore {
@@ -31,7 +31,7 @@ class MediaStorePublicFileStore implements PublicFileStore {
   static const defaultCollection = 'Documents';
 
   /// The name of the library folder as the user sees it in a file manager.
-  static const defaultLibraryFolderName = 'DocForge';
+  static const defaultLibraryFolderName = 'DocScanly';
 
   /// How many materialised copies are kept before the oldest is evicted.
   ///
@@ -80,6 +80,7 @@ class MediaStorePublicFileStore implements PublicFileStore {
 
   @override
   Future<Result<void>> initialise() => _guard(() async {
+    await channel.migrateLegacyLibrary();
     await channel.createFolder(_relativePathFor(const []));
   });
 
@@ -125,7 +126,9 @@ class MediaStorePublicFileStore implements PublicFileStore {
           if (item.displayName.startsWith('.')) continue;
 
           final segments = _segmentsOf(item.relativePath);
-          if (segments.contains(publicTrashFolderName)) continue;
+          if (folders.isEmpty && segments.contains(publicTrashFolderName)) {
+            continue;
+          }
           entries.add(
             PublicEntry(
               kind: PublicEntryKind.file,

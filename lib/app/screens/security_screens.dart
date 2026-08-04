@@ -6,17 +6,17 @@
 /// the gate objects the router's redirect reads.
 library;
 
-import 'package:doc_forge/app/router/app_router.dart';
-import 'package:doc_forge/app/router/app_routes.dart';
-import 'package:doc_forge/core/permissions/permission_service.dart';
-import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
-import 'package:doc_forge/features/app_security/domain/repositories/app_lock_repository.dart';
-import 'package:doc_forge/features/app_security/presentation/cubit/app_lock_cubit.dart';
-import 'package:doc_forge/features/app_security/presentation/screens/unlock_screen.dart';
-import 'package:doc_forge/features/onboarding/application/usecases/onboarding_usecases.dart';
-import 'package:doc_forge/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
-import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_cubit.dart';
-import 'package:doc_forge/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
+import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
+import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_repository.dart';
+import 'package:doc_scanly/features/app_security/presentation/cubit/app_lock_cubit.dart';
+import 'package:doc_scanly/features/app_security/presentation/screens/unlock_screen.dart';
+import 'package:doc_scanly/features/onboarding/application/usecases/onboarding_usecases.dart';
+import 'package:doc_scanly/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
+import 'package:doc_scanly/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:doc_scanly/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 

@@ -10,43 +10,43 @@ library;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/trash.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/previews/fakes/fake_cubit.dart';
-import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
-import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
-import 'package:doc_forge/features/document_library/application/usecases/trash_usecases.dart';
-import 'package:doc_forge/features/document_library/domain/repositories/document_file_store.dart';
-import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_state.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_state.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_state.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/folder_state.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/trash_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/trash_state.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/dashboard_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/document_detail_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/trash_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/document_card.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/document_thumbnail.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/folder_tile.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/page_thumbnail.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/trash.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_cubit.dart';
+import 'package:doc_scanly/core/previews/fixtures/fixtures.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_queries.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/folder_usecases.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/trash_usecases.dart';
+import 'package:doc_scanly/features/document_library/domain/repositories/document_file_store.dart';
+import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/folder_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/folder_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/trash_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/trash_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/dashboard_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_detail_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_list_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/folder_list_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/trash_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_card.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_thumbnail.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/folder_tile.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/page_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -374,6 +374,71 @@ Widget documentCardDark() => previewSurface(
     document: sampleDocument,
     onTap: () {},
     onToggleFavourite: () {},
+  ),
+);
+
+/// A document known only by iCloud metadata.
+@Preview(
+  name: 'DocumentCard — iCloud remote',
+  group: 'Library',
+  theme: appPreviewTheme,
+)
+Widget documentCardCloudRemote() => previewSurface(
+  DocumentCard(
+    document: sampleDocument.copyWith(
+      cloudResourceIdentifier: 'preview-resource',
+      contentAvailability: DocumentContentAvailability.remote,
+    ),
+    onTap: () {},
+  ),
+);
+
+/// A document currently downloading from iCloud.
+@Preview(
+  name: 'DocumentCard — iCloud downloading',
+  group: 'Library',
+  theme: appPreviewTheme,
+)
+Widget documentCardCloudDownloading() => previewSurface(
+  DocumentCard(
+    document: sampleDocument.copyWith(
+      cloudResourceIdentifier: 'preview-resource',
+      contentAvailability: DocumentContentAvailability.downloading,
+    ),
+    onTap: () {},
+  ),
+);
+
+/// An iCloud-backed document whose bytes are available on this device.
+@Preview(
+  name: 'DocumentCard — iCloud available',
+  group: 'Library',
+  theme: appPreviewTheme,
+)
+Widget documentCardCloudAvailable() => previewSurface(
+  DocumentCard(
+    document: sampleDocument.copyWith(
+      cloudResourceIdentifier: 'preview-resource',
+      contentAvailability: DocumentContentAvailability.available,
+    ),
+    onTap: () {},
+  ),
+);
+
+/// A retryable iCloud download failure.
+@Preview(
+  name: 'DocumentCard — iCloud failed, dark',
+  group: 'Library',
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget documentCardCloudFailed() => previewSurface(
+  DocumentCard(
+    document: sampleDocument.copyWith(
+      cloudResourceIdentifier: 'preview-resource',
+      contentAvailability: DocumentContentAvailability.failed,
+    ),
+    onTap: () {},
   ),
 );
 

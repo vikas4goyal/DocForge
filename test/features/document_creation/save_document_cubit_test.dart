@@ -1,12 +1,12 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_creation/presentation/cubit/save_document_cubit.dart';
-import 'package:doc_forge/features/document_creation/presentation/cubit/save_document_state.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_creation/presentation/cubit/save_document_cubit.dart';
+import 'package:doc_scanly/features/document_creation/presentation/cubit/save_document_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 PageDraft page(String id) =>

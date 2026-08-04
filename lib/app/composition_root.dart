@@ -10,12 +10,12 @@
 /// dependency graph a graph rather than a web (`design.md` §5).
 library;
 
-import 'package:doc_forge/app/app_dependencies.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/thumbnail_cache.dart';
-import 'package:doc_forge/core/permissions/permission_service.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
+import 'package:doc_scanly/app/app_dependencies.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/isolates/thumbnail_cache.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

@@ -2,7 +2,7 @@
 ///
 /// The library folder is the user's: they can add, rename and delete files in
 /// it from their file browser, and the most common way that happens is that
-/// they leave DocForge to do it. Reconciling on resume is what makes the change
+/// they leave DocScanly to do it. Reconciling on resume is what makes the change
 /// appear when they come back, rather than on the next cold start
 /// (`design.md` D5).
 ///
@@ -10,6 +10,8 @@
 /// the tree's lifecycle: it stops observing when it is disposed, and a test can
 /// pump it without standing up an application.
 library;
+
+import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
@@ -24,6 +26,7 @@ class LibraryReconciler extends StatefulWidget {
     required this.child,
     super.key,
     this.onReconciled,
+    this.externalTriggers,
   });
 
   /// Runs a reconcile pass. Throttling is the use case's concern, not this
@@ -34,6 +37,10 @@ class LibraryReconciler extends StatefulWidget {
   /// Called after each pass, so a list can reload when something changed.
   final VoidCallback? onReconciled;
 
+  /// Additional platform events that require reconciliation, such as an
+  /// iCloud identity change. Android composition leaves this null.
+  final Stream<void>? externalTriggers;
+
   /// The application beneath.
   final Widget child;
 
@@ -43,6 +50,8 @@ class LibraryReconciler extends StatefulWidget {
 
 class _LibraryReconcilerState extends State<LibraryReconciler>
     with WidgetsBindingObserver {
+  StreamSubscription<void>? _externalSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -50,12 +59,27 @@ class _LibraryReconcilerState extends State<LibraryReconciler>
     // After the first frame rather than during initState: reconciliation
     // writes to the index, and a rebuild triggered mid-build would throw.
     WidgetsBinding.instance.addPostFrameCallback((_) => _run());
+    _subscribeToExternalTriggers();
+  }
+
+  @override
+  void didUpdateWidget(covariant LibraryReconciler oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.externalTriggers, widget.externalTriggers)) {
+      unawaited(_externalSubscription?.cancel());
+      _subscribeToExternalTriggers();
+    }
   }
 
   @override
   void dispose() {
+    unawaited(_externalSubscription?.cancel());
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _subscribeToExternalTriggers() {
+    _externalSubscription = widget.externalTriggers?.listen((_) => _run());
   }
 
   @override

@@ -13,8 +13,8 @@ library;
 
 import 'dart:math' as math;
 
-import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:meta/meta.dart';
 
 /// One crop-and-rotate the user applied.

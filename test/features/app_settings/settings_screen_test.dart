@@ -1,19 +1,19 @@
 /// Widget tests for the settings screens.
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/theme/theme_mode_controller.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/app_settings/application/usecases/settings_usecases.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
-import 'package:doc_forge/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
-import 'package:doc_forge/features/app_settings/presentation/cubit/settings_cubit.dart';
-import 'package:doc_forge/features/app_settings/presentation/screens/settings_screen.dart';
-import 'package:doc_forge/features/app_settings/presentation/settings_keys.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/theme/theme_mode_controller.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/app_settings/application/usecases/settings_usecases.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
+import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/settings_screen.dart';
+import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,6 +39,7 @@ void main() {
     ValueChanged<bool>? onToggleAppLock,
     VoidCallback? onAbout,
     VoidCallback? onPrivacy,
+    VoidCallback? onStorageLocation,
   }) async {
     tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1;
@@ -81,6 +82,7 @@ void main() {
               onAbout: onAbout ?? () {},
               onPrivacyPolicy: onPrivacy ?? () {},
               onToggleAppLock: onToggleAppLock,
+              onStorageLocation: onStorageLocation,
             ),
           ),
         ),
@@ -121,6 +123,25 @@ void main() {
       expect(find.text(AppThemeChoice.system.label), findsOneWidget);
       expect(find.text(OcrScript.latin.label), findsOneWidget);
       expect(find.text(SettingsCopy.systemSaveLocation), findsOneWidget);
+    });
+
+    testWidgets('Android composition has no iCloud storage entry', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      expect(find.byKey(SettingsKeys.storageLocation), findsNothing);
+      expect(find.text('iCloud Drive'), findsNothing);
+    });
+
+    testWidgets('iOS composition exposes the storage entry', (tester) async {
+      var opened = false;
+      await pump(tester, onStorageLocation: () => opened = true);
+
+      await tester.ensureVisible(find.byKey(SettingsKeys.storageLocation));
+      await tester.tap(find.byKey(SettingsKeys.storageLocation));
+
+      expect(opened, isTrue);
     });
 
     testWidgets('shows the naming preview', (tester) async {
@@ -247,27 +268,26 @@ void main() {
       );
 
       expect(find.byKey(SettingsKeys.aboutScreen), findsOneWidget);
-      expect(find.text('DocForge'), findsOneWidget);
+      expect(find.text('DocScanly'), findsOneWidget);
       expect(find.textContaining('1.0.0'), findsOneWidget);
     });
 
-    testWidgets('the Privacy Policy states the local-only guarantee', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.light,
-          home: PrivacyPolicyScreen(onBack: () {}),
-        ),
-      );
+    testWidgets(
+      'the Privacy Policy distinguishes Android and optional iCloud',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: AppTheme.light,
+            home: PrivacyPolicyScreen(onBack: () {}),
+          ),
+        );
 
-      expect(find.byKey(SettingsKeys.privacyScreen), findsOneWidget);
-      expect(find.textContaining('device only'), findsOneWidget);
-      expect(
-        find.textContaining('Nothing is uploaded automatically'),
-        findsOneWidget,
-      );
-    });
+        expect(find.byKey(SettingsKeys.privacyScreen), findsOneWidget);
+        expect(find.textContaining('On Android'), findsOneWidget);
+        expect(find.textContaining('app-owned iCloud Drive'), findsOneWidget);
+        expect(find.textContaining('metadata remain local'), findsOneWidget);
+      },
+    );
   });
 
   group('accessibility', () {

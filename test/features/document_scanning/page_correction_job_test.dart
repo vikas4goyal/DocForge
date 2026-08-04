@@ -8,9 +8,9 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/document_scanning/infrastructure/page_correction_job.dart';
+import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/features/document_scanning/infrastructure/page_correction_job.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 
@@ -48,7 +48,7 @@ void main() {
   late Directory workspace;
 
   setUp(() {
-    workspace = Directory.systemTemp.createTempSync('docforge_correction');
+    workspace = Directory.systemTemp.createTempSync('docscanly_correction');
   });
 
   tearDown(() {

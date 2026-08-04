@@ -4,19 +4,19 @@
 /// and no wall clock, so a golden rendered from one is byte-stable.
 library;
 
-import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/features/document_creation/presentation/cubit/page_table_cubit.dart';
-import 'package:doc_forge/features/document_creation/presentation/cubit/page_table_state.dart';
-import 'package:doc_forge/features/document_creation/presentation/cubit/save_document_state.dart';
-import 'package:doc_forge/features/document_creation/presentation/screens/page_table_screen.dart';
-import 'package:doc_forge/features/document_creation/presentation/screens/save_name_dialog.dart';
-import 'package:doc_forge/features/document_creation/presentation/widgets/add_page_sheet.dart';
-import 'package:doc_forge/features/document_creation/presentation/widgets/page_row.dart';
+import 'package:doc_scanly/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/features/document_creation/presentation/cubit/page_table_cubit.dart';
+import 'package:doc_scanly/features/document_creation/presentation/cubit/page_table_state.dart';
+import 'package:doc_scanly/features/document_creation/presentation/cubit/save_document_state.dart';
+import 'package:doc_scanly/features/document_creation/presentation/screens/page_table_screen.dart';
+import 'package:doc_scanly/features/document_creation/presentation/screens/save_name_dialog.dart';
+import 'package:doc_scanly/features/document_creation/presentation/widgets/add_page_sheet.dart';
+import 'package:doc_scanly/features/document_creation/presentation/widgets/page_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

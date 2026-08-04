@@ -10,15 +10,15 @@
 /// repository, preference store or permission plugin is touched.
 library;
 
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/permissions/permission_service.dart';
-import 'package:doc_forge/core/previews/fakes/fake_cubit.dart';
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/features/onboarding/application/usecases/onboarding_usecases.dart';
-import 'package:doc_forge/features/onboarding/domain/repositories/onboarding_repository.dart';
-import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_cubit.dart';
-import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_state.dart';
-import 'package:doc_forge/features/onboarding/presentation/screens/onboarding_screen.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_cubit.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/features/onboarding/application/usecases/onboarding_usecases.dart';
+import 'package:doc_scanly/features/onboarding/domain/repositories/onboarding_repository.dart';
+import 'package:doc_scanly/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:doc_scanly/features/onboarding/presentation/cubit/onboarding_state.dart';
+import 'package:doc_scanly/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

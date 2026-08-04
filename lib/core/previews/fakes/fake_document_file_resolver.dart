@@ -10,9 +10,9 @@
 /// missing-file path.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
 
 /// Resolves every document to [path].
 class FakeDocumentFileResolver implements DocumentFileResolver {

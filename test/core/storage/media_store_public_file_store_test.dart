@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/storage/public_storage/media_store_channel.dart';
-import 'package:doc_forge/core/storage/public_storage/media_store_public_file_store.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/storage/public_storage/media_store_channel.dart';
+import 'package:doc_scanly/core/storage/public_storage/media_store_public_file_store.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -46,6 +46,10 @@ class FakeMediaStoreChannel extends MediaStoreChannel {
       calls.firstWhere((call) => call.method == method);
 
   bool hasCallTo(String method) => calls.any((call) => call.method == method);
+
+  @override
+  Future<void> migrateLegacyLibrary() async =>
+      _record('migrateLegacyLibrary', const {});
 
   @override
   Future<void> createFolder(String relativePath) async =>
@@ -173,7 +177,7 @@ void main() {
 
   setUp(() async {
     channel = FakeMediaStoreChannel();
-    cache = await Directory.systemTemp.createTemp('docforge_mediastore_');
+    cache = await Directory.systemTemp.createTemp('docscanly_mediastore_');
     store = MediaStorePublicFileStore(channel: channel, cacheDirectory: cache);
   });
 
@@ -191,9 +195,10 @@ void main() {
     test('initialise creates the library collection folder', () async {
       await store.initialise();
 
+      expect(channel.calls.first.method, 'migrateLegacyLibrary');
       expect(
         channel.callTo('createFolder')['relativePath'],
-        'Documents/DocForge/',
+        'Documents/DocScanly/',
       );
     });
 
@@ -204,7 +209,7 @@ void main() {
 
         expect(
           channel.callTo('createFolder')['relativePath'],
-          'Documents/DocForge/Invoices/2026/',
+          'Documents/DocScanly/Invoices/2026/',
         );
       },
     );
@@ -216,7 +221,7 @@ void main() {
       );
 
       final call = channel.callTo('writeFile');
-      expect(call['relativePath'], 'Documents/DocForge/Invoices/');
+      expect(call['relativePath'], 'Documents/DocScanly/Invoices/');
       expect(call['displayName'], 'Receipt.pdf');
     });
   });
@@ -254,7 +259,7 @@ void main() {
       );
 
       final call = channel.callTo('writeFile');
-      expect(call['relativePath'], 'Documents/DocForge/');
+      expect(call['relativePath'], 'Documents/DocScanly/');
       expect(call['displayName'], 'Receipt.pdf');
     });
 
@@ -269,7 +274,7 @@ void main() {
 
   group('list', () {
     test('combines folders and files at one level', () async {
-      channel.folders['Documents/DocForge/'] = ['Invoices'];
+      channel.folders['Documents/DocScanly/'] = ['Invoices'];
       await store.writeFile(
         LibraryPath.parse('Top.pdf'),
         await sourceFile('in.pdf', contents: '12345'),
@@ -284,9 +289,9 @@ void main() {
     });
 
     test('skips dot-files', () async {
-      channel.items['Documents/DocForge/'] = [
+      channel.items['Documents/DocScanly/'] = [
         const MediaStoreItem(
-          relativePath: 'Documents/DocForge/',
+          relativePath: 'Documents/DocScanly/',
           displayName: '.nomedia',
           sizeBytes: 0,
           modifiedAt: null,
@@ -299,9 +304,9 @@ void main() {
 
   group('listRecursive', () {
     test('infers folders from the paths of the files inside them', () async {
-      channel.items['Documents/DocForge/Invoices/2026/'] = [
+      channel.items['Documents/DocScanly/Invoices/2026/'] = [
         const MediaStoreItem(
-          relativePath: 'Documents/DocForge/Invoices/2026/',
+          relativePath: 'Documents/DocScanly/Invoices/2026/',
           displayName: 'Receipt.pdf',
           sizeBytes: 10,
           modifiedAt: null,
@@ -322,15 +327,18 @@ void main() {
     });
 
     test('excludes the reserved Trash namespace', () async {
-      channel.items['Documents/DocForge/.docforge-trash/trash-1/payload/'] = [
+      channel.items['Documents/DocScanly/.docscanly-trash/trash-1/payload/'] = [
         const MediaStoreItem(
-          relativePath: 'Documents/DocForge/.docforge-trash/trash-1/payload/',
+          relativePath: 'Documents/DocScanly/.docscanly-trash/trash-1/payload/',
           displayName: 'Receipt.pdf',
           sizeBytes: 10,
           modifiedAt: null,
         ),
       ];
-      channel.folders['Documents/DocForge/'] = ['.docforge-trash', 'Invoices'];
+      channel.folders['Documents/DocScanly/'] = [
+        '.docscanly-trash',
+        'Invoices',
+      ];
 
       expect((await store.listRecursive(const [])).valueOrNull, isEmpty);
       expect(
@@ -348,10 +356,10 @@ void main() {
       final moved = channel.calls.lastWhere(
         (call) => call.method == 'moveFile',
       );
-      expect(moved['fromRelativePath'], 'Documents/DocForge/Invoices/');
+      expect(moved['fromRelativePath'], 'Documents/DocScanly/Invoices/');
       expect(
         moved['toRelativePath'],
-        'Documents/DocForge/.docforge-trash/trash-1/payload/',
+        'Documents/DocScanly/.docscanly-trash/trash-1/payload/',
       );
 
       await store.restoreFileFromTrash(
@@ -368,24 +376,24 @@ void main() {
     test('moves and restores a complete folder tree', () async {
       await store.moveFolderToTrash('trash-2', const ['Projects']);
       var call = channel.callTo('moveFolder');
-      expect(call['fromRelativePath'], 'Documents/DocForge/Projects/');
+      expect(call['fromRelativePath'], 'Documents/DocScanly/Projects/');
       expect(
         call['toRelativePath'],
-        'Documents/DocForge/.docforge-trash/trash-2/payload/Projects/',
+        'Documents/DocScanly/.docscanly-trash/trash-2/payload/Projects/',
       );
 
       await store.restoreFolderFromTrash('trash-2', 'Projects', const [
         'Recovered Projects',
       ]);
       call = channel.calls.lastWhere((value) => value.method == 'moveFolder');
-      expect(call['toRelativePath'], 'Documents/DocForge/Recovered Projects/');
+      expect(call['toRelativePath'], 'Documents/DocScanly/Recovered Projects/');
     });
 
     test('purge delegates to idempotent folder deletion', () async {
       await store.purgeTrashPayload('trash-1');
       expect(
         channel.callTo('deleteFolder')['relativePath'],
-        'Documents/DocForge/.docforge-trash/trash-1/',
+        'Documents/DocScanly/.docscanly-trash/trash-1/',
       );
     });
   });
@@ -478,9 +486,9 @@ void main() {
       );
 
       final call = channel.callTo('moveFile');
-      expect(call['fromRelativePath'], 'Documents/DocForge/A/');
+      expect(call['fromRelativePath'], 'Documents/DocScanly/A/');
       expect(call['fromDisplayName'], 'Receipt.pdf');
-      expect(call['toRelativePath'], 'Documents/DocForge/B/');
+      expect(call['toRelativePath'], 'Documents/DocScanly/B/');
       expect(call['toDisplayName'], 'Invoice.pdf');
     });
 
@@ -550,7 +558,7 @@ void main() {
   group('MediaStoreItem.fromMap', () {
     test('reads the channel form', () {
       final item = MediaStoreItem.fromMap(const {
-        'relativePath': 'Documents/DocForge/',
+        'relativePath': 'Documents/DocScanly/',
         'displayName': 'A.pdf',
         'size': 12,
         'modified': 1750000000,

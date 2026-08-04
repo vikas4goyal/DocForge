@@ -33,7 +33,18 @@ mixin _$Document {
 ///
 /// The password itself is never held here — it lives in secure storage.
  bool get isProtected;/// Whether text recognition has been run and produced a stored result.
- bool get hasRecognisedText;/// Trash entry holding the PDF, or null while the document is active.
+ bool get hasRecognisedText;/// Stable iCloud resource identity, when Foundation supplied one.
+///
+/// This is metadata only. Local and Android documents leave it null.
+ String? get cloudResourceIdentifier;/// Original path reported by iCloud for byte operations.
+///
+/// Usually this equals [libraryPath]. A simultaneous same-name conflict is
+/// indexed under a deterministic non-overwriting display path while this
+/// field retains the actual container path that Foundation must download.
+ String? get cloudRelativePath;/// Whether the authoritative PDF bytes are readable on this device.
+///
+/// Android documents always retain the default [DocumentContentAvailability.local].
+ DocumentContentAvailability get contentAvailability;/// Trash entry holding the PDF, or null while the document is active.
  TrashId? get trashId;/// UTC instant at which this document was moved to Trash.
  DateTime? get trashedAt;
 /// Create a copy of Document
@@ -48,16 +59,16 @@ $DocumentCopyWith<Document> get copyWith => _$DocumentCopyWithImpl<Document>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Document&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.sizeInBytes, sizeInBytes) || other.sizeInBytes == sizeInBytes)&&(identical(other.libraryPath, libraryPath) || other.libraryPath == libraryPath)&&(identical(other.folderId, folderId) || other.folderId == folderId)&&(identical(other.isFavourite, isFavourite) || other.isFavourite == isFavourite)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isProtected, isProtected) || other.isProtected == isProtected)&&(identical(other.hasRecognisedText, hasRecognisedText) || other.hasRecognisedText == hasRecognisedText)&&(identical(other.trashId, trashId) || other.trashId == trashId)&&(identical(other.trashedAt, trashedAt) || other.trashedAt == trashedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Document&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.sizeInBytes, sizeInBytes) || other.sizeInBytes == sizeInBytes)&&(identical(other.libraryPath, libraryPath) || other.libraryPath == libraryPath)&&(identical(other.folderId, folderId) || other.folderId == folderId)&&(identical(other.isFavourite, isFavourite) || other.isFavourite == isFavourite)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isProtected, isProtected) || other.isProtected == isProtected)&&(identical(other.hasRecognisedText, hasRecognisedText) || other.hasRecognisedText == hasRecognisedText)&&(identical(other.cloudResourceIdentifier, cloudResourceIdentifier) || other.cloudResourceIdentifier == cloudResourceIdentifier)&&(identical(other.cloudRelativePath, cloudRelativePath) || other.cloudRelativePath == cloudRelativePath)&&(identical(other.contentAvailability, contentAvailability) || other.contentAvailability == contentAvailability)&&(identical(other.trashId, trashId) || other.trashId == trashId)&&(identical(other.trashedAt, trashedAt) || other.trashedAt == trashedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,createdAt,updatedAt,pageCount,sizeInBytes,libraryPath,folderId,isFavourite,isArchived,isProtected,hasRecognisedText,trashId,trashedAt);
+int get hashCode => Object.hash(runtimeType,id,title,createdAt,updatedAt,pageCount,sizeInBytes,libraryPath,folderId,isFavourite,isArchived,isProtected,hasRecognisedText,cloudResourceIdentifier,cloudRelativePath,contentAvailability,trashId,trashedAt);
 
 @override
 String toString() {
-  return 'Document(id: $id, title: $title, createdAt: $createdAt, updatedAt: $updatedAt, pageCount: $pageCount, sizeInBytes: $sizeInBytes, libraryPath: $libraryPath, folderId: $folderId, isFavourite: $isFavourite, isArchived: $isArchived, isProtected: $isProtected, hasRecognisedText: $hasRecognisedText, trashId: $trashId, trashedAt: $trashedAt)';
+  return 'Document(id: $id, title: $title, createdAt: $createdAt, updatedAt: $updatedAt, pageCount: $pageCount, sizeInBytes: $sizeInBytes, libraryPath: $libraryPath, folderId: $folderId, isFavourite: $isFavourite, isArchived: $isArchived, isProtected: $isProtected, hasRecognisedText: $hasRecognisedText, cloudResourceIdentifier: $cloudResourceIdentifier, cloudRelativePath: $cloudRelativePath, contentAvailability: $contentAvailability, trashId: $trashId, trashedAt: $trashedAt)';
 }
 
 
@@ -68,7 +79,7 @@ abstract mixin class $DocumentCopyWith<$Res>  {
   factory $DocumentCopyWith(Document value, $Res Function(Document) _then) = _$DocumentCopyWithImpl;
 @useResult
 $Res call({
- DocumentId id, String title, DateTime createdAt, DateTime updatedAt, int pageCount, int sizeInBytes, LibraryPath libraryPath, FolderId? folderId, bool isFavourite, bool isArchived, bool isProtected, bool hasRecognisedText, TrashId? trashId, DateTime? trashedAt
+ DocumentId id, String title, DateTime createdAt, DateTime updatedAt, int pageCount, int sizeInBytes, LibraryPath libraryPath, FolderId? folderId, bool isFavourite, bool isArchived, bool isProtected, bool hasRecognisedText, String? cloudResourceIdentifier, String? cloudRelativePath, DocumentContentAvailability contentAvailability, TrashId? trashId, DateTime? trashedAt
 });
 
 
@@ -85,7 +96,7 @@ class _$DocumentCopyWithImpl<$Res>
 
 /// Create a copy of Document
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? createdAt = null,Object? updatedAt = null,Object? pageCount = null,Object? sizeInBytes = null,Object? libraryPath = null,Object? folderId = freezed,Object? isFavourite = null,Object? isArchived = null,Object? isProtected = null,Object? hasRecognisedText = null,Object? trashId = freezed,Object? trashedAt = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? createdAt = null,Object? updatedAt = null,Object? pageCount = null,Object? sizeInBytes = null,Object? libraryPath = null,Object? folderId = freezed,Object? isFavourite = null,Object? isArchived = null,Object? isProtected = null,Object? hasRecognisedText = null,Object? cloudResourceIdentifier = freezed,Object? cloudRelativePath = freezed,Object? contentAvailability = null,Object? trashId = freezed,Object? trashedAt = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as DocumentId,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -99,7 +110,10 @@ as FolderId?,isFavourite: null == isFavourite ? _self.isFavourite : isFavourite 
 as bool,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
 as bool,isProtected: null == isProtected ? _self.isProtected : isProtected // ignore: cast_nullable_to_non_nullable
 as bool,hasRecognisedText: null == hasRecognisedText ? _self.hasRecognisedText : hasRecognisedText // ignore: cast_nullable_to_non_nullable
-as bool,trashId: freezed == trashId ? _self.trashId : trashId // ignore: cast_nullable_to_non_nullable
+as bool,cloudResourceIdentifier: freezed == cloudResourceIdentifier ? _self.cloudResourceIdentifier : cloudResourceIdentifier // ignore: cast_nullable_to_non_nullable
+as String?,cloudRelativePath: freezed == cloudRelativePath ? _self.cloudRelativePath : cloudRelativePath // ignore: cast_nullable_to_non_nullable
+as String?,contentAvailability: null == contentAvailability ? _self.contentAvailability : contentAvailability // ignore: cast_nullable_to_non_nullable
+as DocumentContentAvailability,trashId: freezed == trashId ? _self.trashId : trashId // ignore: cast_nullable_to_non_nullable
 as TrashId?,trashedAt: freezed == trashedAt ? _self.trashedAt : trashedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));
@@ -186,10 +200,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DocumentId id,  String title,  DateTime createdAt,  DateTime updatedAt,  int pageCount,  int sizeInBytes,  LibraryPath libraryPath,  FolderId? folderId,  bool isFavourite,  bool isArchived,  bool isProtected,  bool hasRecognisedText,  TrashId? trashId,  DateTime? trashedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( DocumentId id,  String title,  DateTime createdAt,  DateTime updatedAt,  int pageCount,  int sizeInBytes,  LibraryPath libraryPath,  FolderId? folderId,  bool isFavourite,  bool isArchived,  bool isProtected,  bool hasRecognisedText,  String? cloudResourceIdentifier,  String? cloudRelativePath,  DocumentContentAvailability contentAvailability,  TrashId? trashId,  DateTime? trashedAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _Document() when $default != null:
-return $default(_that.id,_that.title,_that.createdAt,_that.updatedAt,_that.pageCount,_that.sizeInBytes,_that.libraryPath,_that.folderId,_that.isFavourite,_that.isArchived,_that.isProtected,_that.hasRecognisedText,_that.trashId,_that.trashedAt);case _:
+return $default(_that.id,_that.title,_that.createdAt,_that.updatedAt,_that.pageCount,_that.sizeInBytes,_that.libraryPath,_that.folderId,_that.isFavourite,_that.isArchived,_that.isProtected,_that.hasRecognisedText,_that.cloudResourceIdentifier,_that.cloudRelativePath,_that.contentAvailability,_that.trashId,_that.trashedAt);case _:
   return orElse();
 
 }
@@ -207,10 +221,10 @@ return $default(_that.id,_that.title,_that.createdAt,_that.updatedAt,_that.pageC
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DocumentId id,  String title,  DateTime createdAt,  DateTime updatedAt,  int pageCount,  int sizeInBytes,  LibraryPath libraryPath,  FolderId? folderId,  bool isFavourite,  bool isArchived,  bool isProtected,  bool hasRecognisedText,  TrashId? trashId,  DateTime? trashedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( DocumentId id,  String title,  DateTime createdAt,  DateTime updatedAt,  int pageCount,  int sizeInBytes,  LibraryPath libraryPath,  FolderId? folderId,  bool isFavourite,  bool isArchived,  bool isProtected,  bool hasRecognisedText,  String? cloudResourceIdentifier,  String? cloudRelativePath,  DocumentContentAvailability contentAvailability,  TrashId? trashId,  DateTime? trashedAt)  $default,) {final _that = this;
 switch (_that) {
 case _Document():
-return $default(_that.id,_that.title,_that.createdAt,_that.updatedAt,_that.pageCount,_that.sizeInBytes,_that.libraryPath,_that.folderId,_that.isFavourite,_that.isArchived,_that.isProtected,_that.hasRecognisedText,_that.trashId,_that.trashedAt);case _:
+return $default(_that.id,_that.title,_that.createdAt,_that.updatedAt,_that.pageCount,_that.sizeInBytes,_that.libraryPath,_that.folderId,_that.isFavourite,_that.isArchived,_that.isProtected,_that.hasRecognisedText,_that.cloudResourceIdentifier,_that.cloudRelativePath,_that.contentAvailability,_that.trashId,_that.trashedAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -227,10 +241,10 @@ return $default(_that.id,_that.title,_that.createdAt,_that.updatedAt,_that.pageC
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DocumentId id,  String title,  DateTime createdAt,  DateTime updatedAt,  int pageCount,  int sizeInBytes,  LibraryPath libraryPath,  FolderId? folderId,  bool isFavourite,  bool isArchived,  bool isProtected,  bool hasRecognisedText,  TrashId? trashId,  DateTime? trashedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( DocumentId id,  String title,  DateTime createdAt,  DateTime updatedAt,  int pageCount,  int sizeInBytes,  LibraryPath libraryPath,  FolderId? folderId,  bool isFavourite,  bool isArchived,  bool isProtected,  bool hasRecognisedText,  String? cloudResourceIdentifier,  String? cloudRelativePath,  DocumentContentAvailability contentAvailability,  TrashId? trashId,  DateTime? trashedAt)?  $default,) {final _that = this;
 switch (_that) {
 case _Document() when $default != null:
-return $default(_that.id,_that.title,_that.createdAt,_that.updatedAt,_that.pageCount,_that.sizeInBytes,_that.libraryPath,_that.folderId,_that.isFavourite,_that.isArchived,_that.isProtected,_that.hasRecognisedText,_that.trashId,_that.trashedAt);case _:
+return $default(_that.id,_that.title,_that.createdAt,_that.updatedAt,_that.pageCount,_that.sizeInBytes,_that.libraryPath,_that.folderId,_that.isFavourite,_that.isArchived,_that.isProtected,_that.hasRecognisedText,_that.cloudResourceIdentifier,_that.cloudRelativePath,_that.contentAvailability,_that.trashId,_that.trashedAt);case _:
   return null;
 
 }
@@ -242,7 +256,7 @@ return $default(_that.id,_that.title,_that.createdAt,_that.updatedAt,_that.pageC
 @JsonSerializable()
 
 class _Document extends Document {
-  const _Document({required this.id, required this.title, required this.createdAt, required this.updatedAt, required this.pageCount, required this.sizeInBytes, required this.libraryPath, this.folderId, this.isFavourite = false, this.isArchived = false, this.isProtected = false, this.hasRecognisedText = false, this.trashId, this.trashedAt}): super._();
+  const _Document({required this.id, required this.title, required this.createdAt, required this.updatedAt, required this.pageCount, required this.sizeInBytes, required this.libraryPath, this.folderId, this.isFavourite = false, this.isArchived = false, this.isProtected = false, this.hasRecognisedText = false, this.cloudResourceIdentifier, this.cloudRelativePath, this.contentAvailability = DocumentContentAvailability.local, this.trashId, this.trashedAt}): super._();
   factory _Document.fromJson(Map<String, dynamic> json) => _$DocumentFromJson(json);
 
 @override final  DocumentId id;
@@ -275,6 +289,20 @@ class _Document extends Document {
 @override@JsonKey() final  bool isProtected;
 /// Whether text recognition has been run and produced a stored result.
 @override@JsonKey() final  bool hasRecognisedText;
+/// Stable iCloud resource identity, when Foundation supplied one.
+///
+/// This is metadata only. Local and Android documents leave it null.
+@override final  String? cloudResourceIdentifier;
+/// Original path reported by iCloud for byte operations.
+///
+/// Usually this equals [libraryPath]. A simultaneous same-name conflict is
+/// indexed under a deterministic non-overwriting display path while this
+/// field retains the actual container path that Foundation must download.
+@override final  String? cloudRelativePath;
+/// Whether the authoritative PDF bytes are readable on this device.
+///
+/// Android documents always retain the default [DocumentContentAvailability.local].
+@override@JsonKey() final  DocumentContentAvailability contentAvailability;
 /// Trash entry holding the PDF, or null while the document is active.
 @override final  TrashId? trashId;
 /// UTC instant at which this document was moved to Trash.
@@ -293,16 +321,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Document&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.sizeInBytes, sizeInBytes) || other.sizeInBytes == sizeInBytes)&&(identical(other.libraryPath, libraryPath) || other.libraryPath == libraryPath)&&(identical(other.folderId, folderId) || other.folderId == folderId)&&(identical(other.isFavourite, isFavourite) || other.isFavourite == isFavourite)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isProtected, isProtected) || other.isProtected == isProtected)&&(identical(other.hasRecognisedText, hasRecognisedText) || other.hasRecognisedText == hasRecognisedText)&&(identical(other.trashId, trashId) || other.trashId == trashId)&&(identical(other.trashedAt, trashedAt) || other.trashedAt == trashedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Document&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.sizeInBytes, sizeInBytes) || other.sizeInBytes == sizeInBytes)&&(identical(other.libraryPath, libraryPath) || other.libraryPath == libraryPath)&&(identical(other.folderId, folderId) || other.folderId == folderId)&&(identical(other.isFavourite, isFavourite) || other.isFavourite == isFavourite)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isProtected, isProtected) || other.isProtected == isProtected)&&(identical(other.hasRecognisedText, hasRecognisedText) || other.hasRecognisedText == hasRecognisedText)&&(identical(other.cloudResourceIdentifier, cloudResourceIdentifier) || other.cloudResourceIdentifier == cloudResourceIdentifier)&&(identical(other.cloudRelativePath, cloudRelativePath) || other.cloudRelativePath == cloudRelativePath)&&(identical(other.contentAvailability, contentAvailability) || other.contentAvailability == contentAvailability)&&(identical(other.trashId, trashId) || other.trashId == trashId)&&(identical(other.trashedAt, trashedAt) || other.trashedAt == trashedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,createdAt,updatedAt,pageCount,sizeInBytes,libraryPath,folderId,isFavourite,isArchived,isProtected,hasRecognisedText,trashId,trashedAt);
+int get hashCode => Object.hash(runtimeType,id,title,createdAt,updatedAt,pageCount,sizeInBytes,libraryPath,folderId,isFavourite,isArchived,isProtected,hasRecognisedText,cloudResourceIdentifier,cloudRelativePath,contentAvailability,trashId,trashedAt);
 
 @override
 String toString() {
-  return 'Document(id: $id, title: $title, createdAt: $createdAt, updatedAt: $updatedAt, pageCount: $pageCount, sizeInBytes: $sizeInBytes, libraryPath: $libraryPath, folderId: $folderId, isFavourite: $isFavourite, isArchived: $isArchived, isProtected: $isProtected, hasRecognisedText: $hasRecognisedText, trashId: $trashId, trashedAt: $trashedAt)';
+  return 'Document(id: $id, title: $title, createdAt: $createdAt, updatedAt: $updatedAt, pageCount: $pageCount, sizeInBytes: $sizeInBytes, libraryPath: $libraryPath, folderId: $folderId, isFavourite: $isFavourite, isArchived: $isArchived, isProtected: $isProtected, hasRecognisedText: $hasRecognisedText, cloudResourceIdentifier: $cloudResourceIdentifier, cloudRelativePath: $cloudRelativePath, contentAvailability: $contentAvailability, trashId: $trashId, trashedAt: $trashedAt)';
 }
 
 
@@ -313,7 +341,7 @@ abstract mixin class _$DocumentCopyWith<$Res> implements $DocumentCopyWith<$Res>
   factory _$DocumentCopyWith(_Document value, $Res Function(_Document) _then) = __$DocumentCopyWithImpl;
 @override @useResult
 $Res call({
- DocumentId id, String title, DateTime createdAt, DateTime updatedAt, int pageCount, int sizeInBytes, LibraryPath libraryPath, FolderId? folderId, bool isFavourite, bool isArchived, bool isProtected, bool hasRecognisedText, TrashId? trashId, DateTime? trashedAt
+ DocumentId id, String title, DateTime createdAt, DateTime updatedAt, int pageCount, int sizeInBytes, LibraryPath libraryPath, FolderId? folderId, bool isFavourite, bool isArchived, bool isProtected, bool hasRecognisedText, String? cloudResourceIdentifier, String? cloudRelativePath, DocumentContentAvailability contentAvailability, TrashId? trashId, DateTime? trashedAt
 });
 
 
@@ -330,7 +358,7 @@ class __$DocumentCopyWithImpl<$Res>
 
 /// Create a copy of Document
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? createdAt = null,Object? updatedAt = null,Object? pageCount = null,Object? sizeInBytes = null,Object? libraryPath = null,Object? folderId = freezed,Object? isFavourite = null,Object? isArchived = null,Object? isProtected = null,Object? hasRecognisedText = null,Object? trashId = freezed,Object? trashedAt = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? title = null,Object? createdAt = null,Object? updatedAt = null,Object? pageCount = null,Object? sizeInBytes = null,Object? libraryPath = null,Object? folderId = freezed,Object? isFavourite = null,Object? isArchived = null,Object? isProtected = null,Object? hasRecognisedText = null,Object? cloudResourceIdentifier = freezed,Object? cloudRelativePath = freezed,Object? contentAvailability = null,Object? trashId = freezed,Object? trashedAt = freezed,}) {
   return _then(_Document(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as DocumentId,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -344,7 +372,10 @@ as FolderId?,isFavourite: null == isFavourite ? _self.isFavourite : isFavourite 
 as bool,isArchived: null == isArchived ? _self.isArchived : isArchived // ignore: cast_nullable_to_non_nullable
 as bool,isProtected: null == isProtected ? _self.isProtected : isProtected // ignore: cast_nullable_to_non_nullable
 as bool,hasRecognisedText: null == hasRecognisedText ? _self.hasRecognisedText : hasRecognisedText // ignore: cast_nullable_to_non_nullable
-as bool,trashId: freezed == trashId ? _self.trashId : trashId // ignore: cast_nullable_to_non_nullable
+as bool,cloudResourceIdentifier: freezed == cloudResourceIdentifier ? _self.cloudResourceIdentifier : cloudResourceIdentifier // ignore: cast_nullable_to_non_nullable
+as String?,cloudRelativePath: freezed == cloudRelativePath ? _self.cloudRelativePath : cloudRelativePath // ignore: cast_nullable_to_non_nullable
+as String?,contentAvailability: null == contentAvailability ? _self.contentAvailability : contentAvailability // ignore: cast_nullable_to_non_nullable
+as DocumentContentAvailability,trashId: freezed == trashId ? _self.trashId : trashId // ignore: cast_nullable_to_non_nullable
 as TrashId?,trashedAt: freezed == trashedAt ? _self.trashedAt : trashedAt // ignore: cast_nullable_to_non_nullable
 as DateTime?,
   ));

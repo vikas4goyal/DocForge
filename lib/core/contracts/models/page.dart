@@ -10,7 +10,7 @@
 /// memory on a low-end device (`design.md` §7).
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'page.freezed.dart';

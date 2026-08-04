@@ -1,11 +1,11 @@
-/// The return type for every fallible operation in DocForge.
+/// The return type for every fallible operation in DocScanly.
 ///
 /// Use cases and repositories return `Result<T>` rather than throwing, so a
 /// caller cannot forget that an operation can fail — the value is unreachable
 /// without handling the failure case first.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'result.freezed.dart';

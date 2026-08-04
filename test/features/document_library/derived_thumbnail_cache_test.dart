@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_library/infrastructure/datasource/derived_thumbnail_cache.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/datasource/derived_thumbnail_cache.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -26,7 +26,7 @@ void main() {
   );
 
   setUp(() async {
-    cache = await Directory.systemTemp.createTemp('docforge_thumbs_');
+    cache = await Directory.systemTemp.createTemp('docscanly_thumbs_');
     renders = [];
     renderFailure = null;
     thumbnails = DerivedThumbnailCache(

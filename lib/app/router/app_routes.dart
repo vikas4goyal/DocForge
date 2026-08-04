@@ -9,7 +9,7 @@
 /// anything already pointing at it (`design.md` §8).
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
 
 /// Path templates for every route, and helpers to build concrete locations.
 abstract final class AppRoutes {
@@ -80,6 +80,9 @@ abstract final class AppRoutes {
   /// Privacy policy.
   static const privacy = '/settings/privacy';
 
+  /// iOS-only app-owned iCloud storage selection.
+  static const storageLocation = '/settings/storage-location';
+
   /// Name of the `:id` path parameter shared by the templated routes.
   static const idParameter = 'id';
 
@@ -111,4 +114,16 @@ abstract final class AppRoutes {
     about,
     privacy,
   ];
+
+  /// Routes that are registered only when the platform supports them.
+  static const iosOnly = <String>[storageLocation];
+}
+
+/// Typed iOS storage-location destination.
+class StorageLocationRoute {
+  /// Creates the destination value.
+  const StorageLocationRoute();
+
+  /// Stable route location.
+  String get location => AppRoutes.storageLocation;
 }

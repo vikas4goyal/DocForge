@@ -20,7 +20,7 @@ void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
   testWidgets('pages can be added and removed before saving', (tester) async {
-    await bootDocForge(tester);
+    await bootDocScanly(tester);
 
     await DashboardRobot(tester).waitUntilLoaded();
     await TabShellRobot(tester).startCreation();
@@ -39,7 +39,7 @@ void main() {
   });
 
   testWidgets('reordering renumbers every row', (tester) async {
-    await bootDocForge(tester);
+    await bootDocScanly(tester);
 
     await DashboardRobot(tester).waitUntilLoaded();
     await TabShellRobot(tester).startCreation();

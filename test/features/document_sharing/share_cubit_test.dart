@@ -9,21 +9,21 @@ library;
 import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/previews/fakes/fake_document_file_resolver.dart';
-import 'package:doc_forge/features/document_sharing/application/usecases/sharing_usecases.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
-import 'package:doc_forge/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
-import 'package:doc_forge/features/document_sharing/presentation/cubit/share_cubit.dart';
-import 'package:doc_forge/features/document_sharing/presentation/cubit/share_state.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_document_file_resolver.dart';
+import 'package:doc_scanly/features/document_sharing/application/usecases/sharing_usecases.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/cubit/share_cubit.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/cubit/share_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Reader implements DocumentReader {

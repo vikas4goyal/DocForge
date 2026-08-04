@@ -5,14 +5,14 @@
 /// real job is covered in `enhancement_job_test.dart`.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Records every request it is given and returns the destination path.

@@ -1,5 +1,5 @@
-import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Builds a quad from four normalised corner pairs, in canonical order.

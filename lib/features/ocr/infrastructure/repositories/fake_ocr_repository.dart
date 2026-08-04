@@ -5,11 +5,11 @@
 /// no network, so it is safe everywhere a real recogniser is not.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
 
 /// Recognises fixture text without touching a recogniser.
 class FakeOcrRepository implements OcrRepository {

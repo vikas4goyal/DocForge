@@ -3,7 +3,7 @@
 /// The values are normative — they come from `specs/image-enhancement/spec.md`.
 library;
 
-import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:flutter/widgets.dart';
 
 /// Keys used by the enhancement screen and its widgets.

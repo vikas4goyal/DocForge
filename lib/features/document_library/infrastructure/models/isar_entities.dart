@@ -19,11 +19,11 @@
 ///   wrong after a restore and meaningless to a future sync layer.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/trash.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/trash.dart';
 import 'package:isar_community/isar.dart';
 
 part 'isar_entities.g.dart';
@@ -35,7 +35,7 @@ part 'isar_entities.g.dart';
 /// Version 2 replaced `filePath` — an absolute device path into app-private
 /// storage — with `folderPath` and `fileName`, which address the file inside
 /// the user-visible library folder. See `LibraryStorageMigration`.
-const librarySchemaVersion = 3;
+const librarySchemaVersion = 5;
 
 /// Isar row for a document.
 @collection
@@ -99,6 +99,19 @@ class DocumentEntity {
   /// Whether recognised text has been stored for this document.
   late bool hasRecognisedText;
 
+  /// Stable iCloud resource identity. Null for local and legacy rows.
+  @Index()
+  String? cloudResourceIdentifier;
+
+  /// Original iCloud-relative path used to materialise conflict copies.
+  String? cloudRelativePath;
+
+  /// Stored [DocumentContentAvailability] name.
+  ///
+  /// Nullable so rows written before schema version 4 read as local without a
+  /// destructive database migration.
+  String? contentAvailability;
+
   /// UUID of the Trash entry holding this document, when deleted.
   @Index()
   String? trashUuid;
@@ -135,6 +148,9 @@ class DocumentEntity {
     ..isArchived = document.isArchived
     ..isProtected = document.isProtected
     ..hasRecognisedText = document.hasRecognisedText
+    ..cloudResourceIdentifier = document.cloudResourceIdentifier
+    ..cloudRelativePath = document.cloudRelativePath
+    ..contentAvailability = document.contentAvailability.name
     ..trashUuid = document.trashId?.value
     ..trashedAt = document.trashedAt?.toUtc()
     ..schemaVersion = librarySchemaVersion;
@@ -162,6 +178,12 @@ class DocumentEntity {
     isArchived: isArchived,
     isProtected: isProtected,
     hasRecognisedText: hasRecognisedText,
+    cloudResourceIdentifier: cloudResourceIdentifier,
+    cloudRelativePath: cloudRelativePath,
+    contentAvailability: DocumentContentAvailability.values.firstWhere(
+      (value) => value.name == contentAvailability,
+      orElse: () => DocumentContentAvailability.local,
+    ),
     trashId: trashUuid == null ? null : TrashId(trashUuid!),
     trashedAt: trashedAt?.toUtc(),
   );

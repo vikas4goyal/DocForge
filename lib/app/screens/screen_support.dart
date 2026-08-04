@@ -5,7 +5,7 @@
 /// a rule would be putting it in the wrong layer.
 library;
 
-import 'package:doc_forge/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
 import 'package:flutter/material.dart';
 
 /// Shows [message] in a snackbar over [context].

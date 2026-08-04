@@ -11,12 +11,13 @@
 /// for, and duplicating them here would mean two things to re-record.
 library;
 
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/app_settings/presentation/settings_previews.dart';
-import 'package:doc_forge/features/app_shell/presentation/shell_previews.dart';
-import 'package:doc_forge/features/document_creation/presentation/creation_previews.dart';
-import 'package:doc_forge/features/document_library/presentation/library_previews.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/features/app_settings/presentation/settings_previews.dart';
+import 'package:doc_scanly/features/app_shell/presentation/shell_previews.dart';
+import 'package:doc_scanly/features/cloud_storage/presentation/cloud_storage_previews.dart';
+import 'package:doc_scanly/features/document_creation/presentation/creation_previews.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_previews.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -52,6 +53,10 @@ void main() {
       'pageThumbnailStrip': pageThumbnailStrip,
       'documentCardDefault': documentCardDefault,
       'documentCardDark': documentCardDark,
+      'documentCardCloudRemote': documentCardCloudRemote,
+      'documentCardCloudDownloading': documentCardCloudDownloading,
+      'documentCardCloudAvailable': documentCardCloudAvailable,
+      'documentCardCloudFailed': documentCardCloudFailed,
       'documentThumbnailLoading': documentThumbnailLoading,
       'documentThumbnailFallback': documentThumbnailFallback,
       'documentListReady': documentListReady,
@@ -85,6 +90,7 @@ void main() {
       'settingsError': settingsError,
       'settingsPhoneDark': settingsPhoneDark,
       'settingsTabletLight': settingsTabletLight,
+      'settingsICloudStorage': settingsICloudStorage,
       'aboutDefault': aboutDefault,
       'privacyDefault': privacyDefault,
       'choiceTileDefault': choiceTileDefault,
@@ -96,6 +102,23 @@ void main() {
       'switchTileOn': switchTileOn,
       'switchTileDisabled': switchTileDisabled,
       'namingPreviewDefault': namingPreviewDefault,
+    }.entries) {
+      testWidgets(entry.key, (tester) => rendersCleanly(tester, entry.value));
+    }
+  });
+
+  group('iOS cloud-storage previews render', () {
+    for (final entry in <String, Widget Function()>{
+      'storageLocationLocal': storageLocationLocal,
+      'storageLocationICloudDark': storageLocationICloudDark,
+      'storageLocationLoading': storageLocationLoading,
+      'storageLocationEmpty': storageLocationEmpty,
+      'storageLocationUnavailable': storageLocationUnavailable,
+      'storageLocationConfirmation': storageLocationConfirmation,
+      'storageLocationMigration': storageLocationMigration,
+      'storageLocationVerifying': storageLocationVerifying,
+      'storageLocationLongContent': storageLocationLongContent,
+      'storageLocationError': storageLocationError,
     }.entries) {
       testWidgets(entry.key, (tester) => rendersCleanly(tester, entry.value));
     }

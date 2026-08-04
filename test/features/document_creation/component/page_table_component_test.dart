@@ -11,11 +11,11 @@
 /// device.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/features/document_creation/presentation/creation_keys.dart';
-import 'package:doc_forge/features/document_creation/presentation/cubit/page_table_cubit.dart';
-import 'package:doc_forge/features/document_creation/presentation/screens/page_table_screen.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/features/document_creation/presentation/creation_keys.dart';
+import 'package:doc_scanly/features/document_creation/presentation/cubit/page_table_cubit.dart';
+import 'package:doc_scanly/features/document_creation/presentation/screens/page_table_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';

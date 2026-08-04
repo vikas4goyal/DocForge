@@ -8,24 +8,25 @@ library;
 import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/previews/fakes/fake_document_file_resolver.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
-import 'package:doc_forge/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
-import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
-import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/pdf_editing/application/atomic_pdf_write.dart';
+import 'package:doc_scanly/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 class _Library implements DocumentReader, DocumentWriter {
@@ -91,7 +92,7 @@ void main() {
     String? password,
     int padding = 0,
   }) {
-    final path = '${temporary.path}/DocForge/$documentId.pdf';
+    final path = '${temporary.path}/DocScanly/$documentId.pdf';
     Directory(path).parent.createSync(recursive: true);
     final file = writeFakePdf(
       path,
@@ -117,6 +118,7 @@ void main() {
     final library = _Library({
       for (final document in documents) document.id: document,
     });
+    final store = FilesystemPublicFileStore(temporary);
 
     final context = PdfEditContext(
       documents: library,
@@ -126,7 +128,8 @@ void main() {
         (path, password) => editor.pageCountOf(path, password: password),
       ),
       secrets: secrets,
-      store: FilesystemPublicFileStore(temporary),
+      store: store,
+      files: PublicStoreDocumentFileResolver(store),
       workingDirectory: Directory.systemTemp,
       clock: FixedClock(DateTime.utc(2026, 6)),
       ids: SequentialIdGenerator(),

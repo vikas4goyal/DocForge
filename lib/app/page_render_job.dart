@@ -17,14 +17,14 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
-import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/page_render_plan.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/features/image_enhancement/infrastructure/enhancement_job.dart';
+import 'package:doc_scanly/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/features/image_enhancement/infrastructure/enhancement_job.dart';
 import 'package:image/image.dart' as img;
 import 'package:meta/meta.dart';
 

@@ -47,7 +47,7 @@ abstract final class ImportKeys {
   /// The control that abandons a protected import.
   static const passwordCancelButton = Key('import_password_cancel_button');
 
-  /// The wrapper that receives content shared into DocForge by another app.
+  /// The wrapper that receives content shared into DocScanly by another app.
   ///
   /// Keyed for the same reason as the other app-wide wrappers: it renders
   /// nothing, so its absence would otherwise show up only as a share that

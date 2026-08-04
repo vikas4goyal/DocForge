@@ -4,7 +4,7 @@
 TBD - created by archiving change add-recoverable-trash. Update Purpose after archive.
 ## Requirements
 ### Requirement: Recoverable Trash lifecycle
-The application SHALL move documents and complete folder trees deleted inside DocForge to Trash, SHALL keep them recoverable for up to 30 days, and SHALL remove bytes irreversibly only through confirmed permanent removal or expiry.
+The application SHALL move documents and complete folder trees deleted inside DocScanly to Trash, SHALL keep them recoverable for up to 30 days, and SHALL remove bytes irreversibly only through confirmed permanent removal or expiry.
 
 #### Scenario: Document moved to Trash
 - **WHEN** the user activates `Key('document_move_to_trash_button')` with semantics “Move <title> to Trash” and confirms
@@ -12,7 +12,7 @@ The application SHALL move documents and complete folder trees deleted inside Do
 
 #### Scenario: Folder tree moved to Trash
 - **WHEN** the user moves a folder to Trash from its dashboard action menu
-- **THEN** the folder, all descendant folders, every contained document and every other file DocForge can inventory move as one Trash entry and disappear from active browsing
+- **THEN** the folder, all descendant folders, every contained document and every other file DocScanly can inventory move as one Trash entry and disappear from active browsing
 
 #### Scenario: Archive remains distinct
 - **WHEN** a document is archived

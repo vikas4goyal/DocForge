@@ -37,6 +37,9 @@ abstract final class SettingsKeys {
   /// The storage-information entry.
   static const storageInfo = Key('settings_storage_info');
 
+  /// iOS-only storage-location entry.
+  static const storageLocation = Key('settings_storage_location');
+
   /// The About entry.
   static const about = Key('settings_about');
 

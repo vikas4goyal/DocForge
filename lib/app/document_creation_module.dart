@@ -7,22 +7,22 @@
 library;
 
 import 'dart:io';
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
-import 'package:doc_forge/features/ocr/application/usecases/ocr_usecases.dart';
-import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/isar_ocr_text_store.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/mlkit_ocr_repository.dart';
-import 'package:doc_forge/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
-import 'package:doc_forge/features/pdf_generation/domain/repositories/pdf_repository.dart';
-import 'package:doc_forge/features/pdf_generation/infrastructure/pdf_composer.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/features/ocr/application/usecases/ocr_usecases.dart';
+import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/isar_ocr_text_store.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/mlkit_ocr_repository.dart';
+import 'package:doc_scanly/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/repositories/pdf_repository.dart';
+import 'package:doc_scanly/features/pdf_generation/infrastructure/pdf_composer.dart';
 import 'package:isar_community/isar.dart';
 
 /// Everything OCR and PDF generation need, built once.

@@ -1,21 +1,21 @@
 /// Widget tests for the document preview and save screen.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/public_storage/in_memory_public_file_store.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
-import 'package:doc_forge/features/pdf_generation/presentation/cubit/pdf_generation_cubit.dart';
-import 'package:doc_forge/features/pdf_generation/presentation/cubit/pdf_generation_state.dart';
-import 'package:doc_forge/features/pdf_generation/presentation/pdf_keys.dart';
-import 'package:doc_forge/features/pdf_generation/presentation/screens/pdf_preview_screen.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/presentation/cubit/pdf_generation_cubit.dart';
+import 'package:doc_scanly/features/pdf_generation/presentation/cubit/pdf_generation_state.dart';
+import 'package:doc_scanly/features/pdf_generation/presentation/pdf_keys.dart';
+import 'package:doc_scanly/features/pdf_generation/presentation/screens/pdf_preview_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';

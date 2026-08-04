@@ -7,11 +7,11 @@
 /// and gate behaviour against trivial placeholder screens.
 library;
 
-import 'package:doc_forge/app/router/app_routes.dart';
-import 'package:doc_forge/app/router/route_gates.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/core/widgets/core_keys.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/app/router/route_gates.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/core/widgets/core_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -52,6 +52,7 @@ class AppScreens {
     required this.settings,
     required this.about,
     required this.privacy,
+    this.storageLocation,
   });
 
   /// First-launch onboarding.
@@ -104,6 +105,9 @@ class AppScreens {
 
   /// Privacy policy.
   final ScreenBuilder privacy;
+
+  /// iOS-only storage-location screen; null removes the route on Android.
+  final ScreenBuilder? storageLocation;
 }
 
 /// Creates the application router.
@@ -213,6 +217,11 @@ GoRouter createAppRouter({
           ),
         ],
       ),
+      if (screens.storageLocation != null)
+        GoRoute(
+          path: AppRoutes.storageLocation,
+          builder: (context, state) => screens.storageLocation!(context),
+        ),
     ],
   );
 }

@@ -1,10 +1,10 @@
 /// State coordination for recoverable Trash.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_library/application/usecases/trash_usecases.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/trash_state.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/trash_usecases.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/trash_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Coordinates Trash use cases without owning deletion rules.

@@ -9,9 +9,9 @@
 /// that has changed invalidates its own cache by not matching the old key.
 library;
 
-import 'package:doc_forge/core/contracts/geometry/page_geometry.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
 import 'package:meta/meta.dart';
 
 /// How large a render is wanted.

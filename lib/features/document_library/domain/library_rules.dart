@@ -5,7 +5,7 @@
 /// no storage, no clock, so each one is directly unit-testable.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
 
 /// Why a proposed library operation was rejected.
 enum LibraryRuleViolation {

@@ -21,10 +21,10 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_library/domain/repositories/document_file_store.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_library/domain/repositories/document_file_store.dart';
 
 /// A [DocumentFileStore] over the real filesystem.
 class LocalDocumentFileStore implements DocumentFileStore {

@@ -9,13 +9,13 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
-import 'package:doc_forge/features/pdf_generation/domain/repositories/pdf_repository.dart';
-import 'package:doc_forge/features/pdf_generation/infrastructure/pdf_composer.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/repositories/pdf_repository.dart';
+import 'package:doc_scanly/features/pdf_generation/infrastructure/pdf_composer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 
@@ -66,7 +66,7 @@ void main() {
   const composer = InlinePdfComposer();
 
   setUp(() {
-    directory = Directory.systemTemp.createTempSync('docforge_pdf');
+    directory = Directory.systemTemp.createTempSync('docscanly_pdf');
   });
 
   tearDown(() {

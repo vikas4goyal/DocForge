@@ -12,8 +12,8 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 import 'package:image/image.dart' as img;
 
 /// The longest edge, in pixels, of a shared page image.

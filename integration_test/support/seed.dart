@@ -23,7 +23,7 @@ import 'robots/library_robots.dart';
 /// Imports the fixture document and returns to a loaded dashboard.
 ///
 /// The flow must have been booted with the fixture path already supplied as
-/// [bootDocForge]'s `pickedFiles`, because the file browser answers with
+/// [bootDocScanly]'s `pickedFiles`, because the file browser answers with
 /// whatever it was configured with at boot and cannot be reconfigured
 /// afterwards.
 Future<void> seedDocumentByImport(WidgetTester tester) =>

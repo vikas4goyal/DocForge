@@ -1,12 +1,12 @@
 /// Recoverable Trash screen.
 library;
 
-import 'package:doc_forge/core/contracts/models/trash.dart';
-import 'package:doc_forge/core/formatting/display_formatting.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/trash_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/trash_state.dart';
-import 'package:doc_forge/features/document_library/presentation/trash_keys.dart';
+import 'package:doc_scanly/core/contracts/models/trash.dart';
+import 'package:doc_scanly/core/formatting/display_formatting.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/trash_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/trash_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/trash_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

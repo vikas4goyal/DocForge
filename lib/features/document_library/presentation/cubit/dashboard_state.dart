@@ -1,9 +1,9 @@
 /// State for the dashboard.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
 import 'package:equatable/equatable.dart';
 
 /// A folder as the dashboard lists it.
@@ -129,7 +129,7 @@ class DashboardState extends Equatable {
   bool get showsRecents => isAtRoot && !isSearching && recents.isNotEmpty;
 
   /// The breadcrumb from the library root to the open folder.
-  List<String> get breadcrumb => ['DocForge', ...path];
+  List<String> get breadcrumb => ['DocScanly', ...path];
 
   /// Returns a copy with the given fields replaced.
   ///

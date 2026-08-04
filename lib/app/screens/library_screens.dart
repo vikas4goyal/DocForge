@@ -5,20 +5,20 @@
 /// built from one helper rather than four near-copies that could drift.
 library;
 
-import 'package:doc_forge/app/library_module.dart';
-import 'package:doc_forge/app/router/app_router.dart';
-import 'package:doc_forge/app/router/app_routes.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/trash_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/document_detail_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/folder_detail_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/trash_screen.dart';
+import 'package:doc_scanly/app/library_module.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/folder_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/trash_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_detail_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_list_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/folder_detail_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/folder_list_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/trash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';

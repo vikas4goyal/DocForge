@@ -10,10 +10,10 @@
 /// specs mandate (`home_error_view`, `search_empty_state`, …) are preserved.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/widgets/core_keys.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/widgets/core_keys.dart';
 import 'package:flutter/material.dart';
 
 /// A centred loading indicator.

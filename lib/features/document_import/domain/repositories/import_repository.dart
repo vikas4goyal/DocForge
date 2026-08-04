@@ -5,7 +5,7 @@
 /// test for the share-sheet path has no interest in the photo library.
 library;
 
-import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 
 /// Offers the photo library.
 abstract interface class GalleryPicker {
@@ -29,14 +29,14 @@ abstract interface class FileBrowser {
   Future<Result<List<String>>> pickFiles();
 }
 
-/// Content handed to DocForge by another application.
+/// Content handed to DocScanly by another application.
 ///
-/// Covers both cases the spec names: a file shared while DocForge was closed,
+/// Covers both cases the spec names: a file shared while DocScanly was closed,
 /// which is waiting at launch, and one shared while it was already running.
 abstract interface class SharedContentSource {
   /// Content that was shared before the application finished launching.
   ///
-  /// Empty when DocForge was opened normally. Read once, at startup, so a
+  /// Empty when DocScanly was opened normally. Read once, at startup, so a
   /// cold-launch share is not lost before anything is listening.
   Future<Result<List<String>>> pending();
 

@@ -13,9 +13,9 @@ import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_maths.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_maths.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:image/image.dart' as img;
 
 /// JPEG quality used for an enhanced page.

@@ -8,10 +8,10 @@
 /// silently fails to update.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/features/document_search/domain/search_query.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/features/document_search/domain/search_query.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Document documentNamed(String title) => Document(

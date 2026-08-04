@@ -2,9 +2,9 @@
 /// and the share sheet.
 library;
 
-import 'package:doc_forge/features/document_sharing/presentation/share_keys.dart';
-import 'package:doc_forge/features/document_viewer/presentation/viewer_keys.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/pdf_edit_keys.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/share_keys.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/viewer_keys.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/pdf_edit_keys.dart';
 import 'package:flutter/widgets.dart';
 
 import '../pump.dart';

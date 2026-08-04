@@ -10,7 +10,7 @@ library;
 
 import 'dart:math' as math;
 
-import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
 
 /// A candidate page outline, in pixel coordinates.
 ///

@@ -3,9 +3,9 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
 import 'package:flutter/material.dart';
 
 /// Resolves a cached thumbnail-sized rendering of one document page.

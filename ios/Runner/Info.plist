@@ -8,15 +8,15 @@
 	     a usage description iOS refuses the permission outright, without ever
 	     asking the user, and rejects the app at review. -->
 	<key>NSCameraUsageDescription</key>
-	<string>DocForge uses the camera to scan documents into PDFs.</string>
+	<string>DocScanly uses the camera to scan documents into PDFs.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>DocForge needs access to your photos so you can turn existing images into documents.</string>
+	<string>DocScanly needs access to your photos so you can turn existing images into documents.</string>
 	<key>NSFaceIDUsageDescription</key>
-	<string>DocForge uses Face ID to unlock your documents.</string>
+	<string>DocScanly uses Face ID to unlock your documents.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Doc Forge</string>
+	<string>DocScanly</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -24,7 +24,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>doc_forge</string>
+	<string>doc_scanly</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -35,6 +35,21 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Publishes the registered iCloud Documents container as one DocScanly
+	     folder in Files. The container's Documents directory is the library
+	     root, so no second nested DocScanly directory is created. -->
+	<key>NSUbiquitousContainers</key>
+	<dict>
+		<key>iCloud.com.bruxkey.docscanly</key>
+		<dict>
+			<key>NSUbiquitousContainerIsDocumentScopePublic</key>
+			<true/>
+			<key>NSUbiquitousContainerName</key>
+			<string>DocScanly</string>
+			<key>NSUbiquitousContainerSupportedFolderLevels</key>
+			<string>Any</string>
+		</dict>
+	</dict>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -63,18 +78,18 @@
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
 	<!-- Exposes the app's Documents container in the Files app, under
-	     "On My iPhone → Doc Forge". This is what makes a saved PDF reachable
+	     "On My iPhone → DocScanly". This is what makes a saved PDF reachable
 	     from Files and from other applications, which is the whole point of the
 	     public library folder.
 
 	     It exposes the container *wholesale*, which is why nothing private is
 	     left in it: the database lives in Application Support and every derived
-	     cache in Caches, so Documents holds nothing but the DocForge folder
+	     cache in Caches, so Documents holds nothing but the DocScanly folder
 	     (design.md D4). -->
 	<key>UIFileSharingEnabled</key>
 	<true/>
 	<!-- Share-sheet and "Open in" registration. Declaring the document types
-	     DocForge accepts is what puts it in the iOS share sheet for a PDF or an
+	     DocScanly accepts is what puts it in the iOS share sheet for a PDF or an
 	     image. -->
 	<key>CFBundleDocumentTypes</key>
 	<array>
@@ -104,10 +119,10 @@
 		</dict>
 	</array>
 	<!-- True so files *inside our own container* can be opened in place by
-	     other applications — that is what makes the DocForge folder behave like
+	     other applications — that is what makes the DocScanly folder behave like
 	     a real folder in Files rather than a read-only listing.
 
-	     It does NOT mean DocForge edits foreign files in place. An imported PDF
+	     It does NOT mean DocScanly edits foreign files in place. An imported PDF
 	     is still copied into the library first, because an in-place handle to
 	     another app's file can be revoked and would leave a library entry
 	     pointing at something we can no longer open (design.md D8). -->

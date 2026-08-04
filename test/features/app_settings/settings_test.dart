@@ -1,14 +1,14 @@
 /// Tests for the settings domain, repository and use cases.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/app_settings/application/usecases/settings_usecases.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
-import 'package:doc_forge/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/app_settings/application/usecases/settings_usecases.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A preference store that fails every write.
@@ -139,11 +139,16 @@ void main() {
       );
     });
 
-    test('the privacy statement makes the local-only guarantee', () {
+    test('the privacy statement distinguishes Android and optional iCloud', () {
       final statement = SettingsCopy.privacyStatement.toLowerCase();
 
-      expect(statement, contains('device only'));
-      expect(statement, contains('nothing is uploaded automatically'));
+      expect(
+        statement,
+        contains('on android this library is always on the device'),
+      );
+      expect(statement, contains('explicitly select'));
+      expect(statement, contains('icloud drive container'));
+      expect(statement, contains('never silently switches'));
     });
 
     test('the storage label agrees in number', () {

@@ -25,13 +25,13 @@ void main() {
   testWidgets('a query that matches nothing empties the library view', (
     tester,
   ) async {
-    final staging = await Directory.systemTemp.createTemp('docforge_search_');
+    final staging = await Directory.systemTemp.createTemp('docscanly_search_');
     addTearDown(() {
       if (staging.existsSync()) staging.deleteSync(recursive: true);
     });
     final importable = await Fixtures(staging).importable();
 
-    await bootDocForge(tester, pickedFiles: [importable]);
+    await bootDocScanly(tester, pickedFiles: [importable]);
     await seedDocumentByImport(tester);
 
     final dashboard = DashboardRobot(tester);
@@ -55,13 +55,13 @@ void main() {
   });
 
   testWidgets('clearing the query brings the library back', (tester) async {
-    final staging = await Directory.systemTemp.createTemp('docforge_search2_');
+    final staging = await Directory.systemTemp.createTemp('docscanly_search2_');
     addTearDown(() {
       if (staging.existsSync()) staging.deleteSync(recursive: true);
     });
     final importable = await Fixtures(staging).importable();
 
-    await bootDocForge(tester, pickedFiles: [importable]);
+    await bootDocScanly(tester, pickedFiles: [importable]);
     await seedDocumentByImport(tester);
 
     final dashboard = DashboardRobot(tester);

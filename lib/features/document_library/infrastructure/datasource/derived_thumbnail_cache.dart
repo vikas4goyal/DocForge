@@ -12,11 +12,11 @@ library;
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
 
 /// Renders one page of a PDF to thumbnail-sized image bytes.
 typedef ThumbnailRenderer =

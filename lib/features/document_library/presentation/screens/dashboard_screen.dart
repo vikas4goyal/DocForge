@@ -1,17 +1,17 @@
 /// The dashboard: the library folder, as the user's own folder.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/core/formatting/display_formatting.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_state.dart';
-import 'package:doc_forge/features/document_library/presentation/library_dashboard_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/document_card.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/document_thumbnail.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/core/formatting/display_formatting.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_dashboard_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_card.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -54,13 +54,25 @@ class DashboardActions {
 /// in the path type: nothing on this screen can address anything outside it.
 class DashboardScreen extends StatelessWidget {
   /// Creates the dashboard.
-  const DashboardScreen({required this.actions, super.key, this.loadThumbnail});
+  const DashboardScreen({
+    required this.actions,
+    super.key,
+    this.loadThumbnail,
+    this.onLibraryRefresh,
+    this.libraryRefreshKey,
+  });
 
   /// What each control does.
   final DashboardActions actions;
 
   /// Lazily resolves bounded first-page previews for visible documents.
   final DocumentThumbnailLoader? loadThumbnail;
+
+  /// Reconciles externally changed storage before the Cubit reloads its index.
+  final Future<void> Function()? onLibraryRefresh;
+
+  /// Optional platform-specific key for the pull-to-refresh control.
+  final Key? libraryRefreshKey;
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +83,7 @@ class DashboardScreen extends StatelessWidget {
         return Scaffold(
           key: DashboardKeys.screen,
           appBar: AppBar(
-            title: const Text('DocForge'),
+            title: const Text('DocScanly'),
             actions: [
               IconButton(
                 key: DashboardKeys.createFolderButton,
@@ -89,7 +101,11 @@ class DashboardScreen extends StatelessWidget {
           ),
           body: SafeArea(
             child: RefreshIndicator(
-              onRefresh: cubit.load,
+              key: libraryRefreshKey,
+              onRefresh: () async {
+                await onLibraryRefresh?.call();
+                await cubit.load();
+              },
               child: CustomScrollView(
                 key: DashboardKeys.scrollView,
                 physics: const AlwaysScrollableScrollPhysics(),

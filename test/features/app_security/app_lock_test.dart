@@ -5,13 +5,13 @@
 /// nowhere until the app runs on a device.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
-import 'package:doc_forge/features/app_security/domain/app_lock.dart';
-import 'package:doc_forge/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
+import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
+import 'package:doc_scanly/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A secure store whose every operation fails.
@@ -113,7 +113,7 @@ void main() {
     test('the prompt reason names what is being unlocked', () {
       // It appears inside the system dialogue, where "authenticate" alone tells
       // the user nothing about what they are authorising.
-      expect(AppLockRules.promptReason, contains('DocForge'));
+      expect(AppLockRules.promptReason, contains('DocScanly'));
       expect(AppLockRules.changeLockReason, isNot(AppLockRules.promptReason));
     });
   });

@@ -3,16 +3,16 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/ocr/application/usecases/ocr_usecases.dart';
-import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
-import 'package:doc_forge/features/ocr/presentation/cubit/ocr_cubit.dart';
-import 'package:doc_forge/features/ocr/presentation/cubit/ocr_state.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/ocr/application/usecases/ocr_usecases.dart';
+import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
+import 'package:doc_scanly/features/ocr/presentation/cubit/ocr_cubit.dart';
+import 'package:doc_scanly/features/ocr/presentation/cubit/ocr_state.dart';
 
 /// The document every test recognises.
 const testDocument = DocumentId('doc-1');

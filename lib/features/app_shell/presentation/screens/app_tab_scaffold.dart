@@ -1,7 +1,7 @@
 /// The application's three destinations.
 library;
 
-import 'package:doc_forge/features/app_shell/presentation/shell_keys.dart';
+import 'package:doc_scanly/features/app_shell/presentation/shell_keys.dart';
 import 'package:flutter/material.dart';
 
 /// Which destination the tab bar is showing.

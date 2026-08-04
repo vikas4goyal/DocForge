@@ -6,7 +6,7 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/features/document_import/application/usecases/import_usecases.dart';
+import 'package:doc_scanly/features/document_import/application/usecases/import_usecases.dart';
 
 /// Copies one selected file and returns where it landed.
 ///

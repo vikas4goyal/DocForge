@@ -3,7 +3,7 @@
 /// Precondition: onboarding is complete, the library is empty, and the file
 /// browser is configured to answer with the fixture PDF.
 ///
-/// What it proves: a file chosen from outside DocForge becomes a document the
+/// What it proves: a file chosen from outside DocScanly becomes a document the
 /// user can see in their library. This is the journey where an app that stores
 /// documents most obviously either works or does not, and the one a unit test
 /// can least meaningfully stand in for — it crosses the picker, the importer,
@@ -27,13 +27,13 @@ void main() {
     // The fixture path has to be resolved before the boot that configures the
     // file browser with it, so this materialises it into a directory of its own
     // first.
-    final staging = await Directory.systemTemp.createTemp('docforge_import_');
+    final staging = await Directory.systemTemp.createTemp('docscanly_import_');
     addTearDown(() {
       if (staging.existsSync()) staging.deleteSync(recursive: true);
     });
     final importable = await Fixtures(staging).importable();
 
-    final app = await bootDocForge(tester, pickedFiles: [importable]);
+    final app = await bootDocScanly(tester, pickedFiles: [importable]);
 
     final dashboard = DashboardRobot(tester);
     await dashboard.waitUntilLoaded();

@@ -8,17 +8,17 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_import/application/usecases/import_usecases.dart';
-import 'package:doc_forge/features/document_import/domain/import_rules.dart';
-import 'package:doc_forge/features/document_import/domain/repositories/import_repository.dart';
-import 'package:doc_forge/features/document_import/infrastructure/import_job.dart';
-import 'package:doc_forge/features/document_import/infrastructure/repositories/platform_import_sources.dart';
-import 'package:doc_forge/features/document_viewer/domain/repositories/pdf_renderer.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_import/application/usecases/import_usecases.dart';
+import 'package:doc_scanly/features/document_import/domain/import_rules.dart';
+import 'package:doc_scanly/features/document_import/domain/repositories/import_repository.dart';
+import 'package:doc_scanly/features/document_import/infrastructure/import_job.dart';
+import 'package:doc_scanly/features/document_import/infrastructure/repositories/platform_import_sources.dart';
+import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
 
 /// Adapts a [PdfRenderer] into the [ImportedPdfInspector] import declares.
 ///

@@ -14,33 +14,33 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/app/document_creation_module.dart';
-import 'package:doc_forge/app/library_module.dart';
-import 'package:doc_forge/core/contracts/geometry/perspective_transform.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/dashboard_cubit.dart';
-import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
-import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/infrastructure/page_correction_job.dart';
-import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
-import 'package:doc_forge/features/image_enhancement/infrastructure/enhancement_job.dart';
-import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
-import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
-import 'package:doc_forge/features/pdf_generation/infrastructure/pdf_composer.dart';
+import 'package:doc_scanly/app/document_creation_module.dart';
+import 'package:doc_scanly/app/library_module.dart';
+import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
+import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
+import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/infrastructure/page_correction_job.dart';
+import 'package:doc_scanly/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/features/image_enhancement/infrastructure/enhancement_job.dart';
+import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/infrastructure/pdf_composer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:isar_community/isar.dart';
@@ -103,7 +103,7 @@ void main() {
   });
 
   setUp(() async {
-    root = Directory.systemTemp.createTempSync('docforge_slice');
+    root = Directory.systemTemp.createTempSync('docscanly_slice');
     staging = Directory('${root.path}/staging')..createSync();
     documents = Directory('${root.path}/documents')..createSync();
 
@@ -286,7 +286,7 @@ void main() {
       expect(document.pageCount, 3);
       expect(document.sizeInBytes, greaterThan(0));
       final published = File(
-        '${documents.path}/DocForge/${document.relativePath}',
+        '${documents.path}/DocScanly/${document.relativePath}',
       );
       expect(published.existsSync(), isTrue);
       // A real PDF, not a stub.
@@ -353,7 +353,7 @@ void main() {
     final document = (saved as Success<Document>).value;
     expect(document.pageCount, 2);
     expect(
-      File('${documents.path}/DocForge/${document.relativePath}').existsSync(),
+      File('${documents.path}/DocScanly/${document.relativePath}').existsSync(),
       isTrue,
     );
   });
@@ -374,7 +374,7 @@ void main() {
     // The finished PDF goes into the user-visible library folder — that is the
     // point of it. The captures it was built from stay in private staging.
     expect(
-      File('${documents.path}/DocForge/${document.relativePath}').existsSync(),
+      File('${documents.path}/DocScanly/${document.relativePath}').existsSync(),
       isTrue,
     );
     expect(captured.single.imagePath, startsWith(staging.path));

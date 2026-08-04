@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/storage/public_storage/filesystem_public_file_store.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -11,7 +11,7 @@ void main() {
   late FilesystemPublicFileStore store;
 
   setUp(() async {
-    container = await Directory.systemTemp.createTemp('docforge_public_');
+    container = await Directory.systemTemp.createTemp('docscanly_public_');
     store = FilesystemPublicFileStore(container);
     await store.initialise();
   });
@@ -20,7 +20,7 @@ void main() {
     if (container.existsSync()) await container.delete(recursive: true);
   });
 
-  Directory root() => Directory('${container.path}/DocForge');
+  Directory root() => Directory('${container.path}/DocScanly');
 
   /// Writes a throwaway source file the store can copy in.
   Future<String> sourceFile(
@@ -43,6 +43,16 @@ void main() {
       expect(result.isSuccess, isTrue);
       expect(root().existsSync(), isTrue);
     });
+  });
+
+  test('atRoot uses the supplied directory directly', () async {
+    final cloudRoot = Directory('${container.path}/iCloud/Documents');
+    final cloudStore = FilesystemPublicFileStore.atRoot(cloudRoot);
+
+    await cloudStore.initialise();
+
+    expect(cloudRoot.existsSync(), isTrue);
+    expect(Directory('${cloudRoot.path}/DocScanly').existsSync(), isFalse);
   });
 
   group('writeFile', () {

@@ -6,7 +6,7 @@
 /// (`design.md` §2).
 library;
 
-import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'scanned_page_bundle.freezed.dart';

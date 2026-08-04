@@ -16,7 +16,7 @@
 /// tell at a glance what a test is claiming.
 library;
 
-import 'package:doc_forge/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';

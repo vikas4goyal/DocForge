@@ -1,11 +1,11 @@
 /// Builds the search screen.
 library;
 
-import 'package:doc_forge/app/library_module.dart';
-import 'package:doc_forge/app/router/app_router.dart';
-import 'package:doc_forge/app/router/app_routes.dart';
-import 'package:doc_forge/features/document_search/presentation/bloc/search_bloc.dart';
-import 'package:doc_forge/features/document_search/presentation/screens/search_screen.dart';
+import 'package:doc_scanly/app/library_module.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/features/document_search/presentation/bloc/search_bloc.dart';
+import 'package:doc_scanly/features/document_search/presentation/screens/search_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 

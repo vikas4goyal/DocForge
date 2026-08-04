@@ -9,7 +9,7 @@
 /// So the harness proves it about itself, first, before any flow relies on it.
 library;
 
-import 'package:doc_forge/features/document_library/presentation/library_dashboard_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_dashboard_keys.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -27,7 +27,7 @@ void main() {
       // the application is stamped with: a document's created-at, its
       // identifier, a page's identifier. If those two agree across boots, no
       // flow's assertions can depend on which run they are in.
-      final first = await bootDocForge(tester);
+      final first = await bootDocScanly(tester);
       await DashboardRobot(tester).waitUntilLoaded();
 
       final firstNow = first.dependencies.clock.now();
@@ -37,7 +37,7 @@ void main() {
         first.dependencies.idGenerator.generate(),
       ];
 
-      final second = await bootDocForge(tester);
+      final second = await bootDocScanly(tester);
       await DashboardRobot(tester).waitUntilLoaded();
 
       final secondNow = second.dependencies.clock.now();
@@ -69,12 +69,12 @@ void main() {
       // The property that lets flows run in any order. If a boot could see what
       // an earlier one wrote, a flow asserting "the document appears" would
       // pass on the strength of some other flow's document.
-      final first = await bootDocForge(tester);
+      final first = await bootDocScanly(tester);
       final dashboard = DashboardRobot(tester);
       await dashboard.waitUntilLoaded();
       expect(dashboard.isEmpty, isTrue);
 
-      final second = await bootDocForge(tester);
+      final second = await bootDocScanly(tester);
       await DashboardRobot(tester).waitUntilLoaded();
 
       expect(
@@ -90,7 +90,7 @@ void main() {
     testWidgets('the substituted platform starts from a clean slate', (
       tester,
     ) async {
-      final app = await bootDocForge(tester);
+      final app = await bootDocScanly(tester);
       await DashboardRobot(tester).waitUntilLoaded();
 
       // Nothing has been shared, printed or captured before the flow acts. A
@@ -107,13 +107,13 @@ void main() {
     ) async {
       // The end-to-end version of the same claim: not just that the seeds
       // match, but that the application built from them looks the same.
-      await bootDocForge(tester);
+      await bootDocScanly(tester);
       final firstRun = DashboardRobot(tester);
       await firstRun.waitUntilLoaded();
       final firstEmpty = firstRun.isEmpty;
       expect(find.byKey(DashboardKeys.screen), findsOneWidget);
 
-      await bootDocForge(tester);
+      await bootDocScanly(tester);
       final secondRun = DashboardRobot(tester);
       await secondRun.waitUntilLoaded();
 

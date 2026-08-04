@@ -86,7 +86,7 @@ class MediaStoreItem {
   );
 
   /// The path of the containing folder relative to shared storage,
-  /// e.g. `Documents/DocForge/Invoices/`.
+  /// e.g. `Documents/DocScanly/Invoices/`.
   final String relativePath;
 
   /// The file's name including its extension.
@@ -112,10 +112,14 @@ class MediaStoreChannel {
   const MediaStoreChannel([this.channel = const MethodChannel(channelName)]);
 
   /// The channel name shared with the Android host.
-  static const channelName = 'com.bruxkey.doc_forge/media_store';
+  static const channelName = 'com.bruxkey.docscanly/media_store';
 
   /// The platform channel calls are sent on.
   final MethodChannel channel;
+
+  /// Moves any retired public-library tree into the current DocScanly path.
+  Future<void> migrateLegacyLibrary() =>
+      _invoke<void>('migrateLegacyLibrary', const {});
 
   /// Ensures the collection folder named by [relativePath] exists.
   ///

@@ -1,4 +1,4 @@
-import 'package:doc_forge/core/time/clock.dart';
+import 'package:doc_scanly/core/time/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

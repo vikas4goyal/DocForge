@@ -1,7 +1,7 @@
-import 'package:doc_forge/app/router/app_router.dart';
-import 'package:doc_forge/app/router/app_routes.dart';
-import 'package:doc_forge/app/router/route_gates.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/app/router/route_gates.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -14,13 +14,14 @@ Future<GoRouter> pumpRouter(
   String location = AppRoutes.home,
   bool locked = false,
   bool needsOnboarding = false,
+  bool includeStorageLocation = false,
 }) async {
   final router = createAppRouter(
     guard: RouteGuard(
       lockGate: FakeAppLockGate(isLocked: locked),
       onboardingGate: FakeOnboardingGate(needsOnboarding: needsOnboarding),
     ),
-    screens: markerScreens(),
+    screens: markerScreens(includeStorageLocation: includeStorageLocation),
     initialLocation: location,
   );
 
@@ -99,6 +100,33 @@ void main() {
         '/documents/a/edit',
       );
       expect(AppRoutes.folderDetail(const FolderId('b')), '/folders/b');
+    });
+  });
+
+  group('iOS-only storage route', () {
+    testWidgets('is registered when iOS composition supplies the screen', (
+      tester,
+    ) async {
+      await pumpRouter(
+        tester,
+        location: AppRoutes.storageLocation,
+        includeStorageLocation: true,
+      );
+
+      expect(find.text('storageLocation'), findsOneWidget);
+    });
+
+    testWidgets('is absent from Android composition', (tester) async {
+      await pumpRouter(tester, location: AppRoutes.storageLocation);
+
+      expect(find.text('That page does not exist'), findsOneWidget);
+      expect(find.text('storageLocation'), findsNothing);
+    });
+
+    test('typed destination uses the stable location', () {
+      expect(const StorageLocationRoute().location, AppRoutes.storageLocation);
+      expect(AppRoutes.iosOnly, [AppRoutes.storageLocation]);
+      expect(AppRoutes.all, isNot(contains(AppRoutes.storageLocation)));
     });
   });
 

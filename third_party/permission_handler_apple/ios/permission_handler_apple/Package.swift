@@ -70,7 +70,7 @@ func findInfoPlist() -> [String: Any] {
 let infoPlist = findInfoPlist()
 
 // ── LOCAL PATCH (not upstream) ─────────────────────────────────────────────
-// The permissions DocForge requests, forced on rather than auto-detected.
+// The permissions DocScanly requests, forced on rather than auto-detected.
 //
 // Neither mechanism below can work in a Flutter + Swift Package Manager app:
 //

@@ -1,7 +1,7 @@
 /// Recoverable deletion vocabulary shared by the library and Trash UI.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'trash.freezed.dart';
@@ -36,7 +36,7 @@ abstract class TrashInventory with _$TrashInventory {
 
   const TrashInventory._();
 
-  /// Total number of files, including files DocForge does not index.
+  /// Total number of files, including files DocScanly does not index.
   int get fileCount => documentCount + otherFileCount;
 
   /// Whether moving this candidate also moves descendants or unknown files.

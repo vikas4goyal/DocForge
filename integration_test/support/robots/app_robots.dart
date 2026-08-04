@@ -2,15 +2,16 @@
 /// lock, the tab shell, the dashboard and settings.
 library;
 
-import 'package:doc_forge/features/app_security/presentation/security_keys.dart';
-import 'package:doc_forge/features/app_settings/presentation/settings_keys.dart';
-import 'package:doc_forge/features/app_shell/presentation/shell_keys.dart';
-import 'package:doc_forge/features/document_import/presentation/import_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/library_dashboard_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/trash_keys.dart';
-import 'package:doc_forge/features/onboarding/presentation/onboarding_keys.dart';
-import 'package:flutter/widgets.dart';
+import 'package:doc_scanly/features/app_security/presentation/security_keys.dart';
+import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
+import 'package:doc_scanly/features/app_shell/presentation/shell_keys.dart';
+import 'package:doc_scanly/features/cloud_storage/presentation/cloud_storage_keys.dart';
+import 'package:doc_scanly/features/document_import/presentation/import_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_dashboard_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/trash_keys.dart';
+import 'package:doc_scanly/features/onboarding/presentation/onboarding_keys.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../pump.dart';
@@ -239,6 +240,35 @@ class DashboardRobot extends Robot {
     await tester.pump(const Duration(milliseconds: 600));
   });
 
+  /// Document identifiers currently exposed by dashboard rows.
+  List<String> get visibleDocumentIds => find
+      .byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith(
+              LibraryKeys.documentListItemPrefix,
+            ),
+      )
+      .evaluate()
+      .map(
+        (element) => (element.widget.key! as ValueKey<String>).value.substring(
+          LibraryKeys.documentListItemPrefix.length + 1,
+        ),
+      )
+      .toSet()
+      .toList();
+
+  /// Pulls the iCloud-backed dashboard refresh control.
+  Future<void> refreshCloudLibrary() =>
+      step('refreshing the iCloud library', () async {
+        await waitUntilVisible();
+        final indicator = tester.widget<RefreshIndicator>(
+          find.byKey(CloudStorageKeys.libraryRefresh),
+        );
+        await indicator.onRefresh();
+        await tester.pump();
+      });
+
   /// Whether the dashboard is showing its empty state.
   bool get isEmpty => has(DashboardKeys.emptyState);
 }
@@ -349,4 +379,11 @@ class SettingsRobot extends Robot {
     await tap(SettingsKeys.about);
     await waitFor(SettingsKeys.aboutScreen);
   });
+
+  /// Opens the iOS-only storage-location screen.
+  Future<void> openStorageLocation() =>
+      step('opening storage location', () async {
+        await waitUntilVisible();
+        await tap(SettingsKeys.storageLocation);
+      });
 }

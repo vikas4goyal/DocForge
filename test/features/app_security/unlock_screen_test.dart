@@ -2,13 +2,13 @@
 library;
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
-import 'package:doc_forge/features/app_security/domain/app_lock.dart';
-import 'package:doc_forge/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
-import 'package:doc_forge/features/app_security/presentation/cubit/app_lock_cubit.dart';
-import 'package:doc_forge/features/app_security/presentation/screens/unlock_screen.dart';
-import 'package:doc_forge/features/app_security/presentation/security_keys.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
+import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
+import 'package:doc_scanly/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
+import 'package:doc_scanly/features/app_security/presentation/cubit/app_lock_cubit.dart';
+import 'package:doc_scanly/features/app_security/presentation/screens/unlock_screen.dart';
+import 'package:doc_scanly/features/app_security/presentation/security_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';

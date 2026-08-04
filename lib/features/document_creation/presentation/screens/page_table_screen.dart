@@ -1,14 +1,14 @@
 /// The page table: creating a PDF is one screen.
 library;
 
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/document_creation/domain/creation_session.dart';
-import 'package:doc_forge/features/document_creation/presentation/creation_keys.dart';
-import 'package:doc_forge/features/document_creation/presentation/cubit/page_table_cubit.dart';
-import 'package:doc_forge/features/document_creation/presentation/cubit/page_table_state.dart';
-import 'package:doc_forge/features/document_creation/presentation/widgets/page_row.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/document_creation/domain/creation_session.dart';
+import 'package:doc_scanly/features/document_creation/presentation/creation_keys.dart';
+import 'package:doc_scanly/features/document_creation/presentation/cubit/page_table_cubit.dart';
+import 'package:doc_scanly/features/document_creation/presentation/cubit/page_table_state.dart';
+import 'package:doc_scanly/features/document_creation/presentation/widgets/page_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

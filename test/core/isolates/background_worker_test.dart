@@ -1,6 +1,6 @@
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Doubles [input]. Top-level so it can be sent to a real isolate.

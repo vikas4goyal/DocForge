@@ -1,18 +1,19 @@
 /// Builds the settings screen and the two informational screens it pushes.
 library;
 
-import 'package:doc_forge/app/router/app_router.dart';
-import 'package:doc_forge/app/screens/screen_support.dart';
-import 'package:doc_forge/app/settings_module.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/theme/theme_mode_controller.dart';
-import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
-import 'package:doc_forge/features/app_security/domain/app_lock.dart';
-import 'package:doc_forge/features/app_security/domain/repositories/app_lock_repository.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
-import 'package:doc_forge/features/app_settings/presentation/cubit/settings_cubit.dart';
-import 'package:doc_forge/features/app_settings/presentation/screens/settings_screen.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/app/screens/screen_support.dart';
+import 'package:doc_scanly/app/settings_module.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/theme/theme_mode_controller.dart';
+import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
+import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
+import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_repository.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -61,6 +62,7 @@ SettingsScreens buildSettingsScreens({
   required String appVersion,
   required AppLockConfiguration lockConfiguration,
   required DeviceAuthenticator authenticator,
+  bool supportsCloudStorage = false,
 }) {
   Widget settingsScreen(BuildContext context) => BlocProvider(
     create: (_) => SettingsCubit(
@@ -105,6 +107,9 @@ SettingsScreens buildSettingsScreens({
             screenContext.read<SettingsCubit>(),
             enabled: requested,
           ),
+          onStorageLocation: supportsCloudStorage
+              ? () => context.push(AppRoutes.storageLocation)
+              : null,
         );
       },
     ),

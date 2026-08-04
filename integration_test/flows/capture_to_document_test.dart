@@ -27,7 +27,7 @@ void main() {
   testWidgets('captured pages become a document in the library', (
     tester,
   ) async {
-    final app = await bootDocForge(tester);
+    final app = await bootDocScanly(tester);
 
     await DashboardRobot(tester).waitUntilLoaded();
     await TabShellRobot(tester).startCreation();
@@ -75,7 +75,7 @@ void main() {
   });
 
   testWidgets('a page abandoned at crop is not added', (tester) async {
-    final app = await bootDocForge(tester);
+    final app = await bootDocScanly(tester);
 
     await DashboardRobot(tester).waitUntilLoaded();
     await TabShellRobot(tester).startCreation();

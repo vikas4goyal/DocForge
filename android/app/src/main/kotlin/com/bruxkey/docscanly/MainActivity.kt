@@ -1,4 +1,4 @@
-package com.bruxkey.doc_forge
+package com.bruxkey.docscanly
 
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -11,7 +11,7 @@ class MainActivity : FlutterActivity() {
      * Registers the MediaStore bridge alongside the generated plugins.
      *
      * Hosted here rather than published as a plugin package: it exists only to
-     * reach `Documents/DocForge`, and every candidate plugin either needs the
+     * reach `Documents/DocScanly`, and every candidate plugin either needs the
      * folder-picker prompt this application deliberately avoids or cannot
      * create and enumerate nested folders — see `design.md` D3.
      */

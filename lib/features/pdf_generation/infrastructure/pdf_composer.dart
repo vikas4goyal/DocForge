@@ -4,11 +4,11 @@ library;
 import 'dart:io';
 import 'dart:isolate';
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
-import 'package:doc_forge/features/pdf_generation/domain/repositories/pdf_repository.dart';
-import 'package:doc_forge/features/pdf_generation/infrastructure/pdf_composer_job.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/repositories/pdf_repository.dart';
+import 'package:doc_scanly/features/pdf_generation/infrastructure/pdf_composer_job.dart';
 
 /// Composes PDFs in a background isolate.
 ///

@@ -30,6 +30,17 @@ abstract final class LibraryKeys {
   static Key documentThumbnailLoading(String documentId) =>
       Key('document_thumbnail_loading_$documentId');
 
+  /// Cloud-content state beside a document row or detail header.
+  ///
+  /// The value mirrors the iOS cloud-storage registry without importing that
+  /// feature, preserving the cross-feature layering boundary.
+  static Key documentCloudStatus(String documentId) =>
+      Key('document_cloud_status_$documentId');
+
+  /// Download progress for one cloud-backed document.
+  static Key documentCloudDownload(String documentId) =>
+      Key('document_cloud_download_$documentId');
+
   /// Empty state shown when a document list has nothing to show.
   static const documentListEmptyState = Key('document_list_empty_state');
 
@@ -186,7 +197,7 @@ abstract final class LibraryKeys {
   /// The wrapper that reconciles the library folder when the app resumes.
   ///
   /// The library folder is visible in the user's file browser, so it can change
-  /// while DocForge is in the background. Keyed so a flow can assert the
+  /// while DocScanly is in the background. Keyed so a flow can assert the
   /// reconciler is mounted rather than discover its absence as a stale list.
   static const libraryReconciler = Key('library_reconciler');
 }

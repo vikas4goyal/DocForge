@@ -3,9 +3,9 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/enhance_keys.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/enhance_keys.dart';
 import 'package:flutter/material.dart';
 
 /// A selectable enhancement filter.

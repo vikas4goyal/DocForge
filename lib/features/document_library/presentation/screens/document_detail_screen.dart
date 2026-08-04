@@ -1,17 +1,17 @@
 /// A single document's detail screen.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/formatting/display_formatting.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_state.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_state.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/library_dialogs.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/page_thumbnail.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/formatting/display_formatting.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/library_dialogs.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/page_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -153,6 +153,29 @@ class _Body extends StatelessWidget {
         ),
         if (document.isArchived)
           const _MetadataRow(label: 'Status', value: 'Archived'),
+        if (document.contentAvailability != DocumentContentAvailability.local)
+          _MetadataRow(
+            key: LibraryKeys.documentCloudStatus(document.id.value),
+            label: 'iCloud',
+            value: switch (document.contentAvailability) {
+              DocumentContentAvailability.remote =>
+                'Stored in iCloud — downloads when opened',
+              DocumentContentAvailability.downloading => 'Downloading…',
+              DocumentContentAvailability.available =>
+                'Available on this device',
+              DocumentContentAvailability.failed =>
+                'Download failed — open to retry',
+              DocumentContentAvailability.local => 'Not used',
+            },
+          ),
+        if (document.contentAvailability ==
+            DocumentContentAvailability.downloading)
+          Semantics(
+            label: 'Downloading ${document.title} from iCloud',
+            child: LinearProgressIndicator(
+              key: LibraryKeys.documentCloudDownload(document.id.value),
+            ),
+          ),
         const SizedBox(height: 8),
         _FavouriteRow(isFavourite: document.isFavourite),
         if (onOpenViewer != null) ...[
@@ -199,7 +222,7 @@ class _Body extends StatelessWidget {
 
 /// One labelled metadata line.
 class _MetadataRow extends StatelessWidget {
-  const _MetadataRow({required this.label, required this.value});
+  const _MetadataRow({required this.label, required this.value, super.key});
 
   final String label;
   final String value;

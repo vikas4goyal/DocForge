@@ -1,5 +1,5 @@
 /// Moves an existing library out of app-private storage and into the
-/// user-visible `DocForge` folder.
+/// user-visible `DocScanly` folder.
 ///
 /// Layout 1 kept every document in `<appDocuments>/documents/<uuid>/`, holding
 /// the PDF, its page images and its thumbnails. Nothing there was reachable
@@ -17,10 +17,10 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/library_path.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/public_storage/public_file_store.dart';
-import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:isar_community/isar.dart';
 
 /// What a migration run did.

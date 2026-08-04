@@ -1,13 +1,13 @@
 /// The enhancement screen.
 library;
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/page_draft.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/enhance_keys.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/widgets/enhancement_widgets.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_state.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/enhance_keys.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/widgets/enhancement_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

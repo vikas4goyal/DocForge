@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.bruxkey.doc_forge"
+    namespace = "com.bruxkey.docscanly"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -16,7 +16,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.bruxkey.doc_forge"
+        applicationId = "com.bruxkey.docscanly"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // Flutter's default is 24, which already satisfies the highest plugin

@@ -1,4 +1,4 @@
-package com.bruxkey.doc_forge
+package com.bruxkey.docscanly
 
 import android.content.ContentUris
 import android.content.ContentValues
@@ -15,7 +15,7 @@ import java.io.FileNotFoundException
 import java.io.IOException
 
 /**
- * Bridges the user-visible `Documents/DocForge` folder to Dart.
+ * Bridges the user-visible `Documents/DocScanly` folder to Dart.
  *
  * Android 10 introduced scoped storage, which forbids writing arbitrary paths
  * into shared `Documents/`. MediaStore is the only route that reaches a folder
@@ -47,6 +47,10 @@ class MediaStorePlugin(private val context: Context) : MethodChannel.MethodCallH
     override fun onMethodCall(call: MethodCall, result: MethodChannel.Result) {
         try {
             when (call.method) {
+                "migrateLegacyLibrary" -> {
+                    LegacyMediaStoreMigration(context).run()
+                    result.success(null)
+                }
                 "createFolder" -> {
                     createFolder(call.argument<String>("relativePath")!!)
                     result.success(null)
@@ -482,7 +486,7 @@ class MediaStorePlugin(private val context: Context) : MethodChannel.MethodCallH
     }
 
     private companion object {
-        const val CHANNEL_NAME = "com.bruxkey.doc_forge/media_store"
+        const val CHANNEL_NAME = "com.bruxkey.docscanly/media_store"
         const val PDF_MIME_TYPE = "application/pdf"
         const val ERROR_NOT_FOUND = "not_found"
         const val ERROR_STORAGE_FULL = "storage_full"
