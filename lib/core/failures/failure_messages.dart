@@ -136,6 +136,8 @@ extension FailurePresentationX on Failure {
         ValidationIssue.passwordMismatch => 'The passwords do not match.',
         ValidationIssue.documentWouldHaveNoPages =>
           'A document must keep at least one page.',
+        ValidationIssue.bulkActionNotConfirmed =>
+          'Review and confirm the selected documents first.',
       },
       action: RecoveryAction.none,
     ),

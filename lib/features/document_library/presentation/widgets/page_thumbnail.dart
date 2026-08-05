@@ -3,6 +3,7 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_scanly/core/contracts/models/document_page_handle.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
@@ -17,16 +18,21 @@ import 'package:flutter/material.dart';
 class PageThumbnail extends StatefulWidget {
   /// Creates a thumbnail for [page].
   const PageThumbnail({
-    required this.page,
+    this.page,
+    this.handle,
     super.key,
     this.onTap,
     this.loadThumbnail,
     this.width = 96,
     this.height = 128,
-  });
+  }) : assert(page != null || handle != null),
+       assert(page == null || handle == null);
 
   /// The page to present.
-  final DocumentPage page;
+  final DocumentPage? page;
+
+  /// Unified PDF-backed page used when no stored [DocumentPage] row exists.
+  final DocumentPageHandle? handle;
 
   /// Called when the thumbnail is activated.
   final VoidCallback? onTap;
@@ -40,6 +46,17 @@ class PageThumbnail extends StatefulWidget {
 
   /// Height of the thumbnail box.
   final double height;
+
+  String get _id => (page?.id ?? handle!.id).value;
+
+  int get _pageNumber => page?.pageNumber ?? handle!.pageNumber;
+
+  String? get _thumbnailPath =>
+      page?.thumbnailPath ??
+      handle?.source.when(
+        storedImage: (_, thumbnailPath) => thumbnailPath,
+        pdfPage: () => null,
+      );
 
   @override
   State<PageThumbnail> createState() => _PageThumbnailState();
@@ -58,15 +75,15 @@ class _PageThumbnailState extends State<PageThumbnail> {
   @override
   void didUpdateWidget(covariant PageThumbnail oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.page.id != widget.page.id ||
-        oldWidget.page.thumbnailPath != widget.page.thumbnailPath ||
+    if (oldWidget._id != widget._id ||
+        oldWidget._thumbnailPath != widget._thumbnailPath ||
         (oldWidget.loadThumbnail == null && widget.loadThumbnail != null)) {
       _prepare();
     }
   }
 
   void _prepare() {
-    final path = widget.page.thumbnailPath;
+    final path = widget._thumbnailPath;
     _storedPath = path != null && File(path).existsSync() ? path : null;
     _request = _storedPath == null ? widget.loadThumbnail?.call() : null;
   }
@@ -74,15 +91,16 @@ class _PageThumbnailState extends State<PageThumbnail> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final page = widget.page;
+    final pageNumber = widget._pageNumber;
+    final pageId = widget._id;
 
     return Semantics(
       button: widget.onTap != null,
       image: true,
-      label: LibrarySemantics.pageThumbnail(page.pageNumber),
+      label: LibrarySemantics.pageThumbnail(pageNumber),
       child: ExcludeSemantics(
         child: InkWell(
-          key: LibraryKeys.pageThumbnail(page.id.value),
+          key: LibraryKeys.pageThumbnail(pageId),
           onTap: widget.onTap,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -99,7 +117,7 @@ class _PageThumbnailState extends State<PageThumbnail> {
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8),
                     child: _ThumbnailImage(
-                      page: page,
+                      pageId: pageId,
                       theme: theme,
                       storedPath: _storedPath,
                       request: _request,
@@ -108,7 +126,7 @@ class _PageThumbnailState extends State<PageThumbnail> {
                 ),
               ),
               const SizedBox(height: 4),
-              Text('${page.pageNumber}', style: theme.textTheme.labelSmall),
+              Text('$pageNumber', style: theme.textTheme.labelSmall),
             ],
           ),
         ),
@@ -120,13 +138,13 @@ class _PageThumbnailState extends State<PageThumbnail> {
 /// The thumbnail image, or a placeholder when none can be shown.
 class _ThumbnailImage extends StatelessWidget {
   const _ThumbnailImage({
-    required this.page,
+    required this.pageId,
     required this.theme,
     required this.storedPath,
     required this.request,
   });
 
-  final DocumentPage page;
+  final String pageId;
   final ThemeData theme;
   final String? storedPath;
   final Future<Result<String>>? request;
@@ -143,7 +161,7 @@ class _ThumbnailImage extends StatelessWidget {
         if (snapshot.connectionState != ConnectionState.done) {
           return Center(
             child: SizedBox.square(
-              key: LibraryKeys.pageThumbnailLoading(page.id.value),
+              key: LibraryKeys.pageThumbnailLoading(pageId),
               dimension: 24,
               child: const CircularProgressIndicator(strokeWidth: 2),
             ),

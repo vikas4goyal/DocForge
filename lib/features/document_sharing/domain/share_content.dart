@@ -115,7 +115,7 @@ abstract final class ShareRules {
   /// available; the control is disabled and labelled, which is the option a
   /// screen reader can convey without the user having to activate it first.
   static bool canShareText(Document document, String recognisedText) =>
-      document.hasRecognisedText && recognisedText.trim().isNotEmpty;
+      recognisedText.trim().isNotEmpty;
 
   /// The pages of a document in the order they must be shared.
   ///

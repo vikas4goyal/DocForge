@@ -60,7 +60,15 @@ class ViewerScreen extends StatelessWidget {
         return Scaffold(
           key: ViewerKeys.screen,
           appBar: AppBar(
-            title: Text(state.title),
+            title: Semantics(
+              label: state.title,
+              child: Text(
+                state.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
             leading: BackButton(onPressed: onBack),
             actions: [
               // Offered only once the document is open: sharing a document that
@@ -76,24 +84,46 @@ class ViewerScreen extends StatelessWidget {
                   ),
                   tooltip: 'Share document',
                 ),
-                IconButton(
-                  key: ViewerKeys.printButton,
-                  onPressed: onPrint,
-                  icon: const Icon(
-                    Icons.print_outlined,
-                    semanticLabel: 'Print document',
+                if (MediaQuery.sizeOf(context).width >= 600) ...[
+                  IconButton(
+                    key: ViewerKeys.printButton,
+                    onPressed: onPrint,
+                    icon: const Icon(
+                      Icons.print_outlined,
+                      semanticLabel: 'Print document',
+                    ),
+                    tooltip: 'Print document',
                   ),
-                  tooltip: 'Print document',
-                ),
-                IconButton(
-                  key: ViewerKeys.editButton,
-                  onPressed: onEdit,
-                  icon: const Icon(
-                    Icons.edit_outlined,
-                    semanticLabel: 'Edit document',
+                  IconButton(
+                    key: ViewerKeys.editButton,
+                    onPressed: onEdit,
+                    icon: const Icon(
+                      Icons.edit_outlined,
+                      semanticLabel: 'Edit document',
+                    ),
+                    tooltip: 'Edit document',
                   ),
-                  tooltip: 'Edit document',
-                ),
+                ] else
+                  PopupMenuButton<_ViewerAction>(
+                    key: ViewerKeys.actionsMenu,
+                    tooltip: 'More document actions',
+                    onSelected: (action) => switch (action) {
+                      _ViewerAction.print => onPrint(),
+                      _ViewerAction.edit => onEdit(),
+                    },
+                    itemBuilder: (_) => const [
+                      PopupMenuItem(
+                        key: ViewerKeys.printButton,
+                        value: _ViewerAction.print,
+                        child: Text('Print'),
+                      ),
+                      PopupMenuItem(
+                        key: ViewerKeys.editButton,
+                        value: _ViewerAction.edit,
+                        child: Text('Edit'),
+                      ),
+                    ],
+                  ),
               ],
             ],
           ),
@@ -297,70 +327,107 @@ class _TextPanel extends StatelessWidget {
   }
 }
 
-/// The page indicator and the jump-to-page control.
-class _PageBar extends StatefulWidget {
+enum _ViewerAction { print, edit }
+
+/// The page indicator and intentional jump-to-page control.
+class _PageBar extends StatelessWidget {
   const _PageBar({required this.state, required this.cubit});
 
   final ViewerState state;
   final ViewerCubit cubit;
 
   @override
-  State<_PageBar> createState() => _PageBarState();
+  Widget build(BuildContext context) {
+    return BottomAppBar(
+      child: Center(
+        child: Semantics(
+          button: true,
+          liveRegion: true,
+          label: 'Page ${state.page} of ${state.pageCount}, jump to page',
+          child: ExcludeSemantics(
+            child: TextButton.icon(
+              key: ViewerKeys.pageJumpButton,
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (_) => _PageJumpDialog(state: state, cubit: cubit),
+              ),
+              icon: const Icon(Icons.find_in_page_outlined),
+              label: Text(
+                state.pageLabel,
+                key: ViewerKeys.pageIndicator,
+                maxLines: 1,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
-class _PageBarState extends State<_PageBar> {
-  final _controller = TextEditingController();
+class _PageJumpDialog extends StatefulWidget {
+  const _PageJumpDialog({required this.state, required this.cubit});
+
+  final ViewerState state;
+  final ViewerCubit cubit;
+
+  @override
+  State<_PageJumpDialog> createState() => _PageJumpDialogState();
+}
+
+class _PageJumpDialogState extends State<_PageJumpDialog> {
+  final controller = TextEditingController();
+  String? errorText;
 
   @override
   void dispose() {
-    _controller.dispose();
+    controller.dispose();
     super.dispose();
   }
 
-  void _jump() {
-    final page = ViewerRules.parsePage(_controller.text);
-    // A non-numeric entry is ignored rather than treated as page one: silently
-    // jumping somewhere arbitrary is worse than doing nothing visible.
-    if (page == null) return;
-
+  void submit() {
+    final page = ViewerRules.parsePage(controller.text);
+    if (page == null ||
+        !ViewerRules.isValidPage(page, pageCount: widget.state.pageCount)) {
+      setState(
+        () => errorText = 'Enter a page from 1 to ${widget.state.pageCount}.',
+      );
+      return;
+    }
     widget.cubit.goToPage(page);
-    _controller.clear();
-    FocusScope.of(context).unfocus();
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return BottomAppBar(
-      child: Row(
-        children: [
-          Semantics(
-            liveRegion: true,
-            label: ViewerSemantics.pageIndicator(widget.state.pageLabel),
-            child: ExcludeSemantics(
-              child: Text(
-                widget.state.pageLabel,
-                key: ViewerKeys.pageIndicator,
-              ),
-            ),
-          ),
-          const Spacer(),
-          SizedBox(
-            width: 120,
-            child: TextField(
-              key: ViewerKeys.jumpToPageField,
-              controller: _controller,
-              keyboardType: TextInputType.number,
-              textInputAction: TextInputAction.go,
-              onSubmitted: (_) => _jump(),
-              decoration: const InputDecoration(
-                labelText: 'Go to page',
-                isDense: true,
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-        ],
+    return AlertDialog(
+      key: ViewerKeys.pageJumpDialog,
+      title: Text('Jump to page (1–${widget.state.pageCount})'),
+      content: TextField(
+        key: ViewerKeys.pageJumpField,
+        controller: controller,
+        autofocus: true,
+        keyboardType: TextInputType.number,
+        textInputAction: TextInputAction.go,
+        onSubmitted: (_) => submit(),
+        decoration: InputDecoration(
+          labelText: 'Page number',
+          errorText: errorText,
+          border: const OutlineInputBorder(),
+        ),
       ),
+      actions: [
+        TextButton(
+          key: ViewerKeys.pageJumpCancel,
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: ViewerKeys.pageJumpConfirm,
+          onPressed: submit,
+          child: const Text('Go'),
+        ),
+      ],
     );
   }
 }

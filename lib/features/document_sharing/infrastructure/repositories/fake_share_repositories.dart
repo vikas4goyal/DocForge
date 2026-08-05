@@ -9,8 +9,11 @@
 /// for, and that what leaves is what was intended.
 library;
 
+import 'dart:io';
+
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_sharing/domain/document_export_result.dart';
 import 'package:doc_scanly/features/document_sharing/domain/repositories/share_repository.dart';
 import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 
@@ -64,8 +67,8 @@ class FakePrintRepository implements PrintRepository {
   }
 }
 
-/// An [ExportDestinationPicker] that answers with a fixed choice.
-class FakeExportDestinationPicker implements ExportDestinationPicker {
+/// An [ExportDocumentRepository] that writes to a fixed test destination.
+class FakeExportDestinationPicker implements ExportDocumentRepository {
   /// Creates a picker returning [destination], or failing with [failure].
   ///
   /// A null [destination] stands for the user cancelling the picker.
@@ -81,15 +84,32 @@ class FakeExportDestinationPicker implements ExportDestinationPicker {
   final List<String> suggestions = [];
 
   @override
-  Future<Result<String?>> chooseDestination({
+  Future<Result<DocumentExportResult>> export({
+    required String sourcePath,
     required String suggestedName,
     String? initialDirectory,
   }) async {
     suggestions.add(suggestedName);
 
     final configured = failure;
-    return configured == null
-        ? Result<String?>.success(destination)
-        : Result<String?>.failure(configured);
+    if (configured != null) {
+      return Result<DocumentExportResult>.failure(configured);
+    }
+    final target = destination;
+    if (target == null) {
+      return const Result<DocumentExportResult>.success(
+        DocumentExportResult.cancelled(),
+      );
+    }
+    try {
+      await File(sourcePath).copy(target);
+      return Result<DocumentExportResult>.success(
+        DocumentExportResult.completed(destinationLabel: target),
+      );
+    } on Object catch (error) {
+      return Result<DocumentExportResult>.failure(
+        Failure.export(debugDetail: '$error'),
+      );
+    }
   }
 }

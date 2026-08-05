@@ -5,6 +5,7 @@
 /// the Cubit and the use case disagree about what a rejected password means.
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
@@ -24,6 +25,7 @@ import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/pdf_editing/application/atomic_pdf_write.dart';
 import 'package:doc_scanly/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_operation_workflow.dart';
 import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
@@ -68,6 +70,30 @@ class _Library implements DocumentReader, DocumentWriter {
   Future<Result<Document>> updateMetadata(Document document) async {
     documents[document.id] = document;
     return Result<Document>.success(document);
+  }
+}
+
+class _DelayedRotateEditor extends FakePdfEditor {
+  final started = Completer<void>();
+  final release = Completer<void>();
+
+  @override
+  Future<Result<void>> rotatePage(
+    String sourcePath,
+    String destinationPath, {
+    required int page,
+    required int degrees,
+    String? password,
+  }) async {
+    if (!started.isCompleted) started.complete();
+    await release.future;
+    return super.rotatePage(
+      sourcePath,
+      destinationPath,
+      page: page,
+      degrees: degrees,
+      password: password,
+    );
   }
 }
 
@@ -209,6 +235,18 @@ void main() {
       },
     );
 
+    test('clearSelection removes every selected page', () async {
+      final cubit = build([given()]);
+      await cubit.load();
+      cubit
+        ..toggleSelection(0)
+        ..toggleSelection(2)
+        ..clearSelection();
+
+      expect(cubit.state.selection, isEmpty);
+      await cubit.close();
+    });
+
     blocTest<PdfEditCubit, PdfEditState>(
       'a multiple selection disables rotate but allows extract',
       build: () => build([given()]),
@@ -238,6 +276,56 @@ void main() {
   });
 
   group('page operations', () {
+    test('review cancellation clears the draft without mutation', () async {
+      final editor = FakePdfEditor();
+      final cubit = build([given()], withEditor: editor);
+      await cubit.load();
+      const review = PdfOperationReview(
+        draft: PdfOperationDraft.compress(),
+        title: 'Compress?',
+        summary: 'Replace the source only when smaller.',
+        confirmLabel: 'Compress',
+      );
+
+      cubit.reviewOperation(review);
+      expect(cubit.state.workflowPhase, PdfOperationPhase.review);
+      expect(cubit.state.review, review);
+
+      cubit.cancelReview();
+      expect(cubit.state.workflowPhase, PdfOperationPhase.idle);
+      expect(cubit.state.review, isNull);
+      expect(editor.operations, isEmpty);
+      await cubit.close();
+    });
+
+    test(
+      'repeated confirmation submits one operation and clears its token',
+      () async {
+        final editor = _DelayedRotateEditor();
+        final cubit = build([given()], withEditor: editor);
+        await cubit.load();
+        cubit.toggleSelection(0);
+
+        final first = cubit.rotate();
+        await editor.started.future;
+        expect(cubit.state.workflowPhase, PdfOperationPhase.submitting);
+        expect(cubit.state.operationToken, isNotNull);
+
+        await cubit.rotate();
+        editor.release.complete();
+        await first;
+
+        expect(
+          editor.operations.where((value) => value.startsWith('rotatePage')),
+          hasLength(1),
+        );
+        expect(cubit.state.workflowPhase, PdfOperationPhase.succeeded);
+        expect(cubit.state.operationToken, isNull);
+        expect(cubit.state.result, isA<PdfInPlaceOperationResult>());
+        await cubit.close();
+      },
+    );
+
     blocTest<PdfEditCubit, PdfEditState>(
       'rotating keeps the page count',
       build: () => build([given()]),
@@ -338,6 +426,21 @@ void main() {
     );
 
     blocTest<PdfEditCubit, PdfEditState>(
+      'a compression failure clears the token and is retryable',
+      build: () => build([
+        given(),
+      ], withEditor: FakePdfEditor(failWith: const Failure.pdf())),
+      act: (cubit) async {
+        await cubit.load();
+        await cubit.compress();
+      },
+      verify: (cubit) {
+        expect(cubit.state.workflowPhase, PdfOperationPhase.failed);
+        expect(cubit.state.operationToken, isNull);
+      },
+    );
+
+    blocTest<PdfEditCubit, PdfEditState>(
       'watermarking keeps the page count',
       build: () => build([given(pageCount: 3)]),
       act: (cubit) async {
@@ -358,6 +461,50 @@ void main() {
         await cubit.split(2);
       },
       verify: (cubit) => expect(cubit.state.derived?.pageCount, 2),
+    );
+
+    blocTest<PdfEditCubit, PdfEditState>(
+      'splitting maps an invalid boundary to the failed phase',
+      build: () => build([given()]),
+      act: (cubit) async {
+        await cubit.load();
+        await cubit.split(4);
+      },
+      verify: (cubit) {
+        expect(cubit.state.status, PdfEditStatus.failure);
+        expect(cubit.state.workflowPhase, PdfOperationPhase.failed);
+        expect(cubit.state.operationToken, isNull);
+      },
+    );
+
+    blocTest<PdfEditCubit, PdfEditState>(
+      'merging preserves reviewed order and reports one derived result',
+      build: () => build([given(), given(documentId: 'b')]),
+      act: (cubit) async {
+        await cubit.load();
+        await cubit.merge(const [
+          DocumentId('b'),
+          DocumentId('a'),
+        ], outputTitle: 'Reviewed merge');
+      },
+      verify: (cubit) {
+        expect(cubit.state.workflowPhase, PdfOperationPhase.succeeded);
+        expect(cubit.state.derived?.title, 'Reviewed merge');
+        expect(cubit.state.result, isA<PdfDerivedOperationResult>());
+      },
+    );
+
+    blocTest<PdfEditCubit, PdfEditState>(
+      'merging fewer than two documents reaches a retryable failure',
+      build: () => build([given()]),
+      act: (cubit) async {
+        await cubit.load();
+        await cubit.merge(const [DocumentId('a')]);
+      },
+      verify: (cubit) {
+        expect(cubit.state.workflowPhase, PdfOperationPhase.failed);
+        expect(cubit.state.operationToken, isNull);
+      },
     );
   });
 

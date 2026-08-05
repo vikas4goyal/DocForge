@@ -2,14 +2,21 @@
 library;
 
 import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/features/document_library/domain/bulk_document_action.dart';
 import 'package:equatable/equatable.dart';
 
 /// A folder as the dashboard lists it.
 class DashboardFolder extends Equatable {
   /// Creates a folder entry.
-  const DashboardFolder({required this.name, required this.documentCount});
+  const DashboardFolder({
+    required this.name,
+    required this.documentCount,
+    this.path = const [],
+    this.modifiedAt,
+  });
 
   /// The folder's own name.
   final String name;
@@ -17,8 +24,35 @@ class DashboardFolder extends Equatable {
   /// How many non-archived documents it holds, counted recursively.
   final int documentCount;
 
+  /// Full folder path relative to the library root.
+  final List<String> path;
+
+  /// Last platform-reported modification time, when available.
+  final DateTime? modifiedAt;
+
   @override
-  List<Object?> get props => [name, documentCount];
+  List<Object?> get props => [name, documentCount, path, modifiedAt];
+}
+
+/// Which bulk mutation is currently running or most recently completed.
+enum DashboardBulkAction {
+  /// Move active documents into Archive.
+  archive,
+
+  /// Move active documents into recoverable Trash.
+  trash,
+}
+
+/// Where the selection toolbar is in a bulk mutation.
+enum DashboardBulkStatus {
+  /// No bulk mutation is running.
+  idle,
+
+  /// A single bulk submission is in progress.
+  working,
+
+  /// Some items failed and remain selected for retry.
+  partialFailure,
 }
 
 /// Where the dashboard is in its lifecycle.
@@ -53,6 +87,11 @@ class DashboardState extends Equatable {
     this.favouritesCount = 0,
     this.archiveCount = 0,
     this.trashCount = 0,
+    this.selectionMode = false,
+    this.selectedDocumentIds = const [],
+    this.bulkStatus = DashboardBulkStatus.idle,
+    this.bulkOutcome,
+    this.bulkAction,
     this.failure,
   });
 
@@ -102,6 +141,21 @@ class DashboardState extends Equatable {
   /// Number of recoverable Trash entries.
   final int trashCount;
 
+  /// Whether document multi-selection controls are visible.
+  final bool selectionMode;
+
+  /// Selected documents in current visible list order.
+  final List<DocumentId> selectedDocumentIds;
+
+  /// Whether a bulk operation is idle, working, or needs partial-failure retry.
+  final DashboardBulkStatus bulkStatus;
+
+  /// Per-item outcome retained when a bulk operation partially fails.
+  final BulkDocumentOutcome? bulkOutcome;
+
+  /// The bulk action associated with [bulkStatus].
+  final DashboardBulkAction? bulkAction;
+
   /// What went wrong, when something did.
   final Failure? failure;
 
@@ -128,6 +182,15 @@ class DashboardState extends Equatable {
   /// Whether the recents strip should be shown.
   bool get showsRecents => isAtRoot && !isSearching && recents.isNotEmpty;
 
+  /// Whether a bulk mutation currently blocks another submission.
+  bool get isBulkWorking => bulkStatus == DashboardBulkStatus.working;
+
+  /// Number of selected documents.
+  int get selectedCount => selectedDocumentIds.length;
+
+  /// Whether [id] is selected.
+  bool isSelected(DocumentId id) => selectedDocumentIds.contains(id);
+
   /// The breadcrumb from the library root to the open folder.
   List<String> get breadcrumb => ['DocScanly', ...path];
 
@@ -146,6 +209,11 @@ class DashboardState extends Equatable {
     int? favouritesCount,
     int? archiveCount,
     int? trashCount,
+    bool? selectionMode,
+    List<DocumentId>? selectedDocumentIds,
+    DashboardBulkStatus? bulkStatus,
+    BulkDocumentOutcome? bulkOutcome,
+    DashboardBulkAction? bulkAction,
     Failure? failure,
   }) => DashboardState._(
     status: status ?? this.status,
@@ -158,6 +226,11 @@ class DashboardState extends Equatable {
     favouritesCount: favouritesCount ?? this.favouritesCount,
     archiveCount: archiveCount ?? this.archiveCount,
     trashCount: trashCount ?? this.trashCount,
+    selectionMode: selectionMode ?? this.selectionMode,
+    selectedDocumentIds: selectedDocumentIds ?? this.selectedDocumentIds,
+    bulkStatus: bulkStatus ?? this.bulkStatus,
+    bulkOutcome: bulkOutcome,
+    bulkAction: bulkAction ?? this.bulkAction,
     failure: failure,
   );
 
@@ -173,6 +246,11 @@ class DashboardState extends Equatable {
     favouritesCount,
     archiveCount,
     trashCount,
+    selectionMode,
+    selectedDocumentIds,
+    bulkStatus,
+    bulkOutcome,
+    bulkAction,
     failure,
   ];
 }

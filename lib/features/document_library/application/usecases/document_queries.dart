@@ -5,7 +5,9 @@
 /// accidentally be handed the ability to delete one.
 library;
 
+import 'package:doc_scanly/core/contracts/document_page_access.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/document_page_handle.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/failures/result.dart';
@@ -71,22 +73,30 @@ class LoadDocuments {
 /// A document together with the pages belonging to it.
 class DocumentDetail {
   /// Creates a detail record.
-  const DocumentDetail({required this.document, required this.pages});
+  const DocumentDetail({
+    required this.document,
+    required this.pages,
+    required this.pageHandles,
+  });
 
   /// The document's metadata.
   final Document document;
 
   /// The document's pages, in page order.
   final List<DocumentPage> pages;
+
+  /// Unified stored-image or PDF-backed pages used by preview consumers.
+  final List<DocumentPageHandle> pageHandles;
 }
 
 /// Loads a single document and its pages.
 class LoadDocumentDetail {
   /// Creates the use case.
-  const LoadDocumentDetail(this._documents, this._pages);
+  const LoadDocumentDetail(this._documents, this._pages, [this._pageAccess]);
 
   final DocumentRepository _documents;
   final PageRepository _pages;
+  final DocumentPageAccessRepository? _pageAccess;
 
   /// Returns [id] with its pages.
   ///
@@ -99,10 +109,29 @@ class LoadDocumentDetail {
 
     return found.flatMapAsync((document) async {
       final pages = await _pages.forDocument(document.id);
+      final storedPages = pages.getOrElse(const <DocumentPage>[]);
+      final handles = _pageAccess == null
+          ? Result<List<DocumentPageHandle>>.success(
+              storedPages
+                  .map(
+                    (page) => DocumentPageHandle(
+                      id: page.id,
+                      documentId: page.documentId,
+                      pageNumber: page.pageNumber,
+                      source: DocumentPageSource.storedImage(
+                        imagePath: page.imagePath,
+                        thumbnailPath: page.thumbnailPath,
+                      ),
+                    ),
+                  )
+                  .toList(growable: false),
+            )
+          : await _pageAccess.pagesOf(document);
       return Result<DocumentDetail>.success(
         DocumentDetail(
           document: document,
-          pages: pages.getOrElse(const <DocumentPage>[]),
+          pages: storedPages,
+          pageHandles: handles.getOrElse(const <DocumentPageHandle>[]),
         ),
       );
     });

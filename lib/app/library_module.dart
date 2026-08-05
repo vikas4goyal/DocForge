@@ -27,6 +27,7 @@ import 'package:doc_scanly/features/document_library/domain/repositories/library
 import 'package:doc_scanly/features/document_library/infrastructure/datasource/derived_thumbnail_cache.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/datasource/document_file_store.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/datasource/pdfrx_thumbnail_renderer.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/document_page_access_repository.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/document_title_index.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/library_contracts_impl.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/library_storage_migration.dart';
@@ -52,6 +53,8 @@ class LibraryModule {
     required this.loadDocuments,
     required this.loadDocumentDetail,
     required this.loadDocumentPageThumbnail,
+    required this.loadDocumentPagePreview,
+    required this.pageAccess,
     required this.loadFolderOptions,
     required this.renameDocument,
     required this.moveDocument,
@@ -93,6 +96,12 @@ class LibraryModule {
 
   /// Lazily derives one page preview from the authoritative PDF.
   final LoadDocumentPageThumbnail loadDocumentPageThumbnail;
+
+  /// Loads a preview through unified scanned/PDF-backed page access.
+  final LoadDocumentPagePreview loadDocumentPagePreview;
+
+  /// Unified page access injected into OCR and sharing consumers.
+  final DocumentPageAccessRepository pageAccess;
 
   /// Loads folders for the move picker.
   final LoadFolderOptions loadFolderOptions;
@@ -280,6 +289,7 @@ LibraryModule buildLibraryModuleOver({
   required SecureStore secureStorage,
   DocumentFileResolver? documentFileResolver,
   ThumbnailRenderer thumbnailRenderer = renderPdfrxThumbnail,
+  DocumentPageTextExtractor pageTextExtractor = extractPdfrxPageText,
 }) {
   final documents = IsarDocumentRepository(isar);
   final folders = IsarFolderRepository(isar);
@@ -302,8 +312,16 @@ LibraryModule buildLibraryModuleOver({
     fileResolver,
     secureStorage,
   );
+  final pageAccess = LibraryDocumentPageAccessRepository(
+    pages,
+    fileResolver,
+    secureStorage,
+    documentsDirectory,
+    thumbnailRenderer,
+    pageTextExtractor,
+  );
 
-  final move = MoveDocument(documents, clock);
+  final move = MoveDocument(documents, clock, store, folders);
   final purge = PurgeDocument(documents, pages, store, derived, secureStorage);
   final storageSummary = ComputeStorageSummary(documents, store);
   final purgeTrash = PurgeTrashEntry(trash, folders, store, purge);
@@ -317,8 +335,10 @@ LibraryModule buildLibraryModuleOver({
     isar: isar,
     documentsDirectory: documentsDirectory,
     loadDocuments: LoadDocuments(documents),
-    loadDocumentDetail: LoadDocumentDetail(documents, pages),
+    loadDocumentDetail: LoadDocumentDetail(documents, pages, pageAccess),
     loadDocumentPageThumbnail: loadThumbnail,
+    loadDocumentPagePreview: LoadDocumentPagePreview(pageAccess),
+    pageAccess: pageAccess,
     loadFolderOptions: LoadFolderOptions(folders),
     renameDocument: RenameDocument(documents, clock, store),
     moveDocument: move,

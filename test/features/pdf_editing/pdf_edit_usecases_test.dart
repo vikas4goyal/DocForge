@@ -403,6 +403,18 @@ void main() {
       expect(File(pathOf(second)).readAsStringSync(), before.last);
     });
 
+    test('uses the reviewed output name', () async {
+      final first = given(pageCount: 2);
+      final second = given(documentId: 'b', pageCount: 2);
+
+      final result = await MergeDocuments(contextFor([first, second]))([
+        first.id,
+        second.id,
+      ], outputTitle: 'Quarterly bundle');
+
+      expect((result as Success<Document>).value.title, 'Quarterly bundle');
+    });
+
     test('refuses fewer than two documents', () async {
       final only = given();
 
@@ -448,6 +460,38 @@ void main() {
 
       expect(File(pathOf(document)).readAsStringSync(), before);
       expect(library.documents[id]!.pageCount, 4);
+    });
+
+    test('uses both reviewed output names', () async {
+      final document = given();
+
+      final result = await SplitDocument(contextFor([document]))(
+        id,
+        afterPage: 2,
+        outputTitles: (first: 'Policy A', second: 'Policy B'),
+      );
+
+      final (first, second) = (result as Success<(Document, Document)>).value;
+      expect(first.title, 'Policy A');
+      expect(second.title, 'Policy B');
+    });
+
+    test('refuses blank or duplicate reviewed output names', () async {
+      final document = given();
+
+      final blank = await SplitDocument(contextFor([document]))(
+        id,
+        afterPage: 2,
+        outputTitles: (first: '', second: 'Policy B'),
+      );
+      final duplicate = await SplitDocument(contextFor([document]))(
+        id,
+        afterPage: 2,
+        outputTitles: (first: 'Policy', second: 'Policy'),
+      );
+
+      expect(blank, isA<Failed<(Document, Document)>>());
+      expect(duplicate, isA<Failed<(Document, Document)>>());
     });
 
     test('refuses a split point that would produce an empty half', () async {

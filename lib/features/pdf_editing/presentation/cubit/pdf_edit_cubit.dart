@@ -5,12 +5,14 @@
 /// the domain layer and are unit-tested there.
 library;
 
+import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_scanly/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_operation_workflow.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -78,6 +80,25 @@ class PdfEditCubit extends Cubit<PdfEditState> {
   final DocumentId _documentId;
   final PdfEditUseCases _useCases;
   final DocumentFileResolver _files;
+  var _nextOperationToken = 0;
+
+  /// Stores a validated review before the UI asks for confirmation.
+  void reviewOperation(PdfOperationReview review) {
+    if (state.isWorking) return;
+    emit(
+      state.copyWith(
+        workflowPhase: PdfOperationPhase.review,
+        draft: review.draft,
+        review: review,
+        clearWorkflow: true,
+      ),
+    );
+  }
+
+  /// Cancels a review without mutating the source document.
+  void cancelReview() => emit(
+    state.copyWith(workflowPhase: PdfOperationPhase.idle, clearWorkflow: true),
+  );
 
   /// Loads the document and its metadata.
   Future<void> load() async {
@@ -96,6 +117,7 @@ class PdfEditCubit extends Cubit<PdfEditState> {
 
   /// Adds or removes [page] from the selection.
   void toggleSelection(int page) {
+    if (state.isWorking) return;
     final next = {...state.selection};
     if (!next.remove(page)) next.add(page);
     emit(state.copyWith(selection: next));
@@ -141,12 +163,7 @@ class PdfEditCubit extends Cubit<PdfEditState> {
 
   /// Compresses the document.
   Future<void> compress() async {
-    emit(
-      state.copyWith(
-        status: PdfEditStatus.working,
-        operation: PdfEditOperation.compress,
-      ),
-    );
+    if (!_beginSubmission(PdfEditOperation.compress)) return;
 
     final result = await _useCases.compress(_documentId);
     if (isClosed) return;
@@ -158,9 +175,10 @@ class PdfEditCubit extends Cubit<PdfEditState> {
             message: value.message,
             wasKept: value.wasKept,
           ),
+          completedMessage: value.message,
         );
       case Failed(:final failure):
-        emit(state.copyWith(status: PdfEditStatus.failure, failure: failure));
+        _emitOperationFailure(failure);
     }
   }
 
@@ -182,19 +200,14 @@ class PdfEditCubit extends Cubit<PdfEditState> {
   /// document is untouched and the user can try again, which an error view
   /// would make look like something broke.
   Future<void> removePassword(String currentPassword) async {
-    emit(
-      state.copyWith(
-        status: PdfEditStatus.working,
-        operation: PdfEditOperation.removePassword,
-      ),
-    );
+    if (!_beginSubmission(PdfEditOperation.removePassword)) return;
 
     final result = await _useCases.removePassword(_documentId, currentPassword);
     if (isClosed) return;
 
     switch (result) {
       case Success():
-        await _refresh();
+        await _refresh(completedMessage: 'PDF protection removed.');
       case Failed(:final failure):
         emit(
           state.copyWith(
@@ -203,6 +216,10 @@ class PdfEditCubit extends Cubit<PdfEditState> {
                 : PdfEditStatus.failure,
             failure: failure is AuthFailure ? null : failure,
             passwordRejected: failure is AuthFailure,
+            workflowPhase: failure is AuthFailure
+                ? PdfOperationPhase.review
+                : PdfOperationPhase.failed,
+            clearWorkflow: true,
           ),
         );
     }
@@ -214,35 +231,52 @@ class PdfEditCubit extends Cubit<PdfEditState> {
     () => _useCases.extract(_documentId, state.selection),
   );
 
-  /// Merges this document with [others], in the order given.
-  Future<void> merge(List<DocumentId> others) => _derive(
-    PdfEditOperation.merge,
-    () => _useCases.merge([_documentId, ...others]),
-  );
+  /// Merges [orderedIds] into [outputTitle], preserving the reviewed order.
+  Future<void> merge(List<DocumentId> orderedIds, {String? outputTitle}) =>
+      _derive(
+        PdfEditOperation.merge,
+        () => _useCases.merge(orderedIds, outputTitle: outputTitle),
+      );
 
   /// Splits the document after one-based page [afterPage].
-  Future<void> split(int afterPage) async {
-    emit(
-      state.copyWith(
-        status: PdfEditStatus.working,
-        operation: PdfEditOperation.split,
-      ),
-    );
+  Future<void> split(
+    int afterPage, {
+    ({String first, String second})? outputTitles,
+  }) async {
+    if (!_beginSubmission(PdfEditOperation.split)) return;
 
-    final result = await _useCases.split(_documentId, afterPage: afterPage);
+    final result = await _useCases.split(
+      _documentId,
+      afterPage: afterPage,
+      outputTitles: outputTitles,
+    );
     if (isClosed) return;
 
     switch (result) {
       case Success(:final value):
-        // The first half is what the user is shown; both exist in the library.
-        emit(state.copyWith(status: PdfEditStatus.ready, derived: value.$1));
+        emit(
+          state.copyWith(
+            status: PdfEditStatus.ready,
+            derived: value.$1,
+            derivedDocuments: [value.$1, value.$2],
+            workflowPhase: PdfOperationPhase.succeeded,
+            result: PdfOperationResult.derived(documents: [value.$1, value.$2]),
+            clearWorkflow: true,
+          ),
+        );
       case Failed(:final failure):
-        emit(state.copyWith(status: PdfEditStatus.failure, failure: failure));
+        _emitOperationFailure(failure);
     }
   }
 
   /// Returns to the editor after a failure.
-  void dismissError() => emit(state.copyWith(status: PdfEditStatus.ready));
+  void dismissError() => emit(
+    state.copyWith(
+      status: PdfEditStatus.ready,
+      workflowPhase: PdfOperationPhase.idle,
+      clearWorkflow: true,
+    ),
+  );
 
   /// Runs an in-place operation and reloads what it changed.
   Future<void> _inPlace(
@@ -250,16 +284,19 @@ class PdfEditCubit extends Cubit<PdfEditState> {
     Future<Result<dynamic>> Function() run, {
     bool clearSelectionAfter = false,
   }) async {
-    emit(state.copyWith(status: PdfEditStatus.working, operation: operation));
+    if (!_beginSubmission(operation)) return;
 
     final result = await run();
     if (isClosed) return;
 
     switch (result) {
       case Success():
-        await _refresh(clearSelection: clearSelectionAfter);
+        await _refresh(
+          clearSelection: clearSelectionAfter,
+          completedMessage: '${operation.label} completed.',
+        );
       case Failed(:final failure):
-        emit(state.copyWith(status: PdfEditStatus.failure, failure: failure));
+        _emitOperationFailure(failure);
     }
   }
 
@@ -268,21 +305,26 @@ class PdfEditCubit extends Cubit<PdfEditState> {
     PdfEditOperation operation,
     Future<Result<dynamic>> Function() run,
   ) async {
-    emit(state.copyWith(status: PdfEditStatus.working, operation: operation));
+    if (!_beginSubmission(operation)) return;
 
     final result = await run();
     if (isClosed) return;
 
     switch (result) {
       case Success(:final value):
+        final document = value as Document;
         emit(
           state.copyWith(
             status: PdfEditStatus.ready,
-            derived: value as dynamic,
+            derived: document,
+            derivedDocuments: [document],
+            workflowPhase: PdfOperationPhase.succeeded,
+            result: PdfOperationResult.derived(documents: [document]),
+            clearWorkflow: true,
           ),
         );
       case Failed(:final failure):
-        emit(state.copyWith(status: PdfEditStatus.failure, failure: failure));
+        _emitOperationFailure(failure);
     }
   }
 
@@ -295,6 +337,7 @@ class PdfEditCubit extends Cubit<PdfEditState> {
     PdfMetadata? metadata,
     CompressionOutcomeView? compression,
     bool clearSelection = false,
+    String? completedMessage,
   }) async {
     final read =
         metadata ?? (await _useCases.metadata(_documentId)).valueOrNull;
@@ -320,6 +363,44 @@ class PdfEditCubit extends Cubit<PdfEditState> {
         metadata: read,
         compression: compression,
         selection: clearSelection ? const {} : null,
+        workflowPhase: completedMessage == null
+            ? PdfOperationPhase.idle
+            : PdfOperationPhase.succeeded,
+        result: completedMessage == null || document == null
+            ? null
+            : PdfOperationResult.inPlace(
+                document: document,
+                message: completedMessage,
+              ),
+        clearWorkflow: true,
+      ),
+    );
+  }
+
+  /// Starts one submission and makes repeated confirmation taps no-ops.
+  bool _beginSubmission(PdfEditOperation operation) {
+    if (state.isWorking || state.operationToken != null) return false;
+    final token = ++_nextOperationToken;
+    emit(
+      state.copyWith(
+        status: PdfEditStatus.working,
+        operation: operation,
+        workflowPhase: PdfOperationPhase.submitting,
+        operationToken: token,
+        clearWorkflow: true,
+      ),
+    );
+    return true;
+  }
+
+  /// Clears the one-shot token before exposing a retryable failure.
+  void _emitOperationFailure(Failure failure) {
+    emit(
+      state.copyWith(
+        status: PdfEditStatus.failure,
+        failure: failure,
+        workflowPhase: PdfOperationPhase.failed,
+        clearWorkflow: true,
       ),
     );
   }

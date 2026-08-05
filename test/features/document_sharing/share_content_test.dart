@@ -41,8 +41,8 @@ void main() {
   });
 
   group('canShareText', () {
-    test('is false when the document has no recognised text', () {
-      expect(ShareRules.canShareText(doc(), 'anything'), isFalse);
+    test('is true when text exists despite stale document metadata', () {
+      expect(ShareRules.canShareText(doc(), 'anything'), isTrue);
     });
 
     test('is false when the recognised text is blank', () {

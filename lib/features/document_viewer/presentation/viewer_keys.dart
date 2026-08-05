@@ -13,8 +13,26 @@ abstract final class ViewerKeys {
   /// The indicator showing the current page and the total.
   static const pageIndicator = Key('viewer_page_indicator');
 
-  /// The field for jumping to a page.
-  static const jumpToPageField = Key('viewer_jump_to_page_field');
+  /// Compact control that opens page-jump input.
+  static const pageJumpButton = Key('viewer_page_jump_button');
+
+  /// Dialog containing intentional numeric page input.
+  static const pageJumpDialog = Key('viewer_page_jump_dialog');
+
+  /// Numeric field shown only inside the jump dialog.
+  static const pageJumpField = Key('viewer_page_jump_field');
+
+  /// Backwards-compatible source alias for the intentional jump field.
+  static const jumpToPageField = pageJumpField;
+
+  /// Confirms a valid page jump.
+  static const pageJumpConfirm = Key('viewer_page_jump_confirm');
+
+  /// Cancels the jump dialog without changing page.
+  static const pageJumpCancel = Key('viewer_page_jump_cancel');
+
+  /// Responsive overflow containing secondary viewer actions.
+  static const actionsMenu = Key('viewer_actions_menu');
 
   /// The control that shares the document.
   static const shareButton = Key('viewer_share_button');

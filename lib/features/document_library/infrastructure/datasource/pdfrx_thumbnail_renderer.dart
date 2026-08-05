@@ -64,3 +64,31 @@ Future<Result<Uint8List>> renderPdfrxThumbnail(
     await document?.dispose();
   }
 }
+
+/// Extracts embedded text from one PDF page, returning null when none exists.
+Future<Result<String?>> extractPdfrxPageText(
+  String filePath, {
+  required int pageNumber,
+  String? password,
+}) async {
+  PdfDocument? document;
+  try {
+    document = await PdfDocument.openFile(
+      filePath,
+      passwordProvider: password == null ? null : () async => password,
+      firstAttemptByEmptyPassword: password == null,
+    );
+    if (pageNumber < 1 || pageNumber > document.pages.length) {
+      return Result<String?>.failure(
+        Failure.notFound(debugDetail: 'Page $pageNumber is out of range.'),
+      );
+    }
+    final rawText = await document.pages[pageNumber - 1].loadText();
+    final text = rawText?.fullText.trim() ?? '';
+    return Result<String?>.success(text.isEmpty ? null : text);
+  } on Object catch (error) {
+    return Result<String?>.failure(Failure.pdf(debugDetail: '$error'));
+  } finally {
+    await document?.dispose();
+  }
+}

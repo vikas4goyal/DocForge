@@ -40,7 +40,7 @@ void main() {
 
     // Read the stable row identifier from what the user can see, then drive the
     // same dashboard → detail → Open route that production composition owns.
-    final visibleIds = DocumentListRobot(tester).visibleDocumentIds;
+    final visibleIds = dashboard.visibleDocumentIds;
     expect(visibleIds, hasLength(1));
     await dashboard.waitForDocumentThumbnail(visibleIds.single);
     await dashboard.openDocument(visibleIds.single);

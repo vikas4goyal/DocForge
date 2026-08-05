@@ -245,14 +245,18 @@ void main() {
     );
 
     blocTest<DashboardCubit, DashboardState>(
-      'hides folders while searching',
+      'returns matching folders and hides non-matches',
       build: build,
       setUp: () {
         store.folderPaths.add('Invoices');
+        store.folderPaths.add('Statements');
         given('Statement.pdf');
       },
-      act: (cubit) => cubit.search('statement'),
-      verify: (cubit) => expect(cubit.state.folders, isEmpty),
+      act: (cubit) => cubit.search('invoice'),
+      verify: (cubit) {
+        expect(cubit.state.folders.single.name, 'Invoices');
+        expect(cubit.state.folders.single.path, ['Invoices']);
+      },
     );
   });
 

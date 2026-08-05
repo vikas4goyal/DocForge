@@ -19,12 +19,12 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes.dart';
 
-/// Finds [text] inside the content list, ignoring the recents strip above it.
+/// Finds [text] inside the content grid, ignoring the recents strip above it.
 ///
 /// A recently-saved document appears in both, so an unscoped text finder would
 /// match twice and say nothing about which list rendered it.
 Finder inList(String text) => find.descendant(
-  of: find.byKey(DashboardKeys.contentList),
+  of: find.byKey(DashboardKeys.contentGrid),
   matching: find.text(text),
 );
 
@@ -235,11 +235,11 @@ void main() {
       await tester.tap(find.byKey(DashboardKeys.trashConfirm));
       await tester.pumpAndSettle();
       expect(find.text('Moved to Trash'), findsOneWidget);
-      expect(find.byKey(DashboardKeys.folderRow('Projects')), findsNothing);
+      expect(find.byKey(DashboardKeys.folderTile('Projects')), findsNothing);
 
       await tester.tap(find.text('Undo'));
       await tester.pumpAndSettle();
-      expect(find.byKey(DashboardKeys.folderRow('Projects')), findsOneWidget);
+      expect(find.byKey(DashboardKeys.folderTile('Projects')), findsOneWidget);
     });
   });
 
@@ -248,7 +248,7 @@ void main() {
       given('Invoices/Receipt.pdf');
       await pumpDashboard(tester);
 
-      await tester.tap(find.byKey(DashboardKeys.folderRow('Invoices')));
+      await tester.tap(find.byKey(DashboardKeys.folderTile('Invoices')));
       await tester.pumpAndSettle();
 
       expect(find.text('Receipt'), findsOneWidget);

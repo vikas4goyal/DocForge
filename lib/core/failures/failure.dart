@@ -53,6 +53,9 @@ enum ValidationIssue {
 
   /// A password and its confirmation did not match.
   passwordMismatch,
+
+  /// A destructive bulk action was submitted without its reviewed confirmation.
+  bulkActionNotConfirmed,
 }
 
 /// Every way an operation in DocScanly can fail.

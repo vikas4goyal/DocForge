@@ -121,11 +121,16 @@ class _StubCubit extends PdfEditCubit {
   Future<void> compress() async => calls.add('compress');
 
   @override
-  Future<void> split(int afterPage) async => calls.add('split:$afterPage');
+  Future<void> split(
+    int afterPage, {
+    ({String first, String second})? outputTitles,
+  }) async => calls.add('split:$afterPage');
 
   @override
-  Future<void> merge(List<DocumentId> others) async =>
-      calls.add('merge:${others.length}');
+  Future<void> merge(
+    List<DocumentId> orderedIds, {
+    String? outputTitle,
+  }) async => calls.add('merge:${orderedIds.length}');
 
   @override
   Future<void> watermark(String text) async => calls.add('watermark:$text');
@@ -145,11 +150,12 @@ class _StubCubit extends PdfEditCubit {
 }
 
 Document doc({
+  String id = 'a',
   String title = 'Invoice',
   int pageCount = 4,
   bool isProtected = false,
 }) => Document(
-  id: const DocumentId('a'),
+  id: DocumentId(id),
   title: title,
   createdAt: DateTime.utc(2026, 3, 14),
   updatedAt: DateTime.utc(2026, 3, 14),
@@ -174,6 +180,13 @@ Widget thumbnail(BuildContext context, int index) =>
     ColoredBox(color: Colors.grey.shade300);
 
 void main() {
+  Future<void> confirmReview(WidgetTester tester) async {
+    await tester.pumpAndSettle();
+    expect(find.byKey(PdfEditKeys.operationSheet), findsOneWidget);
+    await tester.tap(find.byKey(PdfEditKeys.confirm));
+    await tester.pumpAndSettle();
+  }
+
   Future<_StubCubit> pump(
     WidgetTester tester,
     PdfEditState state, {
@@ -220,17 +233,17 @@ void main() {
   );
 
   group('composition', () {
-    testWidgets('shows the page grid and every editing control', (
+    testWidgets('shows document tools but omits page actions until selection', (
       tester,
     ) async {
       await pump(tester, ready);
 
       expect(find.byKey(PdfEditKeys.screen), findsOneWidget);
       expect(find.byKey(PdfEditKeys.pageGrid), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.rotateButton), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.deleteButton), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.extractButton), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.duplicateButton), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.rotateButton), findsNothing);
+      expect(find.byKey(PdfEditKeys.deleteButton), findsNothing);
+      expect(find.byKey(PdfEditKeys.extractButton), findsNothing);
+      expect(find.byKey(PdfEditKeys.compressButton), findsOneWidget);
     });
 
     testWidgets('shows a tile per page', (tester) async {
@@ -253,9 +266,7 @@ void main() {
     testWidgets('rotate is disabled with no selection', (tester) async {
       final cubit = await pump(tester, ready);
 
-      await tester.tap(find.byKey(PdfEditKeys.rotateButton));
-      await tester.pump();
-
+      expect(find.byKey(PdfEditKeys.rotateButton), findsNothing);
       expect(cubit.calls, isEmpty);
     });
 
@@ -263,7 +274,7 @@ void main() {
       final cubit = await pump(tester, ready.copyWith(selection: {1}));
 
       await tester.tap(find.byKey(PdfEditKeys.rotateButton));
-      await tester.pump();
+      await confirmReview(tester);
 
       expect(cubit.calls, ['rotate']);
     });
@@ -273,9 +284,7 @@ void main() {
     ) async {
       final cubit = await pump(tester, ready.copyWith(selection: {0, 1}));
 
-      await tester.tap(find.byKey(PdfEditKeys.rotateButton));
-      await tester.pump();
-
+      expect(find.byKey(PdfEditKeys.rotateButton), findsNothing);
       expect(cubit.calls, isEmpty);
     });
 
@@ -283,7 +292,7 @@ void main() {
       final cubit = await pump(tester, ready.copyWith(selection: {0, 2}));
 
       await tester.tap(find.byKey(PdfEditKeys.extractButton));
-      await tester.pump();
+      await confirmReview(tester);
 
       expect(cubit.calls, ['extract']);
     });
@@ -326,10 +335,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byKey(PdfEditKeys.deleteButton));
-      await tester.pumpAndSettle();
-
-      // Disabled rather than refused: the user finds out before they commit.
+      expect(find.byKey(PdfEditKeys.deleteButton), findsNothing);
       expect(find.text('Delete pages?'), findsNothing);
       expect(cubit.calls, isEmpty);
     });
@@ -341,7 +347,7 @@ void main() {
 
       await tester.ensureVisible(find.byKey(PdfEditKeys.compressButton));
       await tester.tap(find.byKey(PdfEditKeys.compressButton));
-      await tester.pump();
+      await confirmReview(tester);
 
       expect(cubit.calls, ['compress']);
     });
@@ -363,14 +369,16 @@ void main() {
       final cubit = await pump(
         tester,
         ready,
-        mergeCandidates: [doc(title: 'Receipt')],
+        mergeCandidates: [doc(id: 'b', title: 'Receipt')],
       );
 
       await tester.ensureVisible(find.byKey(PdfEditKeys.mergeConfirmButton));
       await tester.tap(find.byKey(PdfEditKeys.mergeConfirmButton));
-      await tester.pump();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(PdfEditKeys.inputContinue));
+      await confirmReview(tester);
 
-      expect(cubit.calls, ['merge:1']);
+      expect(cubit.calls, ['merge:2']);
     });
 
     testWidgets('split is disabled for a single-page document', (tester) async {
@@ -385,6 +393,54 @@ void main() {
       await tester.ensureVisible(find.byKey(PdfEditKeys.splitConfirmButton));
       await tester.tap(find.byKey(PdfEditKeys.splitConfirmButton));
       await tester.pump();
+
+      expect(cubit.calls, isEmpty);
+    });
+
+    testWidgets('split reviews two outputs before one submission', (
+      tester,
+    ) async {
+      final cubit = await pump(tester, ready);
+
+      await tester.ensureVisible(find.byKey(PdfEditKeys.splitConfirmButton));
+      await tester.tap(find.byKey(PdfEditKeys.splitConfirmButton));
+      await tester.pumpAndSettle();
+      expect(find.byKey(PdfEditKeys.splitBoundaryField), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.splitFirstNameField), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.splitSecondNameField), findsOneWidget);
+      await tester.tap(find.byKey(PdfEditKeys.inputContinue));
+      await confirmReview(tester);
+
+      expect(cubit.calls, ['split:2']);
+    });
+
+    testWidgets('split refuses an invalid boundary before review', (
+      tester,
+    ) async {
+      final cubit = await pump(tester, ready);
+
+      await tester.ensureVisible(find.byKey(PdfEditKeys.splitConfirmButton));
+      await tester.tap(find.byKey(PdfEditKeys.splitConfirmButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(PdfEditKeys.splitBoundaryField), '4');
+      await tester.tap(find.byKey(PdfEditKeys.inputContinue));
+      await tester.pump();
+
+      expect(find.textContaining('split point'), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.confirm), findsNothing);
+      expect(cubit.calls, isEmpty);
+    });
+
+    testWidgets('cancelling an operation review mutates nothing', (
+      tester,
+    ) async {
+      final cubit = await pump(tester, ready);
+
+      await tester.ensureVisible(find.byKey(PdfEditKeys.compressButton));
+      await tester.tap(find.byKey(PdfEditKeys.compressButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(PdfEditKeys.cancel));
+      await tester.pumpAndSettle();
 
       expect(cubit.calls, isEmpty);
     });
@@ -427,7 +483,7 @@ void main() {
       );
       await tester.pump();
       await tester.tap(find.byKey(PdfEditKeys.watermarkConfirmButton));
-      await tester.pump();
+      await confirmReview(tester);
 
       expect(cubit.calls, ['watermark:DRAFT']);
     });
@@ -444,7 +500,7 @@ void main() {
       );
       await tester.pump();
       await tester.tap(find.byKey(PdfEditKeys.protectConfirmButton));
-      await tester.pump();
+      await confirmReview(tester);
 
       expect(cubit.calls, ['protect:hunter2']);
     });
@@ -467,7 +523,7 @@ void main() {
       );
       await tester.pump();
       await tester.tap(find.byKey(PdfEditKeys.removePasswordButton));
-      await tester.pump();
+      await confirmReview(tester);
 
       expect(cubit.calls, ['removePassword:hunter2']);
     });
@@ -555,10 +611,16 @@ void main() {
 
       await pump(
         tester,
-        ready.copyWith(derived: doc(title: 'Invoice (2 pages)')),
+        ready.copyWith(
+          derived: doc(title: 'Invoice (2 pages)'),
+          derivedDocuments: [doc(title: 'Invoice (2 pages)')],
+        ),
         onDerived: derived.add,
       );
 
+      expect(find.byKey(PdfEditKeys.result), findsOneWidget);
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
       expect(derived, hasLength(1));
     });
   });

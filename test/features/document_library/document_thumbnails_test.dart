@@ -1,4 +1,6 @@
+import 'package:doc_scanly/core/contracts/document_page_access.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/document_page_handle.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
@@ -69,6 +71,81 @@ void main() {
     expect(cache.document, isNull);
     expect(files.released, isEmpty);
   });
+
+  group('unified page preview', () {
+    final handle = DocumentPageHandle(
+      id: const PageId('page-1'),
+      documentId: sampleDocument.id,
+      pageNumber: 1,
+      source: const DocumentPageSource.pdfPage(),
+    );
+
+    test(
+      'maps every materialized page lifetime to its readable path',
+      () async {
+        for (final value in <MaterializedDocumentPage>[
+          const MaterializedDocumentPage.authoritative(path: '/scan.jpg'),
+          const MaterializedDocumentPage.cached(path: '/cache/page.png'),
+          const MaterializedDocumentPage.temporary(path: '/tmp/page.png'),
+        ]) {
+          final pages = _PageAccess(value: value);
+
+          final result = await LoadDocumentPagePreview(pages)(
+            sampleDocument,
+            handle,
+          );
+
+          expect(result.valueOrNull, value.path);
+          expect(pages.purpose, DocumentPageRenderPurpose.thumbnail);
+        }
+      },
+    );
+
+    test('preserves a typed materialization failure', () async {
+      final pages = _PageAccess(failure: const Failure.corruptFile());
+
+      final result = await LoadDocumentPagePreview(pages)(
+        sampleDocument,
+        handle,
+      );
+
+      expect(result.failureOrNull, const Failure.corruptFile());
+    });
+  });
+}
+
+class _PageAccess implements DocumentPageAccessRepository {
+  _PageAccess({this.value, this.failure});
+
+  final MaterializedDocumentPage? value;
+  final Failure? failure;
+  DocumentPageRenderPurpose? purpose;
+
+  @override
+  Future<Result<MaterializedDocumentPage>> materialize(
+    Document document,
+    DocumentPageHandle page,
+    DocumentPageRenderPurpose purpose,
+  ) async {
+    this.purpose = purpose;
+    return failure == null
+        ? Result<MaterializedDocumentPage>.success(value!)
+        : Result<MaterializedDocumentPage>.failure(failure!);
+  }
+
+  @override
+  Future<Result<List<DocumentPageHandle>>> pagesOf(Document document) async =>
+      const Result<List<DocumentPageHandle>>.success([]);
+
+  @override
+  Future<Result<String?>> embeddedText(
+    Document document,
+    DocumentPageHandle page,
+  ) async => const Result<String?>.success(null);
+
+  @override
+  Future<Result<void>> release(MaterializedDocumentPage page) async =>
+      const Result<void>.success(null);
 }
 
 class _ThumbnailCache implements DocumentThumbnailCache {

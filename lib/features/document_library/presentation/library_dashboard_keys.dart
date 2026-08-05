@@ -14,8 +14,45 @@ abstract final class DashboardKeys {
   /// Searches across the whole library.
   static const searchField = Key('dashboard_search_field');
 
-  /// The folders and documents of the open folder.
-  static const contentList = Key('dashboard_content_list');
+  /// Clears the current search query.
+  static const searchClear = Key('dashboard_search_clear');
+
+  /// Adaptive folder and document grid.
+  static const contentGrid = Key('dashboard_content_grid');
+
+  /// Enters document selection mode.
+  static const selectButton = Key('dashboard_select_button');
+
+  /// Stable toolbar shown during selection.
+  static const selectionToolbar = Key('dashboard_selection_toolbar');
+
+  /// Selects all visible documents.
+  static const selectAll = Key('dashboard_select_all');
+
+  /// Archives the selected documents.
+  static const bulkArchive = Key('dashboard_bulk_archive');
+
+  /// Starts the reviewed bulk Trash flow.
+  static const bulkTrash = Key('dashboard_bulk_trash');
+
+  /// Confirms the reviewed bulk Trash flow.
+  static const bulkTrashConfirm = Key('dashboard_bulk_trash_confirm');
+
+  /// Leaves selection without a mutation.
+  static const selectionCancel = Key('dashboard_selection_cancel');
+
+  /// Reports a partial bulk result with retryable failed selections.
+  static const bulkPartialFailure = Key('dashboard_bulk_partial_failure');
+
+  /// A document card in the adaptive grid.
+  static const documentTilePrefix = 'dashboard_document';
+
+  /// A document card in the adaptive grid.
+  static Key documentTile(String documentId) =>
+      Key('${documentTilePrefix}_$documentId');
+
+  /// A folder card in the adaptive grid.
+  static Key folderTile(String pathToken) => Key('dashboard_folder_$pathToken');
 
   /// The path from the library root to the open folder.
   static const breadcrumb = Key('dashboard_breadcrumb');
@@ -40,7 +77,7 @@ abstract final class DashboardKeys {
       Key('dashboard_recent_$documentId');
 
   /// Shown when the open folder holds nothing.
-  static const emptyState = Key('dashboard_empty_state');
+  static const emptyState = Key('document_list_empty_state');
 
   /// Shown while the folder is being read.
   static const loadingIndicator = Key('dashboard_loading_indicator');
@@ -89,7 +126,4 @@ abstract final class DashboardKeys {
 
   /// Reports that a requested folder move could not be completed.
   static const trashMoveFailure = Key('dashboard_trash_move_failure');
-
-  /// A folder row, keyed by name.
-  static Key folderRow(String name) => Key('dashboard_folder_$name');
 }

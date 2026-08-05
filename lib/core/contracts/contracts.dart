@@ -18,6 +18,9 @@ import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 
+export 'package:doc_scanly/core/contracts/document_page_access.dart';
+export 'package:doc_scanly/core/contracts/models/document_page_handle.dart';
+
 /// Read access to stored documents.
 ///
 /// Implemented by `document-library`. Consumed by the viewer, sharing, import,

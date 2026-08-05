@@ -33,6 +33,7 @@ class DocumentCreationModule {
     required this.loadRecognisedText,
     required this.forgetRecognisedText,
     required this.ocrTextSource,
+    this.extractDocumentText,
     required this.languagePacks,
     required this.saveDocument,
     required this.generateName,
@@ -50,6 +51,9 @@ class DocumentCreationModule {
 
   /// Recognised text for search and sharing.
   final OcrTextSource ocrTextSource;
+
+  /// Extracts embedded text with bounded on-device OCR fallback for imports.
+  final ExtractDocumentText? extractDocumentText;
 
   /// Which recognition scripts this build can use.
   final OcrLanguagePacks languagePacks;
@@ -90,6 +94,7 @@ DocumentCreationModule buildDocumentCreationModule({
   required DocumentWriter documentWriter,
   required NamingPattern Function() namingPattern,
   required ApplyEnhancement applyEnhancement,
+  DocumentPageAccessRepository? pageAccess,
   PdfComposer composer = const IsolatePdfComposer(),
   OcrRepository? recogniser,
   OcrScript Function() script = _defaultScript,
@@ -98,6 +103,16 @@ DocumentCreationModule buildDocumentCreationModule({
   final store = IsarOcrTextStore(isar);
   final ocr = recogniser ?? MlKitOcrRepository(clock);
   final recognise = RecogniseText(ocr, store);
+  final extract = pageAccess == null
+      ? null
+      : ExtractDocumentText(
+          documentReader,
+          documentWriter,
+          pageAccess,
+          ocr,
+          store,
+          clock,
+        );
 
   Future<Map<String, RecognisedText>> textFor(List<PageId> pageIds) async {
     final result = await store.findAll(pageIds);
@@ -167,7 +182,16 @@ DocumentCreationModule buildDocumentCreationModule({
     recogniseText: recognise,
     loadRecognisedText: LoadRecognisedText(store),
     forgetRecognisedText: ForgetRecognisedText(store),
-    ocrTextSource: OcrTextSourceImpl(store, documentReader.pagesOf),
+    ocrTextSource: pageAccess == null
+        ? OcrTextSourceImpl(store, documentReader.pagesOf)
+        : DocumentPageOcrTextSource(
+            documentReader,
+            pageAccess,
+            store,
+            extract,
+            script,
+          ),
+    extractDocumentText: extract,
     languagePacks: languagePacks,
     saveDocument: save,
     generateName: generateName,

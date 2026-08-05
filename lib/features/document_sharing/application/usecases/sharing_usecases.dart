@@ -16,6 +16,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
@@ -23,6 +24,7 @@ import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/isolates/background_worker.dart';
 import 'package:doc_scanly/core/isolates/cancellation.dart';
 import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/features/document_sharing/domain/document_export_result.dart';
 import 'package:doc_scanly/features/document_sharing/domain/repositories/share_repository.dart';
 import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 
@@ -120,14 +122,16 @@ class SharePageImages {
     this._share,
     this._worker,
     this._staging,
-    this._job,
-  );
+    this._job, [
+    this._pageAccess,
+  ]);
 
   final DocumentReader _documents;
   final ShareRepository _share;
   final BackgroundWorker _worker;
   final ShareStagingDirectory _staging;
   final IsolateJob<SharePageRequest, String> _job;
+  final DocumentPageAccessRepository? _pageAccess;
 
   /// Prepares and shares the pages of [documentId] identified by [pageIds].
   ///
@@ -145,6 +149,29 @@ class SharePageImages {
       return;
     }
     final document = found.valueOrNull!;
+
+    final pageAccess = _pageAccess;
+    if (pageAccess != null) {
+      final handles = await pageAccess.pagesOf(document);
+      if (handles case Failed(:final failure)) {
+        yield SharePreparationFailed(failure);
+        return;
+      }
+      final available = handles.valueOrNull!;
+      // Stored scan rows retain rotation/enhancement metadata in the existing
+      // worker path. PDF-only imports have no such rows and materialise through
+      // the shared page contract instead.
+      if (available.any((page) => page.source is PdfDocumentPageSource)) {
+        yield* _sharePdfBackedPages(
+          document,
+          available,
+          pageIds: pageIds,
+          token: token,
+          access: pageAccess,
+        );
+        return;
+      }
+    }
 
     final loaded = await _documents.pagesOf(documentId);
     if (loaded case Failed(:final failure)) {
@@ -218,6 +245,66 @@ class SharePageImages {
       Success() => SharePreparationReady(payload),
       Failed(:final failure) => SharePreparationFailed(failure),
     };
+  }
+
+  Stream<SharePreparationEvent> _sharePdfBackedPages(
+    Document document,
+    List<DocumentPageHandle> pages, {
+    required List<PageId> pageIds,
+    required CancellationToken? token,
+    required DocumentPageAccessRepository access,
+  }) async* {
+    final selected = pageIds.isEmpty
+        ? pages
+        : [
+            for (final page in pages)
+              if (pageIds.contains(page.id)) page,
+          ];
+    if (selected.isEmpty) {
+      yield const SharePreparationFailed(
+        Failure.notFound(debugDetail: 'no pages selected'),
+      );
+      return;
+    }
+    final ordered = [...selected]
+      ..sort((a, b) => a.pageNumber.compareTo(b.pageNumber));
+    final materialized = <MaterializedDocumentPage>[];
+    try {
+      for (var index = 0; index < ordered.length; index++) {
+        if (token?.isCancelled ?? false) {
+          yield const SharePreparationFailed(Failure.cancelled());
+          return;
+        }
+        final rendered = await access.materialize(
+          document,
+          ordered[index],
+          DocumentPageRenderPurpose.sharing,
+        );
+        if (rendered case Failed(:final failure)) {
+          yield SharePreparationFailed(failure);
+          return;
+        }
+        materialized.add(rendered.valueOrNull!);
+        yield SharePreparationProgress(
+          Progress(completed: index + 1, total: ordered.length),
+        );
+      }
+      final payload = SharePayload(
+        filePaths: [for (final page in materialized) page.path],
+        subject: ShareRules.subjectFor(document),
+      );
+      final shared = await _share.share(payload);
+      yield switch (shared) {
+        Success() => SharePreparationReady(payload),
+        Failed(:final failure) => SharePreparationFailed(failure),
+      };
+    } finally {
+      // The share repository returns after the platform has accepted the
+      // handoff, so temporary renders can now be reclaimed safely.
+      for (final page in materialized) {
+        await access.release(page);
+      }
+    }
   }
 
   /// Removes staged files after a failure or cancellation.
@@ -314,77 +401,37 @@ class PrintDocument {
 /// Exports a document's PDF to a destination the user chooses.
 class ExportDocument {
   /// Creates the use case.
-  const ExportDocument(this._documents, this._picker, this._files);
+  const ExportDocument(this._documents, this._exporter, this._files);
 
   final DocumentReader _documents;
-  final ExportDestinationPicker _picker;
+  final ExportDocumentRepository _exporter;
   final DocumentFileResolver _files;
 
   /// Exports [documentId], asking the user where it should go.
   ///
-  /// Returns the destination path, or null when the picker was cancelled — in
-  /// which case nothing has been written, which the spec requires explicitly.
+  /// Returns a platform-owned completed or cancelled result. The exporter owns
+  /// the provider write; this use case never treats an opaque provider value as
+  /// a local path or creates an application-managed `.partial` sibling.
   ///
   /// [initialDirectory] is the configured default save location, when set.
-  Future<Result<String?>> call(
+  Future<Result<DocumentExportResult>> call(
     DocumentId documentId, {
     String? initialDirectory,
   }) async {
     final found = await _documents.findById(documentId);
     if (found case Failed(:final failure)) {
-      return Result<String?>.failure(failure);
+      return Result<DocumentExportResult>.failure(failure);
     }
     final document = found.valueOrNull!;
 
     final resolved = await _files.pathFor(document);
     if (resolved case Failed(:final failure)) {
-      return Result<String?>.failure(failure);
+      return Result<DocumentExportResult>.failure(failure);
     }
-    final source = File(resolved.valueOrNull!);
-
-    final chosen = await _picker.chooseDestination(
+    return _exporter.export(
+      sourcePath: resolved.valueOrNull!,
       suggestedName: ShareRules.pdfFileName(document.title),
       initialDirectory: initialDirectory,
     );
-    if (chosen case Failed(:final failure)) {
-      return Result<String?>.failure(failure);
-    }
-
-    final destination = chosen.valueOrNull;
-    if (destination == null) {
-      // Cancelled. Nothing was written and nothing is said.
-      return const Result<String?>.success(null);
-    }
-
-    return _copyTo(source, destination);
-  }
-
-  /// Copies [source] to [destination], leaving nothing behind on failure.
-  ///
-  /// Written to a temporary sibling and renamed into place, so a failure
-  /// part-way — the device filling up is the case the spec names — cannot leave
-  /// a truncated file where the user expects their document.
-  Future<Result<String?>> _copyTo(File source, String destination) async {
-    final temporary = File('$destination.partial');
-
-    try {
-      await source.copy(temporary.path);
-      final written = await temporary.rename(destination);
-      return Result<String?>.success(written.path);
-    } on FileSystemException catch (error) {
-      if (temporary.existsSync()) temporary.deleteSync();
-
-      // errno 28 is ENOSPC on both platforms. The distinction matters because
-      // "the device is full" has a different recovery from "that location is
-      // not writable".
-      return Result<String?>.failure(
-        error.osError?.errorCode == 28
-            ? Failure.storageFull(debugDetail: '$error')
-            : Failure.export(debugDetail: '$error'),
-      );
-    } on Object catch (error) {
-      if (temporary.existsSync()) temporary.deleteSync();
-      return Result<String?>.failure(Failure.export(debugDetail: '$error'));
-    }
   }
 }

@@ -21,6 +21,7 @@ import 'package:doc_scanly/features/document_import/presentation/cubit/import_cu
 import 'package:doc_scanly/features/document_import/presentation/import_keys.dart';
 import 'package:doc_scanly/features/document_import/presentation/screens/import_options_sheet.dart';
 import 'package:doc_scanly/features/document_import/presentation/widgets/shared_content_watcher.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/bulk_document_lifecycle.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/library_folder_usecases.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_scanly/features/document_library/presentation/screens/dashboard_screen.dart';
@@ -74,6 +75,12 @@ ScreenBuilder buildHomeScreen({
         restoreTrashEntry: library.restoreTrashEntry,
         renameLibraryFolder: library.renameLibraryFolder,
         loadTrash: library.loadTrash,
+        bulkArchiveDocuments: BulkArchiveDocuments(
+          library.archiveDocument.call,
+        ),
+        bulkTrashDocuments: BulkTrashDocuments(
+          library.moveDocumentToTrash.call,
+        ),
       )..load(),
       child: Builder(
         builder: (dashboardContext) => HomeRefreshListener(

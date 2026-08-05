@@ -150,7 +150,8 @@ Future<Widget> buildDocScanly({
   OcrRepository? recogniser,
   ShareRepository share = const SystemShareRepository(),
   PrintRepository printer = const SystemPrintRepository(),
-  ExportDestinationPicker exportPicker = const SystemExportDestinationPicker(),
+  ExportDocumentRepository exportPicker =
+      const SystemExportDocumentRepository(),
   GalleryPicker gallery = const SystemGalleryPicker(),
   FileBrowser files = const SystemFileBrowser(),
   SharedContentSource? sharedContent,
@@ -402,6 +403,7 @@ Future<Widget> buildDocScanly({
     // Shared with the scanning module so a page enhanced on screen and a page
     // enhanced while saving go through exactly the same code.
     applyEnhancement: scanning.applyEnhancement,
+    pageAccess: library.pageAccess,
     recogniser: recogniser,
   );
 
@@ -460,12 +462,13 @@ Future<Widget> buildDocScanly({
   final sharing = buildSharingModule(
     documentReader: library.documentReader,
     ocrTextSource: creation.ocrTextSource,
+    pageAccess: library.pageAccess,
     documentFiles: documentFiles,
     cacheDirectory: resolvedCache,
     worker: resolvedDependencies.worker,
     share: share,
     printer: printer,
-    picker: exportPicker,
+    exporter: exportPicker,
   );
 
   // Onboarding owns its own gate. The flag is read once here, before the first

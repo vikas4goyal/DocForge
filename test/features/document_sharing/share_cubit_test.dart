@@ -342,13 +342,13 @@ void main() {
     );
 
     blocTest<ShareCubit, ShareState>(
-      'says nothing when the picker is cancelled',
+      'reports a non-error cancellation when the picker is dismissed',
       build: build,
       act: (cubit) => cubit.export(),
       skip: 1,
       expect: () => [
         isA<ShareState>()
-            .having((s) => s.status, 'status', ShareStatus.idle)
+            .having((s) => s.status, 'status', ShareStatus.cancelled)
             .having((s) => s.exportedTo, 'exportedTo', isNull),
       ],
     );

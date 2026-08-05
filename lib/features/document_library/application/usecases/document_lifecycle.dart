@@ -13,6 +13,7 @@ import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/domain/document_duplicate.dart';
 import 'package:doc_scanly/features/document_library/domain/library_rules.dart';
 import 'package:doc_scanly/features/document_library/domain/repositories/document_file_store.dart';
 import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
@@ -87,35 +88,87 @@ class RenameDocument {
 /// Moves a document into a folder, or out of one.
 class MoveDocument {
   /// Creates the use case.
-  const MoveDocument(this._documents, this._clock);
+  const MoveDocument(
+    this._documents,
+    this._clock, [
+    this._store,
+    this._folders,
+  ]);
 
   final DocumentRepository _documents;
   final Clock _clock;
+  final PublicFileStore? _store;
+  final FolderRepository? _folders;
 
   /// Moves [id] into [folderId], or unfiles it when [folderId] is null.
   Future<Result<Document>> call(DocumentId id, FolderId? folderId) async {
     final found = await _documents.findById(id);
+    if (found case Failed(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
+    final document = found.valueOrNull!;
+    var destinationPath = document.libraryPath;
+    final store = _store;
+    final folderRepository = _folders;
+    if (store != null && folderRepository != null) {
+      var destinationFolders = const <String>[];
+      if (folderId != null) {
+        final folder = await folderRepository.findById(folderId);
+        if (folder case Failed(:final failure)) {
+          return Result<Document>.failure(failure);
+        }
+        final relative = folder.valueOrNull!.relativePath.trim();
+        destinationFolders = relative.isEmpty ? const [] : relative.split('/');
+      }
+      destinationPath = LibraryPath.inFolder(
+        destinationFolders,
+        document.fileName,
+      );
+      if (destinationPath != document.libraryPath) {
+        final occupied = await store.exists(destinationPath);
+        if (occupied case Failed(:final failure)) {
+          return Result<Document>.failure(failure);
+        }
+        if (occupied.valueOrNull ?? false) {
+          return const Result<Document>.failure(
+            Failure.validation(issue: ValidationIssue.duplicateDocumentName),
+          );
+        }
+        final moved = await store.rename(document.libraryPath, destinationPath);
+        if (moved case Failed(:final failure)) {
+          return Result<Document>.failure(failure);
+        }
+      }
+    }
 
-    return found.flatMapAsync(
-      (document) => _documents.save(
-        // copyWith cannot clear a nullable field, so unfiling is expressed by
-        // rebuilding the record without a folder.
-        Document(
-          id: document.id,
-          title: document.title,
-          createdAt: document.createdAt,
-          updatedAt: _clock.now(),
-          pageCount: document.pageCount,
-          sizeInBytes: document.sizeInBytes,
-          libraryPath: document.libraryPath,
-          folderId: folderId,
-          isFavourite: document.isFavourite,
-          isArchived: document.isArchived,
-          isProtected: document.isProtected,
-          hasRecognisedText: document.hasRecognisedText,
-        ),
+    // Rebuild to allow a null folder assignment when moving to Root.
+    final saved = await _documents.save(
+      Document(
+        id: document.id,
+        title: document.title,
+        createdAt: document.createdAt,
+        updatedAt: _clock.now(),
+        pageCount: document.pageCount,
+        sizeInBytes: document.sizeInBytes,
+        libraryPath: destinationPath,
+        folderId: folderId,
+        isFavourite: document.isFavourite,
+        isArchived: document.isArchived,
+        isProtected: document.isProtected,
+        hasRecognisedText: document.hasRecognisedText,
+        cloudResourceIdentifier: document.cloudResourceIdentifier,
+        cloudRelativePath: document.cloudRelativePath,
+        contentAvailability: document.contentAvailability,
+        trashId: document.trashId,
+        trashedAt: document.trashedAt,
       ),
     );
+    if (saved.isFailure &&
+        store != null &&
+        destinationPath != document.libraryPath) {
+      await store.rename(destinationPath, document.libraryPath);
+    }
+    return saved;
   }
 }
 
@@ -207,32 +260,90 @@ class DuplicateDocument {
   /// The copy is fully independent: its own identifier, its own files and its
   /// own page records, so editing or deleting one cannot affect the other.
   Future<Result<Document>> call(DocumentId id) async {
+    final proposal = await propose(id);
+    if (proposal case Failed(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
+    return execute(proposal.valueOrNull!);
+  }
+
+  /// Proposes a collision-safe copy name beside the source document.
+  Future<Result<DuplicateDocumentRequest>> propose(
+    DocumentId id, {
+    Folder? destination,
+  }) async {
     final found = await _documents.findById(id);
     if (found case Failed<Document>(:final failure)) {
-      return Result<Document>.failure(failure);
+      return Result<DuplicateDocumentRequest>.failure(failure);
     }
 
     final original = found.valueOrNull!;
+    final folders =
+        _folderSegments(destination?.relativePath) ??
+        original.libraryPath.folders;
+    final proposed = DocumentRules.duplicateTitle(original.title);
+    final destinationPath = await _availablePathFor(proposed, folders);
+    if (destinationPath case Failed(:final failure)) {
+      return Result<DuplicateDocumentRequest>.failure(failure);
+    }
+    return Result<DuplicateDocumentRequest>.success(
+      DuplicateDocumentRequest(
+        sourceDocumentId: id,
+        title: destinationPath.valueOrNull!.baseName,
+        destinationFolders: folders,
+        destinationFolderId: destination?.id ?? original.folderId,
+      ),
+    );
+  }
+
+  /// Creates exactly one independent copy from the reviewed [request].
+  Future<Result<Document>> execute(DuplicateDocumentRequest request) async {
+    final normalised = NameRules.normalise(request.title);
+    if (normalised == null) {
+      return const Result<Document>.failure(
+        Failure.validation(issue: ValidationIssue.emptyName),
+      );
+    }
+    final fileName = LibraryPath.pdfFileName(normalised);
+    if (!LibraryPath.isValidName(fileName)) {
+      return const Result<Document>.failure(
+        Failure.validation(issue: ValidationIssue.illegalName),
+      );
+    }
+    final found = await _documents.findById(request.sourceDocumentId);
+    if (found case Failed<Document>(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
+    final original = found.valueOrNull!;
+    final destination = LibraryPath.inFolder(
+      request.destinationFolders,
+      fileName,
+    );
+    if (destination == original.libraryPath) {
+      return const Result<Document>.failure(
+        Failure.validation(issue: ValidationIssue.duplicateDocumentName),
+      );
+    }
+    final exists = await _store.exists(destination);
+    if (exists case Failed(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
+    if (exists.valueOrNull ?? false) {
+      return const Result<Document>.failure(
+        Failure.validation(issue: ValidationIssue.duplicateDocumentName),
+      );
+    }
     final newId = DocumentId(_ids.generate());
-    final title = DocumentRules.duplicateTitle(original.title);
 
     // A second file beside the first in the user's own folder, under a name
     // de-duplicated the way the file browser would do it — the copy has to be
     // something they can tell apart from the original at a glance.
-    final destination = await _availablePathFor(title, original);
-    if (destination case Failed<LibraryPath>(:final failure)) {
-      return Result<Document>.failure(failure);
-    }
-
     final source = await _store.materialise(original.libraryPath);
     if (source case Failed<String>(:final failure)) {
       return Result<Document>.failure(failure);
     }
 
-    final copied = await _store.writeFile(
-      destination.valueOrNull!,
-      source.valueOrNull!,
-    );
+    final copied = await _store.writeFile(destination, source.valueOrNull!);
     await _store.releaseMaterialised(original.libraryPath);
     if (copied case Failed<String>(:final failure)) {
       return Result<Document>.failure(failure);
@@ -241,10 +352,11 @@ class DuplicateDocument {
     final now = _clock.now();
     final duplicate = original.copyWith(
       id: newId,
-      title: title,
+      title: normalised,
       createdAt: now,
       updatedAt: now,
-      libraryPath: destination.valueOrNull!,
+      libraryPath: destination,
+      folderId: request.destinationFolderId,
     );
 
     final saved = await _documents.save(duplicate);
@@ -254,7 +366,7 @@ class DuplicateDocument {
 
     // Page records are copied with fresh identifiers so the two documents never
     // share a page row.
-    final originalPages = await _pages.forDocument(id);
+    final originalPages = await _pages.forDocument(request.sourceDocumentId);
     if (originalPages case Success(:final value)) {
       final copiedPages = value
           .map(
@@ -268,12 +380,11 @@ class DuplicateDocument {
     return Result<Document>.success(duplicate);
   }
 
-  /// A library path for [title] beside [original] that nothing already holds.
+  /// A collision-safe library path for [title] inside [folders].
   Future<Result<LibraryPath>> _availablePathFor(
     String title,
-    Document original,
+    List<String> folders,
   ) async {
-    final folders = original.libraryPath.folders;
     final existing = await _store.list(folders);
     // Propagated, not defaulted to empty: without the listing there is no way
     // to know whether the name is free, and writing anyway would silently
@@ -301,6 +412,11 @@ class DuplicateDocument {
         ),
       );
     }
+  }
+
+  static List<String>? _folderSegments(String? relativePath) {
+    final value = relativePath?.trim();
+    return value == null || value.isEmpty ? null : value.split('/');
   }
 }
 

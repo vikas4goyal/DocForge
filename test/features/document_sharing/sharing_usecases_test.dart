@@ -21,6 +21,7 @@ import 'package:doc_scanly/core/isolates/cancellation.dart';
 import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_scanly/features/document_sharing/application/usecases/sharing_usecases.dart';
+import 'package:doc_scanly/features/document_sharing/domain/document_export_result.dart';
 import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -364,6 +365,19 @@ void main() {
       expect(share.shared.single.filePaths, isEmpty);
     });
 
+    test('shares available text when summary metadata is stale', () async {
+      final share = FakeShareRepository();
+
+      final result = await ShareExtractedText(
+        _Reader(document: doc()),
+        _Text('Policy wording'),
+        share,
+      )(id);
+
+      expect(result, isA<Success<void>>());
+      expect(share.shared.single.text, 'Policy wording');
+    });
+
     test('refuses when the document has no recognised text', () async {
       final share = FakeShareRepository();
 
@@ -441,7 +455,10 @@ void main() {
         testFiles,
       )(id);
 
-      expect((result as Success<String?>).value, destination);
+      expect(
+        (result as Success<DocumentExportResult>).value,
+        DocumentExportResult.completed(destinationLabel: destination),
+      );
       expect(File(destination).readAsStringSync(), 'the document');
     });
 
@@ -483,7 +500,10 @@ void main() {
         testFiles,
       )(id);
 
-      expect((result as Success<String?>).value, isNull);
+      expect(
+        (result as Success<DocumentExportResult>).value,
+        const DocumentExportResult.cancelled(),
+      );
       expect(
         temporary.listSync().where((e) => e.path.endsWith('exported.pdf')),
         isEmpty,
@@ -502,7 +522,7 @@ void main() {
           testFiles,
         )(id);
 
-        expect(result, isA<Failed<String?>>());
+        expect(result, isA<Failed<DocumentExportResult>>());
         expect(File(destination).existsSync(), isFalse);
         expect(File('$destination.partial').existsSync(), isFalse);
       },
@@ -515,7 +535,7 @@ void main() {
         testFiles,
       )(id);
 
-      expect(result, isA<Failed<String?>>());
+      expect(result, isA<Failed<DocumentExportResult>>());
     });
 
     test('propagates a picker failure', () async {
@@ -527,7 +547,7 @@ void main() {
         testFiles,
       )(id);
 
-      expect(result, isA<Failed<String?>>());
+      expect(result, isA<Failed<DocumentExportResult>>());
     });
   });
 }

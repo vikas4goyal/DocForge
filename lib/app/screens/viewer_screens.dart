@@ -10,6 +10,7 @@ import 'package:doc_scanly/app/document_creation_module.dart';
 import 'package:doc_scanly/app/library_module.dart';
 import 'package:doc_scanly/app/pdf_editing_module.dart';
 import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
 import 'package:doc_scanly/app/screens/screen_support.dart';
 import 'package:doc_scanly/app/sharing_module.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
@@ -153,6 +154,14 @@ Future<void> openEditor(
                           ),
                   ),
             onClose: () => Navigator.of(routeContext).pop(),
+            onDone: () {
+              Navigator.of(routeContext).pop();
+              context.go(AppRoutes.home);
+            },
+            onDerived: (document) {
+              Navigator.of(routeContext).pop();
+              context.go(AppRoutes.documentDetail(document.id));
+            },
           );
         },
       ),

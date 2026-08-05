@@ -136,6 +136,28 @@ void main() {
       expect(editCount, 1);
     });
 
+    testWidgets('compact width keeps secondary actions in a reachable menu', (
+      tester,
+    ) async {
+      await pump(tester, viewport: const Size(390, 844));
+
+      expect(find.byKey(ViewerKeys.shareButton), findsOneWidget);
+      expect(find.byKey(ViewerKeys.actionsMenu), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.printButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.editButton));
+      await tester.pumpAndSettle();
+
+      expect(printCount, 1);
+      expect(editCount, 1);
+    });
+
     testWidgets('back leaves the viewer', (tester) async {
       await pump(tester);
 
@@ -147,35 +169,49 @@ void main() {
   });
 
   group('jump to page', () {
+    Future<void> openJump(WidgetTester tester) async {
+      await tester.tap(find.byKey(ViewerKeys.pageJumpButton));
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('a valid number moves to that page', (tester) async {
       final cubit = await pump(tester);
 
+      await openJump(tester);
       await tester.enterText(find.byKey(ViewerKeys.jumpToPageField), '3');
-      await tester.testTextInput.receiveAction(TextInputAction.go);
+      await tester.tap(find.byKey(ViewerKeys.pageJumpConfirm));
       await tester.pumpAndSettle();
 
       expect(cubit.state.page, 3);
       expect(find.text('3 of 3'), findsOneWidget);
     });
 
-    testWidgets('a number past the end lands on the last page', (tester) async {
+    testWidgets('a number past the end stays visible with validation', (
+      tester,
+    ) async {
       final cubit = await pump(tester);
 
+      await openJump(tester);
       await tester.enterText(find.byKey(ViewerKeys.jumpToPageField), '99');
-      await tester.testTextInput.receiveAction(TextInputAction.go);
-      await tester.pumpAndSettle();
-
-      expect(cubit.state.page, 3);
-    });
-
-    testWidgets('a number below one lands on the first page', (tester) async {
-      final cubit = await pump(tester);
-
-      await tester.enterText(find.byKey(ViewerKeys.jumpToPageField), '0');
-      await tester.testTextInput.receiveAction(TextInputAction.go);
+      await tester.tap(find.byKey(ViewerKeys.pageJumpConfirm));
       await tester.pumpAndSettle();
 
       expect(cubit.state.page, 1);
+      expect(find.text('Enter a page from 1 to 3.'), findsOneWidget);
+      expect(find.byKey(ViewerKeys.pageJumpDialog), findsOneWidget);
+    });
+
+    testWidgets('cancel leaves the current page unchanged', (tester) async {
+      final cubit = await pump(tester);
+      cubit.goToPage(2);
+      await tester.pump();
+
+      await openJump(tester);
+      await tester.enterText(find.byKey(ViewerKeys.jumpToPageField), '3');
+      await tester.tap(find.byKey(ViewerKeys.pageJumpCancel));
+      await tester.pumpAndSettle();
+
+      expect(cubit.state.page, 2);
     });
 
     testWidgets('a non-numeric entry does nothing rather than guessing', (
@@ -185,11 +221,13 @@ void main() {
       cubit.goToPage(2);
       await tester.pumpAndSettle();
 
+      await openJump(tester);
       await tester.enterText(find.byKey(ViewerKeys.jumpToPageField), 'seven');
-      await tester.testTextInput.receiveAction(TextInputAction.go);
+      await tester.tap(find.byKey(ViewerKeys.pageJumpConfirm));
       await tester.pumpAndSettle();
 
       expect(cubit.state.page, 2);
+      expect(find.text('Enter a page from 1 to 3.'), findsOneWidget);
     });
   });
 
@@ -330,7 +368,10 @@ void main() {
       final handle = tester.ensureSemantics();
       await pump(tester);
 
-      expect(find.bySemanticsLabel('Page 1 of 3'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Page 1 of 3, jump to page'),
+        findsOneWidget,
+      );
 
       handle.dispose();
     });

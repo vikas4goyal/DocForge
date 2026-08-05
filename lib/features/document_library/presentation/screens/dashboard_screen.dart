@@ -9,8 +9,9 @@ import 'package:doc_scanly/core/widgets/app_state_views.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_state.dart';
 import 'package:doc_scanly/features/document_library/presentation/library_dashboard_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_grid_layout.dart';
 import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
-import 'package:doc_scanly/features/document_library/presentation/widgets/document_card.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/dashboard_grid_tile.dart';
 import 'package:doc_scanly/features/document_library/presentation/widgets/document_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -83,20 +84,40 @@ class DashboardScreen extends StatelessWidget {
         return Scaffold(
           key: DashboardKeys.screen,
           appBar: AppBar(
-            title: const Text('DocScanly'),
+            title: Text(
+              state.selectionMode
+                  ? '${state.selectedCount} selected'
+                  : 'DocScanly',
+            ),
             actions: [
-              IconButton(
-                key: DashboardKeys.createFolderButton,
-                tooltip: 'New folder',
-                onPressed: () => _promptForFolder(context, cubit),
-                icon: const Icon(Icons.create_new_folder_outlined),
-              ),
-              IconButton(
-                key: DashboardKeys.importPdfButton,
-                tooltip: 'Import PDF',
-                onPressed: actions.onImportPdf,
-                icon: const Icon(Icons.file_open_outlined),
-              ),
+              if (state.selectionMode)
+                IconButton(
+                  key: DashboardKeys.selectionCancel,
+                  tooltip: 'Cancel selection',
+                  onPressed: state.isBulkWorking ? null : cubit.cancelSelection,
+                  icon: const Icon(Icons.close),
+                )
+              else ...[
+                if (state.documents.isNotEmpty)
+                  IconButton(
+                    key: DashboardKeys.selectButton,
+                    tooltip: 'Select documents',
+                    onPressed: cubit.enterSelection,
+                    icon: const Icon(Icons.checklist_rounded),
+                  ),
+                IconButton(
+                  key: DashboardKeys.createFolderButton,
+                  tooltip: 'New folder',
+                  onPressed: () => _promptForFolder(context, cubit),
+                  icon: const Icon(Icons.create_new_folder_outlined),
+                ),
+                IconButton(
+                  key: DashboardKeys.importPdfButton,
+                  tooltip: 'Import PDF',
+                  onPressed: actions.onImportPdf,
+                  icon: const Icon(Icons.file_open_outlined),
+                ),
+              ],
             ],
           ),
           body: SafeArea(
@@ -113,6 +134,10 @@ class DashboardScreen extends StatelessWidget {
                   SliverToBoxAdapter(
                     child: _SearchField(state: state, cubit: cubit),
                   ),
+                  if (state.selectionMode)
+                    SliverToBoxAdapter(
+                      child: _SelectionToolbar(state: state, cubit: cubit),
+                    ),
                   if (!state.isSearching && !state.isAtRoot)
                     SliverToBoxAdapter(
                       child: _Breadcrumb(state: state, cubit: cubit),
@@ -257,34 +282,193 @@ class _CollectionChip extends StatelessWidget {
 }
 
 /// Searches across the whole library.
-class _SearchField extends StatelessWidget {
+class _SearchField extends StatefulWidget {
   const _SearchField({required this.state, required this.cubit});
 
   final DashboardState state;
   final DashboardCubit cubit;
 
   @override
+  State<_SearchField> createState() => _SearchFieldState();
+}
+
+class _SearchFieldState extends State<_SearchField> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.state.query,
+  );
+
+  @override
+  void didUpdateWidget(covariant _SearchField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_controller.text != widget.state.query) {
+      _controller.value = TextEditingValue(
+        text: widget.state.query,
+        selection: TextSelection.collapsed(offset: widget.state.query.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      child: TextField(
-        key: DashboardKeys.searchField,
-        decoration: InputDecoration(
-          hintText: 'Search all documents',
-          prefixIcon: const Icon(Icons.search),
-          suffixIcon: state.isSearching
-              ? IconButton(
-                  tooltip: 'Clear search',
-                  onPressed: cubit.clearSearch,
-                  icon: const Icon(Icons.close),
-                )
-              : null,
-          border: const OutlineInputBorder(),
-          isDense: true,
+      child: Semantics(
+        textField: true,
+        label: 'Search documents and folders',
+        child: TextField(
+          key: DashboardKeys.searchField,
+          controller: _controller,
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            hintText: 'Search documents and folders',
+            prefixIcon: const Icon(Icons.search_rounded),
+            suffixIcon: widget.state.isSearching
+                ? IconButton(
+                    key: DashboardKeys.searchClear,
+                    tooltip: 'Clear search',
+                    onPressed: widget.cubit.clearSearch,
+                    icon: const Icon(Icons.cancel_rounded),
+                  )
+                : null,
+            filled: true,
+            fillColor: theme.colorScheme.surfaceContainerHighest,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(13),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(13),
+              borderSide: BorderSide.none,
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(13),
+              borderSide: BorderSide(
+                color: theme.colorScheme.primary,
+                width: 1.5,
+              ),
+            ),
+            isDense: true,
+          ),
+          onChanged: widget.cubit.search,
         ),
-        onChanged: cubit.search,
       ),
     );
+  }
+}
+
+class _SelectionToolbar extends StatelessWidget {
+  const _SelectionToolbar({required this.state, required this.cubit});
+
+  final DashboardState state;
+  final DashboardCubit cubit;
+
+  @override
+  Widget build(BuildContext context) {
+    final failed = state.bulkOutcome?.failed.length ?? 0;
+    return Material(
+      key: DashboardKeys.selectionToolbar,
+      color: Theme.of(context).colorScheme.surfaceContainerLow,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (failed > 0)
+              Semantics(
+                liveRegion: true,
+                label: '$failed selected documents failed. Retry available.',
+                child: Text(
+                  key: DashboardKeys.bulkPartialFailure,
+                  '$failed could not be updated and remain selected.',
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 4,
+              runSpacing: 2,
+              children: [
+                TextButton(
+                  key: DashboardKeys.selectAll,
+                  onPressed: state.isBulkWorking ? null : cubit.selectAll,
+                  child: Semantics(
+                    label: 'Select all documents',
+                    child: const Text('Select all'),
+                  ),
+                ),
+                TextButton.icon(
+                  key: DashboardKeys.bulkArchive,
+                  onPressed: state.isBulkWorking || state.selectedCount == 0
+                      ? null
+                      : cubit.archiveSelected,
+                  icon: const Icon(Icons.archive_outlined),
+                  label: Semantics(
+                    label: 'Archive selected documents',
+                    child: const Text('Archive'),
+                  ),
+                ),
+                TextButton.icon(
+                  key: DashboardKeys.bulkTrash,
+                  onPressed: state.isBulkWorking || state.selectedCount == 0
+                      ? null
+                      : () => _confirmTrash(context),
+                  icon: const Icon(Icons.delete_outline),
+                  label: Semantics(
+                    label: 'Move selected documents to Trash',
+                    child: const Text('Trash'),
+                  ),
+                ),
+                if (failed > 0)
+                  TextButton(
+                    onPressed: state.isBulkWorking ? null : cubit.retrySelected,
+                    child: const Text('Retry'),
+                  ),
+                if (state.isBulkWorking)
+                  const Padding(
+                    padding: EdgeInsets.only(left: 8),
+                    child: SizedBox.square(
+                      dimension: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _confirmTrash(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Move ${state.selectedCount} to Trash?'),
+        content: const Text(
+          'These documents will leave active folders and can be restored from Trash.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: DashboardKeys.bulkTrashConfirm,
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Move to Trash'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed ?? false) await cubit.trashSelected(confirmed: true);
   }
 }
 
@@ -484,7 +668,8 @@ class _Body extends StatelessWidget {
               : Icons.folder_open_outlined,
           title: state.isSearching ? 'No matches' : 'Nothing here yet',
           message: state.isSearching
-              ? 'No document matches what you typed.'
+              ? 'No results for “${state.query.trim()}”. Clear search to show '
+                    'all documents and folders.'
               : 'Create a PDF or import one to get started. '
                     'Everything you save lives in a folder you can also open '
                     'from your files app.',
@@ -492,65 +677,63 @@ class _Body extends StatelessWidget {
       );
     }
 
-    return SliverList(
-      key: DashboardKeys.contentList,
-      delegate: SliverChildBuilderDelegate((context, index) {
-        if (index < state.folders.length) {
-          final folder = state.folders[index];
-          return ListTile(
-            key: DashboardKeys.folderRow(folder.name),
-            leading: const Icon(Icons.folder_outlined),
-            title: Text(folder.name),
-            subtitle: Text(
-              DisplayFormatting.documentCount(folder.documentCount),
-            ),
-            trailing: PopupMenuButton<_FolderAction>(
-              key: DashboardKeys.folderMenu(folder.name),
-              tooltip: 'Actions for ${folder.name}',
-              onSelected: (action) => switch (action) {
-                _FolderAction.rename => _renameFolder(
-                  context,
-                  cubit,
-                  folder.name,
-                ),
-                _FolderAction.trash => _moveFolderToTrash(
-                  context,
-                  cubit,
-                  folder.name,
-                ),
-              },
-              itemBuilder: (_) => const [
-                PopupMenuItem(
-                  key: DashboardKeys.folderRename,
-                  value: _FolderAction.rename,
-                  child: Text('Rename'),
-                ),
-                PopupMenuItem(
-                  key: DashboardKeys.folderTrash,
-                  value: _FolderAction.trash,
-                  child: Text('Move to Trash'),
-                ),
-              ],
-            ),
-            onTap: () => cubit.openFolder(folder.name),
-          );
-        }
-
-        final document = state.documents[index - state.folders.length];
-        return DocumentCard(
-          document: document,
-          loadThumbnail: loadThumbnail,
-          onTap: () => actions.onOpenDocument(document),
+    return SliverLayoutBuilder(
+      builder: (context, constraints) {
+        final media = MediaQuery.of(context);
+        final textScale = media.textScaler.scale(16) / 16;
+        final columns = LibraryGridLayout.columnsFor(
+          availableWidth: constraints.crossAxisExtent,
+          textScale: textScale,
         );
-      }, childCount: state.folders.length + state.documents.length),
+        return SliverPadding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: LibraryGridLayout.horizontalPadding,
+            vertical: 8,
+          ),
+          sliver: SliverGrid(
+            key: DashboardKeys.contentGrid,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              crossAxisSpacing: LibraryGridLayout.spacing,
+              mainAxisSpacing: LibraryGridLayout.spacing,
+              mainAxisExtent: LibraryGridLayout.tileExtent,
+            ),
+            delegate: SliverChildBuilderDelegate((context, index) {
+              if (index < state.folders.length) {
+                final folder = state.folders[index];
+                return DashboardFolderGridTile(
+                  folder: folder,
+                  onTap: () => cubit.openPath(folder.path),
+                  onRename: () => _renameFolder(context, cubit, folder.path),
+                  onTrash: () =>
+                      _moveFolderToTrash(context, cubit, folder.path),
+                );
+              }
+
+              final document = state.documents[index - state.folders.length];
+              final selected = state.isSelected(document.id);
+              return DashboardDocumentGridTile(
+                document: document,
+                selected: selected,
+                loadThumbnail: loadThumbnail,
+                onLongPress: () => cubit.enterSelection(document.id),
+                onTap: state.selectionMode
+                    ? () => cubit.toggleSelection(document.id)
+                    : () => actions.onOpenDocument(document),
+              );
+            }, childCount: state.folders.length + state.documents.length),
+          ),
+        );
+      },
     );
   }
 
   Future<void> _renameFolder(
     BuildContext context,
     DashboardCubit cubit,
-    String name,
+    List<String> path,
   ) async {
+    final name = path.last;
     var newName = name;
     final confirmed = await showDialog<bool>(
       context: context,
@@ -574,7 +757,7 @@ class _Body extends StatelessWidget {
       ),
     );
     if (!(confirmed ?? false) || !context.mounted) return;
-    final result = await cubit.renameFolder(name, newName);
+    final result = await cubit.renameFolderPath(path, newName);
     if (!context.mounted || result.isSuccess) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(result.failureOrNull!.presentation.message)),
@@ -584,10 +767,11 @@ class _Body extends StatelessWidget {
   Future<void> _moveFolderToTrash(
     BuildContext context,
     DashboardCubit cubit,
-    String name,
+    List<String> path,
   ) async {
+    final name = path.last;
     final messenger = ScaffoldMessenger.of(context);
-    final inspected = cubit.inspectFolder(name);
+    final inspected = cubit.inspectFolderPath(path);
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -648,7 +832,7 @@ class _Body extends StatelessWidget {
       ),
     );
     if (!(confirmed ?? false)) return;
-    final moved = await cubit.trashFolder(name);
+    final moved = await cubit.trashFolderPath(path);
     if (!messenger.mounted) return;
     if (moved.isFailure) {
       messenger.showSnackBar(
@@ -671,8 +855,6 @@ class _Body extends StatelessWidget {
     );
   }
 }
-
-enum _FolderAction { rename, trash }
 
 /// How much space the library occupies.
 class _StorageSummary extends StatelessWidget {

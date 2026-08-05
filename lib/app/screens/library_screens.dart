@@ -109,11 +109,12 @@ LibraryScreens buildLibraryScreens({required LibraryModule library}) {
         library.duplicateDocument,
         library.purgeDocument,
         moveToTrash: library.moveDocumentToTrash,
+        loadFolderOptions: library.loadFolderOptions,
       ),
       child: DocumentDetailScreen(
         onClose: () => context.pop(),
         onOpenViewer: () => context.push(AppRoutes.documentView(id)),
-        loadPageThumbnail: library.loadDocumentPageThumbnail.call,
+        loadPageThumbnail: library.loadDocumentPagePreview.call,
         // Replaces rather than pushes: the user asked for a copy, and leaving
         // the original underneath would make Back feel like an undo it is not.
         onOpenDocument: (document) =>

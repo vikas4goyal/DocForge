@@ -102,7 +102,7 @@ class InMemoryPublicFileStore implements PublicFileStore {
           PublicEntry(
             kind: PublicEntryKind.folder,
             name: folder.split('/').last,
-            folders: List.unmodifiable(_segmentsOf(folder)),
+            folders: List.unmodifiable(_segmentsOf(_folderOf(folder))),
           ),
       for (final entry in files.entries)
         if (!_isReserved(entry.key) && _atOrBelow(entry.key, prefix))

@@ -5,27 +5,37 @@
 Define the application's top-level navigation and the Dashboard that sits at its centre: a persistent three-destination tab bar, the composition of the Dashboard's folder-browsing home screen, its empty, loading and error states, and the shell-wide guarantees every screen inherits — typed routes, Material 3 theming, responsive layout, accessibility and offline operation.
 ## Requirements
 ### Requirement: Tab bar navigation
-The application SHALL present a persistent bottom tab bar with three destinations — Dashboard, Create PDF and Settings — with Create PDF in the middle, and every destination SHALL be reachable from every other in one tap.
+The application SHALL present a persistent, platform-adaptive bottom bar containing Dashboard, a middle Create PDF action, and Settings. On iOS it SHALL use a restrained Cupertino-style tab-bar presentation with native icons, spacing, safe-area treatment, separator, typography and selected-state treatment; on Android it SHALL use a Material 3 navigation-bar presentation. Dashboard and Settings are selectable destinations, while Create PDF SHALL start a flow without becoming selected.
 
 #### Scenario: Tab bar displayed
 - **WHEN** the application is showing any top-level destination
-- **THEN** a tab bar with key `app_tab_scaffold` is displayed with a dashboard tab with key `app_tab_dashboard`, a create-PDF control with key `app_tab_create` in the middle, and a settings tab with key `app_tab_settings`
+- **THEN** a tab bar with key `app_tab_scaffold` is displayed with a dashboard control with key `app_tab_dashboard`, a create-PDF control with key `app_tab_create` in the middle, and a settings control with key `app_tab_settings`
+
+#### Scenario: Native iOS presentation
+- **WHEN** the top-level shell is displayed on iOS
+- **THEN** the bottom bar uses Cupertino-style unfilled/filled icon pairs, standard tab labels, system-safe-area insets and a subtle top separator
+- **AND** no floating action button, notch, oversized circular background, or Material ink splash is shown
+
+#### Scenario: Native Android presentation
+- **WHEN** the top-level shell is displayed on Android
+- **THEN** the bottom bar uses the Material 3 navigation-bar treatment and Android-appropriate icons and feedback
 
 #### Scenario: Settings reachable
-- **WHEN** the user activates the settings tab
-- **THEN** the settings screen is displayed
+- **WHEN** the user activates `app_tab_settings` with semantics label “Settings, tab”
+- **THEN** `settings_screen` is displayed and Settings is announced as selected
 
 #### Scenario: Dashboard reachable
-- **WHEN** the user activates the dashboard tab
-- **THEN** the dashboard is displayed
+- **WHEN** the user activates `app_tab_dashboard` with semantics label “Dashboard, tab”
+- **THEN** the dashboard is displayed and Dashboard is announced as selected
 
 #### Scenario: Create PDF starts a session
-- **WHEN** the user activates the create-PDF control
+- **WHEN** the user activates `app_tab_create` with semantics label “Create PDF”
 - **THEN** a new PDF creation session is started and the page table screen is displayed
 
 #### Scenario: Create PDF is not a browsing tab
-- **WHEN** the user leaves the creation flow
-- **THEN** the previously selected tab is restored rather than a Create tab remaining selected
+- **WHEN** Create PDF is activated or the user leaves the creation flow
+- **THEN** Create PDF is never announced or rendered as the selected tab
+- **AND** the previously selected Dashboard or Settings tab remains selected
 
 #### Scenario: Each tab keeps its own history
 - **WHEN** the user navigates into a folder on the dashboard, switches to settings, and switches back
@@ -37,11 +47,19 @@ The application SHALL present a persistent bottom tab bar with three destination
 
 #### Scenario: Tab bar accessibility
 - **WHEN** a screen reader is in use
-- **THEN** each destination exposes a semantics label naming it and announces its selected state, and each tab target meets the minimum touch target size
+- **THEN** Dashboard and Settings expose their exact tab semantics labels and selected state, Create PDF exposes its action label without a selected state, and every target measures at least 48dp on each axis
+
+#### Scenario: Tab bar at maximum text scale
+- **WHEN** the system uses maximum supported text scale
+- **THEN** all three labels remain visible or follow the platform's accessible tab-bar behavior without overflow or an unreachable action
 
 #### Scenario: Tab bar in dark mode
 - **WHEN** the device is in dark mode
-- **THEN** the tab bar renders in the dark theme with the selected destination distinguishable by more than colour alone
+- **THEN** each platform bar uses its native dark appearance and Dashboard or Settings is distinguishable as selected by both icon form and colour
+
+#### Scenario: End-to-end coverage
+- **WHEN** any full application flow uses the top-level navigation and `integration_test/flows/settings_and_app_lock_test.dart` explicitly traverses it
+- **THEN** the robot can activate all three controls exclusively through `app_tab_dashboard`, `app_tab_create`, and `app_tab_settings` and their semantics labels
 
 ### Requirement: Home screen composition
 The Dashboard SHALL be the application's primary destination and SHALL display search, the currently open folder, storage usage, a root Collections section, and actions to create a folder, import a PDF and create a PDF.
@@ -140,15 +158,15 @@ All navigation SHALL be performed through typed routes; no navigation in feature
 - **THEN** a not-found state is displayed with a control returning the user to the dashboard, and the application does not crash
 
 ### Requirement: Material 3 theming and dark mode
-The application SHALL use Material 3 with adaptive Cupertino affordances where platform-appropriate, and SHALL support light, dark and system-following theme modes.
+The application SHALL use Material 3 on Android and adaptive Cupertino affordances on iOS where platform conventions materially differ, and SHALL support light, dark and system-following theme modes.
 
 #### Scenario: System dark mode
 - **WHEN** the theme setting is set to follow the system and the device switches to dark mode
-- **THEN** the entire application re-renders using the dark colour scheme without requiring a restart
+- **THEN** the entire application, including the platform-adaptive bottom bar, re-renders using the platform-appropriate dark colour scheme without requiring a restart
 
 #### Scenario: Explicit theme selection
 - **WHEN** the user selects the light or dark theme explicitly in settings
-- **THEN** that theme is applied regardless of the system setting and persists across launches
+- **THEN** that theme is applied to Material and adaptive Cupertino surfaces regardless of the system setting and persists across launches
 
 ### Requirement: Responsive and tablet layout
 Every screen SHALL adapt to phone and tablet viewports in both portrait and landscape without clipping, truncation or horizontal overflow.
@@ -186,4 +204,3 @@ The dashboard and all navigation SHALL function fully with no network connectivi
 #### Scenario: Dashboard with no connectivity
 - **WHEN** the device has no network connection
 - **THEN** the dashboard loads all of its sections from local storage and no network request is made
-

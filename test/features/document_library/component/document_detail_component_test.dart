@@ -33,6 +33,7 @@ import '../fakes.dart';
 void main() {
   late FakeDocumentRepository documents;
   late FakePageRepository pages;
+  late FakeFolderRepository folders;
   late FakeDocumentFileStore derivedFiles;
   late InMemoryPublicFileStore publicStore;
   late InMemorySecureStore secrets;
@@ -43,6 +44,7 @@ void main() {
   setUp(() async {
     documents = FakeDocumentRepository([sampleDocument]);
     pages = FakePageRepository()..pages[sampleDocument.id] = samplePages(2);
+    folders = FakeFolderRepository();
     derivedFiles = FakeDocumentFileStore();
     publicStore = InMemoryPublicFileStore()
       ..files[sampleDocument.relativePath] = 'pdf bytes';
@@ -61,7 +63,11 @@ void main() {
     if (directory.existsSync()) await directory.delete(recursive: true);
   });
 
-  Future<void> pumpDetail(WidgetTester tester, {VoidCallback? onOpen}) async {
+  Future<void> pumpDetail(
+    WidgetTester tester, {
+    VoidCallback? onOpen,
+    void Function(Document document)? onOpenDocument,
+  }) async {
     final clock = FixedClock(DateTime.utc(2026, 8, 3));
     final loadThumbnail = LoadDocumentPageThumbnail(
       thumbnails,
@@ -74,7 +80,9 @@ void main() {
       DocumentDetailScreen(
         onClose: () {},
         onOpenViewer: onOpen,
-        loadPageThumbnail: loadThumbnail.call,
+        onOpenDocument: onOpenDocument,
+        loadPageThumbnail: (document, page) =>
+            loadThumbnail(document, page.pageNumber),
       ),
       providers: [
         BlocProvider(
@@ -94,6 +102,7 @@ void main() {
               SequentialIdGenerator(),
             ),
             PurgeDocument(documents, pages, publicStore, derivedFiles, secrets),
+            loadFolderOptions: LoadFolderOptions(folders),
           ),
         ),
       ],
@@ -122,6 +131,61 @@ void main() {
     expect(find.byType(Image), findsNWidgets(2));
     expect(publicStore.materialised, isEmpty);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('move picker loads a newly created folder and moves once', (
+    tester,
+  ) async {
+    final destination = sampleFolder.copyWith(
+      id: const FolderId('created-folder'),
+      name: 'Created folder',
+      relativePath: 'Created folder',
+    );
+    folders.folders[destination.id] = destination;
+    await pumpDetail(tester);
+
+    await tester.tap(find.byKey(LibraryKeys.documentDetailMenu));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(LibraryKeys.documentMoveButton));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(LibraryKeys.documentMovePicker), findsOneWidget);
+    expect(
+      find.byKey(LibraryKeys.documentMoveFolder(destination.id.value)),
+      findsOneWidget,
+    );
+    await tester.tap(
+      find.byKey(LibraryKeys.documentMoveFolder(destination.id.value)),
+    );
+    await tester.pump();
+    await tester.tap(find.byKey(LibraryKeys.documentMoveConfirm));
+    await tester.pumpAndSettle();
+
+    expect(documents.documents[sampleDocument.id]?.folderId, destination.id);
+  });
+
+  testWidgets('duplicate requires review and navigates exactly once', (
+    tester,
+  ) async {
+    final opened = <Document>[];
+    await pumpDetail(tester, onOpenDocument: opened.add);
+
+    await tester.tap(find.byKey(LibraryKeys.documentDetailMenu));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(LibraryKeys.documentDuplicateButton));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(LibraryKeys.documentDuplicateDialog), findsOneWidget);
+    await tester.enterText(
+      find.byKey(LibraryKeys.documentDuplicateName),
+      'Reviewed policy copy',
+    );
+    await tester.tap(find.byKey(LibraryKeys.documentDuplicateConfirm));
+    await tester.pumpAndSettle();
+
+    expect(opened, hasLength(1));
+    expect(opened.single.title, 'Reviewed policy copy');
+    expect(documents.documents, hasLength(2));
   });
 }
 

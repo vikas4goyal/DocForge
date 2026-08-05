@@ -63,12 +63,13 @@ class SharingModule {
 SharingModule buildSharingModule({
   required DocumentReader documentReader,
   required OcrTextSource ocrTextSource,
+  DocumentPageAccessRepository? pageAccess,
   required DocumentFileResolver documentFiles,
   required Directory cacheDirectory,
   BackgroundWorker worker = const IsolateBackgroundWorker(),
   ShareRepository share = const SystemShareRepository(),
   PrintRepository printer = const SystemPrintRepository(),
-  ExportDestinationPicker picker = const SystemExportDestinationPicker(),
+  ExportDocumentRepository exporter = const SystemExportDocumentRepository(),
 }) {
   Directory staging() {
     final directory = Directory(
@@ -88,9 +89,10 @@ SharingModule buildSharingModule({
       worker,
       staging,
       renderSharePageJob,
+      pageAccess,
     ),
     shareText: ShareExtractedText(documentReader, ocrTextSource, share),
     printDocument: PrintDocument(documentReader, printer, documentFiles),
-    export: ExportDocument(documentReader, picker, documentFiles),
+    export: ExportDocument(documentReader, exporter, documentFiles),
   );
 }

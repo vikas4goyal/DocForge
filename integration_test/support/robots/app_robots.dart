@@ -129,7 +129,7 @@ class DashboardRobot extends Robot {
   Future<void> waitUntilLoaded() => step('loading the dashboard', () async {
     await waitUntilVisible();
     await pumpUntilAnyOf(tester, [
-      DashboardKeys.contentList,
+      DashboardKeys.contentGrid,
       DashboardKeys.emptyState,
     ]);
   });
@@ -138,8 +138,39 @@ class DashboardRobot extends Robot {
   Future<void> openDocument(String documentId) =>
       step('opening document $documentId from the dashboard', () async {
         await waitUntilVisible();
-        await tap(LibraryKeys.documentListItem(documentId));
+        await tap(DashboardKeys.documentTile(documentId));
       });
+
+  /// Enters selection mode by long-pressing [documentId].
+  Future<void> selectDocument(String documentId) =>
+      step('selecting document $documentId', () async {
+        await waitUntilVisible();
+        await tester.longPress(
+          find.byKey(DashboardKeys.documentTile(documentId)),
+        );
+        await tester.pump();
+        await waitFor(DashboardKeys.selectionToolbar);
+      });
+
+  /// Selects every visible eligible document.
+  Future<void> selectAll() => step('selecting all visible documents', () async {
+    await tap(DashboardKeys.selectAll);
+    await tester.pump();
+  });
+
+  /// Archives the current selection once.
+  Future<void> archiveSelection() => step('archiving the selection', () async {
+    await tap(DashboardKeys.bulkArchive);
+    await waitUntilGone(DashboardKeys.selectionToolbar);
+  });
+
+  /// Moves the current selection to Trash after explicit confirmation.
+  Future<void> trashSelection() => step('trashing the selection', () async {
+    await tap(DashboardKeys.bulkTrash);
+    await waitFor(DashboardKeys.bulkTrashConfirm);
+    await tap(DashboardKeys.bulkTrashConfirm);
+    await waitUntilGone(DashboardKeys.selectionToolbar);
+  });
 
   /// Waits for the visible document's bounded first-page preview surface.
   Future<void> waitForDocumentThumbnail(String documentId) => step(
@@ -162,7 +193,7 @@ class DashboardRobot extends Robot {
   Future<void> openFolder(String folderId) =>
       step('opening folder $folderId', () async {
         await waitUntilVisible();
-        await tap(DashboardKeys.folderRow(folderId));
+        await tap(DashboardKeys.folderTile(folderId));
       });
 
   /// Returns to the library root through the stable breadcrumb control.
@@ -192,7 +223,7 @@ class DashboardRobot extends Robot {
               .join(' ');
           fail('Moving $name to Trash failed: $messages');
         }
-        await waitUntilGone(DashboardKeys.folderRow(name));
+        await waitUntilGone(DashboardKeys.folderTile(name));
       } else {
         await tester.tap(find.text('Cancel'));
         await waitUntilGone(DashboardKeys.trashConfirmDialog);
@@ -207,7 +238,7 @@ class DashboardRobot extends Robot {
   });
 
   /// Whether a named folder is currently visible.
-  bool containsFolder(String name) => has(DashboardKeys.folderRow(name));
+  bool containsFolder(String name) => has(DashboardKeys.folderTile(name));
 
   /// Opens the import sources sheet.
   Future<void> openImportSheet() => step('opening the import sheet', () async {
@@ -228,7 +259,7 @@ class DashboardRobot extends Robot {
     // before the result can be believed.
     await tester.pump(const Duration(milliseconds: 600));
     await pumpUntilAnyOf(tester, [
-      DashboardKeys.contentList,
+      DashboardKeys.contentGrid,
       DashboardKeys.emptyState,
     ]);
   });
@@ -246,13 +277,13 @@ class DashboardRobot extends Robot {
         (widget) =>
             widget.key is ValueKey<String> &&
             (widget.key! as ValueKey<String>).value.startsWith(
-              LibraryKeys.documentListItemPrefix,
+              '${DashboardKeys.documentTilePrefix}_',
             ),
       )
       .evaluate()
       .map(
         (element) => (element.widget.key! as ValueKey<String>).value.substring(
-          LibraryKeys.documentListItemPrefix.length + 1,
+          DashboardKeys.documentTilePrefix.length + 1,
         ),
       )
       .toSet()

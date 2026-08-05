@@ -71,6 +71,7 @@ abstract final class DisplayFormatting {
       document.title,
       pageCount(document.pageCount),
       'modified ${date(document.updatedAt)}',
+      fileSize(document.sizeInBytes),
       if (document.isFavourite) 'favourite',
       if (document.isProtected) 'password protected',
       if (document.isArchived) 'archived',

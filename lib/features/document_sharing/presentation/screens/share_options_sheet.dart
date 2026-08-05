@@ -51,6 +51,7 @@ class ShareOptionsSheet extends StatelessWidget {
         key: ShareKeys.sheet,
         child: switch (state.status) {
           ShareStatus.preparing => _Preparing(state: state),
+          ShareStatus.exporting => _Preparing(state: state),
           ShareStatus.failure => _Failure(state: state),
           _ => _Options(
             state: state,
@@ -92,6 +93,20 @@ class _Options extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (state.exportConfirmation case final confirmation?)
+          Semantics(
+            liveRegion: true,
+            child: Padding(
+              key: ShareKeys.exportDone,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Text(confirmation),
+            ),
+          ),
+        if (state.status == ShareStatus.cancelled)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Text('Export cancelled. No file was written.'),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(

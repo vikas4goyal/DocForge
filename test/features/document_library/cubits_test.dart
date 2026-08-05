@@ -71,6 +71,7 @@ void main() {
     RestoreDocument(documents, clock),
     DuplicateDocument(documents, pages, store, clock, ids),
     PurgeDocument(documents, pages, store, files, secure),
+    loadFolderOptions: LoadFolderOptions(folders),
   );
 
   FolderCubit buildFolders() {
@@ -499,6 +500,82 @@ void main() {
       expect(copy.title, isNot(sampleDocument.title));
       // The screen still shows the original, which is what the user has open.
       expect(cubit.state.document?.id, sampleDocument.id);
+      await cubit.close();
+    });
+
+    blocTest<DocumentDetailCubit, DocumentDetailState>(
+      'folder options distinguish loading, ready, and current-folder exclusion',
+      setUp: () {
+        documents.documents[sampleDocument.id] = sampleDocument.copyWith(
+          folderId: sampleFolder.id,
+        );
+        folders.folders[sampleFolder.id] = sampleFolder;
+        final other = sampleFolder.copyWith(
+          id: const FolderId('other'),
+          name: 'Other',
+          relativePath: 'Other',
+        );
+        folders.folders[other.id] = other;
+      },
+      build: () => buildDetail(sampleDocument.id),
+      act: (cubit) async {
+        await cubit.load();
+        await cubit.loadMoveOptions();
+      },
+      verify: (cubit) {
+        expect(cubit.state.folderOptionsStatus, FolderOptionsStatus.ready);
+        expect(cubit.state.folderOptions.map((folder) => folder.name), [
+          'Other',
+        ]);
+      },
+    );
+
+    blocTest<DocumentDetailCubit, DocumentDetailState>(
+      'folder option failure remains retryable and retry recovers',
+      build: () => buildDetail(sampleDocument.id),
+      act: (cubit) async {
+        await cubit.load();
+        folders.failure = _storageFailure;
+        await cubit.loadMoveOptions();
+        folders.failure = null;
+        final other = sampleFolder.copyWith(
+          id: const FolderId('retry-folder'),
+          name: 'Retry folder',
+          relativePath: 'Retry folder',
+        );
+        folders.folders[other.id] = other;
+        await cubit.loadMoveOptions();
+      },
+      verify: (cubit) {
+        expect(cubit.state.folderOptionsStatus, FolderOptionsStatus.ready);
+        expect(cubit.state.folderOptions.single.name, 'Retry folder');
+      },
+    );
+
+    test('duplicate review cancellation creates nothing', () async {
+      final cubit = buildDetail(sampleDocument.id);
+      await cubit.load();
+      await cubit.beginDuplicate();
+
+      cubit.cancelDuplicate();
+
+      expect(cubit.state.duplicateStatus, DuplicateStatus.idle);
+      expect(documents.documents, hasLength(1));
+      await cubit.close();
+    });
+
+    test('repeated duplicate confirmation submits and returns once', () async {
+      final cubit = buildDetail(sampleDocument.id);
+      await cubit.load();
+      await cubit.beginDuplicate();
+
+      final first = cubit.confirmDuplicate();
+      final repeated = cubit.confirmDuplicate();
+      final results = await Future.wait([first, repeated]);
+
+      expect(results.whereType<Document>(), hasLength(1));
+      expect(documents.documents, hasLength(2));
+      expect(cubit.state.duplicateStatus, DuplicateStatus.succeeded);
       await cubit.close();
     });
 

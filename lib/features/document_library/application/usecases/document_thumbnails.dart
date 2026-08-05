@@ -1,7 +1,9 @@
 /// Loads disposable page previews from an authoritative library PDF.
 library;
 
+import 'package:doc_scanly/core/contracts/document_page_access.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/document_page_handle.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
@@ -46,5 +48,33 @@ class LoadDocumentPageThumbnail {
       // successfully rendered preview or replace the rendering failure.
       await _files.release(document);
     }
+  }
+}
+
+/// Materialises one unified page as a private thumbnail-sized image.
+class LoadDocumentPagePreview {
+  /// Creates the use case over shared [pages].
+  const LoadDocumentPagePreview(this.pages);
+
+  /// Unified scanned/PDF-backed page access.
+  final DocumentPageAccessRepository pages;
+
+  /// Returns a readable preview path for [page] of [document].
+  Future<Result<String>> call(
+    Document document,
+    DocumentPageHandle page,
+  ) async {
+    final result = await pages.materialize(
+      document,
+      page,
+      DocumentPageRenderPurpose.thumbnail,
+    );
+    return result.map(
+      (materialized) => materialized.when(
+        authoritative: (path) => path,
+        cached: (path) => path,
+        temporary: (path) => path,
+      ),
+    );
   }
 }

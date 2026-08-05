@@ -142,13 +142,30 @@ class DocumentDetailRobot extends Robot {
         await waitUntilVisible();
         await _openMenuIfPresent();
         await tap(LibraryKeys.documentMoveButton);
-        await waitFor(LibraryKeys.documentMoveDialog);
+        await waitFor(LibraryKeys.documentMovePicker);
         await tap(
           folderId == null
-              ? LibraryKeys.documentMoveOptionNone
-              : LibraryKeys.documentMoveOption(folderId),
+              ? LibraryKeys.documentMoveRoot
+              : LibraryKeys.documentMoveFolder(folderId),
         );
-        await waitUntilGone(LibraryKeys.documentMoveDialog);
+        await tap(LibraryKeys.documentMoveConfirm);
+        await waitUntilGone(LibraryKeys.documentMovePicker);
+      });
+
+  /// Duplicates into [folderId] under the reviewed [name].
+  Future<void> duplicate({required String name, String? folderId}) =>
+      step('duplicating as "$name"', () async {
+        await waitUntilVisible();
+        await _openMenuIfPresent();
+        await tap(LibraryKeys.documentDuplicateButton);
+        await waitFor(LibraryKeys.documentDuplicateDialog);
+        await type(LibraryKeys.documentDuplicateName, name);
+        if (folderId != null) {
+          await tap(LibraryKeys.documentDuplicateFolder);
+          await tap(LibraryKeys.documentDuplicateFolderOption(folderId));
+        }
+        await tap(LibraryKeys.documentDuplicateConfirm);
+        await waitUntilGone(LibraryKeys.documentDuplicateDialog);
       });
 
   /// Archives the document.

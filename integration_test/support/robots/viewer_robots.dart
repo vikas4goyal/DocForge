@@ -48,7 +48,9 @@ class ViewerRobot extends Robot {
   Future<void> goToPage(int number) =>
       step('jumping to page $number', () async {
         await waitUntilVisible();
+        await tap(ViewerKeys.pageJumpButton);
         await type(ViewerKeys.jumpToPageField, '$number');
+        await tap(ViewerKeys.pageJumpConfirm);
         await tester.pump(const Duration(milliseconds: 300));
       });
 
@@ -62,6 +64,9 @@ class ViewerRobot extends Robot {
   /// Prints, which goes straight to the system dialogue rather than the sheet.
   Future<void> print() => step('printing the document', () async {
     await waitUntilVisible();
+    if (has(ViewerKeys.actionsMenu)) {
+      await tap(ViewerKeys.actionsMenu);
+    }
     await tap(ViewerKeys.printButton);
     await tester.pump(const Duration(milliseconds: 300));
   });
@@ -69,6 +74,9 @@ class ViewerRobot extends Robot {
   /// Opens the PDF editor.
   Future<void> openEditor() => step('opening the PDF editor', () async {
     await waitUntilVisible();
+    if (has(ViewerKeys.actionsMenu)) {
+      await tap(ViewerKeys.actionsMenu);
+    }
     await tap(ViewerKeys.editButton);
     await waitFor(PdfEditKeys.screen);
   });
@@ -111,8 +119,14 @@ class PdfEditRobot extends Robot {
 
   /// Rotates the selected page.
   Future<void> rotateSelected() => step('rotating the selection', () async {
+    if (has(PdfEditKeys.actionsMenu)) await tap(PdfEditKeys.actionsMenu);
     await tap(PdfEditKeys.rotateButton);
-    await tester.pump(const Duration(milliseconds: 300));
+    await waitFor(PdfEditKeys.review);
+    await tap(PdfEditKeys.confirm);
+    await waitUntilGone(
+      PdfEditKeys.progress,
+      timeout: const Duration(seconds: 60),
+    );
   });
 
   /// Deletes the selected page, confirming the prompt.
@@ -130,6 +144,8 @@ class PdfEditRobot extends Robot {
       step('protecting the document', () async {
         await type(PdfEditKeys.protectPasswordField, password);
         await tap(PdfEditKeys.protectConfirmButton);
+        await waitFor(PdfEditKeys.review);
+        await tap(PdfEditKeys.confirm);
         await waitUntilGone(
           PdfEditKeys.progress,
           timeout: const Duration(seconds: 60),

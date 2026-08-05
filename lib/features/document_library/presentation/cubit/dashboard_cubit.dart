@@ -12,8 +12,10 @@ import 'package:doc_scanly/core/contracts/models/trash.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/bulk_document_lifecycle.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/library_folder_usecases.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/trash_usecases.dart';
+import 'package:doc_scanly/features/document_library/domain/bulk_document_action.dart';
 import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -29,6 +31,8 @@ class DashboardCubit extends Cubit<DashboardState> {
     this.restoreTrashEntry,
     this.renameLibraryFolder,
     this.loadTrash,
+    this.bulkArchiveDocuments,
+    this.bulkTrashDocuments,
   }) : super(const DashboardState.initial());
 
   /// The library folder being browsed.
@@ -55,24 +59,176 @@ class DashboardCubit extends Cubit<DashboardState> {
   /// Loads the root Collections count.
   final LoadTrash? loadTrash;
 
+  /// Archives selected documents with per-item outcomes.
+  final BulkArchiveDocuments? bulkArchiveDocuments;
+
+  /// Moves selected documents to recoverable Trash with per-item outcomes.
+  final BulkTrashDocuments? bulkTrashDocuments;
+
+  /// Enters selection mode, optionally selecting [documentId].
+  void enterSelection([DocumentId? documentId]) {
+    if (state.isBulkWorking) return;
+    emit(
+      state.copyWith(
+        selectionMode: true,
+        selectedDocumentIds: documentId == null ? const [] : [documentId],
+        bulkStatus: DashboardBulkStatus.idle,
+      ),
+    );
+  }
+
+  /// Toggles [documentId] while retaining current visible-list order.
+  void toggleSelection(DocumentId documentId) {
+    if (state.isBulkWorking) return;
+    final selected = state.selectedDocumentIds.contains(documentId);
+    final ids = selected
+        ? [
+            for (final id in state.selectedDocumentIds)
+              if (id != documentId) id,
+          ]
+        : [
+            for (final document in state.documents)
+              if (state.selectedDocumentIds.contains(document.id) ||
+                  document.id == documentId)
+                document.id,
+          ];
+    emit(state.copyWith(selectionMode: true, selectedDocumentIds: ids));
+  }
+
+  /// Selects every currently visible eligible document.
+  void selectAll() {
+    if (state.isBulkWorking) return;
+    emit(
+      state.copyWith(
+        selectionMode: true,
+        selectedDocumentIds: [
+          for (final document in state.documents) document.id,
+        ],
+      ),
+    );
+  }
+
+  /// Leaves selection mode without mutating a document.
+  void cancelSelection() {
+    if (state.isBulkWorking) return;
+    emit(
+      state.copyWith(
+        selectionMode: false,
+        selectedDocumentIds: const [],
+        bulkStatus: DashboardBulkStatus.idle,
+      ),
+    );
+  }
+
+  /// Archives selected documents once.
+  Future<void> archiveSelected() async {
+    final useCase = bulkArchiveDocuments;
+    if (useCase == null || state.isBulkWorking || state.selectedCount == 0) {
+      return;
+    }
+    await _runBulk(
+      DashboardBulkAction.archive,
+      () =>
+          useCase(BulkDocumentRequest(documentIds: state.selectedDocumentIds)),
+    );
+  }
+
+  /// Retries only the documents retained after a partial failure.
+  Future<void> retrySelected() async {
+    switch (state.bulkAction) {
+      case DashboardBulkAction.archive:
+        await archiveSelected();
+      case DashboardBulkAction.trash:
+        await trashSelected(confirmed: true);
+      case null:
+        return;
+    }
+  }
+
+  /// Moves selected documents to Trash after the UI's reviewed confirmation.
+  Future<void> trashSelected({required bool confirmed}) async {
+    final useCase = bulkTrashDocuments;
+    if (useCase == null || state.isBulkWorking || state.selectedCount == 0) {
+      return;
+    }
+    await _runBulk(
+      DashboardBulkAction.trash,
+      () => useCase(
+        BulkDocumentRequest(
+          documentIds: state.selectedDocumentIds,
+          destructiveActionConfirmed: confirmed,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _runBulk(
+    DashboardBulkAction action,
+    Future<BulkDocumentOutcome> Function() operation,
+  ) async {
+    emit(
+      state.copyWith(
+        bulkStatus: DashboardBulkStatus.working,
+        bulkAction: action,
+      ),
+    );
+    final outcome = await operation();
+    if (isClosed) return;
+    final succeeded = outcome.succeeded.toSet();
+    final failedIds = [for (final item in outcome.failed) item.documentId];
+    emit(
+      state.copyWith(
+        documents: [
+          for (final document in state.documents)
+            if (!succeeded.contains(document.id)) document,
+        ],
+        recents: [
+          for (final document in state.recents)
+            if (!succeeded.contains(document.id)) document,
+        ],
+        selectionMode: failedIds.isNotEmpty,
+        selectedDocumentIds: failedIds,
+        bulkStatus: failedIds.isEmpty
+            ? DashboardBulkStatus.idle
+            : DashboardBulkStatus.partialFailure,
+        bulkOutcome: failedIds.isEmpty ? null : outcome,
+        bulkAction: action,
+        archiveCount: action == DashboardBulkAction.archive
+            ? state.archiveCount + outcome.succeeded.length
+            : state.archiveCount,
+        trashCount: action == DashboardBulkAction.trash
+            ? state.trashCount + outcome.succeeded.length
+            : state.trashCount,
+      ),
+    );
+  }
+
   /// Measures the named child folder for confirmation.
-  Future<Result<TrashInventory>> inspectFolder(String name) {
+  Future<Result<TrashInventory>> inspectFolder(String name) =>
+      inspectFolderPath([...state.path, name]);
+
+  /// Measures a folder at an explicit library-relative [path].
+  Future<Result<TrashInventory>> inspectFolderPath(List<String> path) {
     final useCase = inspectTrashCandidate;
     if (useCase == null) {
       return Future.value(
         const Result<TrashInventory>.failure(Failure.unexpected()),
       );
     }
-    return useCase(folder: [...state.path, name]);
+    return useCase(folder: path);
   }
 
   /// Moves the named child folder to recoverable Trash and reloads.
-  Future<Result<TrashEntry>> trashFolder(String name) async {
+  Future<Result<TrashEntry>> trashFolder(String name) =>
+      trashFolderPath([...state.path, name]);
+
+  /// Moves the folder at [path] into recoverable Trash and reloads.
+  Future<Result<TrashEntry>> trashFolderPath(List<String> path) async {
     final useCase = moveFolderTreeToTrash;
     if (useCase == null) {
       return const Result<TrashEntry>.failure(Failure.unexpected());
     }
-    final result = await useCase([...state.path, name]);
+    final result = await useCase(path);
     if (result.isSuccess) await load();
     return result;
   }
@@ -89,13 +245,20 @@ class DashboardCubit extends Cubit<DashboardState> {
   }
 
   /// Renames the named child folder and reloads.
-  Future<Result<void>> renameFolder(String name, String newName) async {
+  Future<Result<void>> renameFolder(String name, String newName) =>
+      renameFolderPath([...state.path, name], newName);
+
+  /// Renames the folder at [path] and reloads its parent.
+  Future<Result<void>> renameFolderPath(
+    List<String> path,
+    String newName,
+  ) async {
     final useCase = renameLibraryFolder;
     if (useCase == null) {
       return const Result<void>.failure(Failure.unexpected());
     }
-    final result = await useCase([...state.path, name], newName);
-    if (result.isSuccess) await load();
+    final result = await useCase(path, newName);
+    if (result.isSuccess) await _loadFolder(path.sublist(0, path.length - 1));
     return result;
   }
 
@@ -106,20 +269,31 @@ class DashboardCubit extends Cubit<DashboardState> {
   static const maxRecents = 5;
 
   /// Loads the folder currently open.
-  Future<void> load() => _loadFolder(state.path);
+  Future<void> load() =>
+      state.isSearching ? search(state.query) : _loadFolder(state.path);
 
   /// Opens the child folder [name] of the folder currently open.
-  Future<void> openFolder(String name) => _loadFolder([...state.path, name]);
+  Future<void> openFolder(String name) => openPath([...state.path, name]);
 
   /// Opens the folder at [path], relative to the library root.
   ///
   /// Used by the breadcrumb, which can jump several levels at once.
-  Future<void> openPath(List<String> path) => _loadFolder(path);
+  Future<void> openPath(List<String> path) async {
+    emit(
+      state.copyWith(
+        query: '',
+        selectionMode: false,
+        selectedDocumentIds: const [],
+        bulkStatus: DashboardBulkStatus.idle,
+      ),
+    );
+    await _loadFolder(path);
+  }
 
   /// Goes up one level, or does nothing at the root.
   Future<void> goUp() async {
     if (state.isAtRoot) return;
-    await _loadFolder(state.path.sublist(0, state.path.length - 1));
+    await openPath(state.path.sublist(0, state.path.length - 1));
   }
 
   /// Records a search query and shows what matches.
@@ -135,20 +309,51 @@ class DashboardCubit extends Cubit<DashboardState> {
       return;
     }
 
-    final found = await index.query();
+    final results = await Future.wait([
+      index.query(),
+      store.listRecursive(const []),
+    ]);
     if (isClosed) return;
 
     final needle = query.trim().toLowerCase();
+    final found = results[0] as Result<List<Document>>;
+    final walked = results[1] as Result<List<PublicEntry>>;
+    if (found case Failed(:final failure)) {
+      emit(state.copyWith(status: DashboardStatus.failure, failure: failure));
+      return;
+    }
+    if (walked case Failed(:final failure)) {
+      emit(state.copyWith(status: DashboardStatus.failure, failure: failure));
+      return;
+    }
+    final documents = [
+      for (final document in found.valueOrNull ?? const <Document>[])
+        if (document.isVisibleInLibrary &&
+            document.title.toLowerCase().contains(needle))
+          document,
+    ]..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    final allDocuments = found.valueOrNull ?? const <Document>[];
+    final folders = [
+      for (final entry in walked.valueOrNull ?? const <PublicEntry>[])
+        if (entry.isFolder && entry.name.toLowerCase().contains(needle))
+          DashboardFolder(
+            name: entry.name,
+            path: entry.folderSegments,
+            documentCount: _countIn(entry.folderSegments, allDocuments),
+            modifiedAt: entry.modifiedAt,
+          ),
+    ]..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    final visibleIds = documents.map((document) => document.id).toSet();
+    final retainedSelection = [
+      for (final id in state.selectedDocumentIds)
+        if (visibleIds.contains(id)) id,
+    ];
     emit(
       state.copyWith(
         status: DashboardStatus.ready,
-        folders: const [],
-        documents: [
-          for (final document in found.valueOrNull ?? const <Document>[])
-            if (document.isVisibleInLibrary &&
-                document.title.toLowerCase().contains(needle))
-              document,
-        ],
+        folders: folders,
+        documents: documents,
+        selectedDocumentIds: retainedSelection,
       ),
     );
   }
@@ -185,7 +390,9 @@ class DashboardCubit extends Cubit<DashboardState> {
         folders.add(
           DashboardFolder(
             name: entry.name,
+            path: [...path, entry.name],
             documentCount: _countIn([...path, entry.name], byPath.values),
+            modifiedAt: entry.modifiedAt,
           ),
         );
         continue;
@@ -220,12 +427,19 @@ class DashboardCubit extends Cubit<DashboardState> {
     final favourites = await index.count(filter: DocumentFilter.favourites);
     final archived = await index.count(filter: DocumentFilter.archived);
     final trashEntries = path.isEmpty ? await loadTrash?.call() : null;
+    final visibleIds = documents.map((document) => document.id).toSet();
+    final retainedSelection = [
+      for (final id in state.selectedDocumentIds)
+        if (visibleIds.contains(id)) id,
+    ];
 
     emit(
       state.copyWith(
         status: DashboardStatus.ready,
         folders: folders,
         documents: documents,
+        selectionMode: state.selectionMode && retainedSelection.isNotEmpty,
+        selectedDocumentIds: retainedSelection,
         recents: recents.take(maxRecents).toList(),
         storageBytes: bytes.valueOrNull ?? state.storageBytes,
         favouritesCount: favourites.valueOrNull ?? state.favouritesCount,

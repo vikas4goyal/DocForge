@@ -2,8 +2,10 @@
 library;
 
 import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/widgets/app_state_views.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_operation_workflow.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/pdf_edit_keys.dart';
@@ -22,6 +24,7 @@ class PdfEditScreen extends StatelessWidget {
     required this.onClose,
     super.key,
     this.onDerived,
+    this.onDone,
     this.mergeCandidates = const [],
   });
 
@@ -34,16 +37,20 @@ class PdfEditScreen extends StatelessWidget {
   /// Invoked with a document produced by extract, merge or split.
   final ValueChanged<Document>? onDerived;
 
+  /// Returns to Dashboard after the user reviews completed outputs.
+  final VoidCallback? onDone;
+
   /// Other documents that can be merged into this one.
   final List<Document> mergeCandidates;
 
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<PdfEditCubit, PdfEditState>(
-      listenWhen: (previous, current) => previous.derived != current.derived,
+      listenWhen: (previous, current) =>
+          previous.derivedDocuments != current.derivedDocuments &&
+          current.derivedDocuments.isNotEmpty,
       listener: (context, state) {
-        final derived = state.derived;
-        if (derived != null) onDerived?.call(derived);
+        _showResult(context, state.derivedDocuments);
       },
       builder: (context, state) {
         final cubit = context.read<PdfEditCubit>();
@@ -51,44 +58,103 @@ class PdfEditScreen extends StatelessWidget {
         return Scaffold(
           key: PdfEditKeys.screen,
           appBar: AppBar(
-            title: Text(state.title),
+            title: Semantics(
+              label: state.title,
+              child: Text(
+                state.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
             leading: BackButton(onPressed: onClose),
             actions: [
-              PdfEditActionButton(
-                key: PdfEditKeys.rotateButton,
-                operation: PdfEditOperation.rotate,
-                icon: Icons.rotate_right,
-                onPressed: state.canRun(PdfEditOperation.rotate)
-                    ? cubit.rotate
-                    : null,
-              ),
-              PdfEditActionButton(
-                key: PdfEditKeys.duplicateButton,
-                operation: PdfEditOperation.duplicate,
-                icon: Icons.copy_all_outlined,
-                onPressed: state.canRun(PdfEditOperation.duplicate)
-                    ? cubit.duplicate
-                    : null,
-              ),
-              PdfEditActionButton(
-                key: PdfEditKeys.extractButton,
-                operation: PdfEditOperation.extract,
-                icon: Icons.call_split,
-                onPressed: state.canRun(PdfEditOperation.extract)
-                    ? cubit.extract
-                    : null,
-              ),
-              PdfEditActionButton(
-                key: PdfEditKeys.deleteButton,
-                operation: PdfEditOperation.delete,
-                icon: Icons.delete_outline,
-                // Disabled rather than refused when it would empty the
-                // document: the user finds out before they commit rather than
-                // after.
-                onPressed: state.canRun(PdfEditOperation.delete)
-                    ? () => _confirmDelete(context, cubit)
-                    : null,
-              ),
+              if (state.hasSelection)
+                if (MediaQuery.sizeOf(context).width < 600)
+                  PopupMenuButton<PdfEditOperation>(
+                    key: PdfEditKeys.actionsMenu,
+                    tooltip: 'Selected page actions',
+                    onSelected: (operation) async {
+                      switch (operation) {
+                        case PdfEditOperation.rotate:
+                          await _runPageOperation(context, cubit, operation);
+                        case PdfEditOperation.duplicate:
+                          await _runPageOperation(context, cubit, operation);
+                        case PdfEditOperation.extract:
+                          await _runPageOperation(context, cubit, operation);
+                        case PdfEditOperation.delete:
+                          await _confirmDelete(context, cubit);
+                        default:
+                          return;
+                      }
+                    },
+                    itemBuilder: (_) => [
+                      if (state.hasSinglePageSelected)
+                        const PopupMenuItem(
+                          key: PdfEditKeys.rotateButton,
+                          value: PdfEditOperation.rotate,
+                          child: Text('Rotate page'),
+                        ),
+                      if (state.hasSinglePageSelected)
+                        const PopupMenuItem(
+                          key: PdfEditKeys.duplicateButton,
+                          value: PdfEditOperation.duplicate,
+                          child: Text('Duplicate page'),
+                        ),
+                      const PopupMenuItem(
+                        key: PdfEditKeys.extractButton,
+                        value: PdfEditOperation.extract,
+                        child: Text('Extract pages'),
+                      ),
+                      if (state.canDelete)
+                        const PopupMenuItem(
+                          key: PdfEditKeys.deleteButton,
+                          value: PdfEditOperation.delete,
+                          child: Text('Delete pages'),
+                        ),
+                    ],
+                  )
+                else ...[
+                  if (state.hasSinglePageSelected)
+                    PdfEditActionButton(
+                      key: PdfEditKeys.rotateButton,
+                      operation: PdfEditOperation.rotate,
+                      icon: Icons.rotate_right,
+                      onPressed: () => _runPageOperation(
+                        context,
+                        cubit,
+                        PdfEditOperation.rotate,
+                      ),
+                    ),
+                  if (state.hasSinglePageSelected)
+                    PdfEditActionButton(
+                      key: PdfEditKeys.duplicateButton,
+                      operation: PdfEditOperation.duplicate,
+                      icon: Icons.copy_all_outlined,
+                      onPressed: () => _runPageOperation(
+                        context,
+                        cubit,
+                        PdfEditOperation.duplicate,
+                      ),
+                    ),
+                  PdfEditActionButton(
+                    key: PdfEditKeys.extractButton,
+                    operation: PdfEditOperation.extract,
+                    icon: Icons.call_split,
+                    onPressed: () => _runPageOperation(
+                      context,
+                      cubit,
+                      PdfEditOperation.extract,
+                    ),
+                  ),
+                  if (state.canDelete)
+                    PdfEditActionButton(
+                      key: PdfEditKeys.deleteButton,
+                      operation: PdfEditOperation.delete,
+                      icon: Icons.delete_outline,
+                      onPressed: () => _confirmDelete(context, cubit),
+                    ),
+                ],
             ],
           ),
           body: switch (state.status) {
@@ -103,6 +169,53 @@ class PdfEditScreen extends StatelessWidget {
           },
         );
       },
+    );
+  }
+
+  Future<void> _showResult(
+    BuildContext context,
+    List<Document> documents,
+  ) async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        key: PdfEditKeys.result,
+        title: Text(
+          documents.length == 1
+              ? 'Document created'
+              : '${documents.length} documents created',
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final document in documents)
+              ListTile(
+                title: Text(document.title),
+                subtitle: Text('${document.pageCount} pages'),
+                trailing: onDerived == null
+                    ? null
+                    : TextButton(
+                        onPressed: () {
+                          Navigator.pop(dialogContext);
+                          onDerived?.call(document);
+                        },
+                        child: const Text('Open'),
+                      ),
+              ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            key: PdfEditKeys.resultDone,
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              (onDone ?? onClose)();
+            },
+            child: const Text('Done'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -129,6 +242,47 @@ class PdfEditScreen extends StatelessWidget {
     );
 
     if (confirmed ?? false) await cubit.delete();
+  }
+
+  Future<void> _runPageOperation(
+    BuildContext context,
+    PdfEditCubit cubit,
+    PdfEditOperation operation,
+  ) async {
+    final summary = switch (operation) {
+      PdfEditOperation.rotate =>
+        'The selected page will rotate clockwise in the current PDF.',
+      PdfEditOperation.duplicate =>
+        'A copy of the selected page will be inserted in the current PDF.',
+      PdfEditOperation.extract =>
+        '${cubit.state.selection.length} selected pages will become a new PDF. The source stays unchanged.',
+      _ => null,
+    };
+    if (summary == null) return;
+    final confirmed = await _reviewOperation(
+      context,
+      draft: PdfOperationDraft.pages(
+        operation: operation,
+        pageIndices: PdfEditRules.orderedSelection(cubit.state.selection),
+        sourceEffect: operation.producesNewDocument
+            ? PdfSourceEffect.preserve
+            : PdfSourceEffect.replace,
+      ),
+      title: '${operation.label}?',
+      summary: summary,
+      confirmLabel: operation.label,
+    );
+    if (!confirmed) return;
+    switch (operation) {
+      case PdfEditOperation.rotate:
+        await cubit.rotate();
+      case PdfEditOperation.duplicate:
+        await cubit.duplicate();
+      case PdfEditOperation.extract:
+        await cubit.extract();
+      default:
+        return;
+    }
   }
 }
 
@@ -230,7 +384,17 @@ class _DocumentTools extends StatelessWidget {
           key: PdfEditKeys.compressButton,
           leading: const Icon(Icons.compress),
           title: Text(PdfEditOperation.compress.label),
-          onTap: cubit.compress,
+          onTap: () async {
+            final confirmed = await _reviewOperation(
+              context,
+              draft: const PdfOperationDraft.compress(),
+              title: 'Compress this PDF?',
+              summary:
+                  'DocScanly will try a smaller file and keep the original when compression is not beneficial.',
+              confirmLabel: 'Compress',
+            );
+            if (confirmed) await cubit.compress();
+          },
         ),
         ListTile(
           key: PdfEditKeys.splitConfirmButton,
@@ -239,7 +403,27 @@ class _DocumentTools extends StatelessWidget {
           // Split needs at least two pages; offering it for one would be an
           // action that can only fail.
           onTap: state.pageCount > 1
-              ? () => cubit.split(state.pageCount ~/ 2)
+              ? () async {
+                  final draft = await _collectSplitDraft(context, state);
+                  if (draft == null || !context.mounted) return;
+                  final confirmed = await _reviewOperation(
+                    context,
+                    draft: draft,
+                    title: 'Split into two documents?',
+                    summary:
+                        'Pages 1–${draft.boundary} become “${draft.firstTitle}”; pages ${draft.boundary + 1}–${state.pageCount} become “${draft.secondTitle}”. The source stays unchanged.',
+                    confirmLabel: 'Create two PDFs',
+                  );
+                  if (confirmed) {
+                    await cubit.split(
+                      draft.boundary,
+                      outputTitles: (
+                        first: draft.firstTitle,
+                        second: draft.secondTitle,
+                      ),
+                    );
+                  }
+                }
               : null,
           enabled: state.pageCount > 1,
         ),
@@ -253,7 +437,28 @@ class _DocumentTools extends StatelessWidget {
           // Disabled below two documents, which the spec requires explicitly.
           onTap: mergeCandidates.isEmpty
               ? null
-              : () => cubit.merge([mergeCandidates.first.id]),
+              : () async {
+                  final draft = await _collectMergeDraft(
+                    context,
+                    state.document!,
+                    mergeCandidates,
+                  );
+                  if (draft == null || !context.mounted) return;
+                  final confirmed = await _reviewOperation(
+                    context,
+                    draft: draft,
+                    title: 'Merge two documents?',
+                    summary:
+                        '${draft.documentIds.length} documents will be combined in the reviewed order as “${draft.outputTitle}”. Every source PDF stays unchanged.',
+                    confirmLabel: 'Create merged PDF',
+                  );
+                  if (confirmed) {
+                    await cubit.merge(
+                      draft.documentIds,
+                      outputTitle: draft.outputTitle,
+                    );
+                  }
+                },
           enabled: mergeCandidates.isNotEmpty,
         ),
         if (mergeCandidates.length > 1)
@@ -312,7 +517,23 @@ class _WatermarkToolState extends State<_WatermarkTool> {
           FilledButton(
             key: PdfEditKeys.watermarkConfirmButton,
             onPressed: PdfEditRules.isValidWatermark(_controller.text)
-                ? () => context.read<PdfEditCubit>().watermark(_controller.text)
+                ? () async {
+                    final confirmed = await _reviewOperation(
+                      context,
+                      draft: PdfOperationDraft.watermark(
+                        text: _controller.text.trim(),
+                      ),
+                      title: 'Apply watermark?',
+                      summary:
+                          '“${_controller.text.trim()}” will be placed on every page and replace the current PDF.',
+                      confirmLabel: 'Apply watermark',
+                    );
+                    if (confirmed && context.mounted) {
+                      await context.read<PdfEditCubit>().watermark(
+                        _controller.text,
+                      );
+                    }
+                  }
                 : null,
             child: Text(PdfEditOperation.watermark.label),
           ),
@@ -372,7 +593,19 @@ class _PasswordToolState extends State<_PasswordTool> {
             FilledButton(
               key: PdfEditKeys.removePasswordButton,
               onPressed: PdfEditRules.isValidPassword(_controller.text)
-                  ? () => cubit.removePassword(_controller.text)
+                  ? () async {
+                      final confirmed = await _reviewOperation(
+                        context,
+                        draft: const PdfOperationDraft.protection(remove: true),
+                        title: 'Remove PDF protection?',
+                        summary:
+                            'The current PDF will be replaced and will no longer require a password.',
+                        confirmLabel: 'Remove protection',
+                      );
+                      if (confirmed) {
+                        await cubit.removePassword(_controller.text);
+                      }
+                    }
                   : null,
               child: Text(PdfEditOperation.removePassword.label),
             )
@@ -380,7 +613,19 @@ class _PasswordToolState extends State<_PasswordTool> {
             FilledButton(
               key: PdfEditKeys.protectConfirmButton,
               onPressed: PdfEditRules.isValidPassword(_controller.text)
-                  ? () => cubit.protect(_controller.text)
+                  ? () async {
+                      final confirmed = await _reviewOperation(
+                        context,
+                        draft: const PdfOperationDraft.protection(
+                          remove: false,
+                        ),
+                        title: 'Protect this PDF?',
+                        summary:
+                            'The current PDF will be replaced with a password-protected version. Keep the password somewhere safe.',
+                        confirmLabel: 'Protect PDF',
+                      );
+                      if (confirmed) await cubit.protect(_controller.text);
+                    }
                   : null,
               child: Text(PdfEditOperation.protect.label),
             ),
@@ -435,4 +680,254 @@ class _Failure extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<PdfSplitDraft?> _collectSplitDraft(
+  BuildContext context,
+  PdfEditState state,
+) async {
+  final proposed = PdfEditRules.splitTitles(state.title);
+  final boundary = TextEditingController(text: '${state.pageCount ~/ 2}');
+  final first = TextEditingController(text: proposed.first);
+  final second = TextEditingController(text: proposed.second);
+  String? error;
+
+  final draft = await showDialog<PdfSplitDraft>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        key: PdfEditKeys.operationSheet,
+        title: const Text('Split PDF'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                key: PdfEditKeys.splitBoundaryField,
+                controller: boundary,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Split after page',
+                  helperText: 'Choose 1 to ${state.pageCount - 1}',
+                ),
+              ),
+              TextField(
+                key: PdfEditKeys.splitFirstNameField,
+                controller: first,
+                decoration: const InputDecoration(labelText: 'First PDF name'),
+              ),
+              TextField(
+                key: PdfEditKeys.splitSecondNameField,
+                controller: second,
+                decoration: const InputDecoration(labelText: 'Second PDF name'),
+              ),
+              if (error != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            key: PdfEditKeys.cancel,
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: PdfEditKeys.inputContinue,
+            onPressed: () {
+              final candidate = PdfOperationDraft.split(
+                boundary: int.tryParse(boundary.text) ?? 0,
+                firstTitle: first.text.trim(),
+                secondTitle: second.text.trim(),
+              );
+              final message = PdfOperationValidation.messageFor(
+                candidate,
+                pageCount: state.pageCount,
+              );
+              if (message != null) {
+                setState(() => error = message);
+                return;
+              }
+              Navigator.pop(dialogContext, candidate as PdfSplitDraft);
+            },
+            child: const Text('Review'),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  boundary.dispose();
+  first.dispose();
+  second.dispose();
+  return draft;
+}
+
+Future<PdfMergeDraft?> _collectMergeDraft(
+  BuildContext context,
+  Document source,
+  List<Document> candidates,
+) async {
+  final ordered = <Document>[
+    source,
+    ...candidates.where((document) => document.id != source.id),
+  ];
+  final selected = <DocumentId>{for (final document in ordered) document.id};
+  final output = TextEditingController(text: PdfEditRules.mergedTitle(ordered));
+  String? error;
+
+  final draft = await showDialog<PdfMergeDraft>(
+    context: context,
+    builder: (dialogContext) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        key: PdfEditKeys.operationSheet,
+        title: const Text('Merge PDFs'),
+        content: SizedBox(
+          width: 420,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ReorderableListView.builder(
+                  key: PdfEditKeys.mergeOrderList,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: ordered.length,
+                  onReorderItem: (oldIndex, newIndex) {
+                    setState(() {
+                      final item = ordered.removeAt(oldIndex);
+                      ordered.insert(newIndex, item);
+                    });
+                  },
+                  itemBuilder: (context, index) {
+                    final document = ordered[index];
+                    final isSource = document.id == source.id;
+                    return CheckboxListTile(
+                      key: ValueKey('pdf_merge_document_${document.id.value}'),
+                      value: selected.contains(document.id),
+                      onChanged: isSource
+                          ? null
+                          : (value) => setState(() {
+                              if (value ?? false) {
+                                selected.add(document.id);
+                              } else {
+                                selected.remove(document.id);
+                              }
+                            }),
+                      title: Text(document.title),
+                      subtitle: Text(
+                        isSource
+                            ? 'Current document'
+                            : '${document.pageCount} pages',
+                      ),
+                      secondary: const Icon(Icons.drag_handle),
+                    );
+                  },
+                ),
+                TextField(
+                  key: PdfEditKeys.mergeOutputNameField,
+                  controller: output,
+                  decoration: const InputDecoration(
+                    labelText: 'Merged PDF name',
+                  ),
+                ),
+                if (error != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      error!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            key: PdfEditKeys.cancel,
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: PdfEditKeys.inputContinue,
+            onPressed: () {
+              final candidate = PdfOperationDraft.merge(
+                documentIds: [
+                  for (final document in ordered)
+                    if (selected.contains(document.id)) document.id,
+                ],
+                outputTitle: output.text.trim(),
+              );
+              final message = PdfOperationValidation.messageFor(
+                candidate,
+                pageCount: source.pageCount,
+              );
+              if (message != null) {
+                setState(() => error = message);
+                return;
+              }
+              Navigator.pop(dialogContext, candidate as PdfMergeDraft);
+            },
+            child: const Text('Review'),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  output.dispose();
+  return draft;
+}
+
+Future<bool> _reviewOperation(
+  BuildContext context, {
+  required PdfOperationDraft draft,
+  required String title,
+  required String summary,
+  required String confirmLabel,
+}) async {
+  final cubit = context.read<PdfEditCubit>();
+  final review = PdfOperationReview(
+    draft: draft,
+    title: title,
+    summary: summary,
+    confirmLabel: confirmLabel,
+  );
+  cubit.reviewOperation(review);
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      key: PdfEditKeys.operationSheet,
+      title: Text(title),
+      content: Semantics(
+        label: summary,
+        child: Text(summary, key: PdfEditKeys.review),
+      ),
+      actions: [
+        TextButton(
+          key: PdfEditKeys.cancel,
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          key: PdfEditKeys.confirm,
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: Text(confirmLabel),
+        ),
+      ],
+    ),
+  );
+  if (!(confirmed ?? false)) cubit.cancelReview();
+  return confirmed ?? false;
 }

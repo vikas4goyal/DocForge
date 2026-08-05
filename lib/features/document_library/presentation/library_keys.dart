@@ -172,12 +172,50 @@ abstract final class LibraryKeys {
   /// The dialog that picks a document's destination folder.
   static const documentMoveDialog = Key('document_move_dialog');
 
+  /// Reviewed move picker that loads current destinations.
+  static const documentMovePicker = Key('document_move_picker');
+
+  /// Confirms the selected changed move destination.
+  static const documentMoveConfirm = Key('document_move_confirm');
+
+  /// Loading state inside the move picker.
+  static const documentMoveLoading = Key('document_move_loading');
+
+  /// Retry control for a failed move-destination load.
+  static const documentMoveRetry = Key('document_move_retry');
+
   /// The choice that leaves a document unfiled.
   static const documentMoveOptionNone = Key('document_move_option_none');
 
   /// One destination folder in the move dialog.
   static Key documentMoveOption(String folderId) =>
       Key('document_move_option_$folderId');
+
+  /// Root destination in the reviewed move picker.
+  static const documentMoveRoot = Key('document_move_folder_root');
+
+  /// One real folder in the reviewed move picker.
+  static Key documentMoveFolder(String folderId) =>
+      Key('document_move_folder_$folderId');
+
+  /// Reviewed duplicate dialog.
+  static const documentDuplicateDialog = Key('document_duplicate_dialog');
+
+  /// Editable collision-safe duplicate name.
+  static const documentDuplicateName = Key('document_duplicate_name');
+
+  /// Destination control in duplicate review.
+  static const documentDuplicateFolder = Key('document_duplicate_folder');
+
+  /// Destination option inside duplicate review.
+  static Key documentDuplicateFolderOption(String folderId) =>
+      Key('document_duplicate_folder_$folderId');
+
+  /// Confirms exactly one reviewed duplicate request.
+  static const documentDuplicateConfirm = Key('document_duplicate_confirm');
+
+  /// Cancels duplicate review without mutation.
+  static const documentDuplicateCancel = Key('document_duplicate_cancel');
 
   /// The control that opens a document for reading from its detail screen.
   static const documentOpenButton = Key('document_open_button');

@@ -7,6 +7,7 @@ import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/folder_usecases.dart';
+import 'package:doc_scanly/features/document_library/domain/document_duplicate.dart';
 import 'package:doc_scanly/features/document_library/domain/library_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -91,6 +92,39 @@ void main() {
   });
 
   group('MoveDocument', () {
+    test('moves the authoritative PDF into the selected real folder', () async {
+      final destination = sampleFolder.copyWith(relativePath: 'Filed/Policies');
+      folders.folders[destination.id] = destination;
+      store.folderPaths.addAll(['Filed', 'Filed/Policies']);
+
+      final result = await MoveDocument(documents, clock, store, folders)(
+        sampleDocument.id,
+        destination.id,
+      );
+
+      expect(
+        result.valueOrNull?.relativePath,
+        'Filed/Policies/Invoice — Acme Ltd.pdf',
+      );
+      expect(store.files.containsKey(sampleDocument.relativePath), isFalse);
+      expect(store.files.containsKey(result.valueOrNull!.relativePath), isTrue);
+    });
+
+    test('refuses a destination collision without moving the source', () async {
+      final destination = sampleFolder.copyWith(relativePath: 'Filed');
+      folders.folders[destination.id] = destination;
+      store.folderPaths.add('Filed');
+      store.files['Filed/${sampleDocument.fileName}'] = 'occupied';
+
+      final result = await MoveDocument(documents, clock, store, folders)(
+        sampleDocument.id,
+        destination.id,
+      );
+
+      expect(result.failureOrNull, isA<ValidationFailure>());
+      expect(store.files.containsKey(sampleDocument.relativePath), isTrue);
+    });
+
     test('moves a document into a folder', () async {
       final result = await MoveDocument(documents, clock)(
         sampleDocument.id,
@@ -171,6 +205,75 @@ void main() {
   });
 
   group('DuplicateDocument', () {
+    test('proposes a collision-safe name without mutating storage', () async {
+      store.files['Invoice — Acme Ltd (copy).pdf'] = 'existing';
+      final useCase = DuplicateDocument(documents, pages, store, clock, ids);
+
+      final proposed = await useCase.propose(sampleDocument.id);
+
+      expect(proposed.valueOrNull?.title, 'Invoice — Acme Ltd (copy) (2)');
+      expect(documents.documents, hasLength(1));
+    });
+
+    test('uses the reviewed edited name and destination', () async {
+      store.folderPaths.add('Reviewed');
+      final request = DuplicateDocumentRequest(
+        sourceDocumentId: sampleDocument.id,
+        title: 'Policy copy',
+        destinationFolders: const ['Reviewed'],
+        destinationFolderId: const FolderId('reviewed'),
+      );
+
+      final result = await DuplicateDocument(
+        documents,
+        pages,
+        store,
+        clock,
+        ids,
+      ).execute(request);
+
+      expect(result.valueOrNull?.title, 'Policy copy');
+      expect(result.valueOrNull?.folderId, const FolderId('reviewed'));
+      expect(result.valueOrNull?.relativePath, 'Reviewed/Policy copy.pdf');
+    });
+
+    test('refuses a reviewed collision without creating a record', () async {
+      store.files['Taken.pdf'] = 'existing';
+      final request = DuplicateDocumentRequest(
+        sourceDocumentId: sampleDocument.id,
+        title: 'Taken',
+        destinationFolders: const [],
+      );
+
+      final result = await DuplicateDocument(
+        documents,
+        pages,
+        store,
+        clock,
+        ids,
+      ).execute(request);
+
+      expect(result.failureOrNull, isA<ValidationFailure>());
+      expect(documents.documents, hasLength(1));
+      expect(store.files, hasLength(2));
+    });
+
+    test('a repeated reviewed request creates exactly one copy', () async {
+      final useCase = DuplicateDocument(documents, pages, store, clock, ids);
+      final request = DuplicateDocumentRequest(
+        sourceDocumentId: sampleDocument.id,
+        title: 'Only once',
+        destinationFolders: const [],
+      );
+
+      final first = await useCase.execute(request);
+      final second = await useCase.execute(request);
+
+      expect(first.isSuccess, isTrue);
+      expect(second.isFailure, isTrue);
+      expect(documents.documents, hasLength(2));
+    });
+
     test('creates an independent copy', () async {
       final result = await DuplicateDocument(
         documents,

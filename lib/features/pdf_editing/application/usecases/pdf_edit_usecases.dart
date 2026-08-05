@@ -491,7 +491,10 @@ class MergeDocuments extends PdfEditUseCase {
   /// The order of [ids] *is* the order of the result — the list the user
   /// reordered on screen is passed straight through, which is the whole of the
   /// "merge order is user-controlled" requirement.
-  Future<Result<Document>> call(List<DocumentId> ids) async {
+  Future<Result<Document>> call(
+    List<DocumentId> ids, {
+    String? outputTitle,
+  }) async {
     final documents = <Document>[];
 
     for (final id in ids) {
@@ -525,7 +528,9 @@ class MergeDocuments extends PdfEditUseCase {
     }
 
     final derived = await deriveDocument(
-      title: PdfEditRules.mergedTitle(documents),
+      title: outputTitle?.trim().isNotEmpty ?? false
+          ? outputTitle!.trim()
+          : PdfEditRules.mergedTitle(documents),
       folderId: documents.first.folderId,
       folders: documents.first.libraryPath.folders,
       expectedPageCount: expected,
@@ -553,6 +558,7 @@ class SplitDocument extends PdfEditUseCase {
   Future<Result<(Document, Document)>> call(
     DocumentId id, {
     required int afterPage,
+    ({String first, String second})? outputTitles,
   }) async {
     final found = await loadDocument(id);
     if (found case Failed(:final failure)) {
@@ -570,7 +576,19 @@ class SplitDocument extends PdfEditUseCase {
       afterPage,
       pageCount: document.pageCount,
     );
-    final titles = PdfEditRules.splitTitles(document.title);
+    final proposedTitles =
+        outputTitles ?? PdfEditRules.splitTitles(document.title);
+    final titles = (
+      first: proposedTitles.first.trim(),
+      second: proposedTitles.second.trim(),
+    );
+    if (titles.first.isEmpty ||
+        titles.second.isEmpty ||
+        titles.first == titles.second) {
+      return const Result<(Document, Document)>.failure(
+        Failure.validation(issue: ValidationIssue.emptyName),
+      );
+    }
     final password = await passwordFor(document);
 
     final source = await sourcePathFor(document);

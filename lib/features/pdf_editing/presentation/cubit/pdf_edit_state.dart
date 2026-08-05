@@ -5,6 +5,7 @@ import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/failure_messages.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_operation_workflow.dart';
 import 'package:equatable/equatable.dart';
 
 /// Where the editor is in its lifecycle.
@@ -31,10 +32,16 @@ class PdfEditState extends Equatable {
     this.selection = const {},
     this.operation,
     this.derived,
+    this.derivedDocuments = const [],
     this.compression,
     this.metadata,
     this.failure,
     this.passwordRejected = false,
+    this.workflowPhase = PdfOperationPhase.idle,
+    this.draft,
+    this.review,
+    this.result,
+    this.operationToken,
   });
 
   /// Before the document has been loaded.
@@ -62,6 +69,9 @@ class PdfEditState extends Equatable {
   /// A document produced by an extract, merge or split, once one has been.
   final Document? derived;
 
+  /// All outputs from the latest derived operation; Split contains two.
+  final List<Document> derivedDocuments;
+
   /// The outcome of the last compression, when there was one.
   final CompressionOutcomeView? compression;
 
@@ -76,6 +86,21 @@ class PdfEditState extends Equatable {
   /// Distinct from [failure]: a wrong password is not an error state, and the
   /// spec requires the user simply be told and allowed to retry.
   final bool passwordRejected;
+
+  /// Current phase shared by every operation family.
+  final PdfOperationPhase workflowPhase;
+
+  /// Validated operation input, excluding any password text.
+  final PdfOperationDraft? draft;
+
+  /// Effect awaiting explicit user confirmation.
+  final PdfOperationReview? review;
+
+  /// Concrete result awaiting presentation or navigation.
+  final PdfOperationResult? result;
+
+  /// Identity of the sole in-flight submission, or null when none is running.
+  final int? operationToken;
 
   /// How many pages the document has, or zero before it loads.
   int get pageCount => document?.pageCount ?? 0;
@@ -127,10 +152,17 @@ class PdfEditState extends Equatable {
     Set<int>? selection,
     PdfEditOperation? operation,
     Document? derived,
+    List<Document>? derivedDocuments,
     CompressionOutcomeView? compression,
     PdfMetadata? metadata,
     Failure? failure,
     bool passwordRejected = false,
+    PdfOperationPhase? workflowPhase,
+    PdfOperationDraft? draft,
+    PdfOperationReview? review,
+    PdfOperationResult? result,
+    int? operationToken,
+    bool clearWorkflow = false,
   }) => PdfEditState._(
     status: status ?? this.status,
     document: document ?? this.document,
@@ -138,10 +170,17 @@ class PdfEditState extends Equatable {
     selection: selection ?? this.selection,
     operation: operation ?? this.operation,
     derived: derived,
+    derivedDocuments: derivedDocuments ?? const [],
     compression: compression,
     metadata: metadata ?? this.metadata,
     failure: failure,
     passwordRejected: passwordRejected,
+    workflowPhase: workflowPhase ?? this.workflowPhase,
+    draft: draft ?? (clearWorkflow ? null : this.draft),
+    review: review ?? (clearWorkflow ? null : this.review),
+    result: result ?? (clearWorkflow ? null : this.result),
+    operationToken:
+        operationToken ?? (clearWorkflow ? null : this.operationToken),
   );
 
   @override
@@ -152,10 +191,16 @@ class PdfEditState extends Equatable {
     selection,
     operation,
     derived,
+    derivedDocuments,
     compression,
     metadata,
     failure,
     passwordRejected,
+    workflowPhase,
+    draft,
+    review,
+    result,
+    operationToken,
   ];
 }
 
