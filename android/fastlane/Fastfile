@@ -13,17 +13,27 @@
 # Uncomment the line if you want fastlane to automatically update itself
 # update_fastlane
 
+require "json"
+
 default_platform(:android)
 
 platform :android do
   private_lane :setup_variables do
     BUILD_NUMBER_PATH = "../../Jenkins/build_number"
     BUILD_VERSION_PATH = "../../Jenkins/build_version"
-    GSP_PATH = "app/google-services.json"
-    FIREBASE_APP_ID = "1:511064978644:android:adf3492c6648eb0124b741"
+    PACKAGE_NAME = "com.bruxkey.docscanly"
+    GSP_PATH = File.expand_path("../app/google-services.json", FastlaneCore::FastlaneFolder.path)
+    firebase_config = JSON.parse(File.read(GSP_PATH))
+    firebase_client = firebase_config.fetch("client").find do |client|
+      client.dig("client_info", "android_client_info", "package_name") == PACKAGE_NAME
+    end
+    UI.user_error!("No Firebase client for #{PACKAGE_NAME} in #{GSP_PATH}") unless firebase_client
+    # Derive this from the same file consumed by the Android build so Fastlane
+    # cannot silently upload to a stale Firebase project.
+    FIREBASE_APP_ID = firebase_client.dig("client_info", "mobilesdk_app_id")
+    UI.user_error!("mobilesdk_app_id is missing from #{GSP_PATH}") if FIREBASE_APP_ID.to_s.empty?
     FIREBASE_CLI_TOKEN = ENV["FIREBASE_CLI_TOKEN"]
     GOOGLE_SERVICE_ACCOUNT_JSON_KEY_PATH = ENV["GOOGLE_SERVICE_ACCOUNT_JSON_KEY_PATH"]
-    PACKAGE_NAME = "com.bruxkey.docscanly"
     ANDROID_SIGNING_STORE_FILE = ENV["ANDROID_SIGNING_STORE_FILE"]
     ANDROID_SIGNING_STORE_PASSWORD = ENV["ANDROID_SIGNING_STORE_PASSWORD"]
     ANDROID_SIGNING_KEY_ALIAS = ENV["ANDROID_SIGNING_KEY_ALIAS"]

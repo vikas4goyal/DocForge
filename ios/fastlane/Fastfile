@@ -39,8 +39,14 @@ platform :ios do
                                  "build/ios/ipa/My Budget Assistant.ipa")
     BUILD_NUMBER_PATH = "../../Jenkins/build_number"
     BUILD_VERSION_PATH = "../../Jenkins/build_version"
-    GSP_PATH = "Runner/GoogleService-Info.plist"
-    FIREBASE_APP_ID = "1:511064978644:ios:ca34e9d09c5bd07a24b741"
+    GSP_PATH = File.expand_path("../Runner/GoogleService-Info.plist", FastlaneCore::FastlaneFolder.path)
+    firebase_plist = File.read(GSP_PATH)
+    firebase_app_id_match = firebase_plist.match(/<key>GOOGLE_APP_ID<\/key>\s*<string>([^<]+)<\/string>/)
+    UI.user_error!("GOOGLE_APP_ID is missing from #{GSP_PATH}") unless firebase_app_id_match
+    # Keep distribution and Crashlytics aligned with the Firebase project that
+    # is actually compiled into the app. A stale hardcoded ID previously sent
+    # uploads to another project and produced HTTP 403.
+    FIREBASE_APP_ID = firebase_app_id_match[1]
     FIREBASE_CLI_TOKEN = ENV["FIREBASE_CLI_TOKEN"]
     FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT = ENV["FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT"]
     # Needed on the Jenkins agent so match can run `security set-key-partition-list`
