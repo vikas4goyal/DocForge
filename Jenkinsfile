@@ -230,6 +230,19 @@ pipeline {
         }
         stage('Release Android') {
           steps {
+            // Regenerate release signing input here as well so restarting the
+            // pipeline from this production stage cannot reuse a debug-signed
+            // or unsigned bundle.
+            dir(path: 'android') {
+              sh '''
+                   printf '%s\\n' \\
+                    "storePassword=$ANDROID_SIGNING_STORE_PASSWORD" \\
+                    "keyPassword=$ANDROID_SIGNING_KEY_PASSWORD" \\
+                    "keyAlias=$ANDROID_SIGNING_KEY_ALIAS" \\
+                    "storeFile=$ANDROID_SIGNING_STORE_FILE" \\
+                    > key.properties
+              '''
+            }
             sh "flutter build aab --dart-define=\"ENVIRONMENT=production\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --verbose"
             dir(path: 'android') {
               sh 'bundle exec fastlane android send_to_play_store --verbose'
