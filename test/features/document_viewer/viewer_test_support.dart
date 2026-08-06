@@ -160,16 +160,10 @@ class ViewerHarness {
   ViewerHarness({
     FakePdfRenderer? renderer,
     bool documentFound = true,
-    String recognisedText = '',
     Failure? secretsFailure,
-    Failure? textFailure,
   }) : renderer = renderer ?? FakePdfRenderer(),
        documents = StubViewerDocuments(found: documentFound),
-       secrets = InMemorySecureStore(failure: secretsFailure),
-       textSource = StubOcrTextSource(
-         text: recognisedText,
-         failure: textFailure,
-       );
+       secrets = InMemorySecureStore(failure: secretsFailure);
 
   /// The renderer under the viewer.
   final FakePdfRenderer renderer;
@@ -182,9 +176,6 @@ class ViewerHarness {
 
   /// The preference store nothing should ever reach.
   final preferences = InMemoryPreferences();
-
-  /// The recognised-text source.
-  final StubOcrTextSource textSource;
 
   /// The open use case over this harness.
   OpenDocumentForViewing get openUseCase => OpenDocumentForViewing(
@@ -203,6 +194,5 @@ class ViewerHarness {
     const DocumentId('doc-1'),
     openUseCase,
     RememberDocumentPassword(secrets),
-    LoadViewerText(textSource),
   );
 }

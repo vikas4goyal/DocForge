@@ -165,10 +165,10 @@ packages:
     dependency: transitive
     description:
       name: camera_android_camerax
-      sha256: "4fb17b62dc25f97ec752596b749a31e80ccc9829ef95412badfdf0bc6c43a166"
+      sha256: "294b02ae027ad9edc98414a25f5e958d2dc6c65e9f102f21e2b36f0f558751eb"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.4+2"
+    version: "0.7.4+4"
   camera_avfoundation:
     dependency: transitive
     description:
@@ -372,11 +372,10 @@ packages:
   file_picker:
     dependency: "direct main"
     description:
-      name: file_picker
-      sha256: "57d9a1dd5063f85fa3107fb42d1faffda52fdc948cefd5fe5ea85267a5fc7343"
-      url: "https://pub.dev"
-    source: hosted
-    version: "10.3.10"
+      path: "third_party/file_picker"
+      relative: true
+    source: path
+    version: "11.0.3"
   file_selector_linux:
     dependency: transitive
     description:
@@ -650,22 +649,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.4.0"
-  google_mlkit_commons:
-    dependency: transitive
-    description:
-      name: google_mlkit_commons
-      sha256: c7fc384bdb66c3b83e24e3a41818e61d7a378d900f65f5e775344fbca95a0917
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.12.0"
-  google_mlkit_text_recognition:
-    dependency: "direct main"
-    description:
-      name: google_mlkit_text_recognition
-      sha256: "8324fdc2628ebeb63568ad06437b984b716d938d87e4ce63ab24dfd3eeebf08a"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.16.0"
   graphs:
     dependency: transitive
     description:
@@ -810,10 +793,9 @@ packages:
   isar_community_flutter_libs:
     dependency: "direct main"
     description:
-      name: isar_community_flutter_libs
-      sha256: c44340fa38c81ef16d924202d443bbe799cde4826be9a31a9dc92ee612e1966f
-      url: "https://pub.dev"
-    source: hosted
+      path: "third_party/isar_community_flutter_libs"
+      relative: true
+    source: path
     version: "3.3.2"
   isar_community_generator:
     dependency: "direct dev"

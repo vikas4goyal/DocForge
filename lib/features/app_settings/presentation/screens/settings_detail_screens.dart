@@ -19,17 +19,6 @@ typedef DirectoryPicker = Future<String?> Function();
 
 /// Creates typed routes for every pushed Settings detail screen.
 abstract final class SettingsDetailRoutes {
-  /// Creates the recognition-language route for [value].
-  ///
-  /// [onSelected] persists a selection before the route pops.
-  static Route<void> recognitionLanguage({
-    required OcrScript value,
-    required Future<void> Function(OcrScript script) onSelected,
-  }) => MaterialPageRoute<void>(
-    builder: (_) =>
-        RecognitionLanguageScreen(value: value, onSelected: onSelected),
-  );
-
   /// Creates the default-save-location route for [currentPath].
   ///
   /// [pickDirectory] supplies the platform edge and [onSelected] persists an
@@ -58,63 +47,6 @@ abstract final class SettingsDetailRoutes {
       child: StorageDetailsScreen(onManageLocation: onManageLocation),
     ),
   );
-}
-
-/// Shows every OCR script in a pushed, vertically scrollable route.
-class RecognitionLanguageScreen extends StatelessWidget {
-  /// Creates the recognition-language screen.
-  ///
-  /// [value] is the selected script and [onSelected] persists a new selection.
-  const RecognitionLanguageScreen({
-    required this.value,
-    required this.onSelected,
-    super.key,
-  });
-
-  /// The current recognition script.
-  final OcrScript value;
-
-  /// Persists the selected script.
-  final Future<void> Function(OcrScript script) onSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      key: SettingsKeys.ocrLanguageScreen,
-      appBar: AppBar(title: const Text('Recognition language')),
-      body: _SettingsDetailWidth(
-        child: RadioGroup<OcrScript>(
-          groupValue: value,
-          onChanged: (script) {
-            if (script != null) unawaited(_select(context, script));
-          },
-          child: ListView.builder(
-            key: SettingsKeys.ocrLanguageList,
-            itemCount: OcrScript.values.length,
-            itemBuilder: (context, index) {
-              final script = OcrScript.values[index];
-              return Semantics(
-                label: SettingsSemantics.ocrLanguageOption(script.label),
-                selected: script == value,
-                excludeSemantics: true,
-                child: RadioListTile<OcrScript>(
-                  key: SettingsKeys.ocrLanguageOption(script.name),
-                  value: script,
-                  title: Text(script.label),
-                  subtitle: Text(SettingsCopy.ocrScriptDescription(script)),
-                ),
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _select(BuildContext context, OcrScript script) async {
-    await onSelected(script);
-    if (context.mounted) Navigator.of(context).pop();
-  }
 }
 
 /// Chooses whether exports ask each time or start in a preferred folder.

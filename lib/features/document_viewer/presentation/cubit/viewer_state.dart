@@ -31,7 +31,6 @@ class ViewerState extends Equatable {
     this.filePath,
     this.pageCount = 0,
     this.password,
-    this.recognisedText = '',
     this.failure,
     this.passwordRejected = false,
   });
@@ -64,9 +63,6 @@ class ViewerState extends Equatable {
   /// presentation layer writes it anywhere.
   final String? password;
 
-  /// The document's recognised text, when there is any.
-  final String recognisedText;
-
   /// What went wrong, when something did.
   final Failure? failure;
 
@@ -88,9 +84,6 @@ class ViewerState extends Equatable {
   /// Whether a password is being asked for.
   bool get isLocked => status == ViewerStatus.locked;
 
-  /// Whether the document has recognised text to show.
-  bool get hasText => recognisedText.trim().isNotEmpty;
-
   /// The label the page indicator shows.
   String get pageLabel => ViewerRules.pageIndicatorLabel(page, pageCount);
 
@@ -105,7 +98,6 @@ class ViewerState extends Equatable {
     String? filePath,
     int? pageCount,
     String? password,
-    String? recognisedText,
     Failure? failure,
     bool passwordRejected = false,
   }) => ViewerState._(
@@ -115,7 +107,6 @@ class ViewerState extends Equatable {
     filePath: filePath ?? this.filePath,
     pageCount: pageCount ?? this.pageCount,
     password: password ?? this.password,
-    recognisedText: recognisedText ?? this.recognisedText,
     failure: failure,
     passwordRejected: passwordRejected,
   );
@@ -128,7 +119,6 @@ class ViewerState extends Equatable {
     filePath,
     pageCount,
     password,
-    recognisedText,
     failure,
     passwordRejected,
   ];

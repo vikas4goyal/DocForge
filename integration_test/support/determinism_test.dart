@@ -99,7 +99,6 @@ void main() {
       expect(app.platform.share.shared, isEmpty);
       expect(app.platform.printer.printed, isEmpty);
       expect(app.platform.scanner.captures, isEmpty);
-      expect(app.platform.recogniser.requested, isEmpty);
     });
 
     testWidgets('the dashboard renders the same way on both boots', (

@@ -441,16 +441,6 @@ class SettingsRobot extends Robot {
     return screenBottom - privacyBottom;
   }
 
-  /// Chooses a recognition-language enum value by [optionName].
-  Future<void> chooseRecognitionLanguage(String optionName) =>
-      step('choosing recognition language $optionName', () async {
-        await waitUntilVisible();
-        await tap(SettingsKeys.ocrLanguage);
-        await waitFor(SettingsKeys.ocrLanguageScreen);
-        await tap(SettingsKeys.ocrLanguageOption(optionName));
-        await waitUntilGone(SettingsKeys.ocrLanguageScreen);
-      });
-
   /// Selects the deterministic folder supplied by the platform fake.
   Future<void> chooseDefaultSaveFolder() =>
       step('choosing a default save folder', () async {

@@ -28,7 +28,6 @@ void main() {
       const defaults = AppSettings.defaults;
 
       expect(defaults.theme, AppThemeChoice.system);
-      expect(defaults.ocrScript, OcrScript.latin);
       expect(defaults.pdfQuality, PdfQuality.balanced);
       expect(defaults.imageQuality, ImageQuality.balanced);
       expect(defaults.namingPattern, NamingPattern.dateAndTime);
@@ -125,20 +124,6 @@ void main() {
       }
     });
 
-    test('a bundled script is described as working immediately', () {
-      expect(
-        SettingsCopy.ocrScriptDescription(OcrScript.latin),
-        contains('offline immediately'),
-      );
-    });
-
-    test('a downloadable script says it is fetched on first use', () {
-      expect(
-        SettingsCopy.ocrScriptDescription(OcrScript.japanese),
-        contains('first use'),
-      );
-    });
-
     test('the privacy statement distinguishes Android and optional iCloud', () {
       final statement = SettingsCopy.privacyStatement.toLowerCase();
 
@@ -177,7 +162,6 @@ void main() {
       final repository = PreferenceSettingsRepository(store);
 
       await repository.saveTheme(AppThemeChoice.dark);
-      await repository.saveOcrScript(OcrScript.japanese);
       await repository.savePdfQuality(PdfQuality.high);
       await repository.saveImageQuality(ImageQuality.low);
       await repository.saveNamingPattern(NamingPattern.sequential);
@@ -186,7 +170,6 @@ void main() {
       final settings = await repository.load();
 
       expect(settings.theme, AppThemeChoice.dark);
-      expect(settings.ocrScript, OcrScript.japanese);
       expect(settings.pdfQuality, PdfQuality.high);
       expect(settings.imageQuality, ImageQuality.low);
       expect(settings.namingPattern, NamingPattern.sequential);
@@ -271,22 +254,6 @@ void main() {
       );
 
       expect(result, isA<Failed<AppSettings>>());
-    });
-
-    test('changing the recognition script touches no recognised text', () async {
-      // Nothing in this use case reaches the OCR store — which is the whole of
-      // the "existing documents are unaffected" requirement, and is asserted by
-      // the collaborator list rather than by a side effect that is not there.
-      final store = InMemoryPreferenceStore();
-      final update = UpdateSetting(PreferenceSettingsRepository(store));
-
-      await update.ocrScript(AppSettings.defaults, OcrScript.chinese);
-
-      // Only the language key was written; nothing else in storage changed.
-      expect(
-        (await store.readString(PreferenceKeys.ocrLanguage)).valueOrNull,
-        'zh',
-      );
     });
 
     test('clearing the save location is expressible', () async {

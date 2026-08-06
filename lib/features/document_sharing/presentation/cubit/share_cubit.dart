@@ -21,7 +21,6 @@ class ShareCubit extends Cubit<ShareState> {
     this._documentId,
     this._sharePdf,
     this._shareImages,
-    this._shareText,
     this._print,
     this._export, {
     ShareState initial = const ShareState.initial(),
@@ -30,7 +29,6 @@ class ShareCubit extends Cubit<ShareState> {
   final DocumentId _documentId;
   final ShareDocumentPdf _sharePdf;
   final SharePageImages _shareImages;
-  final ShareExtractedText _shareText;
   final PrintDocument _print;
   final ExportDocument _export;
 
@@ -96,19 +94,6 @@ class ShareCubit extends Cubit<ShareState> {
     }
 
     _token = null;
-  }
-
-  /// Shares the document's recognised text.
-  Future<void> shareText() async {
-    emit(
-      state.copyWith(
-        status: ShareStatus.preparing,
-        action: ShareAction.share,
-        format: ShareFormat.text,
-      ),
-    );
-
-    _settle(await _shareText(_documentId));
   }
 
   /// Prints the document.

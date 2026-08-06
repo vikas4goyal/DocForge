@@ -292,11 +292,8 @@ class SaveDocument {
         libraryPath: libraryPath.valueOrNull!,
         folderId: folderId,
         isProtected: password != null,
-        // Taken from what was actually composed rather than from whether
-        // recognition was attempted: a run that produced no legible text
-        // leaves a document with nothing to share, and offering "share
-        // extracted text" for it would be an option that does nothing.
-        hasRecognisedText: pdf.hasTextLayer,
+        // Retained in the stored model for compatibility with older libraries.
+        // New documents no longer run text recognition.
       );
 
       final pages = [
@@ -371,25 +368,11 @@ typedef PdfProtector =
 class PageBundleSinkImpl implements PageBundleSink {
   /// Creates the sink.
   ///
-  /// [_recognise] runs text recognition over the bundle's pages *before*
-  /// composition, which is what makes the resulting PDF searchable — the
-  /// composer reads recognised text from the store, so text recognised after
-  /// the fact would never reach the file. Injected as a function rather than
-  /// taken as the OCR use case, because a feature may not import another
-  /// feature (`design.md` §2).
-  const PageBundleSinkImpl(
-    this._save,
-    this._name,
-    this._patternFor,
-    this._recognise,
-    this._ids,
-  );
+  const PageBundleSinkImpl(this._save, this._name, this._patternFor);
 
   final SaveDocument _save;
   final GenerateDocumentName _name;
   final NamingPattern Function() _patternFor;
-  final RecognisePages _recognise;
-  final IdGenerator _ids;
 
   @override
   Future<Result<Document>> createDocument(
@@ -402,23 +385,6 @@ class PageBundleSinkImpl implements PageBundleSink {
       entered: title,
     );
 
-    // The identity is settled here, because recognition files its results
-    // against a document and composition then reads them back by page.
-    final documentId = DocumentId(_ids.generate());
-
-    // Awaited, and its failure ignored. The spec is explicit that a PDF must
-    // still be produced when recognition is unavailable, so a failed run
-    // degrades to an unsearchable document rather than to no document.
-    await _recognise(bundle.pages, documentId);
-
-    return _save(bundle, title: resolved, documentId: documentId);
+    return _save(bundle, title: resolved);
   }
 }
-
-/// Runs text recognition over [pages], storing whatever it finds.
-///
-/// Returns nothing: the caller does not act on the outcome, because a document
-/// is created either way. What matters is that the recognised text is in the
-/// store before composition reads it.
-typedef RecognisePages =
-    Future<void> Function(List<PageRef> pages, DocumentId documentId);

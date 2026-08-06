@@ -312,15 +312,6 @@ void main() {
 
     final repository = IndexedSearchRepository(
       InMemoryTitleIndex(documents: documents),
-      InMemoryOcrIndex(
-        textByDocumentId: {
-          const DocumentId('b'): 'Acme Limited invoice total 240.00',
-          // A document whose *title* does not contain the term: the case the
-          // searchable-text requirement exists for.
-          const DocumentId('c'): 'Archived acme paperwork',
-        },
-      ),
-      InMemoryDocumentLookup(documents: documents),
     );
 
     Future<List<SearchResult>> search(SearchQuery query) async =>
@@ -329,34 +320,17 @@ void main() {
     test('matches a title', () async {
       final results = await search(const SearchQuery(term: 'invoice'));
 
-      expect(results.map((r) => r.document.id.value), containsAll(['a', 'b']));
-    });
-
-    test('matches recognised text and carries a snippet', () async {
-      final results = await search(const SearchQuery(term: 'acme'));
-
-      expect(results.single.document.id.value, 'b');
-      expect(results.single.source, MatchSource.recognisedText);
-      expect(results.single.hasSnippet, isTrue);
+      expect(results.map((r) => r.document.id.value), ['a']);
     });
 
     test('is case-insensitive', () async {
       expect(await search(const SearchQuery(term: 'INVOICE')), isNotEmpty);
     });
 
-    test('excludes archived documents, by title or by text', () async {
-      // The archive is where a user puts things they have finished with. The
-      // OCR index has no archive flag to filter on, so the rule has to hold on
-      // the text path too — document 'c' is archived and its text says "acme".
+    test('excludes archived documents', () async {
       expect(
         (await search(
           const SearchQuery(term: 'invoice'),
-        )).map((r) => r.document.id.value),
-        isNot(contains('c')),
-      );
-      expect(
-        (await search(
-          const SearchQuery(term: 'acme'),
         )).map((r) => r.document.id.value),
         isNot(contains('c')),
       );
@@ -386,8 +360,6 @@ void main() {
               doc('doc-$index', title: 'Invoice $index'),
           ],
         ),
-        InMemoryOcrIndex(),
-        InMemoryDocumentLookup(),
       );
 
       final result = await many.search(
@@ -401,8 +373,6 @@ void main() {
     test('reports a failure rather than throwing', () async {
       final broken = IndexedSearchRepository(
         InMemoryTitleIndex(failure: const Failure.storage()),
-        InMemoryOcrIndex(),
-        InMemoryDocumentLookup(),
       );
 
       expect(
@@ -423,17 +393,7 @@ void main() {
           doc('b', title: 'Receipt'),
         ],
       );
-      final documents = [
-        doc('a', title: 'Invoice 2026'),
-        doc('b', title: 'Receipt'),
-      ];
-      repository = IndexedSearchRepository(
-        titles,
-        InMemoryOcrIndex(
-          textByDocumentId: {const DocumentId('b'): 'Acme Limited invoice'},
-        ),
-        InMemoryDocumentLookup(documents: documents),
-      );
+      repository = IndexedSearchRepository(titles);
     });
 
     blocTest<SearchBloc, SearchState>(
@@ -449,7 +409,7 @@ void main() {
       wait: searchDebounce * 2,
       verify: (bloc) {
         expect(bloc.state.status, SearchStatus.results);
-        expect(bloc.state.results, hasLength(2));
+        expect(bloc.state.results, hasLength(1));
       },
     );
 
@@ -522,8 +482,6 @@ void main() {
       build: () => SearchBloc(
         IndexedSearchRepository(
           InMemoryTitleIndex(failure: const Failure.storage()),
-          InMemoryOcrIndex(),
-          InMemoryDocumentLookup(),
         ),
       ),
       act: (bloc) => bloc.add(const SearchTermChanged('invoice')),
@@ -595,7 +553,7 @@ void main() {
       build: () => SearchBloc(repository),
       act: (bloc) => bloc.add(const SearchTermChanged('invoice')),
       wait: searchDebounce * 2,
-      verify: (bloc) => expect(bloc.state.resultCountLabel, '2 results'),
+      verify: (bloc) => expect(bloc.state.resultCountLabel, '1 result'),
     );
   });
 
@@ -610,13 +568,6 @@ void main() {
               doc('doc-$index', title: 'Document $index'),
           ],
         ),
-        InMemoryOcrIndex(
-          textByDocumentId: {
-            for (var index = 0; index < 5000; index++)
-              DocumentId('doc-$index'): 'Recognised text for document $index',
-          },
-        ),
-        InMemoryDocumentLookup(),
       );
 
       final stopwatch = Stopwatch()..start();

@@ -61,7 +61,7 @@ class SystemFileBrowser implements FileBrowser {
   @override
   Future<Result<List<String>>> pickFiles() async {
     try {
-      final result = await FilePicker.platform.pickFiles(allowMultiple: true);
+      final result = await FilePicker.pickFiles(allowMultiple: true);
 
       // A null result is a cancelled picker, which is a successful empty list:
       // nothing went wrong and the spec requires nothing to be said.

@@ -11,7 +11,6 @@ import 'package:doc_scanly/core/contracts/contracts.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/isolates/background_worker.dart';
@@ -52,19 +51,6 @@ class _PreviewReader implements DocumentReader {
       const Result<List<DocumentPage>>.success([]);
 }
 
-/// A text source with nothing in it.
-class _PreviewText implements OcrTextSource {
-  const _PreviewText();
-
-  @override
-  Future<Result<RecognisedText?>> textForPage(PageId pageId) async =>
-      const Result<RecognisedText?>.success(null);
-
-  @override
-  Future<Result<String>> textForDocument(DocumentId documentId) async =>
-      const Result<String>.success('');
-}
-
 /// Resolves preview documents to a fixed, machine-independent path.
 final _files = PublicStoreDocumentFileResolver(InMemoryPublicFileStore());
 
@@ -84,11 +70,6 @@ class _PreviewShareCubit extends ShareCubit {
           Directory.systemTemp.createTempSync,
           _neverRendered,
         ),
-        ShareExtractedText(
-          const _PreviewReader(),
-          const _PreviewText(),
-          FakeShareRepository(),
-        ),
         PrintDocument(const _PreviewReader(), FakePrintRepository(), _files),
         ExportDocument(
           const _PreviewReader(),
@@ -107,9 +88,6 @@ class _PreviewShareCubit extends ShareCubit {
 
   @override
   Future<void> shareImages({List<PageId> pageIds = const []}) async {}
-
-  @override
-  Future<void> shareText() async {}
 
   @override
   Future<void> printDocument() async {}
@@ -132,11 +110,7 @@ Widget _sheet(ShareState state) => BlocProvider<ShareCubit>(
   child: const ShareOptionsSheet(),
 );
 
-const _ready = ShareState.initial(
-  title: 'Invoice 2026',
-  pageCount: 4,
-  canShareText: true,
-);
+const _ready = ShareState.initial(title: 'Invoice 2026', pageCount: 4);
 
 // ---------------------------------------------------------------------------
 // Share options sheet
@@ -222,7 +196,6 @@ Widget shareLongContent() => _sheet(
         'Quarterly consulting invoice for services rendered to Acme Limited '
         'during the period ending the thirty-first of March',
     pageCount: 128,
-    canShareText: true,
   ),
 );
 

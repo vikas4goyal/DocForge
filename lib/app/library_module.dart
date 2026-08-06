@@ -37,8 +37,6 @@ import 'package:doc_scanly/features/document_library/infrastructure/preference_l
 import 'package:doc_scanly/features/document_library/infrastructure/repositories/isar_library_repositories.dart';
 import 'package:doc_scanly/features/document_search/domain/repositories/search_repository.dart';
 import 'package:doc_scanly/features/document_search/infrastructure/repositories/indexed_search_repository.dart';
-import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
-import 'package:doc_scanly/features/ocr/infrastructure/ocr_search_index.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -211,17 +209,10 @@ class LibraryModule {
 
   /// The open database.
   ///
-  /// Exposed so other capabilities can register their own collections against
-  /// the same instance. Recognised text in particular has to live here: search
-  /// queries the title and text indexes together, and two databases could not
-  /// be kept consistent across a permanent deletion.
+  /// Exposed so capabilities can share the same open library database.
   final Isar isar;
 
-  /// Searches titles and recognised text together.
-  ///
-  /// Built here rather than in its own module because it queries the library's
-  /// database and the OCR collection in the same instance, and splitting it out
-  /// would mean handing that instance to a second builder for one repository.
+  /// Searches document titles.
   final SearchRepository search;
 
   /// Where document files are written.
@@ -255,10 +246,6 @@ Future<LibraryModule> buildLibraryModule({
     FolderEntitySchema,
     PageEntitySchema,
     TrashEntitySchema,
-    // Recognised text lives in the same database as the documents it belongs
-    // to: search queries both indexes together, and two databases could not be
-    // kept consistent across a permanent deletion.
-    OcrTextEntitySchema,
   ], directory: supportDirectory.path);
 
   // Before anything reads a document: layout-1 records address a private path
@@ -338,11 +325,7 @@ LibraryModule buildLibraryModuleOver({
   final purgeTrash = PurgeTrashEntry(trash, folders, store, purge);
 
   return LibraryModule(
-    search: IndexedSearchRepository(
-      IsarDocumentTitleIndex(isar),
-      IsarOcrSearchIndex(isar),
-      LibraryDocumentReader(documents, pages),
-    ),
+    search: IndexedSearchRepository(IsarDocumentTitleIndex(isar)),
     isar: isar,
     documentsDirectory: documentsDirectory,
     loadDocuments: LoadDocuments(documents),

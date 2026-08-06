@@ -64,13 +64,7 @@ List<SearchResult> _results({int count = 4, bool withSnippets = true}) => [
 /// driving it the way the screen does keeps the preview honest.
 class _PreviewSearchBloc extends SearchBloc {
   _PreviewSearchBloc(this._seeded)
-    : super(
-        IndexedSearchRepository(
-          InMemoryTitleIndex(),
-          InMemoryOcrIndex(),
-          InMemoryDocumentLookup(),
-        ),
-      );
+    : super(IndexedSearchRepository(InMemoryTitleIndex()));
 
   final SearchState _seeded;
 

@@ -51,20 +51,13 @@ dependencies:
   dio: ^5.11.0
   camera: ^0.12.0+2
   image: ^4.9.1
-  google_mlkit_text_recognition: ^0.16.0
   pdf: ^3.13.0
   printing: ^5.15.0
   pdfrx: ^2.4.7
   permission_handler: ^12.0.3
   local_auth: ^3.0.2
   image_picker: ^1.2.3
-  # Pinned <11: file_picker 11 skips the Kotlin Gradle Plugin on AGP 9 and
-  # relies on built-in Kotlin, which we cannot enable — google_mlkit_commons
-  # 0.12.0 and google_mlkit_text_recognition 0.16.0 (both latest) still
-  # `apply plugin: "kotlin-android"`, and AGP 9 fails the build if any module
-  # does that while android.builtInKotlin=true. Revisit when ML Kit migrates.
-  # NOTE: staying on 10.x forgoes the CWE-22 path-traversal fix in 11.0.2.
-  file_picker: ^10.0.0
+  file_picker: ^11.0.2
   # Pinned <13.1.0: share_plus 13.1.0+ needs win32 ^6.0.1, but every
   # file_picker below 12.0.0-beta.1 needs win32 ^5.9.0.
   share_plus: ^12.0.2
@@ -87,6 +80,16 @@ dependencies:
   dartcv4: ^1.1.8
   stream_transform: ^2.1.1
 dependency_overrides:
+  # Vendored fork: 11.0.3 skips KGP on AGP 9, but Flutter temporarily opts
+  # this project out of built-in Kotlin because other plugins still apply KGP.
+  # See third_party/file_picker/LOCAL_PATCH.md.
+  file_picker:
+    path: third_party/file_picker
+  # Vendored fork: upstream 3.3.2 ships an iOS XCFramework with simulator
+  # slices, but does not expose it through Swift Package Manager.
+  # See third_party/isar_community_flutter_libs/LOCAL_PATCH.md.
+  isar_community_flutter_libs:
+    path: third_party/isar_community_flutter_libs
   # Vendored fork: upstream cannot detect which iOS permissions to compile in
   # when the app uses Swift Package Manager, so it silently compiles none and
   # no permission prompt is ever shown.

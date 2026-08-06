@@ -95,7 +95,6 @@ void main() {
       'privacyDefault': privacyDefault,
       'choiceTileDefault': choiceTileDefault,
       'choiceTileWithPreview': choiceTileWithPreview,
-      'choiceTileLongContent': choiceTileLongContent,
       'valueTileDefault': valueTileDefault,
       'valueTileEmpty': valueTileEmpty,
       'switchTileDefault': switchTileDefault,

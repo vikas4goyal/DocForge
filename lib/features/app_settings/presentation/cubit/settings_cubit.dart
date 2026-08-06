@@ -198,10 +198,6 @@ class SettingsCubit extends Cubit<SettingsState> {
     if (result case Success(:final value)) onThemeChanged(value.theme);
   }
 
-  /// Applies a recognition script.
-  Future<void> setOcrScript(OcrScript script) async =>
-      _settle(await _update.ocrScript(state.settings, script));
-
   /// Applies a PDF quality preset.
   Future<void> setPdfQuality(PdfQuality quality) async =>
       _settle(await _update.pdfQuality(state.settings, quality));

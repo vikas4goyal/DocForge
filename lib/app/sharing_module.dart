@@ -20,10 +20,8 @@ class SharingModule {
   /// Creates the module over an already-built object graph.
   const SharingModule({
     required this.documentReader,
-    required this.ocrTextSource,
     required this.sharePdf,
     required this.shareImages,
-    required this.shareText,
     required this.printDocument,
     required this.export,
   });
@@ -35,17 +33,11 @@ class SharingModule {
   /// no other route to that.
   final DocumentReader documentReader;
 
-  /// Reads recognised text, for deciding whether the text option is offered.
-  final OcrTextSource ocrTextSource;
-
   /// Shares the stored PDF.
   final ShareDocumentPdf sharePdf;
 
   /// Renders selected pages as images and shares them.
   final SharePageImages shareImages;
-
-  /// Shares the recognised text.
-  final ShareExtractedText shareText;
 
   /// Prints the document.
   final PrintDocument printDocument;
@@ -62,7 +54,6 @@ class SharingModule {
 /// to reclaim it later. Nothing staged is a document of record.
 SharingModule buildSharingModule({
   required DocumentReader documentReader,
-  required OcrTextSource ocrTextSource,
   DocumentPageAccessRepository? pageAccess,
   required DocumentFileResolver documentFiles,
   required Directory cacheDirectory,
@@ -81,7 +72,6 @@ SharingModule buildSharingModule({
 
   return SharingModule(
     documentReader: documentReader,
-    ocrTextSource: ocrTextSource,
     sharePdf: ShareDocumentPdf(documentReader, share, documentFiles),
     shareImages: SharePageImages(
       documentReader,
@@ -91,7 +81,6 @@ SharingModule buildSharingModule({
       renderSharePageJob,
       pageAccess,
     ),
-    shareText: ShareExtractedText(documentReader, ocrTextSource, share),
     printDocument: PrintDocument(documentReader, printer, documentFiles),
     export: ExportDocument(documentReader, exporter, documentFiles),
   );

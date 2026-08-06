@@ -107,11 +107,8 @@ platform :ios do
   lane :release_firebase do
     # The Flutter plugins resolve through Swift Package Manager now, so
     # FirebaseCrashlytics no longer lands in ./Pods where the action looks by
-    # default. Prefer the SPM checkout and keep the CocoaPods path as a fallback.
-    upload_symbols_binary = [
-      File.join(REPO_ROOT, "build/ios/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols"),
-      File.join(REPO_ROOT, "ios/Pods/FirebaseCrashlytics/upload-symbols")
-    ].find { |path| File.exist?(path) }
+    # default. Resolve it from the Swift Package Manager checkout.
+    upload_symbols_binary = File.join(REPO_ROOT, "build/ios/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols")
     UI.user_error!("Could not find the Crashlytics upload-symbols binary") if upload_symbols_binary.nil?
 
     upload_symbols_to_crashlytics(
@@ -285,11 +282,6 @@ platform :ios do
   lane :update_dev_certificate do
     update_certificates(certificate: "development")
   end
-#   desc "Install pods via bundle exec"
-#   private_lane :install_pods do
-#     cocoapods(clean_install: true, use_bundle_exec: true, repo_update: true)
-#   end
-
 #   desc "Name of IPA file"
 #   private_lane :ipa_name do
 #     PACKAGE_NAME + ".ipa"

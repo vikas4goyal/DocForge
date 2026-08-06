@@ -124,7 +124,6 @@ void main() {
       for (final key in [
         SettingsKeys.screen,
         SettingsKeys.theme,
-        SettingsKeys.ocrLanguage,
         SettingsKeys.pdfQuality,
         SettingsKeys.imageQuality,
         SettingsKeys.fileNaming,
@@ -142,7 +141,6 @@ void main() {
       await pump(tester);
 
       expect(find.text(AppThemeChoice.system.label), findsOneWidget);
-      expect(find.text(OcrScript.latin.label), findsOneWidget);
       expect(find.text(SettingsCopy.systemSaveLocation), findsOneWidget);
     });
 
@@ -189,51 +187,6 @@ void main() {
   });
 
   group('changing a setting', () {
-    testWidgets('recognition language opens a pushed scrollable screen', (
-      tester,
-    ) async {
-      final cubit = await pump(tester);
-
-      await tester.tap(find.byKey(SettingsKeys.ocrLanguage));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(SettingsKeys.ocrLanguageScreen), findsOneWidget);
-      expect(find.byKey(SettingsKeys.ocrLanguageList), findsOneWidget);
-
-      final option = find.byKey(
-        SettingsKeys.ocrLanguageOption(OcrScript.japanese.name),
-      );
-      await tester.ensureVisible(option);
-      await tester.tap(option);
-      await tester.pumpAndSettle();
-
-      expect(cubit.state.settings.ocrScript, OcrScript.japanese);
-      expect(find.byKey(SettingsKeys.ocrLanguageScreen), findsNothing);
-    });
-
-    testWidgets('recognition choices remain reachable at large text', (
-      tester,
-    ) async {
-      await pump(tester, viewport: const Size(390, 600), textScale: 3);
-
-      await tester.tap(find.byKey(SettingsKeys.ocrLanguage));
-      await tester.pumpAndSettle();
-      final lastOption = find.byKey(
-        SettingsKeys.ocrLanguageOption(OcrScript.korean.name),
-      );
-      await tester.scrollUntilVisible(
-        lastOption,
-        200,
-        scrollable: find.descendant(
-          of: find.byKey(SettingsKeys.ocrLanguageList),
-          matching: find.byType(Scrollable),
-        ),
-      );
-
-      expect(lastOption, findsOneWidget);
-      expect(tester.takeException(), isNull);
-    });
-
     testWidgets('Ask each time can be opened and changed to a folder', (
       tester,
     ) async {

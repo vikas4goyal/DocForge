@@ -40,12 +40,6 @@ void main() {
     ];
     repository = IndexedSearchRepository(
       InMemoryTitleIndex(documents: documents),
-      InMemoryOcrIndex(
-        textByDocumentId: {
-          const DocumentId('b'): 'Acme Limited invoice total 240.00',
-        },
-      ),
-      InMemoryDocumentLookup(documents: documents),
     );
   });
 
@@ -115,17 +109,6 @@ void main() {
 
       expect(find.byKey(SearchKeys.resultsList), findsOneWidget);
       expect(find.byKey(SearchKeys.resultRow('a')), findsOneWidget);
-      expect(find.byKey(SearchKeys.resultRow('b')), findsOneWidget);
-    });
-
-    testWidgets('a text match shows its snippet', (tester) async {
-      // Without one, a document whose title does not contain the term looks
-      // like a mistake.
-      await pump(tester);
-
-      await type(tester, 'acme');
-
-      expect(find.textContaining('Acme'), findsAtLeastNWidgets(1));
     });
 
     testWidgets('opening a result reports the document', (tester) async {
@@ -154,8 +137,6 @@ void main() {
         tester,
         source: IndexedSearchRepository(
           InMemoryTitleIndex(failure: const Failure.storage()),
-          InMemoryOcrIndex(),
-          InMemoryDocumentLookup(),
         ),
       );
 
@@ -236,21 +217,7 @@ void main() {
 
       await type(tester, 'invoice');
 
-      expect(find.bySemanticsLabel('2 results'), findsOneWidget);
-
-      handle.dispose();
-    });
-
-    testWidgets('a text match announces where it matched', (tester) async {
-      final handle = tester.ensureSemantics();
-      await pump(tester);
-
-      await type(tester, 'acme');
-
-      expect(
-        find.bySemanticsLabel(RegExp('matched in the document text')),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsLabel('1 result'), findsOneWidget);
 
       handle.dispose();
     });

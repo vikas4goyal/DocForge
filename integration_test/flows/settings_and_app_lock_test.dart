@@ -36,7 +36,6 @@ void main() {
     await settings.waitUntilVisible();
     await settings.choose(SettingsKeys.theme, 'dark');
     await settings.choose(SettingsKeys.pdfQuality, PdfQuality.high.name);
-    await settings.chooseRecognitionLanguage(OcrScript.japanese.name);
     await settings.chooseDefaultSaveFolder();
     expect(
       (await app.dependencies.preferences.readString(

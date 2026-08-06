@@ -84,7 +84,6 @@ class AppSettings {
   /// Creates a settings snapshot.
   const AppSettings({
     this.theme = AppThemeChoice.system,
-    this.ocrScript = OcrScript.defaultScript,
     this.pdfQuality = PdfQuality.defaultQuality,
     this.imageQuality = ImageQuality.defaultQuality,
     this.namingPattern = NamingPattern.defaultPattern,
@@ -94,9 +93,6 @@ class AppSettings {
 
   /// How the theme is chosen. Defaults to following the system.
   final AppThemeChoice theme;
-
-  /// The script used for text recognition. Defaults to Latin.
-  final OcrScript ocrScript;
 
   /// The quality preset used when generating a PDF. Defaults to balanced.
   final PdfQuality pdfQuality;
@@ -127,7 +123,6 @@ class AppSettings {
   /// a null [saveLocation] cannot express.
   AppSettings copyWith({
     AppThemeChoice? theme,
-    OcrScript? ocrScript,
     PdfQuality? pdfQuality,
     ImageQuality? imageQuality,
     NamingPattern? namingPattern,
@@ -136,7 +131,6 @@ class AppSettings {
     bool? isAppLockEnabled,
   }) => AppSettings(
     theme: theme ?? this.theme,
-    ocrScript: ocrScript ?? this.ocrScript,
     pdfQuality: pdfQuality ?? this.pdfQuality,
     imageQuality: imageQuality ?? this.imageQuality,
     namingPattern: namingPattern ?? this.namingPattern,
@@ -151,7 +145,6 @@ class AppSettings {
       identical(this, other) ||
       other is AppSettings &&
           other.theme == theme &&
-          other.ocrScript == ocrScript &&
           other.pdfQuality == pdfQuality &&
           other.imageQuality == imageQuality &&
           other.namingPattern == namingPattern &&
@@ -161,7 +154,6 @@ class AppSettings {
   @override
   int get hashCode => Object.hash(
     theme,
-    ocrScript,
     pdfQuality,
     imageQuality,
     namingPattern,
@@ -198,11 +190,6 @@ abstract final class SettingsCopy {
           'Retains the most detail. Uses noticeably more space per page.',
       };
 
-  /// What recognising in [script] means for the user.
-  static String ocrScriptDescription(OcrScript script) => script.bundled
-      ? 'Included in the application; works offline immediately.'
-      : 'Downloaded on first use, then works offline.';
-
   /// The statement the Privacy Policy screen makes.
   ///
   /// Held here rather than in the widget so the guarantee is one string that a
@@ -215,13 +202,13 @@ abstract final class SettingsCopy {
       'container. Apple then transfers those PDFs between devices signed into '
       'the same iCloud account. DocScanly never silently switches an iCloud '
       'library to a separate local copy.\n\n'
-      'Captured page images, search and recognised-text indexes, preferences '
+      'Captured page images, search indexes, preferences '
       'and other database metadata remain local to each device. They are not '
       'synchronised through iCloud, so a new device rebuilds its document list '
       'from the PDFs it finds. Password-protected PDFs remain protected; you '
       'may need to enter their password again on a new device.\n\n'
-      'DocScanly has no document-storage server and text recognition runs on '
-      'the device. PDFs can also leave the selected library when you explicitly '
+      'DocScanly has no document-storage server. PDFs can leave the selected '
+      'library when you explicitly '
       'share, export or print them. Files and other applications with storage '
       'access may be able to see PDFs in the user-visible DocScanly folder.';
 

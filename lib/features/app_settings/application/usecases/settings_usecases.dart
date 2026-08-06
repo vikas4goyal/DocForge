@@ -45,20 +45,6 @@ class UpdateSetting {
     () => _repository.saveTheme(theme),
   );
 
-  /// Applies the recognition [script].
-  ///
-  /// Previously recognised text is untouched: nothing here reaches the OCR
-  /// store, and recognition is only re-run when the user asks for it. That is
-  /// the whole of the "existing documents are unaffected" requirement.
-  Future<Result<AppSettings>> ocrScript(
-    AppSettings current,
-    OcrScript script,
-  ) => _apply(
-    current,
-    current.copyWith(ocrScript: script),
-    () => _repository.saveOcrScript(script),
-  );
-
   /// Applies the PDF [quality].
   Future<Result<AppSettings>> pdfQuality(
     AppSettings current,

@@ -42,7 +42,6 @@ import 'package:doc_scanly/features/document_sharing/infrastructure/repositories
 import 'package:doc_scanly/features/image_enhancement/application/usecases/enhancement_usecases.dart';
 import 'package:doc_scanly/features/image_enhancement/infrastructure/enhancement_job.dart';
 import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
-import 'package:doc_scanly/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
 import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:doc_scanly/features/pdf_generation/infrastructure/pdf_composer.dart';
@@ -150,7 +149,6 @@ void main() {
         InlineBackgroundWorker(),
         enhancePageJob,
       ),
-      isar: isar,
       workingDirectory: documents,
       publicStore: publicStore,
       clock: clock,
@@ -159,11 +157,6 @@ void main() {
       documentWriter: library.documentWriter,
       namingPattern: () => NamingPattern.defaultPattern,
       composer: const InlinePdfComposer(),
-      // The fake's default blocks already read "INVOICE / Acme Limited /
-      // Total due", which is what the search step below looks for.
-      recogniser: FakeOcrRepository(
-        recognisedAt: DateTime.utc(2026, 3, 14, 9, 30),
-      ),
     );
   });
 
@@ -194,11 +187,7 @@ void main() {
       File('${documents.path}/DocScanly/${document.relativePath}').existsSync(),
       isTrue,
     );
-    // Searchable: recognition ran and its text is stored.
-    expect(document.hasRecognisedText, isTrue);
-
-    final text = await creation.ocrTextSource.textForDocument(document.id);
-    expect(text.valueOrNull, contains('Acme'));
+    expect(document.hasRecognisedText, isFalse);
 
     // ---- Find it from the dashboard --------------------------------------
     final dashboard = DashboardCubit(
@@ -218,15 +207,13 @@ void main() {
     expect((moved as Success<Document>).value.folderId, created.id);
 
     // ---- Search it -------------------------------------------------------
-    // By its recognised text, not merely its title: that is the whole point of
-    // the searchable PDF two steps ago.
-    final byText = await library.search.search(const SearchQuery(term: 'acme'));
+    final byText = await library.search.search(const SearchQuery(term: 'scan'));
     final textHits = (byText as Success<List<SearchResult>>).value;
 
     expect(textHits.map((r) => r.document.id), contains(document.id));
     expect(
       textHits.firstWhere((r) => r.document.id == document.id).source,
-      MatchSource.recognisedText,
+      MatchSource.title,
     );
 
     // ---- Edit it ---------------------------------------------------------
@@ -282,7 +269,6 @@ void main() {
     final share = FakeShareRepository();
     final sharing = buildSharingModule(
       documentReader: library.documentReader,
-      ocrTextSource: creation.ocrTextSource,
       documentFiles: PublicStoreDocumentFileResolver(publicStore),
       cacheDirectory: root,
       worker: const InlineBackgroundWorker(),

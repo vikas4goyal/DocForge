@@ -102,7 +102,7 @@ Future<String?> _saveProviderFile({
   String? initialDirectory,
   required List<String> allowedExtensions,
   required Uint8List bytes,
-}) => FilePicker.platform.saveFile(
+}) => FilePicker.saveFile(
   fileName: fileName,
   initialDirectory: initialDirectory,
   type: FileType.custom,

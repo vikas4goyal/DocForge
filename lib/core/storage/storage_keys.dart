@@ -34,9 +34,6 @@ abstract final class PreferenceKeys {
   /// Theme mode: light, dark or follow the system.
   static const themeMode = 'settings.themeMode';
 
-  /// BCP-47 language tag used for on-device text recognition.
-  static const ocrLanguage = 'settings.ocrLanguage';
-
   /// Quality preset applied when generating a PDF.
   static const pdfQuality = 'settings.pdfQuality';
 
@@ -74,7 +71,6 @@ abstract final class PreferenceKeys {
     onboardingComplete,
     documentLayoutVersion,
     themeMode,
-    ocrLanguage,
     pdfQuality,
     imageQuality,
     fileNamingPattern,

@@ -18,7 +18,6 @@ import 'package:doc_scanly/app/document_creation_module.dart';
 import 'package:doc_scanly/app/library_module.dart';
 import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
-import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_scanly/core/failures/result.dart';
@@ -36,9 +35,7 @@ import 'package:doc_scanly/features/document_scanning/infrastructure/page_correc
 import 'package:doc_scanly/features/image_enhancement/application/usecases/enhancement_usecases.dart';
 import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:doc_scanly/features/image_enhancement/infrastructure/enhancement_job.dart';
-import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
 import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
-import 'package:doc_scanly/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:doc_scanly/features/pdf_generation/infrastructure/pdf_composer.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -94,7 +91,6 @@ void main() {
   late LibraryModule library;
   late DocumentCreationModule creation;
   late FakeScannerRepository scanner;
-  late FakeOcrRepository recogniser;
 
   final clock = FixedClock(DateTime.utc(2026, 3, 14, 9, 30));
 
@@ -136,7 +132,6 @@ void main() {
       ids: SequentialIdGenerator(prefix: 'page'),
       directory: staging,
     );
-    recogniser = FakeOcrRepository();
 
     creation = buildDocumentCreationModule(
       protectPdf: _noProtection,
@@ -145,7 +140,6 @@ void main() {
         InlineBackgroundWorker(),
         enhancePageJob,
       ),
-      isar: isar,
       workingDirectory: documents,
       publicStore: publicStore,
       clock: clock,
@@ -157,7 +151,6 @@ void main() {
       // test VM with a closure over this test's state, and what is under test
       // is the pipeline, not where it runs.
       composer: const InlinePdfComposer(),
-      recogniser: recogniser,
     );
   });
 
@@ -263,18 +256,6 @@ void main() {
         expect(File(page.imagePath).existsSync(), isTrue);
       }
 
-      // --- Recognise ---------------------------------------------------------
-      final recognitionEvents = await creation
-          .recogniseText(
-            pages,
-            documentId: const DocumentId('pending'),
-            script: OcrScript.latin,
-          )
-          .toList();
-
-      expect(recognitionEvents, hasLength(3));
-      expect(recognitionEvents.every((event) => event.isSuccess), isTrue);
-
       // --- Generate and save -------------------------------------------------
       final saved = await creation.pageBundleSink.createDocument(
         ScannedPageBundle(pages: pages, source: PageSource.camera),
@@ -314,27 +295,6 @@ void main() {
       expect(dashboard.state.documents.length, 1);
     },
   );
-
-  test('the document is searchable: its recognised text is stored', () async {
-    final captured = await capture(1);
-    for (final page in captured) {
-      writeCapture(page.imagePath);
-    }
-    final pages = [for (final page in captured) page.toPageRef()];
-
-    final saved = await creation.pageBundleSink.createDocument(
-      ScannedPageBundle(pages: pages, source: PageSource.camera),
-    );
-    final document = (saved as Success<Document>).value;
-
-    await creation
-        .recogniseText(pages, documentId: document.id, script: OcrScript.latin)
-        .toList();
-
-    final text = await creation.ocrTextSource.textForDocument(document.id);
-
-    expect((text as Success<String>).value, contains('INVOICE'));
-  });
 
   test('a document with no recognised text is still created', () async {
     // The spec is explicit: OCR failure must not prevent a document existing.

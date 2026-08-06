@@ -292,7 +292,7 @@ class _PasswordPromptState extends State<_PasswordPrompt> {
   }
 }
 
-/// The document itself, with its text panel on wide viewports.
+/// The document itself.
 class _Document extends StatelessWidget {
   const _Document({
     required this.state,
@@ -321,48 +321,7 @@ class _Document extends StatelessWidget {
 
     return ResponsiveLayout(
       compact: (context) => surface,
-      // The extra width on a tablet goes to a text panel beside the page rather
-      // than to a wider page: a page scaled past its own resolution shows no
-      // more detail, while the recognised text is genuinely useful and has
-      // nowhere to live on a phone.
-      expanded: (context) => Row(
-        children: [
-          Expanded(flex: 2, child: surface),
-          if (state.hasText)
-            SizedBox(width: 340, child: _TextPanel(text: state.recognisedText)),
-        ],
-      ),
-    );
-  }
-}
-
-/// The recognised-text panel shown beside the page on wide viewports.
-class _TextPanel extends StatelessWidget {
-  const _TextPanel({required this.text});
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(color: theme.colorScheme.outlineVariant),
-        ),
-      ),
-      child: Scrollbar(
-        child: SingleChildScrollView(
-          key: ViewerKeys.textPanel,
-          padding: const EdgeInsets.all(16),
-          child: SelectableText(
-            text,
-            style: theme.textTheme.bodySmall,
-            semanticsLabel: 'Recognised text. $text',
-          ),
-        ),
-      ),
+      expanded: (context) => surface,
     );
   }
 }

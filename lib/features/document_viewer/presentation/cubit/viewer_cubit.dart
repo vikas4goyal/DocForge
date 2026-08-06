@@ -16,17 +16,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// Drives the document viewer.
 class ViewerCubit extends Cubit<ViewerState> {
   /// Creates the Cubit for [_documentId] over its collaborators.
-  ViewerCubit(
-    this._documentId,
-    this._open,
-    this._rememberPassword,
-    this._loadText,
-  ) : super(const ViewerState.initial());
+  ViewerCubit(this._documentId, this._open, this._rememberPassword)
+    : super(const ViewerState.initial());
 
   final DocumentId _documentId;
   final OpenDocumentForViewing _open;
   final RememberDocumentPassword _rememberPassword;
-  final LoadViewerText _loadText;
 
   /// Opens the document.
   Future<void> load() async {
@@ -96,7 +91,7 @@ class ViewerCubit extends Cubit<ViewerState> {
   /// Retries after a failure.
   Future<void> retry() => load();
 
-  /// Emits the open document and loads its text.
+  /// Emits the open document.
   Future<void> _showDocument(ViewableDocument viewable) async {
     emit(
       state.copyWith(
@@ -108,13 +103,5 @@ class ViewerCubit extends Cubit<ViewerState> {
         page: ViewerRules.clampPage(state.page, pageCount: viewable.pageCount),
       ),
     );
-
-    // Loaded after the document is on screen rather than before. Text is a
-    // secondary panel, and making the first page wait for it would break the
-    // "opens promptly" requirement for no benefit.
-    final text = await _loadText(_documentId);
-    if (isClosed) return;
-
-    emit(state.copyWith(recognisedText: text));
   }
 }

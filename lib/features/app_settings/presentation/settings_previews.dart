@@ -63,9 +63,6 @@ class _PreviewSettingsCubit extends SettingsCubit {
   Future<void> setTheme(AppThemeChoice theme) async {}
 
   @override
-  Future<void> setOcrScript(OcrScript script) async {}
-
-  @override
   Future<void> setPdfQuality(PdfQuality quality) async {}
 
   @override
@@ -154,7 +151,6 @@ Widget settingsLongContent() => _screen(
   _ready.copyWith(
     settings: const AppSettings(
       theme: AppThemeChoice.dark,
-      ocrScript: OcrScript.japanese,
       pdfQuality: PdfQuality.high,
       imageQuality: ImageQuality.high,
       namingPattern: NamingPattern.sequential,
@@ -223,29 +219,6 @@ Widget settingsICloudStorage() => _screen(_ready, supportsCloudStorage: true);
 // ---------------------------------------------------------------------------
 // Pushed Settings details
 // ---------------------------------------------------------------------------
-
-/// The scrollable recognition-language selector.
-@Preview(
-  name: 'Recognition language — phone, light',
-  group: 'Settings details',
-  size: PreviewSize.phone,
-  theme: appPreviewTheme,
-)
-Widget recognitionLanguagePhone() =>
-    RecognitionLanguageScreen(value: OcrScript.latin, onSelected: (_) async {});
-
-/// Recognition language on a dark tablet with a non-default value.
-@Preview(
-  name: 'Recognition language — tablet, dark',
-  group: 'Settings details',
-  size: PreviewSize.tablet,
-  brightness: Brightness.dark,
-  theme: appPreviewTheme,
-)
-Widget recognitionLanguageTabletDark() => RecognitionLanguageScreen(
-  value: OcrScript.japanese,
-  onSelected: (_) async {},
-);
 
 /// Default save location while exports ask every time.
 @Preview(
@@ -387,23 +360,6 @@ Widget choiceTileWithPreview() => SettingsChoiceTile<NamingPattern>(
   labelFor: (pattern) => pattern.label,
   onSelected: (_) {},
   footer: const NamingPatternPreview(example: 'Scan 42'),
-);
-
-/// A choice tile whose value is long enough to wrap.
-@Preview(
-  name: 'SettingsChoiceTile — long content',
-  group: 'Settings',
-  theme: appPreviewTheme,
-  wrapper: previewNarrow,
-)
-Widget choiceTileLongContent() => SettingsChoiceTile<OcrScript>(
-  title: 'Recognition language used for extracting text from scanned pages',
-  value: OcrScript.devanagari,
-  valueLabel: OcrScript.devanagari.label,
-  options: OcrScript.values,
-  labelFor: (script) => script.label,
-  descriptionFor: SettingsCopy.ocrScriptDescription,
-  onSelected: (_) {},
 );
 
 /// A value tile with something to show.

@@ -6,7 +6,6 @@
 /// renderer and file resolver.
 library;
 
-import 'package:doc_scanly/app/document_creation_module.dart';
 import 'package:doc_scanly/app/library_module.dart';
 import 'package:doc_scanly/app/pdf_editing_module.dart';
 import 'package:doc_scanly/app/router/app_router.dart';
@@ -20,7 +19,6 @@ import 'package:doc_scanly/core/failures/failure_messages.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
-import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 import 'package:doc_scanly/features/document_sharing/presentation/cubit/share_cubit.dart';
 import 'package:doc_scanly/features/document_sharing/presentation/cubit/share_state.dart';
 import 'package:doc_scanly/features/document_sharing/presentation/screens/share_options_sheet.dart';
@@ -55,8 +53,7 @@ class ViewerScreens {
 /// Builds the viewer over the modules that supply what it shows and what it can
 /// do with it.
 ///
-/// [library] supplies the document reader, [creation] the recognised text the
-/// viewer can search and share, [documentFiles] the path a document's bytes
+/// [library] supplies the document reader and [documentFiles] the path a document's bytes
 /// live at, and [secureStorage] the remembered password for a protected file —
 /// secure storage rather than preferences, because an unprotected file can be
 /// edited on a rooted device.
@@ -69,7 +66,6 @@ class ViewerScreens {
 /// defaults it to the real renderer.
 ViewerScreens buildViewerScreens({
   required LibraryModule library,
-  required DocumentCreationModule creation,
   required SharingModule sharing,
   required PdfEditingModule editing,
   required DocumentFileResolver documentFiles,
@@ -87,7 +83,6 @@ ViewerScreens buildViewerScreens({
           documentFiles,
         ),
         RememberDocumentPassword(secureStorage),
-        LoadViewerText(creation.ocrTextSource),
       )..load(),
       child: ViewerScreen(
         // The rendering surface comes from here rather than from the screen:
@@ -253,9 +248,6 @@ Future<void> openShareSheet(
     return;
   }
 
-  final text = await sharing.ocrTextSource.textForDocument(id);
-  if (!context.mounted) return;
-
   await showModalBottomSheet<void>(
     context: context,
     showDragHandle: true,
@@ -264,16 +256,11 @@ Future<void> openShareSheet(
         id,
         sharing.sharePdf,
         sharing.shareImages,
-        sharing.shareText,
         sharing.printDocument,
         sharing.export,
         initial: ShareState.initial(
           title: document.title,
           pageCount: document.pageCount,
-          canShareText: ShareRules.canShareText(
-            document,
-            text.valueOrNull ?? '',
-          ),
         ),
       ),
       child: ShareOptionsSheet(

@@ -26,7 +26,6 @@ import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_locati
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/ios_icloud_channel.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/scripted_icloud_platform.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
-import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 
@@ -158,7 +157,6 @@ Future<FlowApp> bootDocScanly(
       FolderEntitySchema,
       PageEntitySchema,
       TrashEntitySchema,
-      OcrTextEntitySchema,
     ],
     directory: databaseDirectory.path,
     name: 'docscanly_flow_$_instanceCount',
@@ -232,7 +230,6 @@ Future<FlowApp> bootDocScanly(
     scanner: platform.scanner,
     detector: platform.detector,
     authenticator: platform.authenticator,
-    recogniser: platform.recogniser,
     share: platform.share,
     printer: platform.printer,
     exportPicker: platform.exportPicker,

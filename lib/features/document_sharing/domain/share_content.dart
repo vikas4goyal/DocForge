@@ -19,10 +19,7 @@ enum ShareFormat {
   pdf('PDF'),
 
   /// One image file per selected page.
-  images('images'),
-
-  /// The recognised text as plain text.
-  text('text');
+  images('images');
 
   const ShareFormat(this.label);
 
@@ -109,14 +106,6 @@ abstract final class ShareRules {
   /// record.
   static const stagingDirectoryName = 'share_staging';
 
-  /// Whether the "share text" option can be offered for [document].
-  ///
-  /// The spec allows either disabling the control or explaining that no text is
-  /// available; the control is disabled and labelled, which is the option a
-  /// screen reader can convey without the user having to activate it first.
-  static bool canShareText(Document document, String recognisedText) =>
-      recognisedText.trim().isNotEmpty;
-
   /// The pages of a document in the order they must be shared.
   ///
   /// The spec requires page order, and a selection arrives in the order the
@@ -148,9 +137,6 @@ abstract final class ShareRules {
   static String imageFileName(String title, int pageNumber) =>
       '${sanitise(title)}_${'$pageNumber'.padLeft(3, '0')}.jpg';
 
-  /// The file name for [title]'s recognised text.
-  static String textFileName(String title) => '${sanitise(title)}.txt';
-
   /// The subject offered alongside shared content for [document].
   static String subjectFor(Document document) => document.title;
 
@@ -170,7 +156,6 @@ abstract final class ShareRules {
         pageCount == 1
             ? 'one page of "$title" as an image'
             : '$pageCount pages of "$title" as images',
-      ShareFormat.text => 'the recognised text of "$title" as plain text',
     };
 
     return switch (action) {
@@ -179,13 +164,6 @@ abstract final class ShareRules {
       ShareAction.export => 'Export $what to device storage',
     };
   }
-
-  /// The message shown when a document has no text to share.
-  static const noTextMessage =
-      'No text has been recognised for this document yet.';
-
-  /// The label of the control offered alongside [noTextMessage].
-  static const runRecognitionLabel = 'Extract text';
 
   /// The confirmation shown after a successful export to [destination].
   static String exportConfirmation(String destination) =>

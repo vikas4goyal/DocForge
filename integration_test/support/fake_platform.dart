@@ -1,8 +1,8 @@
 /// The platform edges a Tier-3 flow substitutes, and nothing else.
 ///
 /// The suite fakes exactly the seven things a device does that a test cannot
-/// drive or predict: camera capture, edge detection, text recognition,
-/// biometric authentication, the share sheet, the print dialogue, and the
+/// drive or predict: camera capture, edge detection, biometric authentication,
+/// the share sheet, the print dialogue, and the
 /// file and gallery pickers. Isar, the filesystem and the public library folder
 /// stay real, because most of what breaks in an offline-first document app
 /// breaks precisely there — a suite that faked the database would prove the UI
@@ -30,7 +30,6 @@ import 'package:doc_scanly/features/document_import/infrastructure/repositories/
 import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
-import 'package:doc_scanly/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
 
 /// Every substituted platform edge, held together so a flow can assert on them.
 ///
@@ -44,7 +43,6 @@ class FakePlatform {
   const FakePlatform({
     required this.scanner,
     required this.detector,
-    required this.recogniser,
     required this.authenticator,
     required this.share,
     required this.printer,
@@ -63,9 +61,6 @@ class FakePlatform {
   /// of a capture whose edges cannot be found, so a flow driving it is
   /// exercising a real code path rather than a test-only one.
   final FullPageEdgeDetector detector;
-
-  /// Stands in for ML Kit, returning fixed blocks.
-  final FakeOcrRepository recogniser;
 
   /// Stands in for the biometric prompt, which nothing in a test could answer.
   final FakeDeviceAuthenticator authenticator;
@@ -128,11 +123,6 @@ FakePlatform buildFakePlatform({
       imageBytes: captureImageBytes,
     ),
     detector: const FullPageEdgeDetector(),
-    recogniser: FakeOcrRepository(
-      // Fixed rather than read from a clock, so the recognised-at stamp a flow
-      // sees is the same on every run.
-      recognisedAt: DateTime.utc(2026, 7, 26, 10, 30),
-    ),
     authenticator: FakeDeviceAuthenticator(
       // `rejected` rather than a failure: a refused fingerprint is the lock
       // working, which is exactly what the flow proving it locks needs.

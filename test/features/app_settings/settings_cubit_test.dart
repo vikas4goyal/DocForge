@@ -182,22 +182,6 @@ void main() {
     );
 
     blocTest<SettingsCubit, SettingsState>(
-      'changing the recognition script leaves everything else alone',
-      build: build,
-      act: (cubit) async {
-        await cubit.load();
-        await cubit.setOcrScript(OcrScript.chinese);
-      },
-      verify: (cubit) {
-        expect(cubit.state.settings.ocrScript, OcrScript.chinese);
-        // Nothing else moved — in particular, no recognised text was touched,
-        // which is the requirement this guards.
-        expect(cubit.state.settings.pdfQuality, PdfQuality.balanced);
-        expect(cubit.state.settings.namingPattern, NamingPattern.dateAndTime);
-      },
-    );
-
-    blocTest<SettingsCubit, SettingsState>(
       'clearing the save location returns to asking each time',
       build: build,
       act: (cubit) async {

@@ -69,7 +69,6 @@ import 'package:doc_scanly/features/document_sharing/domain/repositories/share_r
 import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/platform_share_repositories.dart';
 import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
 import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
-import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
 import 'package:doc_scanly/features/onboarding/application/usecases/onboarding_usecases.dart';
 import 'package:doc_scanly/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
@@ -127,7 +126,6 @@ const appVersion = '1.0.0';
 /// - [pdfRenderer] — pdfrx, which binds a native library.
 /// - [pdfEditor] — one instance shared by generation and editing, so encryption
 ///   has one implementation rather than two that can drift.
-/// - [recogniser] — ML Kit text recognition.
 /// - [share], [printer] and [exportPicker] — the system share sheet, print
 ///   dialogue and destination picker.
 /// - [gallery], [files] and [sharedContent] — the system pickers and the
@@ -147,7 +145,6 @@ Future<Widget> buildDocScanly({
   DeviceAuthenticator authenticator = const LocalAuthAuthenticator(),
   PdfRenderer pdfRenderer = const PdfrxRenderer(),
   PdfEditorRepository? pdfEditor,
-  OcrRepository? recogniser,
   ShareRepository share = const SystemShareRepository(),
   PrintRepository printer = const SystemPrintRepository(),
   ExportDocumentRepository exportPicker =
@@ -203,7 +200,6 @@ Future<Widget> buildDocScanly({
           authenticator: authenticator,
           pdfRenderer: pdfRenderer,
           pdfEditor: pdfEditor,
-          recogniser: recogniser,
           share: share,
           printer: printer,
           exportPicker: exportPicker,
@@ -241,7 +237,6 @@ Future<Widget> buildDocScanly({
           authenticator: authenticator,
           pdfRenderer: pdfRenderer,
           pdfEditor: pdfEditor,
-          recogniser: recogniser,
           share: share,
           printer: printer,
           exportPicker: exportPicker,
@@ -393,7 +388,6 @@ Future<Widget> buildDocScanly({
       );
       return result.map((_) => destination);
     },
-    isar: library.isar,
     workingDirectory: workingDirectory,
     publicStore: store,
     clock: resolvedDependencies.clock,
@@ -404,8 +398,6 @@ Future<Widget> buildDocScanly({
     // Shared with the scanning module so a page enhanced on screen and a page
     // enhanced while saving go through exactly the same code.
     applyEnhancement: scanning.applyEnhancement,
-    pageAccess: library.pageAccess,
-    recogniser: recogniser,
     telemetry: resolvedDependencies.telemetry,
   );
 
@@ -460,7 +452,6 @@ Future<Widget> buildDocScanly({
 
   final sharing = buildSharingModule(
     documentReader: library.documentReader,
-    ocrTextSource: creation.ocrTextSource,
     pageAccess: library.pageAccess,
     documentFiles: documentFiles,
     cacheDirectory: resolvedCache,
@@ -508,7 +499,6 @@ Future<Widget> buildDocScanly({
     observers: [routeObserver],
     screens: buildAppScreens(
       library: library,
-      creation: creation,
       creationFlow: creationFlow,
       importing: importing,
       sharing: sharing,

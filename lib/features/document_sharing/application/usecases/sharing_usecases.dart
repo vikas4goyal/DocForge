@@ -326,46 +326,6 @@ class SharePageImages {
   }
 }
 
-/// Shares a document's recognised text.
-class ShareExtractedText {
-  /// Creates the use case.
-  const ShareExtractedText(this._documents, this._text, this._share);
-
-  final DocumentReader _documents;
-  final OcrTextSource _text;
-  final ShareRepository _share;
-
-  /// Shares the recognised text of [documentId].
-  ///
-  /// Fails with a not-found failure when the document has no recognised text,
-  /// which the UI prevents by disabling the control — this is the second line
-  /// of defence rather than the first.
-  Future<Result<void>> call(DocumentId documentId) async {
-    final found = await _documents.findById(documentId);
-    if (found case Failed(:final failure)) {
-      return Result<void>.failure(failure);
-    }
-    final document = found.valueOrNull!;
-
-    final text = await _text.textForDocument(documentId);
-    if (text case Failed(:final failure)) {
-      return Result<void>.failure(failure);
-    }
-
-    final content = text.valueOrNull ?? '';
-
-    if (!ShareRules.canShareText(document, content)) {
-      return const Result<void>.failure(
-        Failure.notFound(debugDetail: 'no recognised text'),
-      );
-    }
-
-    return _share.share(
-      SharePayload(text: content, subject: ShareRules.subjectFor(document)),
-    );
-  }
-}
-
 /// Prints a document through the system print flow.
 class PrintDocument {
   /// Creates the use case.

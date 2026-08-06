@@ -137,23 +137,6 @@ class RememberDocumentPassword {
       _secrets.write(SecureStorageKeys.pdfPassword(id.value), password);
 }
 
-/// Loads a document's recognised text for the viewer's text panel.
-class LoadViewerText {
-  /// Creates the use case.
-  const LoadViewerText(this._text);
-
-  final OcrTextSource _text;
-
-  /// Returns the document's recognised text, or an empty string.
-  ///
-  /// A failure degrades to empty rather than propagating: the viewer's job is
-  /// to show the document, and missing text must not stop it.
-  Future<String> call(DocumentId id) async {
-    final result = await _text.textForDocument(id);
-    return result.valueOrNull ?? '';
-  }
-}
-
 /// The failure a locked document produces.
 ///
 /// Exposed so the viewer and its previews agree on what "needs a password"

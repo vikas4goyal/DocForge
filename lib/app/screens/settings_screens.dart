@@ -73,7 +73,7 @@ SettingsScreens buildSettingsScreens({
 }) {
   final directoryPicker =
       pickSaveLocation ??
-      () => FilePicker.platform.getDirectoryPath(
+      () => FilePicker.getDirectoryPath(
         dialogTitle: 'Choose default save location',
       );
   Widget settingsScreen(BuildContext context, {required bool isTab}) =>

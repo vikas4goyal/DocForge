@@ -153,26 +153,6 @@ void main() {
       expectVisible(SettingsKeys.namingPreview);
     });
 
-    testWidgets('recognition selection persists through the real repository', (
-      tester,
-    ) async {
-      await pumpSettings(tester);
-
-      await tester.tap(find.byKey(SettingsKeys.ocrLanguage));
-      await tester.pumpAndSettle();
-      final option = find.byKey(
-        SettingsKeys.ocrLanguageOption(OcrScript.japanese.name),
-      );
-      await tester.ensureVisible(option);
-      await tester.tap(option);
-      await tester.pumpAndSettle();
-
-      expect(
-        (await preferences.readString(PreferenceKeys.ocrLanguage)).valueOrNull,
-        OcrScript.japanese.languageTag,
-      );
-    });
-
     testWidgets('a selected export folder persists through the real use case', (
       tester,
     ) async {

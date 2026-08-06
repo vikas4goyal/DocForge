@@ -13,19 +13,6 @@ abstract final class SettingsKeys {
   /// The theme entry.
   static const theme = Key('settings_theme');
 
-  /// The recognition-language entry.
-  static const ocrLanguage = Key('settings_ocr_language');
-
-  /// Root of the pushed recognition-language screen.
-  static const ocrLanguageScreen = Key('settings_ocr_language_screen');
-
-  /// Scrollable recognition-language choices.
-  static const ocrLanguageList = Key('settings_ocr_language_list');
-
-  /// Identifies one recognition-language choice by enum name.
-  static Key ocrLanguageOption(String language) =>
-      Key('settings_ocr_language_option_$language');
-
   /// The PDF-quality entry.
   static const pdfQuality = Key('settings_pdf_quality');
 
@@ -123,10 +110,6 @@ abstract final class SettingsSemantics {
   /// Announces a choice setting as its name and its current value.
   static String choiceTile(String title, String valueLabel) =>
       '$title, $valueLabel';
-
-  /// Announces a recognition-language option.
-  static String ocrLanguageOption(String language) =>
-      '$language, recognition language';
 
   /// Announces the ask-each-time save option and its selection state.
   static String askEachTime({required bool selected}) =>

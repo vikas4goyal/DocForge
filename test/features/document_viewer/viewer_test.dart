@@ -226,28 +226,6 @@ void main() {
     });
   });
 
-  group('LoadViewerText', () {
-    test('returns the document\'s recognised text', () async {
-      final harness = ViewerHarness(recognisedText: 'Invoice total 240.00');
-
-      expect(
-        await LoadViewerText(harness.textSource)(const DocumentId('doc-1')),
-        'Invoice total 240.00',
-      );
-    });
-
-    test('degrades to empty rather than failing the viewer', () async {
-      // The viewer's job is to show the document; missing text must not stop
-      // it.
-      final harness = ViewerHarness(textFailure: const Failure.storage());
-
-      expect(
-        await LoadViewerText(harness.textSource)(const DocumentId('doc-1')),
-        isEmpty,
-      );
-    });
-  });
-
   group('ViewerCubit', () {
     late ViewerHarness harness;
 
@@ -269,16 +247,6 @@ void main() {
       build: () => harness.cubit(),
       act: (cubit) => cubit.load(),
       verify: (cubit) => expect(cubit.state.title, 'Invoice 2026'),
-    );
-
-    blocTest<ViewerCubit, ViewerState>(
-      'loads recognised text after the document is on screen',
-      build: () => ViewerHarness(recognisedText: 'Some text').cubit(),
-      act: (cubit) => cubit.load(),
-      verify: (cubit) {
-        expect(cubit.state.hasText, isTrue);
-        expect(cubit.state.recognisedText, 'Some text');
-      },
     );
 
     blocTest<ViewerCubit, ViewerState>(
@@ -316,7 +284,6 @@ void main() {
       verify: (cubit) {
         expect(cubit.state.document, isNull);
         expect(cubit.state.pageCount, 0);
-        expect(cubit.state.recognisedText, isEmpty);
       },
     );
 

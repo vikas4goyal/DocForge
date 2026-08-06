@@ -14,7 +14,6 @@ import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/isolates/background_worker.dart';
@@ -48,20 +47,6 @@ class _Reader implements DocumentReader {
   @override
   Future<Result<List<DocumentPage>>> pagesOf(DocumentId id) async =>
       Result<List<DocumentPage>>.success(pages);
-}
-
-class _Text implements OcrTextSource {
-  _Text(this.text);
-
-  final String text;
-
-  @override
-  Future<Result<RecognisedText?>> textForPage(PageId pageId) async =>
-      const Result<RecognisedText?>.success(null);
-
-  @override
-  Future<Result<String>> textForDocument(DocumentId documentId) async =>
-      Result<String>.success(text);
 }
 
 void main() {
@@ -111,16 +96,11 @@ void main() {
     FakePrintRepository? printer,
     FakeExportDestinationPicker? picker,
     List<DocumentPage> pages = const [],
-    String text = '',
-    bool hasRecognisedText = false,
     IsolateJob<SharePageRequest, String>? job,
   }) {
     File('${temporary.path}/a.pdf').writeAsStringSync('%PDF');
 
-    final reader = _Reader(
-      document: doc(hasRecognisedText: hasRecognisedText),
-      pages: pages,
-    );
+    final reader = _Reader(document: doc(), pages: pages);
     final sharing = share ?? FakeShareRepository();
 
     return ShareCubit(
@@ -133,18 +113,13 @@ void main() {
         () => temporary,
         job ?? renderJob,
       ),
-      ShareExtractedText(reader, _Text(text), sharing),
       PrintDocument(reader, printer ?? FakePrintRepository(), testFiles),
       ExportDocument(
         reader,
         picker ?? FakeExportDestinationPicker(),
         testFiles,
       ),
-      initial: ShareState.initial(
-        title: 'Invoice',
-        pageCount: 2,
-        canShareText: hasRecognisedText,
-      ),
+      initial: const ShareState.initial(title: 'Invoice', pageCount: 2),
     );
   }
 
@@ -240,32 +215,6 @@ void main() {
         job: (_) => throw const FormatException('undecodable'),
       ),
       act: (cubit) => cubit.shareImages(),
-      skip: 1,
-      expect: () => [
-        isA<ShareState>().having(
-          (s) => s.status,
-          'status',
-          ShareStatus.failure,
-        ),
-      ],
-    );
-  });
-
-  group('shareText', () {
-    blocTest<ShareCubit, ShareState>(
-      'shares the recognised text',
-      build: () => build(hasRecognisedText: true, text: 'Acme'),
-      act: (cubit) => cubit.shareText(),
-      expect: () => [
-        isA<ShareState>().having((s) => s.format, 'format', ShareFormat.text),
-        isA<ShareState>().having((s) => s.status, 'status', ShareStatus.done),
-      ],
-    );
-
-    blocTest<ShareCubit, ShareState>(
-      'fails when there is no text',
-      build: build,
-      act: (cubit) => cubit.shareText(),
       skip: 1,
       expect: () => [
         isA<ShareState>().having(

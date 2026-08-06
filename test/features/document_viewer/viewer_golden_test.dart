@@ -108,13 +108,7 @@ void main() {
     });
 
     testWidgets('tablet, light', (tester) async {
-      await pumpAt(
-        tester,
-        _tablet,
-        harness: ViewerHarness(
-          recognisedText: 'INVOICE\nAcme Limited\nTotal due: 240.00',
-        ),
-      );
+      await pumpAt(tester, _tablet, harness: ViewerHarness());
 
       await expectLater(
         find.byType(ViewerScreen),
@@ -127,9 +121,7 @@ void main() {
         tester,
         _tablet,
         brightness: Brightness.dark,
-        harness: ViewerHarness(
-          recognisedText: 'INVOICE\nAcme Limited\nTotal due: 240.00',
-        ),
+        harness: ViewerHarness(),
       );
 
       await expectLater(

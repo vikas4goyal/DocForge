@@ -34,7 +34,6 @@ class ShareState extends Equatable {
     required this.status,
     required this.title,
     required this.pageCount,
-    this.canShareText = false,
     this.action,
     this.format,
     this.progress,
@@ -43,20 +42,8 @@ class ShareState extends Equatable {
   });
 
   /// The options as first shown, for a document with [title] and [pageCount].
-  ///
-  /// [canShareText] comes from the document record and its recognised text; the
-  /// text control is disabled when it is false, which is the accessible form of
-  /// the "no recognised text" rule.
-  const ShareState.initial({
-    String title = '',
-    int pageCount = 0,
-    bool canShareText = false,
-  }) : this._(
-         status: ShareStatus.idle,
-         title: title,
-         pageCount: pageCount,
-         canShareText: canShareText,
-       );
+  const ShareState.initial({String title = '', int pageCount = 0})
+    : this._(status: ShareStatus.idle, title: title, pageCount: pageCount);
 
   /// Where the operation has got to.
   final ShareStatus status;
@@ -66,9 +53,6 @@ class ShareState extends Equatable {
 
   /// How many pages the document has.
   final int pageCount;
-
-  /// Whether there is recognised text to share.
-  final bool canShareText;
 
   /// What was asked for, once something was.
   final ShareAction? action;
@@ -121,7 +105,6 @@ class ShareState extends Equatable {
     ShareStatus? status,
     String? title,
     int? pageCount,
-    bool? canShareText,
     ShareAction? action,
     ShareFormat? format,
     Progress? progress,
@@ -131,7 +114,6 @@ class ShareState extends Equatable {
     status: status ?? this.status,
     title: title ?? this.title,
     pageCount: pageCount ?? this.pageCount,
-    canShareText: canShareText ?? this.canShareText,
     action: action ?? this.action,
     format: format ?? this.format,
     progress: progress,
@@ -144,7 +126,6 @@ class ShareState extends Equatable {
     status,
     title,
     pageCount,
-    canShareText,
     action,
     format,
     progress,

@@ -49,13 +49,7 @@ List<SearchResult> _results(int count) => [
 /// A Bloc frozen at a chosen state.
 class _SeededBloc extends SearchBloc {
   _SeededBloc(this._seeded)
-    : super(
-        IndexedSearchRepository(
-          InMemoryTitleIndex(),
-          InMemoryOcrIndex(),
-          InMemoryDocumentLookup(),
-        ),
-      );
+    : super(IndexedSearchRepository(InMemoryTitleIndex()));
 
   final SearchState _seeded;
 

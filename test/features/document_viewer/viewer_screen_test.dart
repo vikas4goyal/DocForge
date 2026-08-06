@@ -347,28 +347,12 @@ void main() {
     testWidgets('a phone viewport shows only the page', (tester) async {
       await pump(
         tester,
-        harness: ViewerHarness(recognisedText: 'Invoice total'),
+        harness: ViewerHarness(),
         viewport: const Size(390, 844),
       );
 
       expect(find.byKey(ViewerKeys.pageView), findsOneWidget);
       expect(find.byKey(ViewerKeys.textPanel), findsNothing);
-    });
-
-    testWidgets('a tablet viewport puts the text beside the page', (
-      tester,
-    ) async {
-      await pump(
-        tester,
-        harness: ViewerHarness(recognisedText: 'Invoice total 240.00'),
-        viewport: const Size(1280, 900),
-      );
-
-      expect(find.byKey(ViewerKeys.textPanel), findsOneWidget);
-
-      final page = tester.getRect(find.byKey(ViewerKeys.pageView));
-      final text = tester.getRect(find.byKey(ViewerKeys.textPanel));
-      expect(page.right, lessThanOrEqualTo(text.left));
     });
 
     testWidgets('a tablet with no recognised text shows only the page', (
@@ -486,7 +470,6 @@ void main() {
 
       expect(state.document, isNull);
       expect(state.isReady, isFalse);
-      expect(state.hasText, isFalse);
       expect(state.title, isEmpty);
     });
   });

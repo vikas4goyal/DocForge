@@ -49,7 +49,6 @@ class PreferenceSettingsRepository implements SettingsRepository {
     // Read individually rather than as one blob: each has its own documented
     // default, and one unreadable key must not take the others down with it.
     final theme = await _preferences.readString(PreferenceKeys.themeMode);
-    final script = await _preferences.readString(PreferenceKeys.ocrLanguage);
     final pdf = await _preferences.readString(PreferenceKeys.pdfQuality);
     final image = await _preferences.readString(PreferenceKeys.imageQuality);
     final naming = await _preferences.readString(
@@ -65,7 +64,6 @@ class PreferenceSettingsRepository implements SettingsRepository {
       // Every `from…` falls back to the default for an unrecognised value, so a
       // preference written by a newer release degrades rather than crashing.
       theme: AppThemeChoice.fromId(theme.valueOrNull),
-      ocrScript: OcrScript.fromTag(script.valueOrNull),
       pdfQuality: PdfQuality.fromName(pdf.valueOrNull),
       imageQuality: ImageQuality.fromName(image.valueOrNull),
       namingPattern: NamingPattern.fromId(naming.valueOrNull),
@@ -77,10 +75,6 @@ class PreferenceSettingsRepository implements SettingsRepository {
   @override
   Future<Result<void>> saveTheme(AppThemeChoice theme) =>
       _preferences.writeString(PreferenceKeys.themeMode, theme.name);
-
-  @override
-  Future<Result<void>> saveOcrScript(OcrScript script) =>
-      _preferences.writeString(PreferenceKeys.ocrLanguage, script.languageTag);
 
   @override
   Future<Result<void>> savePdfQuality(PdfQuality quality) =>

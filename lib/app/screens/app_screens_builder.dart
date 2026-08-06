@@ -8,7 +8,6 @@
 library;
 
 import 'package:doc_scanly/app/creation_module.dart';
-import 'package:doc_scanly/app/document_creation_module.dart';
 import 'package:doc_scanly/app/import_module.dart';
 import 'package:doc_scanly/app/library_module.dart';
 import 'package:doc_scanly/app/pdf_editing_module.dart';
@@ -70,7 +69,6 @@ import 'package:flutter/material.dart';
 ///   thing that makes a saved or imported document appear.
 AppScreens buildAppScreens({
   required LibraryModule library,
-  required DocumentCreationModule creation,
   required CreationModule creationFlow,
   required ImportModule importing,
   required SharingModule sharing,
@@ -118,7 +116,6 @@ AppScreens buildAppScreens({
 
   final viewerScreens = buildViewerScreens(
     library: library,
-    creation: creation,
     sharing: sharing,
     editing: editing,
     documentFiles: documentFiles,

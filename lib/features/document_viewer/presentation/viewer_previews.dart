@@ -11,7 +11,6 @@ import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/previews/fakes/fake_cubit.dart';
@@ -98,19 +97,6 @@ class _InertDocuments implements DocumentReader {
       const Result<List<DocumentPage>>.success([]);
 }
 
-/// A text source that finds nothing.
-class _InertText implements OcrTextSource {
-  const _InertText();
-
-  @override
-  Future<Result<RecognisedText?>> textForPage(PageId pageId) async =>
-      const Result<RecognisedText?>.success(null);
-
-  @override
-  Future<Result<String>> textForDocument(DocumentId documentId) async =>
-      const Result<String>.success('');
-}
-
 /// A [ViewerCubit] frozen at a chosen state.
 class _PreviewViewerCubit extends ViewerCubit with SeededCubit<ViewerState> {
   _PreviewViewerCubit(ViewerState state)
@@ -123,7 +109,6 @@ class _PreviewViewerCubit extends ViewerCubit with SeededCubit<ViewerState> {
           PublicStoreDocumentFileResolver(InMemoryPublicFileStore()),
         ),
         const RememberDocumentPassword(_InertSecrets()),
-        const LoadViewerText(_InertText()),
       ) {
     seed(state);
   }
@@ -140,14 +125,12 @@ Widget _viewer(ViewerState state) => BlocProvider<ViewerCubit>(
 );
 
 /// A document open at page one.
-ViewerState _open({int page = 1, String text = ''}) =>
-    const ViewerState.initial().copyWith(
-      status: ViewerStatus.ready,
-      document: _document,
-      pageCount: 12,
-      page: page,
-      recognisedText: text,
-    );
+ViewerState _open({int page = 1}) => const ViewerState.initial().copyWith(
+  status: ViewerStatus.ready,
+  document: _document,
+  pageCount: 12,
+  page: page,
+);
 
 // ---------------------------------------------------------------------------
 // Viewer screen
@@ -211,16 +194,9 @@ Widget viewerSinglePage() => _viewer(
   ),
 );
 
-/// A document with a great deal of recognised text.
+/// A document with a long title.
 @Preview(name: 'Viewer — long content', group: 'Viewer', theme: appPreviewTheme)
-Widget viewerLongContent() => _viewer(
-  _open(
-    text: [
-      for (var line = 0; line < 80; line++)
-        'Line $line — the quick brown fox jumps over the lazy dog.',
-    ].join('\n'),
-  ),
-);
+Widget viewerLongContent() => _viewer(_open());
 
 /// The viewer on a phone, light.
 @Preview(
@@ -242,7 +218,7 @@ Widget viewerPhoneLight() => _viewer(_open());
 )
 Widget viewerPhoneDark() => _viewer(_open());
 
-/// The viewer on a tablet, where the recognised text sits beside the page.
+/// The viewer on a tablet.
 @Preview(
   name: 'Viewer — tablet, light',
   group: 'Viewer',
@@ -250,8 +226,7 @@ Widget viewerPhoneDark() => _viewer(_open());
   brightness: Brightness.light,
   theme: appPreviewTheme,
 )
-Widget viewerTabletLight() =>
-    _viewer(_open(text: 'INVOICE\nAcme Limited\nTotal due: 240.00'));
+Widget viewerTabletLight() => _viewer(_open());
 
 /// The viewer on a tablet, dark.
 @Preview(
@@ -261,5 +236,4 @@ Widget viewerTabletLight() =>
   brightness: Brightness.dark,
   theme: appPreviewTheme,
 )
-Widget viewerTabletDark() =>
-    _viewer(_open(text: 'INVOICE\nAcme Limited\nTotal due: 240.00'));
+Widget viewerTabletDark() => _viewer(_open());

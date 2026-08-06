@@ -7,7 +7,6 @@ import 'package:doc_scanly/core/contracts/contracts.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/isolates/background_worker.dart';
@@ -31,7 +30,6 @@ final _reader = _InertReader();
 final _share = FakeShareRepository();
 final _printer = FakePrintRepository();
 final _picker = FakeExportDestinationPicker();
-final _text = _InertText();
 
 Directory _staging() => Directory.systemTemp;
 
@@ -59,16 +57,6 @@ class _InertReader implements DocumentReader {
 }
 
 /// A text source with nothing in it.
-class _InertText implements OcrTextSource {
-  @override
-  Future<Result<RecognisedText?>> textForPage(PageId pageId) async =>
-      const Result<RecognisedText?>.success(null);
-
-  @override
-  Future<Result<String>> textForDocument(DocumentId documentId) async =>
-      const Result<String>.success('');
-}
-
 /// A Cubit frozen at a chosen state that records what was asked of it.
 ///
 /// The sheet's job is to offer the right controls and route a tap to the right
@@ -87,7 +75,6 @@ class _StubCubit extends ShareCubit {
           _staging,
           _neverRendered,
         ),
-        ShareExtractedText(_reader, _text, _share),
         PrintDocument(_reader, _printer, testFiles),
         ExportDocument(_reader, _picker, testFiles),
       );
@@ -105,9 +92,6 @@ class _StubCubit extends ShareCubit {
   @override
   Future<void> shareImages({List<PageId> pageIds = const []}) async =>
       calls.add('images');
-
-  @override
-  Future<void> shareText() async => calls.add('text');
 
   @override
   Future<void> printDocument() async => calls.add('print');
@@ -159,11 +143,7 @@ void main() {
     return cubit;
   }
 
-  const withText = ShareState.initial(
-    title: 'Invoice',
-    pageCount: 3,
-    canShareText: true,
-  );
+  const withText = ShareState.initial(title: 'Invoice', pageCount: 3);
   const withoutText = ShareState.initial(title: 'Invoice', pageCount: 3);
 
   group('options', () {

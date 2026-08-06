@@ -40,28 +40,6 @@ void main() {
     });
   });
 
-  group('canShareText', () {
-    test('is true when text exists despite stale document metadata', () {
-      expect(ShareRules.canShareText(doc(), 'anything'), isTrue);
-    });
-
-    test('is false when the recognised text is blank', () {
-      // The record can say text exists while the pages recognised nothing
-      // legible; the control must still be disabled.
-      expect(
-        ShareRules.canShareText(doc(hasRecognisedText: true), '   \n  '),
-        isFalse,
-      );
-    });
-
-    test('is true when there is text to share', () {
-      expect(
-        ShareRules.canShareText(doc(hasRecognisedText: true), 'Acme'),
-        isTrue,
-      );
-    });
-  });
-
   group('inPageOrder', () {
     test('sorts a tap-ordered selection into page order', () {
       final ordered = ShareRules.inPageOrder([page(2), page(0), page(1)]);
@@ -107,10 +85,6 @@ void main() {
 
       expect(names, ['Scan_002.jpg', 'Scan_010.jpg']);
       expect(names.first.compareTo(names.last), lessThan(0));
-    });
-
-    test('text takes the title with a text extension', () {
-      expect(ShareRules.textFileName('Invoice'), 'Invoice.txt');
     });
   });
 
@@ -165,17 +139,6 @@ void main() {
           title: 'Invoice',
         ),
         endsWith('to device storage'),
-      );
-    });
-
-    test('names the text format', () {
-      expect(
-        ShareRules.optionSemanticsLabel(
-          ShareAction.share,
-          ShareFormat.text,
-          title: 'Invoice',
-        ),
-        contains('recognised text'),
       );
     });
   });

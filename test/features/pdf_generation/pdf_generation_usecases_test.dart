@@ -23,13 +23,6 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'pdf_test_support.dart';
 
-/// A recognition step that does nothing.
-///
-/// The sink runs recognition before composing so the text layer is in the store
-/// by the time the composer reads it; these tests are about naming and
-/// ordering, not about OCR.
-Future<void> _noRecognition(List<PageRef> pages, DocumentId documentId) async {}
-
 void main() {
   late FakePdfComposer composer;
   late RecordingDocumentWriter writer;
@@ -402,8 +395,6 @@ void main() {
           StubDocumentReader(),
         ),
         () => NamingPattern.dateOnly,
-        _noRecognition,
-        SequentialIdGenerator(prefix: 'doc'),
       );
 
       final result = await sink.createDocument(bundle());
@@ -419,8 +410,6 @@ void main() {
           StubDocumentReader(),
         ),
         () => NamingPattern.dateOnly,
-        _noRecognition,
-        SequentialIdGenerator(prefix: 'doc'),
       );
 
       final result = await sink.createDocument(bundle(), title: 'Receipts');
@@ -436,8 +425,6 @@ void main() {
           StubDocumentReader(),
         ),
         () => NamingPattern.dateOnly,
-        _noRecognition,
-        SequentialIdGenerator(prefix: 'doc'),
       );
 
       final result = await sink.createDocument(

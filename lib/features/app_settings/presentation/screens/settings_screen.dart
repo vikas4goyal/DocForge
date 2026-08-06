@@ -107,17 +107,6 @@ class SettingsScreen extends StatelessWidget {
           labelFor: (choice) => choice.label,
           onSelected: cubit.setTheme,
         ),
-        SettingsValueTile(
-          key: SettingsKeys.ocrLanguage,
-          title: 'Recognition language',
-          value: settings.ocrScript.label,
-          onTap: () => Navigator.of(context).push<void>(
-            SettingsDetailRoutes.recognitionLanguage(
-              value: settings.ocrScript,
-              onSelected: cubit.setOcrScript,
-            ),
-          ),
-        ),
         SettingsChoiceTile<PdfQuality>(
           key: SettingsKeys.pdfQuality,
           title: 'PDF quality',

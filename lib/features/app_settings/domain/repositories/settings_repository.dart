@@ -22,9 +22,6 @@ abstract interface class SettingsRepository {
   /// Stores the theme choice.
   Future<Result<void>> saveTheme(AppThemeChoice theme);
 
-  /// Stores the recognition script.
-  Future<Result<void>> saveOcrScript(OcrScript script);
-
   /// Stores the PDF quality preset.
   Future<Result<void>> savePdfQuality(PdfQuality quality);
 
