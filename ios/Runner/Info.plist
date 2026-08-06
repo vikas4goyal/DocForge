@@ -35,6 +35,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- The app does not implement non-exempt encryption. Encryption supplied
+	     by Apple platforms, such as HTTPS and Keychain protection, is exempt. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<!-- Publishes the registered iCloud Documents container as one DocScanly
 	     folder in Files. The container's Documents directory is the library
 	     root, so no second nested DocScanly directory is created. -->
