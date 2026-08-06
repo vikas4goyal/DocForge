@@ -19,6 +19,7 @@ import 'package:doc_scanly/features/document_library/application/usecases/docume
 import 'package:doc_scanly/features/document_library/application/usecases/document_queries.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/document_thumbnails.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/folder_usecases.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/library_display_density_usecases.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/library_folder_usecases.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/reconcile_library.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/trash_usecases.dart';
@@ -32,6 +33,7 @@ import 'package:doc_scanly/features/document_library/infrastructure/document_tit
 import 'package:doc_scanly/features/document_library/infrastructure/library_contracts_impl.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/library_storage_migration.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/preference_library_display_density_repository.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/repositories/isar_library_repositories.dart';
 import 'package:doc_scanly/features/document_search/domain/repositories/search_repository.dart';
 import 'package:doc_scanly/features/document_search/infrastructure/repositories/indexed_search_repository.dart';
@@ -86,6 +88,8 @@ class LibraryModule {
     required this.purgeTrashEntry,
     required this.emptyTrash,
     required this.expireTrash,
+    required this.loadDisplayDensity,
+    required this.saveDisplayDensity,
   });
 
   /// Loads a page of documents.
@@ -192,6 +196,12 @@ class LibraryModule {
 
   /// Purges entries at or beyond the retention boundary.
   final ExpireTrash expireTrash;
+
+  /// Loads the persisted Dashboard thumbnail density.
+  final LoadLibraryDisplayDensity loadDisplayDensity;
+
+  /// Saves the Dashboard thumbnail density.
+  final SaveLibraryDisplayDensity saveDisplayDensity;
 
   /// Brings the index back into step with the library folder.
   ///
@@ -320,6 +330,7 @@ LibraryModule buildLibraryModuleOver({
     thumbnailRenderer,
     pageTextExtractor,
   );
+  final displayDensity = PreferenceLibraryDisplayDensityRepository(preferences);
 
   final move = MoveDocument(documents, clock, store, folders);
   final purge = PurgeDocument(documents, pages, store, derived, secureStorage);
@@ -382,6 +393,8 @@ LibraryModule buildLibraryModuleOver({
     purgeTrashEntry: purgeTrash,
     emptyTrash: EmptyTrash(trash, purgeTrash),
     expireTrash: ExpireTrash(trash, purgeTrash, clock),
+    loadDisplayDensity: LoadLibraryDisplayDensity(displayDensity),
+    saveDisplayDensity: SaveLibraryDisplayDensity(displayDensity),
     reconcile: ReconcileLibrary(
       store: store,
       documents: documents,

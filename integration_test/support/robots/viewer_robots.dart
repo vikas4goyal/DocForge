@@ -6,6 +6,7 @@ import 'package:doc_scanly/features/document_sharing/presentation/share_keys.dar
 import 'package:doc_scanly/features/document_viewer/presentation/viewer_keys.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/pdf_edit_keys.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 import '../pump.dart';
 import 'robot.dart';
@@ -71,15 +72,33 @@ class ViewerRobot extends Robot {
     await tester.pump(const Duration(milliseconds: 300));
   });
 
-  /// Opens the PDF editor.
-  Future<void> openEditor() => step('opening the PDF editor', () async {
+  /// Opens the focused compression workflow.
+  Future<void> openCompress() =>
+      _openOperation(ViewerKeys.compressButton, 'opening PDF compression');
+
+  /// Opens the focused split and output-naming workflow.
+  Future<void> openSplit() => step('opening PDF split', () async {
     await waitUntilVisible();
-    if (has(ViewerKeys.actionsMenu)) {
-      await tap(ViewerKeys.actionsMenu);
-    }
-    await tap(ViewerKeys.editButton);
-    await waitFor(PdfEditKeys.screen);
+    await tap(ViewerKeys.actionsMenu);
+    await tap(ViewerKeys.splitButton);
+    await waitFor(PdfEditKeys.pageNamingScreen);
   });
+
+  /// Opens the focused watermark workflow.
+  Future<void> openWatermark() =>
+      _openOperation(ViewerKeys.watermarkButton, 'opening watermark settings');
+
+  /// Opens the focused password workflow.
+  Future<void> openPassword() =>
+      _openOperation(ViewerKeys.passwordButton, 'opening password settings');
+
+  Future<void> _openOperation(Key key, String description) =>
+      step(description, () async {
+        await waitUntilVisible();
+        await tap(ViewerKeys.actionsMenu);
+        await tap(key);
+        await waitFor(PdfEditKeys.screen);
+      });
 
   /// Returns to whichever screen opened the viewer.
   Future<void> goBack() => step('leaving the viewer', () async {
@@ -109,6 +128,30 @@ class PdfEditRobot extends Robot {
     );
     await waitFor(PdfEditKeys.pageGrid);
   });
+
+  /// Waits for a focused whole-document operation reached from Viewer.
+  Future<void> waitUntilFocused() =>
+      step('loading the focused PDF operation', () async {
+        await waitUntilVisible();
+        await waitUntilGone(
+          PdfEditKeys.progress,
+          timeout: const Duration(seconds: 60),
+        );
+        await pumpUntilAnyOf(tester, [
+          PdfEditKeys.operationSheet,
+          PdfEditKeys.watermarkTextField,
+          PdfEditKeys.protectPasswordField,
+          PdfEditKeys.removePasswordButton,
+        ]);
+      });
+
+  /// Waits for the dedicated split naming screen.
+  Future<void> waitUntilSplitNaming() =>
+      step('loading split output naming', () async {
+        await waitFor(PdfEditKeys.pageNamingScreen);
+        await waitFor(PdfEditKeys.splitFirstNameField);
+        await waitFor(PdfEditKeys.splitSecondNameField);
+      });
 
   /// Selects the page at [index], zero-based.
   Future<void> selectPage(int index) =>
@@ -154,7 +197,7 @@ class PdfEditRobot extends Robot {
 
   /// Closes the editor and returns to the viewer.
   Future<void> close() => step('closing the editor', () async {
-    await tester.pageBack();
+    await tester.binding.handlePopRoute();
     await tester.pump();
   });
 }
@@ -187,13 +230,6 @@ class ShareRobot extends Robot {
     await _waitUntilHandedOver();
   });
 
-  /// Shares the recognised text.
-  Future<void> shareText() => step('sharing the recognised text', () async {
-    await waitUntilVisible();
-    await tap(ShareKeys.textButton);
-    await _waitUntilHandedOver();
-  });
-
   /// Prints through the sheet.
   Future<void> print() => step('printing from the sheet', () async {
     await waitUntilVisible();
@@ -208,8 +244,8 @@ class ShareRobot extends Robot {
     await _waitUntilHandedOver();
   });
 
-  /// Whether the sheet is telling the user there is no recognised text.
-  bool get offersNoText => has(ShareKeys.noTextMessage);
+  /// Whether the removed extracted-text action has accidentally returned.
+  bool get offersExtractedText => tester.any(find.text('Share extracted text'));
 
   /// Waits for the sheet to close, which is what a completed hand-off looks
   /// like: the sheet dismisses once the system has the content, rather than

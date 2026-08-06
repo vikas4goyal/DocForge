@@ -7,6 +7,10 @@ Every page-derived and whole-document editing operation SHALL expose the inputs 
 - **WHEN** the user starts split, merge, compress, watermark, protect, page extract, or another derived operation
 - **THEN** `Key('pdf_edit_operation_sheet')` presents required inputs and effect, `Key('pdf_edit_review')` summarizes the affected source and output behavior, and no mutation occurs before `Key('pdf_edit_confirm')` is activated
 
+#### Scenario: Direct operation entry
+- **WHEN** the user chooses Compress, Split, Watermark, or Set/Remove Password from the Viewer overflow menu
+- **THEN** the corresponding focused input sheet or screen opens directly and initializes the common workflow without first opening the generic PDF editor screen
+
 #### Scenario: Operation cancellation
 - **WHEN** the user activates `Key('pdf_edit_cancel')` before confirmation
 - **THEN** the workflow closes without changing the source or creating an output
@@ -17,7 +21,7 @@ Every page-derived and whole-document editing operation SHALL expose the inputs 
 
 #### Scenario: Split review and result
 - **WHEN** the user starts Split
-- **THEN** the workflow requires a valid split boundary and two collision-safe output names before confirmation
+- **THEN** the workflow requires a valid split boundary and two collision-safe output names before confirmation, with separate PDF 1/PDF 2 section headings that do not collide with redundant floating field labels
 - **AND** success displays `Key('pdf_edit_result')` listing both new documents, allows either output to be opened, and allows Done to return to Dashboard while the source remains unchanged
 
 #### Scenario: Merge selection and ordering
@@ -30,7 +34,7 @@ Every page-derived and whole-document editing operation SHALL expose the inputs 
 
 #### Scenario: Watermark input review
 - **WHEN** the user starts Watermark
-- **THEN** the user sees a preview and reviews the text and visual settings before confirmation, and success visibly refreshes the current document once
+- **THEN** the user sees the entered watermark over the current document's bounded first-page thumbnail, reviews the text and visual settings before confirmation, and success visibly refreshes the current document once
 
 #### Scenario: Protection input review
 - **WHEN** the user starts Protect or Remove Password
@@ -70,4 +74,3 @@ The PDF editor SHALL preserve meaningful title space and SHALL expose only appli
 #### Scenario: Editor presentation variants
 - **WHEN** the editor is used offline in light or dark mode on a phone or tablet at a supported large text scale
 - **THEN** the title, page selection, menus, workflows, progress, and results remain scrollable, accessible, unclipped, and require no network request
-

@@ -1,11 +1,23 @@
 ## ADDED Requirements
 
 ### Requirement: Files-inspired adaptive library grid and search
-Dashboard and open-folder browsing SHALL present folders and documents in a clean, lazy, stable-geometry grid with a rounded platform-adaptive search control. Normal compact phone widths SHALL use exactly two columns; wider iPad and tablet widths SHALL add columns according to available width and a documented minimum readable tile extent. The presentation SHALL use DocScanly theme tokens and original assets while following a restrained native information hierarchy.
+Dashboard and open-folder browsing SHALL present folders and documents in a clean, lazy, stable-geometry grid with a rounded platform-adaptive search control. A persistent Large/Small control SHALL let the user preserve the current two-column compact layout or choose a denser three-column compact layout; wider iPad and tablet widths SHALL add columns according to the selected density, available width, and documented minimum readable tile extents. The presentation SHALL use DocScanly theme tokens and original assets while following a restrained native information hierarchy.
 
 #### Scenario: Two-column phone grid
 - **WHEN** Dashboard or an open folder is displayed at a normal compact phone width and supported standard text scale
 - **THEN** `Key('dashboard_content_grid')` presents exactly two columns with consistent margins, gaps, and tile geometry
+
+#### Scenario: Choose Small display density
+- **WHEN** the user chooses Small from `Key('dashboard_display_size_menu')`
+- **THEN** `Key('dashboard_content_grid')` presents three stable columns at compact phone width and proportionally more columns at wider widths, with thumbnails approximately 40–50% of Large area
+
+#### Scenario: Choose Large display density
+- **WHEN** the user chooses Large from `Key('dashboard_display_size_menu')`
+- **THEN** the existing two-column compact layout is restored without changing document order, selection, or search state
+
+#### Scenario: Display density persists
+- **WHEN** the user leaves and later reopens Dashboard after choosing Small or Large
+- **THEN** the chosen density is restored and both modes retain two-line names, accessible semantics, and minimum touch targets
 
 #### Scenario: Adaptive iPad and tablet grid
 - **WHEN** the same content is displayed at a wider iPad or Android tablet width, including split-view widths

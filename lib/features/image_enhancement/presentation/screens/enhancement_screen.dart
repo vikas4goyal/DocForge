@@ -40,7 +40,10 @@ class EnhancementScreen extends StatelessWidget {
         return Scaffold(
           key: EnhanceKeys.screen,
           appBar: AppBar(
-            title: const Text('Enhance'),
+            title: Text(
+              'Enhance',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             // Undo and Reset live here rather than under the controls. Below a
             // column of filters and sliders they sat at the very bottom of the
             // screen — the furthest point from the thing being corrected, and

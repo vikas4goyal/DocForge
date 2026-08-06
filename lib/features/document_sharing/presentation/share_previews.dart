@@ -257,24 +257,6 @@ Widget optionTileDefault() => ShareOptionTile(
   onTap: () {},
 );
 
-/// A disabled option — the state the text control takes with no text.
-@Preview(
-  name: 'ShareOptionTile — disabled',
-  group: 'Sharing',
-  theme: appPreviewTheme,
-  wrapper: previewSurface,
-)
-Widget optionTileDisabled() => ShareOptionTile(
-  label: 'Share extracted text',
-  icon: Icons.text_snippet_outlined,
-  semanticsLabel: ShareRules.optionSemanticsLabel(
-    ShareAction.share,
-    ShareFormat.text,
-    title: 'Invoice 2026',
-  ),
-  subtitle: ShareRules.noTextMessage,
-);
-
 /// An option whose label and subtitle both have to wrap.
 @Preview(
   name: 'ShareOptionTile — long content',
@@ -294,35 +276,3 @@ Widget optionTileLongContent() => ShareOptionTile(
   subtitle: 'One JPEG per page, at up to 2400 pixels on the longest edge',
   onTap: () {},
 );
-
-// ---------------------------------------------------------------------------
-// No recognised text notice
-// ---------------------------------------------------------------------------
-
-/// The notice with its offer to run recognition.
-@Preview(
-  name: 'NoRecognisedTextNotice — default',
-  group: 'Sharing',
-  theme: appPreviewTheme,
-  wrapper: previewSurface,
-)
-Widget noTextNoticeDefault() => NoRecognisedTextNotice(onRunRecognition: () {});
-
-/// The notice with nowhere to send the user — its empty state.
-@Preview(
-  name: 'NoRecognisedTextNotice — empty',
-  group: 'Sharing',
-  theme: appPreviewTheme,
-  wrapper: previewSurface,
-)
-Widget noTextNoticeEmpty() => const NoRecognisedTextNotice();
-
-/// The notice in a narrow column, where its message wraps.
-@Preview(
-  name: 'NoRecognisedTextNotice — long content',
-  group: 'Sharing',
-  theme: appPreviewTheme,
-  wrapper: previewNarrow,
-)
-Widget noTextNoticeLongContent() =>
-    NoRecognisedTextNotice(onRunRecognition: () {});

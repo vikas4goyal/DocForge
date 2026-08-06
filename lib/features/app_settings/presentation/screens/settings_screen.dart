@@ -92,6 +92,9 @@ class SettingsScreen extends StatelessWidget {
     final settings = state.settings;
 
     return ListView(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.paddingOf(context).bottom + 24,
+      ),
       children: [
         if (state.status == SettingsStatus.failure)
           _SaveFailure(state: state, onDismiss: cubit.dismissError),

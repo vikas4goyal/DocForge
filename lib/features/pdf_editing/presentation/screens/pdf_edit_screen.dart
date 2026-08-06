@@ -26,6 +26,7 @@ class PdfEditScreen extends StatelessWidget {
     this.onDerived,
     this.onDone,
     this.mergeCandidates = const [],
+    this.initialOperation,
   });
 
   /// Builds a page's thumbnail.
@@ -43,6 +44,9 @@ class PdfEditScreen extends StatelessWidget {
   /// Other documents that can be merged into this one.
   final List<Document> mergeCandidates;
 
+  /// Opens a single document-level workflow without showing the editor hub.
+  final PdfEditOperation? initialOperation;
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<PdfEditCubit, PdfEditState>(
@@ -55,21 +59,28 @@ class PdfEditScreen extends StatelessWidget {
       builder: (context, state) {
         final cubit = context.read<PdfEditCubit>();
 
+        if (initialOperation == PdfEditOperation.split &&
+            state.status == PdfEditStatus.ready) {
+          return _FocusedSplit(state: state, onClose: onClose);
+        }
+
         return Scaffold(
           key: PdfEditKeys.screen,
           appBar: AppBar(
             title: Semantics(
-              label: state.title,
+              label: initialOperation?.label ?? state.title,
               child: Text(
-                state.title,
+                initialOperation?.label ?? state.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-            leading: BackButton(onPressed: onClose),
+            leading: initialOperation == null
+                ? BackButton(onPressed: onClose)
+                : CloseButton(onPressed: onClose),
             actions: [
-              if (state.hasSelection)
+              if (initialOperation == null && state.hasSelection)
                 if (MediaQuery.sizeOf(context).width < 600)
                   PopupMenuButton<PdfEditOperation>(
                     key: PdfEditKeys.actionsMenu,
@@ -165,6 +176,7 @@ class PdfEditScreen extends StatelessWidget {
               state: state,
               thumbnailBuilder: thumbnailBuilder,
               mergeCandidates: mergeCandidates,
+              initialOperation: initialOperation,
             ),
           },
         );
@@ -292,15 +304,31 @@ class _Editor extends StatelessWidget {
     required this.state,
     required this.thumbnailBuilder,
     required this.mergeCandidates,
+    required this.initialOperation,
   });
 
   final PdfEditState state;
   final PageThumbnailBuilder thumbnailBuilder;
   final List<Document> mergeCandidates;
+  final PdfEditOperation? initialOperation;
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<PdfEditCubit>();
+
+    if (initialOperation case final operation?) {
+      return switch (operation) {
+        PdfEditOperation.compress => _FocusedCompress(state: state),
+        PdfEditOperation.split => const SizedBox.shrink(),
+        PdfEditOperation.watermark => _WatermarkTool(
+          state: state,
+          thumbnailBuilder: thumbnailBuilder,
+        ),
+        PdfEditOperation.protect ||
+        PdfEditOperation.removePassword => _PasswordTool(state: state),
+        _ => const SizedBox.shrink(),
+      };
+    }
 
     return ResponsiveLayout(
       compact: (context) => _content(context, cubit, columns: 3),
@@ -357,19 +385,224 @@ class _Editor extends StatelessWidget {
           ),
         ),
         SliverToBoxAdapter(
-          child: _DocumentTools(state: state, mergeCandidates: mergeCandidates),
+          child: _DocumentTools(
+            state: state,
+            mergeCandidates: mergeCandidates,
+            thumbnailBuilder: thumbnailBuilder,
+          ),
         ),
       ],
     );
   }
 }
 
+/// A focused compression workflow reached directly from the viewer menu.
+class _FocusedCompress extends StatelessWidget {
+  const _FocusedCompress({required this.state});
+
+  final PdfEditState state;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      key: PdfEditKeys.operationSheet,
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(
+          'Make this PDF smaller',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          'DocScanly will create a smaller version when compression helps. '
+          'The original is kept when the result would not be smaller.',
+        ),
+        if (state.compression case final compression?) ...[
+          const SizedBox(height: 16),
+          Text(compression.message),
+        ],
+        const SizedBox(height: 24),
+        FilledButton.icon(
+          key: PdfEditKeys.compressButton,
+          icon: const Icon(Icons.compress),
+          label: const Text('Compress PDF'),
+          onPressed: () async {
+            final confirmed = await _reviewOperation(
+              context,
+              draft: const PdfOperationDraft.compress(),
+              title: 'Compress this PDF?',
+              summary:
+                  'A smaller PDF will replace this file only when compression is beneficial.',
+              confirmLabel: 'Compress',
+            );
+            if (confirmed && context.mounted) {
+              await context.read<PdfEditCubit>().compress();
+            }
+          },
+        ),
+      ],
+    );
+  }
+}
+
+/// A dedicated split form with both output names visible before confirmation.
+class _FocusedSplit extends StatefulWidget {
+  const _FocusedSplit({required this.state, required this.onClose});
+
+  final PdfEditState state;
+  final VoidCallback onClose;
+
+  @override
+  State<_FocusedSplit> createState() => _FocusedSplitState();
+}
+
+class _FocusedSplitState extends State<_FocusedSplit> {
+  late final TextEditingController _boundary;
+  late final TextEditingController _first;
+  late final TextEditingController _second;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final proposed = PdfEditRules.splitTitles(widget.state.title);
+    _boundary = TextEditingController(text: '${widget.state.pageCount ~/ 2}');
+    _first = TextEditingController(text: proposed.first);
+    _second = TextEditingController(text: proposed.second);
+  }
+
+  @override
+  void dispose() {
+    _boundary.dispose();
+    _first.dispose();
+    _second.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pageCount = widget.state.pageCount;
+    final boundary = int.tryParse(_boundary.text) ?? 0;
+    final validBoundary = PdfEditRules.canSplit(boundary, pageCount: pageCount);
+
+    return Scaffold(
+      key: PdfEditKeys.pageNamingScreen,
+      appBar: AppBar(
+        leading: CloseButton(onPressed: widget.onClose),
+        title: Text(
+          'Split PDF',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        actions: [
+          IconButton(
+            key: PdfEditKeys.splitConfirmButton,
+            tooltip: 'Review and create',
+            onPressed: pageCount > 1 ? _review : null,
+            icon: const Icon(Icons.check),
+          ),
+        ],
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+        children: [
+          Text(
+            'Choose where to split and name both PDFs.',
+            style: Theme.of(context).textTheme.bodyLarge,
+          ),
+          const SizedBox(height: 20),
+          TextField(
+            key: PdfEditKeys.splitBoundaryField,
+            controller: _boundary,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              labelText: 'Split after page',
+              helperText: pageCount > 1 ? 'Choose 1 to ${pageCount - 1}' : null,
+            ),
+            onChanged: (_) => setState(() => _error = null),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            validBoundary ? 'PDF 1 · Pages 1–$boundary' : 'PDF 1',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            key: PdfEditKeys.splitFirstNameField,
+            controller: _first,
+            decoration: const InputDecoration(hintText: 'Enter a name'),
+            onChanged: (_) => setState(() => _error = null),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            validBoundary
+                ? 'PDF 2 · Pages ${boundary + 1}–$pageCount'
+                : 'PDF 2',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            key: PdfEditKeys.splitSecondNameField,
+            controller: _second,
+            decoration: const InputDecoration(hintText: 'Enter a name'),
+            onChanged: (_) => setState(() => _error = null),
+          ),
+          if (_error case final message?) ...[
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ],
+          const SizedBox(height: 28),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _review() async {
+    final draft = PdfOperationDraft.split(
+      boundary: int.tryParse(_boundary.text) ?? 0,
+      firstTitle: _first.text.trim(),
+      secondTitle: _second.text.trim(),
+    );
+    final message = PdfOperationValidation.messageFor(
+      draft,
+      pageCount: widget.state.pageCount,
+    );
+    if (message != null) {
+      setState(() => _error = message);
+      return;
+    }
+
+    final split = draft as PdfSplitDraft;
+    final confirmed = await _reviewOperation(
+      context,
+      draft: split,
+      title: 'Create these two PDFs?',
+      summary:
+          'Pages 1–${split.boundary} become “${split.firstTitle}”; pages ${split.boundary + 1}–${widget.state.pageCount} become “${split.secondTitle}”. The source stays unchanged.',
+      confirmLabel: 'Create two PDFs',
+    );
+    if (!confirmed || !mounted) return;
+
+    await context.read<PdfEditCubit>().split(
+      split.boundary,
+      outputTitles: (first: split.firstTitle, second: split.secondTitle),
+    );
+  }
+}
+
 /// The tools that act on the whole document rather than on selected pages.
 class _DocumentTools extends StatelessWidget {
-  const _DocumentTools({required this.state, required this.mergeCandidates});
+  const _DocumentTools({
+    required this.state,
+    required this.mergeCandidates,
+    required this.thumbnailBuilder,
+  });
 
   final PdfEditState state;
   final List<Document> mergeCandidates;
+  final PageThumbnailBuilder thumbnailBuilder;
 
   @override
   Widget build(BuildContext context) {
@@ -468,7 +701,7 @@ class _DocumentTools extends StatelessWidget {
             // use case, which passes it straight through.
             onReorder: (_, _) {},
           ),
-        _WatermarkTool(state: state),
+        _WatermarkTool(state: state, thumbnailBuilder: thumbnailBuilder),
         _PasswordTool(state: state),
         if (metadata != null) PdfMetadataView(metadata: metadata),
         const SizedBox(height: 24),
@@ -479,9 +712,10 @@ class _DocumentTools extends StatelessWidget {
 
 /// The watermark field, its preview and its confirm control.
 class _WatermarkTool extends StatefulWidget {
-  const _WatermarkTool({required this.state});
+  const _WatermarkTool({required this.state, required this.thumbnailBuilder});
 
   final PdfEditState state;
+  final PageThumbnailBuilder thumbnailBuilder;
 
   @override
   State<_WatermarkTool> createState() => _WatermarkToolState();
@@ -512,7 +746,10 @@ class _WatermarkToolState extends State<_WatermarkTool> {
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 8),
-          WatermarkPreview(text: _controller.text),
+          WatermarkPreview(
+            text: _controller.text,
+            page: widget.thumbnailBuilder(context, 0),
+          ),
           const SizedBox(height: 8),
           FilledButton(
             key: PdfEditKeys.watermarkConfirmButton,

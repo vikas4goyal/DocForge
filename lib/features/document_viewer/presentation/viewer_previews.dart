@@ -135,8 +135,7 @@ Widget _viewer(ViewerState state) => BlocProvider<ViewerCubit>(
     surfaceBuilder: _previewSurface,
     onBack: () {},
     onShare: () {},
-    onPrint: () {},
-    onEdit: () {},
+    onAction: (_) {},
   ),
 );
 

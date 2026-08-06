@@ -69,14 +69,14 @@
 
 - [x] 7.1 Route share-images through page access with ordered bounded rendering and handoff-safe temporary-file cleanup for both stored scans and imported PDFs.
 - [x] 7.2 Add Tier-1 share-image tests for selections/order, imported PDFs without page rows, protected pages, render failure stages, handoff lifetime, cleanup, and cancellation.
-- [x] 7.3 Route Share Text through persisted/embedded/OCR text availability and extraction, exposing progress and truthful no-text/retry outcomes instead of relying only on document summary metadata.
+- [x] 7.3 Route text availability through persisted/embedded/OCR extraction, exposing progress and truthful no-text/retry outcomes instead of relying only on document summary metadata.
 - [x] 7.4 Add Tier-1 share-text tests for stored text, stale flags, embedded text, OCR offer/fallback, blank results, protected PDFs, ordered output, and failures.
 - [x] 7.5 Replace path-returning export behavior with the documented platform-owned export repository/result contract and implement deterministic Android/iOS adapters for completion, cancellation, collision, provider handoff, and stage failure.
 - [x] 7.6 Add Tier-1 export adapter/use-case tests proving exactly-one write, no application `.partial` path beside provider items, cancellation as non-error, collision delegation, cleanup, and stage-specific failures.
 - [x] 7.7 Extend Share Cubit equatable state and UI for preparing, handoff, exporting, completed, cancelled, and failed stages; add `share_export_done` plus updated keys and exact semantics to the share registry.
-- [ ] 7.8 Add `bloc_test` and Tier-2 Share component coverage with real Cubit/use cases for scanned/imported images, stored/embedded/OCR text, export success/cancel/failure, platform differences, progress, long names, dark mode, tablet, and offline use.
+- [ ] 7.8 Add `bloc_test` and Tier-2 Share component coverage with real Cubit/use cases for scanned/imported images, absent extracted-text action, export success/cancel/failure, platform differences, progress, long names, dark mode, tablet, and offline use.
 - [ ] 7.9 Add fixture-backed `@Preview()` entries and phone/tablet light/dark/large-text goldens for Share default/loading/empty/error/long-content, preparation, handoff, export completion, cancellation, and each failure stage.
-- [ ] 7.10 Update the `share` robot and Android/iOS Tier-3 flow to share imported PDF pages as images, extract/share policy text, export successfully, cancel without error, and recover from deterministic provider failure.
+- [ ] 7.10 Update the `share` robot and Android/iOS Tier-3 flow to share imported PDF pages as images, prove extracted text is not offered, export successfully, cancel without error, and recover from deterministic provider failure.
 
 ## 8. Documentation and verification
 
@@ -85,3 +85,16 @@
 - [x] 8.3 Run Tier-1 and Tier-2 tests, golden tests, and coverage verification; keep overall coverage at least 80% and business-logic coverage at least 90%, resolving every regression.
 - [ ] 8.4 Verify share/export, PDF rendering, OCR, and navigation on attached Android and iOS targets, including an iOS document provider and supported large-text settings.
 - [x] 8.5 Run `tool/verify.dart` and report its per-stage result. The change is not done while any stage fails, and a run that reports Tier 3 as SKIPPED (no device attached) does not count as verified.
+
+## 9. Density, camera creation, focused PDF actions, and settings polish
+
+- [x] 9.1 Add a persisted Large/Small library density value, deterministic compact/wide layout policies, `dashboard_display_size_menu` keys/semantics, and Tier-1 tests proving Large preserves the current layout while Small uses a three-column phone grid without losing selection/search state.
+- [x] 9.2 Implement Large/Small Dashboard and open-folder presentation, adaptive iPad/tablet counts, bounded thumbnails, accessible touch targets, and component/golden coverage for both modes.
+- [x] 9.3 Remove automatic camera capture, require the explicit shutter action after a visible live preview, and add camera-flow tests proving no capture occurs on entry.
+- [x] 9.4 Make Enhance Back restore Crop state, make Crop flip preview immediate, enlarge invisible corner/edge hit regions, smooth continuous drag updates, compact confirmation titles, and add widget/component tests for navigation and manipulation.
+- [x] 9.5 Replace the multi-page naming popup with a dedicated scrollable `page_naming_screen`, leading Cancel/close, trailing Done/check, ordered Page sections without overlapping redundant field labels, reviewed collision-safe names, exactly-once creation, and phone/tablet/large-text tests.
+- [x] 9.6 Expose Print, Compress, Split, Watermark, and Set/Remove Password directly from `viewer_actions_menu`, route each to its focused adaptive sheet/screen, preview watermark text over the bounded first-page thumbnail, retain page management only where selection is required, and add navigation/semantics/golden tests proving no generic editor hub appears first.
+- [x] 9.7 Remove Share Extracted Text from the share UI, keys, robots, previews, and goldens while retaining embedded/OCR text infrastructure for search; update sharing tests to prove the option is absent and remaining actions work.
+- [x] 9.8 Make the Settings PDF-quality chooser constrained, safe-area-aware, and scrollable at supported large text scales; add bottom content padding below Privacy Policy above the tab bar/home indicator and cover both fixes with component/golden tests.
+- [x] 9.9 Update camera, browse/view, edit, share, and settings Tier-3 robots/flows for manual shutter, reversible Crop/Enhance, density persistence, direct PDF operation entry, absent Share Text, PDF-quality scrolling, and Settings bottom spacing.
+- [ ] 9.10 Re-run formatting, analysis, layering/platform checks, Tier-1/Tier-2/goldens/coverage, attached Android/iOS flows, and `tool/verify.dart`; resolve every regression before archive.

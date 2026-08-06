@@ -35,6 +35,7 @@ class ScanningModule {
     required this.applyEnhancement,
     required this.renderPage,
     required this.buildPreview,
+    required this.openSettings,
   });
 
   /// Drives the camera.
@@ -64,6 +65,9 @@ class ScanningModule {
   /// tied to the plugin's controller: the screen takes it as a parameter so it
   /// stays testable and previewable without a camera.
   final CameraPreviewBuilder buildPreview;
+
+  /// Opens this application's system settings after permanent denial.
+  final Future<bool> Function() openSettings;
 }
 
 /// Builds the scanning graph over an already-resolved cache [directory].
@@ -119,6 +123,7 @@ ScanningModule buildScanningModule({
         (resolvedScanner is CameraScannerRepository
             ? resolvedScanner.buildPreview
             : _unavailableCameraPreview),
+    openSettings: permissions.openSettings,
   );
 }
 

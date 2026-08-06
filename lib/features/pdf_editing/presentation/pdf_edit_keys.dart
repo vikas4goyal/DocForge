@@ -52,6 +52,9 @@ abstract final class PdfEditKeys {
   /// Name of the second split output.
   static const splitSecondNameField = Key('pdf_split_second_name');
 
+  /// Dedicated screen used to review and name split outputs.
+  static const pageNamingScreen = Key('page_naming_screen');
+
   /// Name reviewed for the merged output.
   static const mergeOutputNameField = Key('pdf_merge_output_name');
 

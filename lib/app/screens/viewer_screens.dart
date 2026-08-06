@@ -27,6 +27,7 @@ import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_rend
 import 'package:doc_scanly/features/document_viewer/presentation/cubit/viewer_cubit.dart';
 import 'package:doc_scanly/features/document_viewer/presentation/screens/viewer_screen.dart';
 import 'package:doc_scanly/features/document_viewer/presentation/viewer_keys.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
 import 'package:flutter/material.dart';
@@ -112,8 +113,44 @@ ViewerScreens buildViewerScreens({
         // Printing goes straight to the system dialogue rather than through the
         // sheet: the viewer's print control names the action exactly, and an
         // intermediate sheet asking "print?" would be a step with one option.
-        onPrint: () => printDocument(context, sharing, id),
-        onEdit: () => openEditor(context, editing, documentFiles, id),
+        onAction: (action) {
+          switch (action) {
+            case ViewerDocumentAction.print:
+              printDocument(context, sharing, id);
+            case ViewerDocumentAction.compress:
+              openEditor(
+                context,
+                editing,
+                documentFiles,
+                id,
+                initialOperation: PdfEditOperation.compress,
+              );
+            case ViewerDocumentAction.split:
+              openEditor(
+                context,
+                editing,
+                documentFiles,
+                id,
+                initialOperation: PdfEditOperation.split,
+              );
+            case ViewerDocumentAction.watermark:
+              openEditor(
+                context,
+                editing,
+                documentFiles,
+                id,
+                initialOperation: PdfEditOperation.watermark,
+              );
+            case ViewerDocumentAction.protection:
+              openEditor(
+                context,
+                editing,
+                documentFiles,
+                id,
+                initialOperation: PdfEditOperation.protect,
+              );
+          }
+        },
       ),
     ),
     documentEdit: (_, id) => PlaceholderScreen('Edit ${id.value}'),
@@ -129,8 +166,9 @@ Future<void> openEditor(
   BuildContext context,
   PdfEditingModule editing,
   DocumentFileResolver documentFiles,
-  DocumentId id,
-) => Navigator.of(context).push<void>(
+  DocumentId id, {
+  PdfEditOperation? initialOperation,
+}) => Navigator.of(context).push<void>(
   MaterialPageRoute(
     builder: (routeContext) => BlocProvider(
       create: (_) => PdfEditCubit(id, editing.useCases, documentFiles)..load(),
@@ -139,6 +177,7 @@ Future<void> openEditor(
           final path = screenContext.watch<PdfEditCubit>().state.filePath;
 
           return PdfEditScreen(
+            initialOperation: initialOperation,
             // The real thumbnail is a rendered PDF page. Supplied here rather
             // than by the screen, because rendering is plugin-backed and a
             // screen that built its own could be neither previewed nor tested.

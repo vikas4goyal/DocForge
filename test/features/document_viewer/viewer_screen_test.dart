@@ -40,13 +40,13 @@ void main() {
   late int backCount;
   late int shareCount;
   late int printCount;
-  late int editCount;
+  late List<ViewerDocumentAction> actions;
 
   setUp(() {
     backCount = 0;
     shareCount = 0;
     printCount = 0;
-    editCount = 0;
+    actions = [];
   });
 
   Future<ViewerCubit> pump(
@@ -73,8 +73,10 @@ void main() {
             surfaceBuilder: fakeSurface,
             onBack: () => backCount++,
             onShare: () => shareCount++,
-            onPrint: () => printCount++,
-            onEdit: () => editCount++,
+            onAction: (action) {
+              actions.add(action);
+              if (action == ViewerDocumentAction.print) printCount++;
+            },
           ),
         ),
       ),
@@ -97,14 +99,25 @@ void main() {
       expect(find.text('1 of 3'), findsOneWidget);
     });
 
-    testWidgets('offers share, print and edit once the document is open', (
+    testWidgets('offers share and focused PDF actions once open', (
       tester,
     ) async {
       await pump(tester);
 
       expect(find.byKey(ViewerKeys.shareButton), findsOneWidget);
-      expect(find.byKey(ViewerKeys.printButton), findsOneWidget);
-      expect(find.byKey(ViewerKeys.editButton), findsOneWidget);
+      expect(find.byKey(ViewerKeys.actionsMenu), findsOneWidget);
+
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      for (final key in [
+        ViewerKeys.printButton,
+        ViewerKeys.compressButton,
+        ViewerKeys.splitButton,
+        ViewerKeys.watermarkButton,
+        ViewerKeys.passwordButton,
+      ]) {
+        expect(find.byKey(key), findsOneWidget);
+      }
     });
 
     testWidgets('shows a loading indicator while opening', (tester) async {
@@ -127,13 +140,21 @@ void main() {
       await pump(tester);
 
       await tester.tap(find.byKey(ViewerKeys.shareButton));
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViewerKeys.printButton));
-      await tester.tap(find.byKey(ViewerKeys.editButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.compressButton));
       await tester.pump();
 
       expect(shareCount, 1);
       expect(printCount, 1);
-      expect(editCount, 1);
+      expect(actions, [
+        ViewerDocumentAction.print,
+        ViewerDocumentAction.compress,
+      ]);
     });
 
     testWidgets('compact width keeps secondary actions in a reachable menu', (
@@ -151,11 +172,11 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViewerKeys.actionsMenu));
       await tester.pumpAndSettle();
-      await tester.tap(find.byKey(ViewerKeys.editButton));
+      await tester.tap(find.byKey(ViewerKeys.splitButton));
       await tester.pumpAndSettle();
 
       expect(printCount, 1);
-      expect(editCount, 1);
+      expect(actions.last, ViewerDocumentAction.split);
     });
 
     testWidgets('back leaves the viewer', (tester) async {
@@ -385,11 +406,15 @@ void main() {
         findsAtLeastNWidgets(1),
       );
       expect(
-        find.bySemanticsLabel(RegExp('Print document')),
+        find.bySemanticsLabel(RegExp('More document actions')),
         findsAtLeastNWidgets(1),
       );
+
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel(RegExp('Print')), findsAtLeastNWidgets(1));
       expect(
-        find.bySemanticsLabel(RegExp('Edit document')),
+        find.bySemanticsLabel(RegExp('Compress')),
         findsAtLeastNWidgets(1),
       );
 
@@ -438,8 +463,7 @@ void main() {
               surfaceBuilder: fakeSurface,
               onBack: () {},
               onShare: () {},
-              onPrint: () {},
-              onEdit: () {},
+              onAction: (_) {},
             ),
           ),
         ),

@@ -162,6 +162,7 @@ void main() {
       expect(find.byKey(ScanKeys.cameraScreen), findsOneWidget);
       expect(find.byKey(const Key('fake_preview')), findsOneWidget);
       expect(find.byKey(ScanKeys.shutterButton), findsOneWidget);
+      expect(scanner.captures, isEmpty);
     });
 
     testWidgets('the page counter starts at zero and follows captures', (

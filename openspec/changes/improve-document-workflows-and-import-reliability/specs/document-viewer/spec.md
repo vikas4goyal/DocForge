@@ -24,7 +24,7 @@ The viewer SHALL present page position as a compact, clearly labelled control an
 - **THEN** the dialog closes, the keyboard is dismissed, and the current page is unchanged
 
 ### Requirement: Viewer actions
-The viewer SHALL provide responsive access to share, print and editing tools while preserving meaningful title space. On constrained widths, secondary actions SHALL be placed in an adaptive overflow control rather than rendering inert or clipped buttons.
+The viewer SHALL provide responsive access to share, print, and focused PDF operations while preserving meaningful title space. On constrained widths, Print, Compress, Split, Watermark, Set/Remove Password, and any page-management entry SHALL be placed in an adaptive overflow control rather than requiring a generic editor hub or rendering inert or clipped buttons.
 
 #### Scenario: Long viewer title
 - **WHEN** the viewer displays a long title on a constrained phone width
@@ -38,9 +38,13 @@ The viewer SHALL provide responsive access to share, print and editing tools whi
 - **WHEN** the user activates the control with key `viewer_print_button`, directly or through `Key('viewer_actions_menu')`
 - **THEN** the system print flow for the open document is started
 
-#### Scenario: Open editing tools
-- **WHEN** the user activates the control with key `viewer_edit_button`, directly or through `Key('viewer_actions_menu')`
-- **THEN** the PDF editing tools for the open document are opened
+#### Scenario: Open a focused PDF operation
+- **WHEN** the user chooses Print, Compress, Split, Watermark, or Set/Remove Password from `Key('viewer_actions_menu')`
+- **THEN** that operation's focused sheet or screen opens directly with Cancel and Done/Confirm behavior and no generic editor hub is shown first
+
+#### Scenario: Open page management when required
+- **WHEN** the user chooses an operation that genuinely requires page thumbnail selection or ordering
+- **THEN** the page-management editor opens with only applicable contextual actions
 
 #### Scenario: No inert viewer action
 - **WHEN** an action cannot be offered for the open document
@@ -51,7 +55,7 @@ The viewer SHALL support screen readers, supported large text scales, dark mode,
 
 #### Scenario: Screen reader in the viewer
 - **WHEN** a screen reader traverses the viewer
-- **THEN** the full document title and page position are announced, and the share, print, edit, actions-menu, and jump-to-page controls each expose a descriptive semantics label
+- **THEN** the full document title and page position are announced, and the share, print, focused-operation, actions-menu, and jump-to-page controls each expose a descriptive semantics label
 
 #### Scenario: Large text on a phone
 - **WHEN** the viewer is displayed at a supported large text scale on a phone
@@ -72,4 +76,3 @@ The viewer SHALL support screen readers, supported large text scales, dark mode,
 #### Scenario: End-to-end viewer coverage
 - **WHEN** the `browse_and_view` end-to-end flow opens a long-titled document and jumps to a page
 - **THEN** it uses the compact page control and reaches share, print, and edit through their stable keys and semantics
-

@@ -35,9 +35,19 @@ void main() {
     final pageTable = PageTableRobot(tester);
     await pageTable.waitUntilLoaded();
 
-    // Two pages, each through the crop-then-enhance loop a new page goes
-    // through before it becomes a row.
-    await pageTable.addPageFromCamera();
+    await pageTable.beginAddingPageFromCamera();
+    expect(
+      app.platform.scanner.captures,
+      hasLength(1),
+      reason: 'The live camera must wait for the robot\'s explicit shutter.',
+    );
+    await CropRobot(tester).acceptAndContinue();
+    await EnhanceRobot(tester).backToCrop();
+    await CropRobot(tester).acceptAndContinue();
+    await EnhanceRobot(tester).done();
+    await pageTable.waitUntilLoaded();
+
+    // The second page follows the ordinary crop-then-enhance loop.
     await pageTable.addPageFromCamera();
 
     expect(

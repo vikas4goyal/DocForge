@@ -425,10 +425,7 @@ Future<Widget> buildDocScanly({
   final creationFlow = CreationModule(
     staging: staging,
     renderPage: renderPage,
-    addFromCamera: AddPageFromCamera(() async {
-      final captured = await scanning.capturePage();
-      return captured.map((page) => page.imagePath);
-    }, StagePageImage(staging, resolvedDependencies.idGenerator)),
+    stagePage: StagePageImage(staging, resolvedDependencies.idGenerator),
     addFromGallery: AddPagesFromGallery(
       importing.gallery.pickImages,
       StagePageImage(staging, resolvedDependencies.idGenerator),

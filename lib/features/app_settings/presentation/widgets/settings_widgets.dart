@@ -78,41 +78,48 @@ class SettingsChoiceTile<T> extends StatelessWidget {
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
         key: SettingsKeys.choiceSheet,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Text(
-                title,
-                style: Theme.of(sheetContext).textTheme.titleMedium,
+        top: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.8,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Text(
+                  title,
+                  style: Theme.of(sheetContext).textTheme.titleMedium,
+                ),
               ),
-            ),
-            // `RadioGroup` rather than per-tile `groupValue`/`onChanged`,
-            // which Flutter deprecated: the group owns the selection, so a
-            // tile cannot disagree with its siblings about what is selected.
-            RadioGroup<T>(
-              groupValue: value,
-              onChanged: (chosen) => Navigator.of(sheetContext).pop(chosen),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final option in options)
-                    RadioListTile<T>(
-                      key: SettingsKeys.choiceOption(
-                        SettingsKeys.optionNameOf(option),
-                      ),
-                      value: option,
-                      title: Text(labelFor(option)),
-                      subtitle: descriptionFor == null
-                          ? null
-                          : Text(descriptionFor!(option)),
-                    ),
-                ],
+              // Keep the options scrollable so quality descriptions remain
+              // reachable on short devices and with large accessibility text.
+              Flexible(
+                child: RadioGroup<T>(
+                  groupValue: value,
+                  onChanged: (chosen) => Navigator.of(sheetContext).pop(chosen),
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.only(bottom: 8),
+                    children: [
+                      for (final option in options)
+                        RadioListTile<T>(
+                          key: SettingsKeys.choiceOption(
+                            SettingsKeys.optionNameOf(option),
+                          ),
+                          value: option,
+                          title: Text(labelFor(option)),
+                          subtitle: descriptionFor == null
+                              ? null
+                              : Text(descriptionFor!(option)),
+                        ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-          ],
+            ],
+          ),
         ),
       ),
     );

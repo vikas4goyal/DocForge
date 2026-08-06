@@ -29,13 +29,12 @@ The application SHALL extract text without a network by using embedded text from
 
 #### Scenario: Text availability is repaired
 - **WHEN** stored or newly extracted text exists but the document summary flag is false
-- **THEN** Share Text and extracted-text features become available and the summary flag is repaired after successful persistence
+- **THEN** search and extracted-text features become available internally and the summary flag is repaired after successful persistence without adding a Share Extracted Text action
 
 #### Scenario: Protected PDF text
 - **WHEN** text extraction runs on a protected PDF
 - **THEN** the password is resolved only through secure storage and never enters Cubit state, logs, previews, or text results
 
 #### Scenario: End-to-end text extraction coverage
-- **WHEN** the `share` end-to-end flow opens a text-heavy imported policy PDF whose summary flag was initially false
-- **THEN** it can extract and share the document text without a network request
-
+- **WHEN** the text-recognition flow opens a text-heavy imported policy PDF whose summary flag was initially false
+- **THEN** it can extract and index the document text for internal search without a network request or exposing Share Extracted Text

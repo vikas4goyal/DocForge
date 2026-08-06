@@ -13,9 +13,11 @@ import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/bulk_document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/library_display_density_usecases.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/library_folder_usecases.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/trash_usecases.dart';
 import 'package:doc_scanly/features/document_library/domain/bulk_document_action.dart';
+import 'package:doc_scanly/features/document_library/domain/library_display_density.dart';
 import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -33,6 +35,8 @@ class DashboardCubit extends Cubit<DashboardState> {
     this.loadTrash,
     this.bulkArchiveDocuments,
     this.bulkTrashDocuments,
+    this.loadDisplayDensity,
+    this.saveDisplayDensity,
   }) : super(const DashboardState.initial());
 
   /// The library folder being browsed.
@@ -64,6 +68,26 @@ class DashboardCubit extends Cubit<DashboardState> {
 
   /// Moves selected documents to recoverable Trash with per-item outcomes.
   final BulkTrashDocuments? bulkTrashDocuments;
+
+  /// Loads the persisted Large/Small grid preference.
+  final LoadLibraryDisplayDensity? loadDisplayDensity;
+
+  /// Persists a changed Large/Small grid preference.
+  final SaveLibraryDisplayDensity? saveDisplayDensity;
+
+  bool _didLoadDisplayDensity = false;
+
+  /// Changes grid density without disturbing selection, search, or ordering.
+  Future<void> setDisplayDensity(LibraryDisplayDensity density) async {
+    if (state.displayDensity == density) return;
+    final previous = state.displayDensity;
+    emit(state.copyWith(displayDensity: density));
+    final save = saveDisplayDensity;
+    if (save == null) return;
+    final result = await save(density);
+    if (isClosed || result.isSuccess) return;
+    emit(state.copyWith(displayDensity: previous));
+  }
 
   /// Enters selection mode, optionally selecting [documentId].
   void enterSelection([DocumentId? documentId]) {
@@ -269,8 +293,26 @@ class DashboardCubit extends Cubit<DashboardState> {
   static const maxRecents = 5;
 
   /// Loads the folder currently open.
-  Future<void> load() =>
-      state.isSearching ? search(state.query) : _loadFolder(state.path);
+  Future<void> load() async {
+    await _loadDisplayDensityOnce();
+    if (state.isSearching) {
+      await search(state.query);
+    } else {
+      await _loadFolder(state.path);
+    }
+  }
+
+  Future<void> _loadDisplayDensityOnce() async {
+    if (_didLoadDisplayDensity) return;
+    _didLoadDisplayDensity = true;
+    final load = loadDisplayDensity;
+    if (load == null) return;
+    final result = await load();
+    if (isClosed) return;
+    if (result case Success(:final value)) {
+      emit(state.copyWith(displayDensity: value));
+    }
+  }
 
   /// Opens the child folder [name] of the folder currently open.
   Future<void> openFolder(String name) => openPath([...state.path, name]);

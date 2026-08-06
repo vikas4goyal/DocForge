@@ -194,6 +194,8 @@ void main() {
     Size viewport = const Size(600, 2400),
     List<Document> mergeCandidates = const [],
     ValueChanged<Document>? onDerived,
+    PdfEditOperation? initialOperation,
+    double textScale = 1,
   }) async {
     tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1;
@@ -205,6 +207,12 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: BlocProvider<PdfEditCubit>.value(
           value: cubit,
           child: PdfEditScreen(
@@ -212,6 +220,7 @@ void main() {
             onClose: () {},
             onDerived: onDerived,
             mergeCandidates: mergeCandidates,
+            initialOperation: initialOperation,
           ),
         ),
       ),
@@ -259,6 +268,62 @@ void main() {
       await tester.pump();
 
       expect(cubit.calls, ['toggle:1']);
+    });
+  });
+
+  group('focused viewer workflows', () {
+    testWidgets('compress opens without the generic page editor', (
+      tester,
+    ) async {
+      await pump(tester, ready, initialOperation: PdfEditOperation.compress);
+
+      expect(find.text('Compress'), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.compressButton), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageGrid), findsNothing);
+      expect(find.byType(CloseButton), findsOneWidget);
+    });
+
+    testWidgets('split opens a dedicated naming screen with both outputs', (
+      tester,
+    ) async {
+      await pump(tester, ready, initialOperation: PdfEditOperation.split);
+
+      expect(find.byKey(PdfEditKeys.pageNamingScreen), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.splitBoundaryField), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.splitFirstNameField), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.splitSecondNameField), findsOneWidget);
+      expect(find.textContaining('PDF 1 · Pages'), findsOneWidget);
+      expect(find.textContaining('PDF 2 · Pages'), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageGrid), findsNothing);
+    });
+
+    testWidgets('watermark and password open only their focused controls', (
+      tester,
+    ) async {
+      await pump(tester, ready, initialOperation: PdfEditOperation.watermark);
+      expect(find.byKey(PdfEditKeys.watermarkTextField), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageGrid), findsNothing);
+
+      await pump(tester, ready, initialOperation: PdfEditOperation.protect);
+      expect(find.byKey(PdfEditKeys.protectPasswordField), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageGrid), findsNothing);
+    });
+
+    testWidgets('split naming stays scrollable at large phone text', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        ready,
+        viewport: const Size(390, 600),
+        textScale: 3,
+        initialOperation: PdfEditOperation.split,
+      );
+
+      expect(find.byKey(PdfEditKeys.pageNamingScreen), findsOneWidget);
+      expect(find.byType(Scrollable), findsWidgets);
+      expect(find.byKey(PdfEditKeys.splitConfirmButton), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
   });
 

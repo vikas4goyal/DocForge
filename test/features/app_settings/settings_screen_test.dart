@@ -178,6 +178,14 @@ void main() {
       expect(find.textContaining('2.0 MB'), findsOneWidget);
       expect(find.textContaining('8 documents'), findsOneWidget);
     });
+
+    testWidgets('keeps bottom space below Privacy Policy', (tester) async {
+      await pump(tester);
+
+      final list = tester.widget<ListView>(find.byType(ListView).first);
+      final padding = list.padding! as EdgeInsets;
+      expect(padding.bottom, greaterThanOrEqualTo(24));
+    });
   });
 
   group('changing a setting', () {
@@ -302,6 +310,27 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'PDF quality remains scrollable without overflow at large text',
+      (tester) async {
+        await pump(tester, viewport: const Size(390, 600), textScale: 3);
+
+        await tester.scrollUntilVisible(
+          find.byKey(SettingsKeys.pdfQuality),
+          180,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.drag(find.byType(ListView).first, const Offset(0, -180));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(SettingsKeys.pdfQuality));
+        await tester.pumpAndSettle();
+
+        expect(find.byKey(SettingsKeys.choiceSheet), findsOneWidget);
+        expect(find.byType(Scrollable), findsWidgets);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('choosing a value applies it', (tester) async {
       final cubit = await pump(tester);

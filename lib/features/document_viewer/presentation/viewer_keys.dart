@@ -40,8 +40,17 @@ abstract final class ViewerKeys {
   /// The control that prints the document.
   static const printButton = Key('viewer_print_button');
 
-  /// The control that opens the editing tools.
-  static const editButton = Key('viewer_edit_button');
+  /// The control that opens PDF compression.
+  static const compressButton = Key('viewer_compress_button');
+
+  /// The control that opens PDF splitting.
+  static const splitButton = Key('viewer_split_button');
+
+  /// The control that opens watermark settings.
+  static const watermarkButton = Key('viewer_watermark_button');
+
+  /// The control that opens password settings.
+  static const passwordButton = Key('viewer_password_button');
 
   /// The field for a protected document's password.
   static const passwordField = Key('viewer_password_field');

@@ -6,6 +6,7 @@ import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/failure_messages.dart';
 import 'package:doc_scanly/core/formatting/display_formatting.dart';
 import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/document_library/domain/library_display_density.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_state.dart';
 import 'package:doc_scanly/features/document_library/presentation/library_dashboard_keys.dart';
@@ -98,6 +99,29 @@ class DashboardScreen extends StatelessWidget {
                   icon: const Icon(Icons.close),
                 )
               else ...[
+                PopupMenuButton<LibraryDisplayDensity>(
+                  key: DashboardKeys.displaySizeMenu,
+                  tooltip: 'Thumbnail size',
+                  initialValue: state.displayDensity,
+                  onSelected: cubit.setDisplayDensity,
+                  icon: Icon(
+                    state.displayDensity == LibraryDisplayDensity.small
+                        ? Icons.grid_view_rounded
+                        : Icons.view_module_outlined,
+                  ),
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(
+                      key: DashboardKeys.displaySizeLarge,
+                      value: LibraryDisplayDensity.large,
+                      child: Text('Large thumbnails'),
+                    ),
+                    PopupMenuItem(
+                      key: DashboardKeys.displaySizeSmall,
+                      value: LibraryDisplayDensity.small,
+                      child: Text('Small thumbnails'),
+                    ),
+                  ],
+                ),
                 if (state.documents.isNotEmpty)
                   IconButton(
                     key: DashboardKeys.selectButton,
@@ -684,6 +708,7 @@ class _Body extends StatelessWidget {
         final columns = LibraryGridLayout.columnsFor(
           availableWidth: constraints.crossAxisExtent,
           textScale: textScale,
+          density: state.displayDensity,
         );
         return SliverPadding(
           padding: const EdgeInsets.symmetric(
@@ -696,7 +721,9 @@ class _Body extends StatelessWidget {
               crossAxisCount: columns,
               crossAxisSpacing: LibraryGridLayout.spacing,
               mainAxisSpacing: LibraryGridLayout.spacing,
-              mainAxisExtent: LibraryGridLayout.tileExtent,
+              mainAxisExtent: LibraryGridLayout.tileExtentFor(
+                state.displayDensity,
+              ),
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
               if (index < state.folders.length) {

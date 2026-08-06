@@ -24,6 +24,9 @@ import 'package:doc_scanly/features/document_creation/presentation/cubit/save_do
 import 'package:doc_scanly/features/document_creation/presentation/screens/page_table_screen.dart';
 import 'package:doc_scanly/features/document_creation/presentation/screens/save_name_dialog.dart';
 import 'package:doc_scanly/features/document_creation/presentation/widgets/add_page_sheet.dart';
+import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/screens/scan_capture_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -33,7 +36,7 @@ class CreationModule {
   const CreationModule({
     required this.staging,
     required this.renderPage,
-    required this.addFromCamera,
+    required this.stagePage,
     required this.addFromGallery,
     required this.discardSession,
     required this.scanning,
@@ -48,8 +51,8 @@ class CreationModule {
   /// Renders a page from its original and its layers.
   final RenderPage renderPage;
 
-  /// Captures a page and stages it.
-  final AddPageFromCamera addFromCamera;
+  /// Copies a captured page into this creation session.
+  final StagePageImage stagePage;
 
   /// Picks pages from the photo library and stages them.
   final AddPagesFromGallery addFromGallery;
@@ -206,8 +209,33 @@ class _CreationFlowState extends State<CreationFlow> {
   }
 
   Future<List<PageDraft>> _captureOne() async {
-    final captured = await widget.module.addFromCamera(sessionId: _sessionId);
-    return switch (captured) {
+    CapturedPage? captured;
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (routeContext) => BlocProvider(
+          create: (_) => ScanCaptureCubit(
+            widget.module.scanning.scanner,
+            widget.module.scanning.capturePage,
+            widget.module.scanning.discardSession,
+          ),
+          child: ScanCaptureScreen(
+            previewBuilder: widget.module.scanning.buildPreview,
+            onPageCaptured: (_, page) async => captured = page,
+            onFinished: () => Navigator.of(routeContext).pop(),
+            onCancelled: () => Navigator.of(routeContext).pop(),
+            onOpenSettings: () =>
+                unawaited(widget.module.scanning.openSettings()),
+            onImportInstead: () => Navigator.of(routeContext).pop(),
+          ),
+        ),
+      ),
+    );
+    if (!mounted || captured == null) return const [];
+    final staged = await widget.module.stagePage(
+      captured!.imagePath,
+      sessionId: _sessionId,
+    );
+    return switch (staged) {
       Success(:final value) => [value],
       Failed() => const [],
     };
@@ -223,17 +251,18 @@ class _CreationFlowState extends State<CreationFlow> {
   /// Returns null when the user left either screen without continuing, which
   /// callers must treat as "add nothing" rather than as a failure.
   Future<PageDraft?> _editNewPage(PageDraft page) async {
-    final cropped = await openPageCrop(
-      context,
-      module: widget.module.scanning,
-      page: page,
-    );
-    if (cropped == null || !mounted) return null;
-
-    return openPageEnhance(
-      context,
-      module: widget.module.scanning,
-      page: cropped,
+    return editNewPageReversibly(
+      page,
+      openCrop: (working) => mounted
+          ? openPageCrop(context, module: widget.module.scanning, page: working)
+          : Future<PageDraft?>.value(),
+      openEnhance: (cropped) => mounted
+          ? openPageEnhance(
+              context,
+              module: widget.module.scanning,
+              page: cropped,
+            )
+          : Future<PageDraft?>.value(),
     );
   }
 
@@ -412,5 +441,24 @@ class _CreationFlowState extends State<CreationFlow> {
         ),
       ),
     );
+  }
+}
+
+/// Runs Crop then Enhance while making Enhance Back return to Crop.
+///
+/// A null Crop result abandons the page. A null Enhance result means the user
+/// navigated back to revise geometry, so the last cropped page is reopened.
+Future<PageDraft?> editNewPageReversibly(
+  PageDraft page, {
+  required Future<PageDraft?> Function(PageDraft page) openCrop,
+  required Future<PageDraft?> Function(PageDraft page) openEnhance,
+}) async {
+  var working = page;
+  while (true) {
+    final cropped = await openCrop(working);
+    if (cropped == null) return null;
+    final enhanced = await openEnhance(cropped);
+    if (enhanced != null) return enhanced;
+    working = cropped;
   }
 }

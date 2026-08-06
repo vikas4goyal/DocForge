@@ -16,9 +16,6 @@ abstract final class ShareKeys {
   /// The control that shares selected pages as images.
   static const imagesButton = Key('share_images_button');
 
-  /// The control that shares the recognised text.
-  static const textButton = Key('share_text_button');
-
   /// The control that opens the system print dialogue.
   static const printButton = Key('share_print_button');
 
@@ -42,10 +39,4 @@ abstract final class ShareKeys {
 
   /// The control that offers export after no application could receive a share.
   static const errorExportButton = Key('share_error_export_button');
-
-  /// The message shown when a document has no recognised text.
-  static const noTextMessage = Key('share_no_text_message');
-
-  /// The control that offers to run recognition from the no-text message.
-  static const runRecognitionButton = Key('share_run_recognition_button');
 }

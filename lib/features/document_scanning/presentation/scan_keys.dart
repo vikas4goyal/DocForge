@@ -78,6 +78,9 @@ abstract final class ScanKeys {
   /// The draggable edge overlay.
   static const edgeOverlay = Key('scan_edge_overlay');
 
+  /// The image transform that previews rotation and flips immediately.
+  static const cropPreview = Key('scan_crop_preview');
+
   /// Control that applies the pending crop in place, without navigating.
   static const cropConfirmButton = Key('scan_crop_apply_button');
 

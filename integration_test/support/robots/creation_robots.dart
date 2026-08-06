@@ -132,6 +132,15 @@ class EnhanceRobot extends Robot {
   Future<void> done() => step('finishing enhancement', () async {
     await tap(EnhanceKeys.doneButton);
   });
+
+  /// Returns to Crop without closing the creation journey.
+  Future<void> backToCrop() =>
+      step('returning from enhancement to crop', () async {
+        await waitUntilVisible();
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        await CropRobot(tester).waitUntilVisible();
+      });
 }
 
 /// Drives the page table — the screen the whole creation journey runs through.
@@ -153,17 +162,16 @@ class PageTableRobot extends Robot {
 
   /// Adds one page from the camera, through crop and enhancement.
   ///
-  /// There is no camera *screen* on this path: the page table captures through
-  /// the scanner directly and then walks the new page through crop and
-  /// enhancement, which is where the user actually decides what the page looks
-  /// like. Driving it any other way would be testing a route the creation flow
-  /// does not use.
+  /// The camera must first show its live preview and wait for an explicit
+  /// shutter press. A robot that skipped the shutter would silently restore the
+  /// auto-capture bug this flow is intended to prevent.
   Future<void> addPageFromCamera() =>
       step('adding a page from the camera', () async {
         await waitUntilVisible();
         await tap(CreationKeys.addPageButton);
         await waitFor(CreationKeys.addPageSheet);
         await tap(CreationKeys.addFromCamera);
+        await CaptureRobot(tester).capturePages(1);
 
         // Crop, then enhancement, in that order — the loop every newly staged
         // page goes through before it becomes a row.
@@ -184,6 +192,7 @@ class PageTableRobot extends Robot {
         await tap(CreationKeys.addPageButton);
         await waitFor(CreationKeys.addPageSheet);
         await tap(CreationKeys.addFromCamera);
+        await CaptureRobot(tester).capturePages(1);
         await CropRobot(tester).waitUntilVisible();
       });
 

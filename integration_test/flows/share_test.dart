@@ -19,6 +19,8 @@ import 'package:integration_test/integration_test.dart';
 import '../support/app_boot.dart';
 import '../support/fixtures.dart';
 import '../support/robots/app_robots.dart';
+import '../support/robots/library_robots.dart';
+import '../support/robots/viewer_robots.dart';
 import '../support/seed.dart';
 
 void main() {
@@ -49,5 +51,27 @@ void main() {
       isEmpty,
       reason: 'Importing a document must not print it.',
     );
+
+    final dashboard = DashboardRobot(tester);
+    final documentId = dashboard.visibleDocumentIds.single;
+    await dashboard.openDocument(documentId);
+    final detail = DocumentDetailRobot(tester);
+    await detail.waitUntilVisible();
+    await detail.open();
+    final viewer = ViewerRobot(tester);
+    await viewer.waitUntilOpen();
+    await viewer.openShare();
+
+    final share = ShareRobot(tester);
+    await share.waitUntilVisible();
+    expect(
+      share.offersExtractedText,
+      isFalse,
+      reason: 'Internal OCR text must not reappear as a share action.',
+    );
+    await share.shareImages();
+    expect(app.platform.share.shared, hasLength(1));
+    expect(app.platform.share.shared.single.filePaths, hasLength(1));
+    expect(app.platform.share.shared.single.text, isEmpty);
   });
 }

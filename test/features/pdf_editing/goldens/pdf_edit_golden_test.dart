@@ -26,6 +26,7 @@ import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
 import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/pdf_edit_keys.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -147,6 +148,7 @@ void main() {
     Size size,
     PdfEditState state, {
     Brightness brightness = Brightness.light,
+    PdfEditOperation? initialOperation,
   }) async {
     tester.view.physicalSize = size;
     // One logical pixel per physical pixel, so the golden's dimensions are the
@@ -162,7 +164,11 @@ void main() {
         theme: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
         home: BlocProvider<PdfEditCubit>.value(
           value: cubit,
-          child: PdfEditScreen(thumbnailBuilder: _thumbnail, onClose: () {}),
+          child: PdfEditScreen(
+            thumbnailBuilder: _thumbnail,
+            onClose: () {},
+            initialOperation: initialOperation,
+          ),
         ),
       ),
     );
@@ -255,6 +261,39 @@ void main() {
       await expectLater(
         find.byType(PdfEditScreen),
         matchesGoldenFile('pdf_edit_working_light.png'),
+      );
+    });
+
+    testWidgets('split naming, phone light', (tester) async {
+      await pumpAt(
+        tester,
+        _phone,
+        ready,
+        initialOperation: PdfEditOperation.split,
+      );
+
+      await expectLater(
+        find.byKey(PdfEditKeys.pageNamingScreen),
+        matchesGoldenFile('pdf_split_naming_phone_light.png'),
+      );
+    });
+
+    testWidgets('watermark on page, phone light', (tester) async {
+      await pumpAt(
+        tester,
+        _phone,
+        ready,
+        initialOperation: PdfEditOperation.watermark,
+      );
+      await tester.enterText(
+        find.byKey(PdfEditKeys.watermarkTextField),
+        'CONFIDENTIAL',
+      );
+      await tester.pump();
+
+      await expectLater(
+        find.byType(PdfEditScreen),
+        matchesGoldenFile('pdf_watermark_preview_phone_light.png'),
       );
     });
   });

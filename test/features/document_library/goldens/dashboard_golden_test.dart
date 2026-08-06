@@ -11,6 +11,7 @@ import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/features/document_library/domain/library_display_density.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_state.dart';
 import 'package:doc_scanly/features/document_library/presentation/screens/dashboard_screen.dart';
@@ -100,6 +101,22 @@ void main() {
       await expectLater(
         find.byType(DashboardScreen),
         matchesGoldenFile('dashboard_phone_dark.png'),
+      );
+    });
+
+    testWidgets('phone, small density', (tester) async {
+      await pumpAt(
+        tester,
+        host(
+          base.copyWith(displayDensity: LibraryDisplayDensity.small),
+          Brightness.light,
+        ),
+        _phone,
+      );
+
+      await expectLater(
+        find.byType(DashboardScreen),
+        matchesGoldenFile('dashboard_phone_small.png'),
       );
     });
 

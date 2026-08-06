@@ -119,6 +119,27 @@ void main() {
       expect(apply.onPressed, isNotNull);
     });
 
+    testWidgets('flip updates the preview before Apply', (tester) async {
+      await pumpCrop(tester);
+      await tester.tap(find.byKey(ScanKeys.cropFlipHorizontalButton));
+      await settle(tester);
+
+      final preview = tester.widget<Transform>(
+        find.byKey(ScanKeys.cropPreview),
+      );
+      expect(preview.transform.entry(0, 0), -1);
+    });
+
+    testWidgets('crop handles use forgiving 64 point hit regions', (
+      tester,
+    ) async {
+      await pumpCrop(tester);
+      final handle = tester.getSize(find.byKey(ScanKeys.cropHandle(0)));
+      final edge = tester.getSize(find.byKey(ScanKeys.cropEdgeHandle(0)));
+      expect(handle, const Size.square(64));
+      expect(edge, const Size.square(64));
+    });
+
     testWidgets('revert is disabled until a crop has been applied', (
       tester,
     ) async {

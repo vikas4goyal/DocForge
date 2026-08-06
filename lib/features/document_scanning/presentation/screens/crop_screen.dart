@@ -174,6 +174,9 @@ class _CropScreenState extends State<CropScreen> {
   /// capture's own coordinates — which is what the correction expects.
   double _rotation = 0;
 
+  bool _flippedHorizontally = false;
+  bool _flippedVertically = false;
+
   /// The area the page is laid out in, reported by the canvas.
   Rect? _available;
 
@@ -190,6 +193,13 @@ class _CropScreenState extends State<CropScreen> {
     final cubit = context.read<CropCubit>();
     _rotate(context, 0);
 
+    setState(() {
+      if (horizontal) {
+        _flippedHorizontally = !_flippedHorizontally;
+      } else {
+        _flippedVertically = !_flippedVertically;
+      }
+    });
     final quad = cubit.state.quad;
     cubit.adjust(
       horizontal ? flipQuadHorizontally(quad) : flipQuadVertically(quad),
@@ -290,7 +300,10 @@ class _CropScreenState extends State<CropScreen> {
       builder: (context, state) => Scaffold(
         key: ScanKeys.cropScreen,
         appBar: AppBar(
-          title: const Text('Adjust edges'),
+          title: Text(
+            'Adjust edges',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           leading: IconButton(
             key: ScanKeys.cropCancelButton,
             tooltip: 'Cancel cropping',
@@ -327,6 +340,8 @@ class _CropScreenState extends State<CropScreen> {
               child: _CropCanvas(
                 state: state,
                 rotation: _rotation,
+                flippedHorizontally: _flippedHorizontally,
+                flippedVertically: _flippedVertically,
                 onLayout: (available, imageSize) {
                   if (_available == available && _imageSize == imageSize) {
                     return;
@@ -370,7 +385,13 @@ class _CropScreenState extends State<CropScreen> {
                   onPressed: state.canApply
                       ? () async {
                           await context.read<CropCubit>().apply();
-                          if (context.mounted) setState(() => _rotation = 0);
+                          if (context.mounted) {
+                            setState(() {
+                              _rotation = 0;
+                              _flippedHorizontally = false;
+                              _flippedVertically = false;
+                            });
+                          }
                         }
                       : null,
                   child: const Text('Apply crop'),
@@ -383,7 +404,13 @@ class _CropScreenState extends State<CropScreen> {
                   onPressed: state.canRevert
                       ? () async {
                           await context.read<CropCubit>().revertToOriginal();
-                          if (context.mounted) setState(() => _rotation = 0);
+                          if (context.mounted) {
+                            setState(() {
+                              _rotation = 0;
+                              _flippedHorizontally = false;
+                              _flippedVertically = false;
+                            });
+                          }
                         }
                       : null,
                   child: const Text('Revert to original'),
@@ -494,6 +521,8 @@ class _CropCanvas extends StatefulWidget {
   const _CropCanvas({
     required this.state,
     required this.rotation,
+    required this.flippedHorizontally,
+    required this.flippedVertically,
     required this.onLayout,
   });
 
@@ -502,6 +531,10 @@ class _CropCanvas extends StatefulWidget {
   /// How far the page is turned. Owned by the screen, which also holds the
   /// slider that changes it.
   final double rotation;
+
+  final bool flippedHorizontally;
+
+  final bool flippedVertically;
 
   /// Reports the area the page was laid out in, and its pixel size.
   ///
@@ -630,7 +663,13 @@ class _CropCanvasState extends State<_CropCanvas> {
         return Stack(
           fit: StackFit.expand,
           children: [
-            if (provider != null) _page(provider, transform),
+            if (provider != null)
+              _page(
+                provider,
+                transform,
+                flippedHorizontally: widget.flippedHorizontally,
+                flippedVertically: widget.flippedVertically,
+              ),
             CustomPaint(
               key: ScanKeys.edgeOverlay,
               painter: _SelectionPainter(
@@ -664,7 +703,12 @@ class _CropCanvasState extends State<_CropCanvas> {
   }
 
   /// The page itself, turned and scaled to sit inside the available area.
-  Widget _page(ImageProvider<Object> provider, PageTransform transform) {
+  Widget _page(
+    ImageProvider<Object> provider,
+    PageTransform transform, {
+    required bool flippedHorizontally,
+    required bool flippedVertically,
+  }) {
     final size = transform.displaySize;
 
     return Positioned(
@@ -672,8 +716,17 @@ class _CropCanvasState extends State<_CropCanvas> {
       top: transform.centre.dy - size.height / 2,
       width: size.width,
       height: size.height,
-      child: Transform.rotate(
-        angle: transform.radians,
+      child: Transform(
+        key: ScanKeys.cropPreview,
+        alignment: Alignment.center,
+        transform: Matrix4.identity()
+          ..rotateZ(transform.radians)
+          ..scaleByDouble(
+            flippedHorizontally ? -1 : 1,
+            flippedVertically ? -1 : 1,
+            1,
+            1,
+          ),
         child: Image(
           image: provider,
           // The box already carries the page's aspect ratio, so fill and
@@ -832,6 +885,7 @@ class _CornerHandle extends StatelessWidget {
   final ValueChanged<Offset?> onDragPoint;
 
   static const _radius = 12.0;
+  static const _hitTarget = 64.0;
 
   @override
   Widget build(BuildContext context) {
@@ -841,8 +895,8 @@ class _CornerHandle extends StatelessWidget {
       // The hit area is 48dp square and centred on the corner, while the drawn
       // handle is much smaller: a 24dp target under a fingertip is unusable,
       // and the accessibility baseline requires 48dp regardless.
-      left: centre.dx - AppTheme.minimumTouchTarget / 2,
-      top: centre.dy - AppTheme.minimumTouchTarget / 2,
+      left: centre.dx - _hitTarget / 2,
+      top: centre.dy - _hitTarget / 2,
       child: Semantics(
         label: _labelFor(corner),
         child: ExcludeSemantics(
@@ -850,13 +904,18 @@ class _CornerHandle extends StatelessWidget {
             key: ScanKeys.cropHandle(corner),
             onPanStart: enabled ? (_) => onDragPoint(centre) : null,
             onPanUpdate: enabled
-                ? (details) => _drag(context, centre, details)
+                ? (details) => _drag(
+                    context,
+                    centre -
+                        const Offset(_hitTarget / 2, _hitTarget / 2) +
+                        details.localPosition,
+                  )
                 : null,
             onPanEnd: enabled ? (_) => onDragPoint(null) : null,
             onPanCancel: enabled ? () => onDragPoint(null) : null,
             child: SizedBox(
-              width: AppTheme.minimumTouchTarget,
-              height: AppTheme.minimumTouchTarget,
+              width: _hitTarget,
+              height: _hitTarget,
               child: Center(
                 child: Container(
                   width: _radius * 2,
@@ -875,8 +934,7 @@ class _CornerHandle extends StatelessWidget {
     );
   }
 
-  void _drag(BuildContext context, Offset centre, DragUpdateDetails details) {
-    final moved = centre + details.delta;
+  void _drag(BuildContext context, Offset moved) {
     onDragPoint(moved);
     context.read<CropCubit>().adjust(
       replaceCorner(quad, corner, transform.toPage(moved)),
@@ -911,6 +969,8 @@ class _EdgeHandle extends StatelessWidget {
   final bool enabled;
   final ValueChanged<Offset?> onDragPoint;
 
+  static const _hitTarget = 64.0;
+
   /// The two corner indices this edge joins, clockwise from the top edge.
   (int, int) get _corners => switch (edge) {
     0 => (0, 1),
@@ -927,20 +987,28 @@ class _EdgeHandle extends StatelessWidget {
     final centre = Offset.lerp(start, end, 0.5)!;
 
     return Positioned(
-      left: centre.dx - AppTheme.minimumTouchTarget / 2,
-      top: centre.dy - AppTheme.minimumTouchTarget / 2,
+      left: centre.dx - _hitTarget / 2,
+      top: centre.dy - _hitTarget / 2,
       child: Semantics(
         label: _labelFor(edge),
         child: ExcludeSemantics(
           child: GestureDetector(
             key: ScanKeys.cropEdgeHandle(edge),
             onPanStart: enabled ? (_) => onDragPoint(centre) : null,
-            onPanUpdate: enabled ? (details) => _drag(context, details) : null,
+            onPanUpdate: enabled
+                ? (details) => _drag(
+                    context,
+                    centre -
+                        const Offset(_hitTarget / 2, _hitTarget / 2) +
+                        details.localPosition,
+                    centre,
+                  )
+                : null,
             onPanEnd: enabled ? (_) => onDragPoint(null) : null,
             onPanCancel: enabled ? () => onDragPoint(null) : null,
             child: SizedBox(
-              width: AppTheme.minimumTouchTarget,
-              height: AppTheme.minimumTouchTarget,
+              width: _hitTarget,
+              height: _hitTarget,
               child: Center(
                 // Aligned with the edge it moves, so it reads as "this whole
                 // side moves" rather than "this point moves".
@@ -964,11 +1032,11 @@ class _EdgeHandle extends StatelessWidget {
     );
   }
 
-  void _drag(BuildContext context, DragUpdateDetails details) {
+  void _drag(BuildContext context, Offset pointer, Offset originalCentre) {
     final (first, second) = _corners;
+    final delta = pointer - originalCentre;
 
-    Offset moved(int index) =>
-        transform.toScreen(quad.corners[index]) + details.delta;
+    Offset moved(int index) => transform.toScreen(quad.corners[index]) + delta;
 
     onDragPoint(Offset.lerp(moved(first), moved(second), 0.5));
 

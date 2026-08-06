@@ -19,24 +19,12 @@ The application SHALL allow the user to share one or more pages of scanned or im
 - **WHEN** an imported PDF has no stored page-image rows but its local PDF is readable
 - **THEN** image sharing uses PDF-backed page handles and does not report that the item no longer exists
 
-### Requirement: Share extracted text
-The application SHALL allow the user to share actual stored, embedded, or on-device-recognised document text and SHALL offer local extraction when text has not yet been persisted.
+### Requirement: Focused share surface
+The application SHALL offer PDF sharing, ordered page-image sharing, printing, and platform export without presenting a Share Extracted Text action. Embedded-text extraction and OCR SHALL remain available to internal search and recognition features.
 
-#### Scenario: Sharing stored text
-- **WHEN** the user activates the control with key `share_text_button` for a document with persisted text
-- **THEN** the system share sheet opens with the ordered document text as shareable content
-
-#### Scenario: Sharing embedded PDF text
-- **WHEN** a text-based imported PDF has usable embedded text but its summary metadata does not yet mark recognised text
-- **THEN** `Key('share_text_button')` remains available, local extraction runs with visible progress when chosen, and the system share sheet opens with that text
-
-#### Scenario: OCR fallback offered
-- **WHEN** a document has no stored or embedded text but has renderable pages
-- **THEN** the share flow explains that recognition is required and offers an accessible action to run on-device recognition
-
-#### Scenario: No text after extraction
-- **WHEN** embedded extraction and recognition produce no text
-- **THEN** a message explains that no text was found and no empty share handoff occurs
+#### Scenario: Extracted text is not a share action
+- **WHEN** the share options are displayed for a scanned or imported document
+- **THEN** no `share_text_button` or “Share extracted text” option is present and the remaining actions stay reachable and correctly spaced
 
 ### Requirement: Export to device storage
 The application SHALL allow the user to export a document through a platform-appropriate destination operation whose infrastructure implementation owns destination selection and writing. Application logic SHALL NOT assume that an iOS or Android provider result is an ordinary writable filesystem path.
@@ -81,6 +69,5 @@ The application SHALL present a clear stage-specific message and recovery action
 - **THEN** a human-readable message is displayed and the application does not crash
 
 #### Scenario: End-to-end share and export coverage
-- **WHEN** the `share` end-to-end flow uses an imported text PDF on Android and iOS
-- **THEN** it shares page images and extracted text, completes or cancels export, and observes stage-specific recovery for deterministic platform failures through the specified keys and semantics
-
+- **WHEN** the `share` end-to-end flow uses an imported PDF on Android and iOS
+- **THEN** it shares page images, confirms extracted text is not offered, completes or cancels export, and observes stage-specific recovery for deterministic platform failures through the specified keys and semantics

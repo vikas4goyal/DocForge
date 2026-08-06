@@ -24,6 +24,24 @@ typedef PageSurfaceBuilder =
       required ValueChanged<int> onPageChanged,
     });
 
+/// Document-level operations reached directly from the viewer's overflow menu.
+enum ViewerDocumentAction {
+  /// Opens the system print dialog.
+  print,
+
+  /// Opens the focused compression workflow.
+  compress,
+
+  /// Opens the focused split and naming workflow.
+  split,
+
+  /// Opens the focused watermark workflow.
+  watermark,
+
+  /// Opens the focused set/remove password workflow.
+  protection,
+}
+
 /// Displays a document and offers the actions that act on it.
 class ViewerScreen extends StatelessWidget {
   /// Creates the viewer screen.
@@ -31,8 +49,7 @@ class ViewerScreen extends StatelessWidget {
     required this.surfaceBuilder,
     required this.onBack,
     required this.onShare,
-    required this.onPrint,
-    required this.onEdit,
+    required this.onAction,
     super.key,
   });
 
@@ -45,11 +62,8 @@ class ViewerScreen extends StatelessWidget {
   /// Called when the user shares the document.
   final VoidCallback onShare;
 
-  /// Called when the user prints the document.
-  final VoidCallback onPrint;
-
-  /// Called when the user opens the editing tools.
-  final VoidCallback onEdit;
+  /// Called with the focused operation selected from the overflow menu.
+  final ValueChanged<ViewerDocumentAction> onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -84,46 +98,61 @@ class ViewerScreen extends StatelessWidget {
                   ),
                   tooltip: 'Share document',
                 ),
-                if (MediaQuery.sizeOf(context).width >= 600) ...[
-                  IconButton(
-                    key: ViewerKeys.printButton,
-                    onPressed: onPrint,
-                    icon: const Icon(
-                      Icons.print_outlined,
-                      semanticLabel: 'Print document',
-                    ),
-                    tooltip: 'Print document',
-                  ),
-                  IconButton(
-                    key: ViewerKeys.editButton,
-                    onPressed: onEdit,
-                    icon: const Icon(
-                      Icons.edit_outlined,
-                      semanticLabel: 'Edit document',
-                    ),
-                    tooltip: 'Edit document',
-                  ),
-                ] else
-                  PopupMenuButton<_ViewerAction>(
+                Semantics(
+                  label: 'More document actions',
+                  button: true,
+                  child: PopupMenuButton<ViewerDocumentAction>(
                     key: ViewerKeys.actionsMenu,
                     tooltip: 'More document actions',
-                    onSelected: (action) => switch (action) {
-                      _ViewerAction.print => onPrint(),
-                      _ViewerAction.edit => onEdit(),
-                    },
-                    itemBuilder: (_) => const [
-                      PopupMenuItem(
+                    onSelected: onAction,
+                    itemBuilder: (_) => [
+                      const PopupMenuItem(
                         key: ViewerKeys.printButton,
-                        value: _ViewerAction.print,
-                        child: Text('Print'),
+                        value: ViewerDocumentAction.print,
+                        child: ListTile(
+                          leading: Icon(Icons.print_outlined),
+                          title: Text('Print'),
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        key: ViewerKeys.compressButton,
+                        value: ViewerDocumentAction.compress,
+                        child: ListTile(
+                          leading: Icon(Icons.compress),
+                          title: Text('Compress'),
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        key: ViewerKeys.splitButton,
+                        value: ViewerDocumentAction.split,
+                        child: ListTile(
+                          leading: Icon(Icons.horizontal_split),
+                          title: Text('Split'),
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        key: ViewerKeys.watermarkButton,
+                        value: ViewerDocumentAction.watermark,
+                        child: ListTile(
+                          leading: Icon(Icons.branding_watermark_outlined),
+                          title: Text('Add watermark'),
+                        ),
                       ),
                       PopupMenuItem(
-                        key: ViewerKeys.editButton,
-                        value: _ViewerAction.edit,
-                        child: Text('Edit'),
+                        key: ViewerKeys.passwordButton,
+                        value: ViewerDocumentAction.protection,
+                        child: ListTile(
+                          leading: const Icon(Icons.lock_outline),
+                          title: Text(
+                            state.document?.isProtected ?? false
+                                ? 'Remove password'
+                                : 'Set password',
+                          ),
+                        ),
                       ),
                     ],
                   ),
+                ),
               ],
             ],
           ),
@@ -326,8 +355,6 @@ class _TextPanel extends StatelessWidget {
     );
   }
 }
-
-enum _ViewerAction { print, edit }
 
 /// The page indicator and intentional jump-to-page control.
 class _PageBar extends StatelessWidget {

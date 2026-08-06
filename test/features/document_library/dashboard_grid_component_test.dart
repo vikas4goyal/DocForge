@@ -2,8 +2,12 @@ import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/bulk_document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/library_display_density_usecases.dart';
+import 'package:doc_scanly/features/document_library/domain/library_display_density.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/preference_library_display_density_repository.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_scanly/features/document_library/presentation/library_dashboard_keys.dart';
 import 'package:doc_scanly/features/document_library/presentation/screens/dashboard_screen.dart';
@@ -37,15 +41,21 @@ void main() {
     double textScale = 1,
     BulkArchiveDocuments? archive,
     BulkTrashDocuments? trash,
+    InMemoryPreferenceStore? preferences,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
+    final densityRepository = PreferenceLibraryDisplayDensityRepository(
+      preferences ?? InMemoryPreferenceStore(),
+    );
     final cubit = DashboardCubit(
       store: store,
       index: repository,
       bulkArchiveDocuments: archive,
       bulkTrashDocuments: trash,
+      loadDisplayDensity: LoadLibraryDisplayDensity(densityRepository),
+      saveDisplayDensity: SaveLibraryDisplayDensity(densityRepository),
     );
     addTearDown(cubit.close);
     await tester.pumpWidget(
@@ -82,6 +92,30 @@ void main() {
     tester.view.physicalSize = const Size(1024, 900);
     await tester.pumpAndSettle();
     expect(_columns(tester), 5);
+  });
+
+  testWidgets('Small density is persisted and preserves selection', (
+    tester,
+  ) async {
+    final preferences = InMemoryPreferenceStore();
+    final cubit = await pump(tester, preferences: preferences);
+    await tester.tap(find.byKey(DashboardKeys.displaySizeMenu));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(DashboardKeys.displaySizeSmall));
+    await tester.pumpAndSettle();
+
+    expect(_columns(tester), 3);
+    cubit.enterSelection(first.id);
+    await cubit.setDisplayDensity(LibraryDisplayDensity.large);
+    await cubit.setDisplayDensity(LibraryDisplayDensity.small);
+    await tester.pump();
+    expect(cubit.state.selectedDocumentIds, [first.id]);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pumpAndSettle();
+    final restored = await pump(tester, preferences: preferences);
+    expect(_columns(tester), 3);
+    expect(restored.state.displayDensity.name, 'small');
   });
 
   testWidgets('large text falls back to one column without clipping', (

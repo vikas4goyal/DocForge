@@ -81,6 +81,8 @@ ScreenBuilder buildHomeScreen({
         bulkTrashDocuments: BulkTrashDocuments(
           library.moveDocumentToTrash.call,
         ),
+        loadDisplayDensity: library.loadDisplayDensity,
+        saveDisplayDensity: library.saveDisplayDensity,
       )..load(),
       child: Builder(
         builder: (dashboardContext) => HomeRefreshListener(

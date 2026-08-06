@@ -9,6 +9,8 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_dashboard_keys.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -31,7 +33,7 @@ void main() {
     });
     final importable = await Fixtures(staging).importable();
 
-    await bootDocScanly(tester, pickedFiles: [importable]);
+    final app = await bootDocScanly(tester, pickedFiles: [importable]);
     await seedDocumentByImport(tester);
 
     final dashboard = DashboardRobot(tester);
@@ -42,6 +44,15 @@ void main() {
     // same dashboard → detail → Open route that production composition owns.
     final visibleIds = dashboard.visibleDocumentIds;
     expect(visibleIds, hasLength(1));
+    expect(dashboard.gridColumnCount, 2);
+    await dashboard.chooseDisplaySize(DashboardKeys.displaySizeSmall);
+    expect(dashboard.gridColumnCount, 3);
+    expect(
+      (await app.dependencies.preferences.readString(
+        PreferenceKeys.libraryDisplayDensity,
+      )).valueOrNull,
+      'small',
+    );
     await dashboard.waitForDocumentThumbnail(visibleIds.single);
     await dashboard.openDocument(visibleIds.single);
 
@@ -56,10 +67,31 @@ void main() {
     await viewer.waitUntilOpen();
     expect(viewer.hasFailed, isFalse);
 
+    await viewer.openCompress();
+    await PdfEditRobot(tester).waitUntilFocused();
+    await PdfEditRobot(tester).close();
+    await viewer.waitUntilOpen();
+
+    await viewer.openSplit();
+    await PdfEditRobot(tester).waitUntilSplitNaming();
+    await PdfEditRobot(tester).close();
+    await viewer.waitUntilOpen();
+
+    await viewer.openWatermark();
+    await PdfEditRobot(tester).waitUntilFocused();
+    await PdfEditRobot(tester).close();
+    await viewer.waitUntilOpen();
+
+    await viewer.openPassword();
+    await PdfEditRobot(tester).waitUntilFocused();
+    await PdfEditRobot(tester).close();
+    await viewer.waitUntilOpen();
+
     await viewer.goBack();
     await detail.waitUntilVisible();
     await tester.pageBack();
     await dashboard.waitUntilLoaded();
     expect(dashboard.isEmpty, isFalse);
+    expect(dashboard.gridColumnCount, 3);
   });
 }

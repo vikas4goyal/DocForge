@@ -135,7 +135,6 @@ void main() {
     ShareState state, {
     Brightness brightness = Brightness.light,
     Size viewport = const Size(600, 1200),
-    VoidCallback? onRunRecognition,
   }) async {
     tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1;
@@ -150,7 +149,7 @@ void main() {
         home: Scaffold(
           body: BlocProvider<ShareCubit>.value(
             value: cubit,
-            child: ShareOptionsSheet(onRunRecognition: onRunRecognition),
+            child: const ShareOptionsSheet(),
           ),
         ),
       ),
@@ -174,7 +173,6 @@ void main() {
       expect(find.byKey(ShareKeys.sheet), findsOneWidget);
       expect(find.byKey(ShareKeys.pdfButton), findsOneWidget);
       expect(find.byKey(ShareKeys.imagesButton), findsOneWidget);
-      expect(find.byKey(ShareKeys.textButton), findsOneWidget);
       expect(find.byKey(ShareKeys.printButton), findsOneWidget);
       expect(find.byKey(ShareKeys.exportButton), findsOneWidget);
     });
@@ -185,7 +183,6 @@ void main() {
       for (final key in [
         ShareKeys.pdfButton,
         ShareKeys.imagesButton,
-        ShareKeys.textButton,
         ShareKeys.printButton,
         ShareKeys.exportButton,
       ]) {
@@ -193,7 +190,7 @@ void main() {
         await tester.pump();
       }
 
-      expect(cubit.calls, ['pdf', 'images', 'text', 'print', 'export']);
+      expect(cubit.calls, ['pdf', 'images', 'print', 'export']);
     });
 
     testWidgets('shows the document title', (tester) async {
@@ -203,37 +200,10 @@ void main() {
     });
   });
 
-  group('no recognised text', () {
-    testWidgets('disables the text control and explains why', (tester) async {
-      final cubit = await pump(tester, withoutText);
+  testWidgets('does not expose extracted-text sharing', (tester) async {
+    await pump(tester, withoutText);
 
-      expect(find.byKey(ShareKeys.noTextMessage), findsOneWidget);
-
-      await tester.tap(find.byKey(ShareKeys.textButton));
-      await tester.pump();
-
-      expect(cubit.calls, isEmpty);
-    });
-
-    testWidgets('offers to run recognition when a handler is supplied', (
-      tester,
-    ) async {
-      var asked = 0;
-      await pump(tester, withoutText, onRunRecognition: () => asked++);
-
-      await tester.tap(find.byKey(ShareKeys.runRecognitionButton));
-      await tester.pump();
-
-      expect(asked, 1);
-    });
-
-    testWidgets('offers no recognition control without a handler', (
-      tester,
-    ) async {
-      await pump(tester, withoutText);
-
-      expect(find.byKey(ShareKeys.runRecognitionButton), findsNothing);
-    });
+    expect(find.text('Share extracted text'), findsNothing);
   });
 
   group('preparing', () {

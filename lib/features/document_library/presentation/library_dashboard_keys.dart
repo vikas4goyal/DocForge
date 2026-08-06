@@ -20,6 +20,15 @@ abstract final class DashboardKeys {
   /// Adaptive folder and document grid.
   static const contentGrid = Key('dashboard_content_grid');
 
+  /// Opens the Large/Small thumbnail-size menu.
+  static const displaySizeMenu = Key('dashboard_display_size_menu');
+
+  /// Chooses the original prominent thumbnail size.
+  static const displaySizeLarge = Key('dashboard_display_size_large');
+
+  /// Chooses the denser thumbnail size.
+  static const displaySizeSmall = Key('dashboard_display_size_small');
+
   /// Enters document selection mode.
   static const selectButton = Key('dashboard_select_button');
 

@@ -134,6 +134,24 @@ class DashboardRobot extends Robot {
     ]);
   });
 
+  /// Chooses the Dashboard thumbnail density through its visible menu.
+  Future<void> chooseDisplaySize(Key option) =>
+      step('changing the dashboard thumbnail size', () async {
+        await waitUntilLoaded();
+        await tap(DashboardKeys.displaySizeMenu);
+        await tap(option);
+        await tester.pump(const Duration(milliseconds: 200));
+      });
+
+  /// Number of columns used by the currently rendered library grid.
+  int get gridColumnCount {
+    final grid = tester.widget<SliverGrid>(
+      find.byKey(DashboardKeys.contentGrid),
+    );
+    return (grid.gridDelegate as SliverGridDelegateWithFixedCrossAxisCount)
+        .crossAxisCount;
+  }
+
   /// Opens the document identified by [documentId].
   Future<void> openDocument(String documentId) =>
       step('opening document $documentId from the dashboard', () async {
@@ -388,9 +406,40 @@ class SettingsRobot extends Robot {
         await waitUntilVisible();
         await tap(settingKey);
         await waitFor(SettingsKeys.choiceSheet);
+        final option = find.byKey(SettingsKeys.choiceOption(optionName));
+        await tester.ensureVisible(option);
+        await tester.pump();
         await tap(SettingsKeys.choiceOption(optionName));
         await waitUntilGone(SettingsKeys.choiceSheet);
       });
+
+  /// Scrolls to the final Privacy Policy row and leaves the list at its end.
+  Future<void> revealPrivacyPolicy() =>
+      step('revealing the privacy policy with bottom spacing', () async {
+        await waitUntilVisible();
+        final list = find
+            .descendant(
+              of: find.byKey(SettingsKeys.screen),
+              matching: find.byType(Scrollable),
+            )
+            .first;
+        await tester.scrollUntilVisible(
+          find.byKey(SettingsKeys.privacyPolicy),
+          300,
+          scrollable: list,
+        );
+        await tester.fling(list, const Offset(0, -300), 1000);
+        await tester.pumpAndSettle();
+      });
+
+  /// Visible clearance below the final Privacy Policy row.
+  double get privacyBottomClearance {
+    final screenBottom = tester.getBottomLeft(find.byKey(screenKey)).dy;
+    final privacyBottom = tester
+        .getBottomLeft(find.byKey(SettingsKeys.privacyPolicy))
+        .dy;
+    return screenBottom - privacyBottom;
+  }
 
   /// Chooses a recognition-language enum value by [optionName].
   Future<void> chooseRecognitionLanguage(String optionName) =>

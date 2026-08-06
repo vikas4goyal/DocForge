@@ -35,6 +35,7 @@ void main() {
     final settings = SettingsRobot(tester);
     await settings.waitUntilVisible();
     await settings.choose(SettingsKeys.theme, 'dark');
+    await settings.choose(SettingsKeys.pdfQuality, PdfQuality.high.name);
     await settings.chooseRecognitionLanguage(OcrScript.japanese.name);
     await settings.chooseDefaultSaveFolder();
     expect(
@@ -52,6 +53,12 @@ void main() {
     );
     await settings.openStorageDetails();
     await settings.closeDetails();
+    await settings.revealPrivacyPolicy();
+    expect(
+      settings.privacyBottomClearance,
+      greaterThanOrEqualTo(20),
+      reason: 'Privacy Policy should not touch the tab bar or home indicator.',
+    );
 
     // The theme is published to the application root, so choosing it is
     // visible immediately and everywhere — which is what the spec means by

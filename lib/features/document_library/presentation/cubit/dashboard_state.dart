@@ -6,6 +6,7 @@ import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/failure_messages.dart';
 import 'package:doc_scanly/features/document_library/domain/bulk_document_action.dart';
+import 'package:doc_scanly/features/document_library/domain/library_display_density.dart';
 import 'package:equatable/equatable.dart';
 
 /// A folder as the dashboard lists it.
@@ -87,6 +88,7 @@ class DashboardState extends Equatable {
     this.favouritesCount = 0,
     this.archiveCount = 0,
     this.trashCount = 0,
+    this.displayDensity = LibraryDisplayDensity.large,
     this.selectionMode = false,
     this.selectedDocumentIds = const [],
     this.bulkStatus = DashboardBulkStatus.idle,
@@ -140,6 +142,9 @@ class DashboardState extends Equatable {
 
   /// Number of recoverable Trash entries.
   final int trashCount;
+
+  /// User-selected thumbnail density for this grid.
+  final LibraryDisplayDensity displayDensity;
 
   /// Whether document multi-selection controls are visible.
   final bool selectionMode;
@@ -209,6 +214,7 @@ class DashboardState extends Equatable {
     int? favouritesCount,
     int? archiveCount,
     int? trashCount,
+    LibraryDisplayDensity? displayDensity,
     bool? selectionMode,
     List<DocumentId>? selectedDocumentIds,
     DashboardBulkStatus? bulkStatus,
@@ -226,6 +232,7 @@ class DashboardState extends Equatable {
     favouritesCount: favouritesCount ?? this.favouritesCount,
     archiveCount: archiveCount ?? this.archiveCount,
     trashCount: trashCount ?? this.trashCount,
+    displayDensity: displayDensity ?? this.displayDensity,
     selectionMode: selectionMode ?? this.selectionMode,
     selectedDocumentIds: selectedDocumentIds ?? this.selectedDocumentIds,
     bulkStatus: bulkStatus ?? this.bulkStatus,
@@ -246,6 +253,7 @@ class DashboardState extends Equatable {
     favouritesCount,
     archiveCount,
     trashCount,
+    displayDensity,
     selectionMode,
     selectedDocumentIds,
     bulkStatus,

@@ -49,6 +49,9 @@ abstract final class PreferenceKeys {
   /// Directory offered first when the user exports a document.
   static const defaultSaveLocation = 'settings.defaultSaveLocation';
 
+  /// Dashboard thumbnail density: large or small.
+  static const libraryDisplayDensity = 'settings.libraryDisplayDensity';
+
   /// Versioned authoritative public-library location.
   static const libraryStorageLocation = 'settings.storage.location.v1';
 
@@ -76,6 +79,7 @@ abstract final class PreferenceKeys {
     imageQuality,
     fileNamingPattern,
     defaultSaveLocation,
+    libraryDisplayDensity,
     libraryStorageLocation,
     migrationSource,
     migrationDestination,
