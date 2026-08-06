@@ -7,6 +7,7 @@ import 'package:doc_scanly/core/contracts/models/page_draft.dart';
 import 'package:doc_scanly/core/contracts/page_renderer.dart';
 import 'package:doc_scanly/core/isolates/background_worker.dart';
 import 'package:doc_scanly/core/permissions/permission_service.dart';
+import 'package:doc_scanly/core/telemetry/app_telemetry.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
 import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
@@ -36,6 +37,7 @@ class ScanningModule {
     required this.renderPage,
     required this.buildPreview,
     required this.openSettings,
+    required this.telemetry,
   });
 
   /// Drives the camera.
@@ -68,6 +70,9 @@ class ScanningModule {
 
   /// Opens this application's system settings after permanent denial.
   final Future<bool> Function() openSettings;
+
+  /// Operational telemetry shared by the page editors.
+  final AppTelemetry telemetry;
 }
 
 /// Builds the scanning graph over an already-resolved cache [directory].
@@ -102,6 +107,7 @@ ScanningModule buildScanningModule({
   EdgeDetector detector = const OpenCvEdgeDetector(),
   ScannerRepository? scanner,
   CameraPreviewBuilder? buildPreview,
+  AppTelemetry telemetry = const NoopAppTelemetry(),
 }) {
   final staging = LocalScanStagingArea(directory);
   final resolvedScanner =
@@ -116,7 +122,11 @@ ScanningModule buildScanningModule({
     capturePage: CapturePage(resolvedScanner, detector),
     applyCorrection: ApplyPerspectiveCorrection(worker, correctPageJob),
     discardSession: DiscardScanSession(staging, resolvedScanner),
-    applyEnhancement: ApplyEnhancement(worker, enhancePageJob),
+    applyEnhancement: ApplyEnhancement(
+      worker,
+      enhancePageJob,
+      telemetry: telemetry,
+    ),
     renderPage: renderPage,
     buildPreview:
         buildPreview ??
@@ -124,6 +134,7 @@ ScanningModule buildScanningModule({
             ? resolvedScanner.buildPreview
             : _unavailableCameraPreview),
     openSettings: permissions.openSettings,
+    telemetry: telemetry,
   );
 }
 
@@ -161,7 +172,8 @@ Future<PageDraft?> openPageCrop(
 }) => Navigator.of(context).push<PageDraft>(
   MaterialPageRoute(
     builder: (routeContext) => BlocProvider(
-      create: (_) => CropCubit(page, module.renderPage),
+      create: (_) =>
+          CropCubit(page, module.renderPage, telemetry: module.telemetry),
       child: CropScreen(
         onNext: (edited) => Navigator.of(routeContext).pop(edited),
         onCancelled: () => Navigator.of(routeContext).pop(),

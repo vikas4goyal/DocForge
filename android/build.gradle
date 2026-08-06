@@ -5,16 +5,14 @@ allprojects {
     }
 }
 
-val newBuildDir: Directory =
-    rootProject.layout.buildDirectory
-        .dir("../../build")
-        .get()
-rootProject.layout.buildDirectory.value(newBuildDir)
+def newBuildDir = rootProject.layout.buildDirectory.dir("../../build").get()
+rootProject.layout.buildDirectory.set(newBuildDir)
 
 subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.value(newSubprojectBuildDir)
+    def newSubprojectBuildDir = newBuildDir.dir(project.name)
+    project.layout.buildDirectory.set(newSubprojectBuildDir)
 }
+
 // Pin every plugin subproject to a compileSdk that actually exists locally.
 //
 // Some plugins (receive_sharing_intent among them) hardcode `compileSdk 37`,
@@ -27,10 +25,10 @@ subprojects {
 // forces subproject evaluation, after which afterEvaluate can no longer be
 // added and Gradle fails with "project is already evaluated".
 subprojects {
-    afterEvaluate {
-        extensions.findByName("android")?.let { androidExtension ->
-            (androidExtension as com.android.build.gradle.BaseExtension)
-                .compileSdkVersion(36)
+    afterEvaluate { evaluatedProject ->
+        def androidExtension = evaluatedProject.extensions.findByName("android")
+        if (androidExtension != null) {
+            androidExtension.compileSdkVersion(36)
         }
     }
 }
@@ -39,6 +37,6 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-tasks.register<Delete>("clean") {
-    delete(rootProject.layout.buildDirectory)
+tasks.register("clean", Delete) {
+    delete rootProject.layout.buildDirectory
 }

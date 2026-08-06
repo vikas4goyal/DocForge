@@ -15,6 +15,7 @@ import 'package:doc_scanly/core/isolates/background_worker.dart';
 import 'package:doc_scanly/core/isolates/thumbnail_cache.dart';
 import 'package:doc_scanly/core/permissions/permission_service.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/telemetry/firebase_app_telemetry.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -54,5 +55,6 @@ Future<AppDependencies> buildAppDependencies() async {
     // allocates a heap and starts an event loop before any pixel is touched.
     worker: PooledIsolateBackgroundWorker(),
     thumbnailCache: ThumbnailCache(),
+    telemetry: const FirebaseAppTelemetry(),
   );
 }

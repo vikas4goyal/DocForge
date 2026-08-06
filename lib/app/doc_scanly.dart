@@ -304,6 +304,7 @@ Future<Widget> buildDocScanly({
     worker: resolvedDependencies.worker,
     detector: detector,
     scanner: scanner,
+    telemetry: resolvedDependencies.telemetry,
   );
 
   // Reconciliation needs to know how many pages a file it has never seen
@@ -405,6 +406,7 @@ Future<Widget> buildDocScanly({
     applyEnhancement: scanning.applyEnhancement,
     pageAccess: library.pageAccess,
     recogniser: recogniser,
+    telemetry: resolvedDependencies.telemetry,
   );
 
   final importing = buildImportModule(

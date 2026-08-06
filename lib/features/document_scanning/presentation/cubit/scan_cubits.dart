@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_initializing_formals
+
 /// The Cubits driving the scanning flow.
 ///
 /// Each method is emit / await a use case / emit. Page ordering, undo
@@ -14,6 +16,7 @@ import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
 import 'package:doc_scanly/core/contracts/page_renderer.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/telemetry/app_telemetry.dart';
 import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
 import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
@@ -192,11 +195,19 @@ class PageReviewCubit extends Cubit<PageReviewState> {
 /// is what lets the two layers be reverted independently (`design.md` D6).
 class CropCubit extends Cubit<CropState> {
   /// Creates the Cubit for [page], rendering through [_render].
-  CropCubit(PageDraft page, this._render) : super(CropState.adjusting(page)) {
+  // A named public `telemetry` parameter is clearer than exposing the private
+  // field name solely to use an initializing formal.
+  CropCubit(
+    PageDraft page,
+    this._render, {
+    AppTelemetry telemetry = const NoopAppTelemetry(),
+  }) : _telemetry = telemetry,
+       super(CropState.adjusting(page)) {
     unawaited(_refresh());
   }
 
   final PageRenderer _render;
+  final AppTelemetry _telemetry;
 
   /// Moves the selection to [quad] as the user drags a handle.
   ///
@@ -220,11 +231,38 @@ class CropCubit extends Cubit<CropState> {
     emit(state.copyWith(status: CropStatus.applying));
 
     final cropped = state.page.withCrop(pending);
-    final rendered = await _render(PageRenderPlan.of(cropped));
+    final trace = await _telemetry.startTrace('page_crop');
+    trace.putAttribute('rotated', (pending.rotationDegrees != 0).toString());
+
+    late final Result<String> rendered;
+    try {
+      rendered = await _render(PageRenderPlan.of(cropped));
+      trace.putAttribute(
+        'outcome',
+        rendered is Success<String> ? 'success' : 'failure',
+      );
+    } on Object catch (error, stackTrace) {
+      trace.putAttribute('outcome', 'exception');
+      await _telemetry.recordError(
+        error,
+        stackTrace,
+        reason: 'Page crop render',
+      );
+      rethrow;
+    } finally {
+      await trace.stop();
+    }
     if (isClosed) return;
 
     switch (rendered) {
       case Success(:final value):
+        await _telemetry.logEvent(
+          'page_cropped',
+          parameters: {
+            'outcome': 'success',
+            'rotated': pending.rotationDegrees != 0 ? 1 : 0,
+          },
+        );
         emit(
           state.copyWith(
             status: CropStatus.adjusting,
@@ -238,6 +276,13 @@ class CropCubit extends Cubit<CropState> {
           ),
         );
       case Failed(:final failure):
+        await _telemetry.logEvent(
+          'page_cropped',
+          parameters: {
+            'outcome': 'failure',
+            'rotated': pending.rotationDegrees != 0 ? 1 : 0,
+          },
+        );
         // The page is untouched — the crop was never appended — so the user
         // can adjust the selection and try again.
         emit(state.copyWith(status: CropStatus.adjusting, failure: failure));

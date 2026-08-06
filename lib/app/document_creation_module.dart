@@ -7,11 +7,13 @@
 library;
 
 import 'dart:io';
+
 import 'package:doc_scanly/core/contracts/contracts.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/telemetry/app_telemetry.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/image_enhancement/application/usecases/enhancement_usecases.dart';
 import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
@@ -95,7 +97,8 @@ DocumentCreationModule buildDocumentCreationModule({
   required NamingPattern Function() namingPattern,
   required ApplyEnhancement applyEnhancement,
   DocumentPageAccessRepository? pageAccess,
-  PdfComposer composer = const IsolatePdfComposer(),
+  PdfComposer? composer,
+  AppTelemetry telemetry = const NoopAppTelemetry(),
   OcrRepository? recogniser,
   OcrScript Function() script = _defaultScript,
   OcrLanguagePacks languagePacks = const BundledOcrLanguagePacks(),
@@ -152,7 +155,11 @@ DocumentCreationModule buildDocumentCreationModule({
   }
 
   final save = SaveDocument(
-    BuildSearchablePdf(composer, textFor, resolveImage: resolvePageImage),
+    BuildSearchablePdf(
+      composer ?? IsolatePdfComposer(telemetry: telemetry),
+      textFor,
+      resolveImage: resolvePageImage,
+    ),
     documentWriter,
     clock,
     ids,

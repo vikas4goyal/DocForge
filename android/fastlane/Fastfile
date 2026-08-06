@@ -59,16 +59,34 @@ platform :android do
   end
 
   lane :update_build_number do
-      buildNumber = fetch_build_number.to_i
-      buildVersion = fetch_build_version
-      increment_version_code(
-        gradle_file_path: "app/build.gradle",
-        version_code: buildNumber
-      )
-      increment_version_name(
-        gradle_file_path: "app/build.gradle",
-        version_name: buildVersion
-      )
+    build_number = fetch_build_number.to_s.strip
+    build_version = fetch_build_version.to_s.strip
+
+    UI.user_error!("Invalid Android build number '#{build_number}'") unless build_number.match?(/\A[1-9]\d*\z/)
+    UI.user_error!("Android build version is empty") if build_version.empty?
+
+    increment_version_code(
+      gradle_file_path: "app/build.gradle",
+      version_code: build_number.to_i
+    )
+    increment_version_name(
+      gradle_file_path: "app/build.gradle",
+      version_name: build_version
+    )
+
+    # Keep Flutter's own version metadata aligned with the Groovy values so a
+    # local `flutter build` and the CI build identify themselves consistently.
+    # Lane blocks execute from android/fastlane (actions themselves chdir to
+    # android), so the Flutter manifest is two levels above this block.
+    pubspec_path = "../../pubspec.yaml"
+    pubspec = File.read(pubspec_path)
+    version_lines = pubspec.scan(/^version:\s*.*$/)
+    UI.user_error!("Expected exactly one version entry in #{pubspec_path}") unless version_lines.length == 1
+
+    updated_pubspec = pubspec.sub(/^version:\s*.*$/, "version: #{build_version}+#{build_number}")
+    File.write(pubspec_path, updated_pubspec) if updated_pubspec != pubspec
+
+    UI.success("Updated Flutter/Android version to #{build_version} (#{build_number})")
   end
 
 #   desc "Create App APK"

@@ -1,3 +1,5 @@
+// ignore_for_file: prefer_initializing_formals
+
 /// Use cases for image enhancement.
 library;
 
@@ -5,6 +7,7 @@ import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/isolates/background_worker.dart';
 import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/telemetry/app_telemetry.dart';
 import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
 
 /// Applies enhancement settings to pages, off the UI thread.
@@ -16,10 +19,19 @@ class ApplyEnhancement {
   /// it. It must be a top-level or static function: a closure cannot be sent to
   /// an isolate, and one capturing UI state would reintroduce exactly the
   /// hidden coupling the architecture forbids.
-  const ApplyEnhancement(this._worker, this._job);
+  // A named public `telemetry` parameter is clearer than exposing the private
+  // field name solely to use an initializing formal.
+  const ApplyEnhancement(
+    this._worker,
+    this._job, {
+    AppTelemetry telemetry = const NoopAppTelemetry(),
+  }) : _telemetry = telemetry;
 
   final BackgroundWorker _worker;
   final IsolateJob<EnhancementRequest, String> _job;
+
+  /// Reports full-resolution enhancement duration and outcomes.
+  final AppTelemetry _telemetry;
 
   /// Renders a downscaled preview of [settings] applied to [sourcePath].
   ///
@@ -50,15 +62,42 @@ class ApplyEnhancement {
     required String destinationPath,
     required EnhancementSettings settings,
     int? maxDimension,
-  }) => _worker.run(
-    _job,
-    EnhancementRequest(
-      sourcePath: sourcePath,
-      destinationPath: destinationPath,
-      settings: settings,
-      maxDimension: maxDimension,
-    ),
-  );
+  }) async {
+    final trace = await _telemetry.startTrace('page_enhancement');
+    trace.putAttribute('filter', settings.filter.name);
+    if (maxDimension != null) {
+      trace.setMetric('max_dimension', maxDimension);
+    }
+
+    try {
+      final result = await _worker.run(
+        _job,
+        EnhancementRequest(
+          sourcePath: sourcePath,
+          destinationPath: destinationPath,
+          settings: settings,
+          maxDimension: maxDimension,
+        ),
+      );
+      final outcome = result is Success<String> ? 'success' : 'failure';
+      trace.putAttribute('outcome', outcome);
+      await _telemetry.logEvent(
+        'page_enhanced',
+        parameters: {'outcome': outcome, 'filter': settings.filter.name},
+      );
+      return result;
+    } on Object catch (error, stackTrace) {
+      trace.putAttribute('outcome', 'exception');
+      await _telemetry.recordError(
+        error,
+        stackTrace,
+        reason: 'Full-resolution page enhancement',
+      );
+      rethrow;
+    } finally {
+      await trace.stop();
+    }
+  }
 
   /// Applies each of [requests] in turn, reporting progress as it goes.
   ///

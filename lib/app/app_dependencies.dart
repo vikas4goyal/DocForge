@@ -22,6 +22,7 @@ import 'package:doc_scanly/core/isolates/background_worker.dart';
 import 'package:doc_scanly/core/isolates/thumbnail_cache.dart';
 import 'package:doc_scanly/core/permissions/permission_service.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/telemetry/app_telemetry.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:flutter/widgets.dart';
 
@@ -37,6 +38,7 @@ class AppDependencies {
     required this.permissions,
     required this.worker,
     required this.thumbnailCache,
+    required this.telemetry,
   });
 
   /// Source of the current time. Injected so business logic is deterministic.
@@ -60,6 +62,9 @@ class AppDependencies {
   /// Bounded cache of display-resolution page thumbnails.
   final ThumbnailCache thumbnailCache;
 
+  /// Operational analytics, performance traces, and non-fatal error reports.
+  final AppTelemetry telemetry;
+
   /// Returns a copy with the given collaborators replaced.
   ///
   /// Exists for tests and previews, which typically swap one or two
@@ -72,6 +77,7 @@ class AppDependencies {
     PermissionService? permissions,
     BackgroundWorker? worker,
     ThumbnailCache? thumbnailCache,
+    AppTelemetry? telemetry,
   }) {
     return AppDependencies(
       clock: clock ?? this.clock,
@@ -81,6 +87,7 @@ class AppDependencies {
       permissions: permissions ?? this.permissions,
       worker: worker ?? this.worker,
       thumbnailCache: thumbnailCache ?? this.thumbnailCache,
+      telemetry: telemetry ?? this.telemetry,
     );
   }
 }
