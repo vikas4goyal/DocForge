@@ -30,7 +30,7 @@ pipeline {
     // credential with this exact ID exists in Jenkins -- referencing a missing
     // credential ID aborts the pipeline before stage one. release_firebase picks it
     // up automatically and ignores the token when it is set.
-    FIREBASE_SERVICE_ACCOUNT_JSON_PATH = credentials('FIREBASE_SERVICE_ACCOUNT_JSON_PATH')
+    FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT = credentials('FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT')
     APPSTORE_API_KEY_ID = credentials('APPSTORE_API_KEY_ID')
     APPSTORE_ISSUER_ID = credentials('APPSTORE_ISSUER_ID')
     APPSTORE_API_KEY_PATH = credentials('APPSTORE_API_KEY_PATH')

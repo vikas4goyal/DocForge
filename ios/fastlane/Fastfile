@@ -42,7 +42,7 @@ platform :ios do
     GSP_PATH = "Runner/GoogleService-Info.plist"
     FIREBASE_APP_ID = "1:511064978644:ios:ca34e9d09c5bd07a24b741"
     FIREBASE_CLI_TOKEN = ENV["FIREBASE_CLI_TOKEN"]
-    FIREBASE_SERVICE_ACCOUNT_JSON_PATH = ENV["FIREBASE_SERVICE_ACCOUNT_JSON_PATH"]
+    FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT = ENV["FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT"]
     # Needed on the Jenkins agent so match can run `security set-key-partition-list`
     # when it imports a certificate. Without it codesign cannot reach the private
     # key from a non-GUI session and fails with errSecInternalComponent. Unset
@@ -89,17 +89,17 @@ platform :ios do
   # "invalid_grant". A service account has no expiry and belongs to the project, so
   # prefer it and keep the token only as a fallback until it is fully retired.
   private_lane :firebase_auth_options do
-    if FIREBASE_SERVICE_ACCOUNT_JSON_PATH.to_s.empty?
+    if FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT.to_s.empty?
       if FIREBASE_CLI_TOKEN.to_s.empty?
-        UI.user_error!("Set FIREBASE_SERVICE_ACCOUNT_JSON_PATH (preferred) or FIREBASE_CLI_TOKEN to upload to Firebase")
+        UI.user_error!("Set FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT (preferred) or FIREBASE_CLI_TOKEN to upload to Firebase")
       end
-      UI.important("Using the deprecated FIREBASE_CLI_TOKEN; set FIREBASE_SERVICE_ACCOUNT_JSON_PATH to switch to a service account")
+      UI.important("Using the deprecated FIREBASE_CLI_TOKEN; set FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT to switch to a service account")
       { firebase_cli_token: FIREBASE_CLI_TOKEN }
     else
-      unless File.exist?(FIREBASE_SERVICE_ACCOUNT_JSON_PATH)
-        UI.user_error!("FIREBASE_SERVICE_ACCOUNT_JSON_PATH points at #{FIREBASE_SERVICE_ACCOUNT_JSON_PATH}, which does not exist")
+      unless File.exist?(FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT)
+        UI.user_error!("FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT points at #{FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT}, which does not exist")
       end
-      { service_credentials_file: FIREBASE_SERVICE_ACCOUNT_JSON_PATH }
+      { service_credentials_file: FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT }
     end
   end
 

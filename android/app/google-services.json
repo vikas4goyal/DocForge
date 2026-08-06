@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "511064978644",
-    "project_id": "docscanly-9a9a4",
-    "storage_bucket": "docscanly-9a9a4.firebasestorage.app"
+    "project_number": "523152876285",
+    "project_id": "docscanly-32114",
+    "storage_bucket": "docscanly-32114.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:511064978644:android:adf3492c6648eb0124b741",
+        "mobilesdk_app_id": "1:523152876285:android:52d6da5a8554c70059d494",
         "android_client_info": {
           "package_name": "com.bruxkey.docscanly"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDH7bG28uyy1UfiZunfYt-5crpuLwL1ook"
+          "current_key": "AIzaSyDA6VOJsb_3poWSVzhEhd4PaAX6r4j-3ls"
         }
       ],
       "services": {
