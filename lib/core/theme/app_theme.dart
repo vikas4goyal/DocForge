@@ -1,4 +1,4 @@
-/// Material 3 light and dark themes for DocForge.
+/// Material 3 light and dark themes for DocScanly.
 ///
 /// Dark mode is mandatory, not optional, and every screen must meet WCAG AA
 /// contrast in both themes while remaining usable at the maximum system text

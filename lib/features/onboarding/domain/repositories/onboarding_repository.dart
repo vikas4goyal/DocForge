@@ -6,7 +6,7 @@
 /// without knowing it comes from SharedPreferences.
 library;
 
-import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 
 /// Reads and writes the onboarding-completed flag.
 abstract interface class OnboardingRepository {

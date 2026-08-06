@@ -3,14 +3,15 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/features/ocr/domain/ocr_rules.dart';
-import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/ocr/domain/ocr_rules.dart';
+import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
 
 /// One page's recognition outcome, as it is reported while a run proceeds.
 class RecognitionEvent {
@@ -124,6 +125,176 @@ class RecogniseText {
   }
 }
 
+/// Extracts embedded PDF text first and recognises only image-backed pages.
+class ExtractDocumentText {
+  /// Creates the extractor from explicit document, page, OCR, and storage seams.
+  const ExtractDocumentText(
+    this._documents,
+    this._documentWriter,
+    this._pages,
+    this._recogniser,
+    this._store,
+    this._clock,
+  );
+
+  final DocumentReader _documents;
+  final DocumentWriter _documentWriter;
+  final DocumentPageAccessRepository _pages;
+  final OcrRepository _recogniser;
+  final OcrTextStore _store;
+  final Clock _clock;
+
+  /// Extracts every page of [documentId] in order.
+  Stream<RecognitionEvent> call(
+    DocumentId documentId, {
+    required OcrScript script,
+    bool force = false,
+    CancellationToken? token,
+  }) async* {
+    final found = await _documents.findById(documentId);
+    if (found case Failed(:final failure)) {
+      yield RecognitionEvent(
+        pageId: const PageId('document'),
+        progress: const Progress(completed: 0, total: 0),
+        failure: failure,
+      );
+      return;
+    }
+    final document = found.valueOrNull!;
+    final loaded = await _pages.pagesOf(document);
+    if (loaded case Failed(:final failure)) {
+      yield RecognitionEvent(
+        pageId: const PageId('pages'),
+        progress: const Progress(completed: 0, total: 0),
+        failure: failure,
+      );
+      return;
+    }
+    final handles = loaded.valueOrNull!;
+    final stored =
+        (await _store.findAll([
+          for (final page in handles) page.id,
+        ])).valueOrNull ??
+        const <PageId, RecognisedText>{};
+    final pending = force
+        ? handles
+        : [
+            for (final page in handles)
+              if (!stored.containsKey(page.id)) page,
+          ];
+    var foundText = stored.values.any((value) => !value.isEmpty);
+
+    // PDF engines and on-device recognisers can retain large native buffers.
+    // Process one page at a time so memory and native concurrency stay bounded.
+    for (var index = 0; index < pending.length; index++) {
+      if (token?.isCancelled ?? false) return;
+      final page = pending[index];
+      final progress = Progress(completed: index + 1, total: pending.length);
+      final embedded = await _pages.embeddedText(document, page);
+      if (embedded case Failed(:final failure)) {
+        yield RecognitionEvent(
+          pageId: page.id,
+          progress: progress,
+          failure: failure,
+        );
+        continue;
+      }
+
+      final text = embedded.valueOrNull?.trim();
+      if (text != null && text.isNotEmpty) {
+        foundText = true;
+        final value = RecognisedText(
+          pageId: page.id,
+          languageTag: 'und',
+          recognisedAt: _clock.now(),
+          blocks: [
+            TextBlock(
+              text: text,
+              // Embedded text remains searchable in the source PDF. This box
+              // only lets the shared text model persist it for search/share.
+              bounds: const NormalisedRect(
+                left: 0,
+                top: 0,
+                right: 1,
+                bottom: 1,
+              ),
+            ),
+          ],
+        );
+        final saved = await _store.save(value, documentId);
+        yield switch (saved) {
+          Failed(:final failure) => RecognitionEvent(
+            pageId: page.id,
+            progress: progress,
+            failure: failure,
+          ),
+          Success() => RecognitionEvent(
+            pageId: page.id,
+            progress: progress,
+            text: value,
+          ),
+        };
+        continue;
+      }
+
+      final materialized = await _pages.materialize(
+        document,
+        page,
+        DocumentPageRenderPurpose.recognition,
+      );
+      if (materialized case Failed(:final failure)) {
+        yield RecognitionEvent(
+          pageId: page.id,
+          progress: progress,
+          failure: failure,
+        );
+        continue;
+      }
+      final image = materialized.valueOrNull!;
+      try {
+        final recognised = await _recogniser.recognise(
+          pageId: page.id,
+          imagePath: image.path,
+          script: script,
+        );
+        switch (recognised) {
+          case Success(:final value):
+            if (!value.isEmpty) foundText = true;
+            final saved = await _store.save(value, documentId);
+            yield switch (saved) {
+              Failed(:final failure) => RecognitionEvent(
+                pageId: page.id,
+                progress: progress,
+                failure: failure,
+              ),
+              Success() => RecognitionEvent(
+                pageId: page.id,
+                progress: progress,
+                text: value,
+              ),
+            };
+          case Failed(:final failure):
+            yield RecognitionEvent(
+              pageId: page.id,
+              progress: progress,
+              failure: failure,
+            );
+        }
+      } finally {
+        await _pages.release(image);
+      }
+    }
+
+    if (foundText && !document.hasRecognisedText) {
+      // The flag is a derived list/search hint. Text is already safely stored,
+      // so a metadata failure must not discard successful extraction.
+      await _documentWriter.updateMetadata(
+        document.copyWith(hasRecognisedText: true),
+      );
+    }
+  }
+}
+
 /// Loads the recognised text already stored for a document.
 class LoadRecognisedText {
   /// Creates the use case.
@@ -185,5 +356,63 @@ class OcrTextSourceImpl implements OcrTextSource {
 
       return stored.map((texts) => OcrRules.combinedText(refs, texts));
     });
+  }
+}
+
+/// Reads ordered stored text through unified virtual or stored page identities.
+class DocumentPageOcrTextSource implements OcrTextSource {
+  /// Creates the source over documents, shared page access, and stored text.
+  const DocumentPageOcrTextSource(
+    this._documents,
+    this._pages,
+    this._store, [
+    this._extract,
+    this._script,
+  ]);
+
+  final DocumentReader _documents;
+  final DocumentPageAccessRepository _pages;
+  final OcrTextStore _store;
+  final ExtractDocumentText? _extract;
+  final OcrScript Function()? _script;
+
+  @override
+  Future<Result<RecognisedText?>> textForPage(PageId pageId) =>
+      _store.find(pageId);
+
+  @override
+  Future<Result<String>> textForDocument(DocumentId documentId) async {
+    final found = await _documents.findById(documentId);
+    if (found case Failed(:final failure)) {
+      return Result<String>.failure(failure);
+    }
+    final handles = await _pages.pagesOf(found.valueOrNull!);
+    if (handles case Failed(:final failure)) {
+      return Result<String>.failure(failure);
+    }
+    final ordered = handles.valueOrNull!;
+    var stored = await _store.findAll([for (final page in ordered) page.id]);
+    if (stored case Failed(:final failure)) {
+      return Result<String>.failure(failure);
+    }
+    var values = stored.valueOrNull!;
+    if (!values.values.any((value) => !value.isEmpty) && _extract != null) {
+      await _extract(
+        documentId,
+        script: _script?.call() ?? OcrScript.defaultScript,
+      ).drain<void>();
+      stored = await _store.findAll([for (final page in ordered) page.id]);
+      if (stored case Failed(:final failure)) {
+        return Result<String>.failure(failure);
+      }
+      values = stored.valueOrNull!;
+    }
+    return Result<String>.success(
+      [
+        for (final page in ordered)
+          if (values[page.id] case final value? when !value.isEmpty)
+            value.plainText,
+      ].join('\n\n'),
+    );
   }
 }

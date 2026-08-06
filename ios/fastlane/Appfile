@@ -1,0 +1,6 @@
+app_identifier("com.bruxkey.docscanly") # The bundle identifier of your app
+apple_id("admin.bruxkey@gmail.com") # Your Apple email address
+team_id("85CD8AYN8F") # Developer Portal Team ID
+
+# https://stackoverflow.com/questions/42960644/how-to-get-itunes-connect-team-id-and-team-name
+itc_team_id("126854901") # App Store Connect Team ID

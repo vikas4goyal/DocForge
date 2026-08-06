@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_library/domain/library_rules.dart';
-import 'package:doc_forge/features/document_library/domain/repositories/document_file_store.dart';
-import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/trash.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_library/domain/library_rules.dart';
+import 'package:doc_scanly/features/document_library/domain/repositories/document_file_store.dart';
+import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
 
 /// An in-memory [DocumentRepository].
 ///
@@ -116,7 +117,9 @@ class FakeFolderRepository implements FolderRepository {
   @override
   Future<Result<List<Folder>>> all() async => failure != null
       ? Result<List<Folder>>.failure(failure!)
-      : Result<List<Folder>>.success(folders.values.toList());
+      : Result<List<Folder>>.success(
+          folders.values.where((folder) => folder.isVisibleInLibrary).toList(),
+        );
 
   @override
   Future<Result<Folder>> findById(FolderId id) async {
@@ -131,9 +134,24 @@ class FakeFolderRepository implements FolderRepository {
   Future<Result<Folder?>> findByName(String name) async {
     if (failure != null) return Result<Folder?>.failure(failure!);
     final matches = folders.values.where(
-      (f) => f.name.toLowerCase() == name.toLowerCase(),
+      (f) => f.isVisibleInLibrary && f.name.toLowerCase() == name.toLowerCase(),
     );
     return Result<Folder?>.success(matches.isEmpty ? null : matches.first);
+  }
+
+  @override
+  Future<Result<Folder?>> findByRelativePath(String relativePath) async {
+    if (failure != null) return Result<Folder?>.failure(failure!);
+
+    return Result<Folder?>.success(
+      folders.values
+          .where(
+            (folder) =>
+                folder.isVisibleInLibrary &&
+                folder.relativePath == relativePath,
+          )
+          .firstOrNull,
+    );
   }
 
   @override
@@ -173,6 +191,60 @@ class FakePageRepository implements PageRepository {
     pages.remove(documentId);
     return const Result<void>.success(null);
   }
+}
+
+/// An in-memory [TrashRepository].
+class FakeTrashRepository implements TrashRepository {
+  /// Stored entries by stable identifier.
+  final Map<TrashId, TrashEntry> entries = {};
+
+  /// When set, every operation fails with this failure.
+  Failure? failure;
+
+  @override
+  Future<Result<TrashEntry>> findById(TrashId id) async {
+    if (failure != null) return Result<TrashEntry>.failure(failure!);
+    final entry = entries[id];
+    return entry == null
+        ? const Result<TrashEntry>.failure(Failure.notFound())
+        : Result<TrashEntry>.success(entry);
+  }
+
+  @override
+  Future<Result<List<TrashEntry>>> all() async {
+    if (failure != null) return Result<List<TrashEntry>>.failure(failure!);
+    return Result<List<TrashEntry>>.success(
+      entries.values.toList()
+        ..sort((a, b) => b.deletedAt.compareTo(a.deletedAt)),
+    );
+  }
+
+  @override
+  Future<Result<TrashEntry>> save(TrashEntry entry) async {
+    if (failure != null) return Result<TrashEntry>.failure(failure!);
+    entries[entry.id] = entry;
+    return Result<TrashEntry>.success(entry);
+  }
+
+  @override
+  Future<Result<void>> delete(TrashId id) async {
+    if (failure != null) return Result<void>.failure(failure!);
+    entries.remove(id);
+    return const Result<void>.success(null);
+  }
+
+  @override
+  Future<Result<List<TrashEntry>>> expiredAt(DateTime now) async {
+    final loaded = await all();
+    return loaded.map(
+      (values) => values.where((entry) => entry.isExpiredAt(now)).toList(),
+    );
+  }
+
+  @override
+  Future<Result<int>> count() async => failure != null
+      ? Result<int>.failure(failure!)
+      : Result<int>.success(entries.length);
 }
 
 /// A [DocumentFileStore] that records calls without touching the filesystem.

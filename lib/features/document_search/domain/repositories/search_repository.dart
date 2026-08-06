@@ -1,8 +1,8 @@
 /// The contract behind searching stored documents.
 library;
 
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_search/domain/search_query.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_search/domain/search_query.dart';
 
 /// Searches the library.
 ///

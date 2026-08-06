@@ -6,8 +6,8 @@
 /// without a picker in sight.
 library;
 
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
-import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 
 /// Where imported content came from.
 enum ImportSource {
@@ -21,7 +21,10 @@ enum ImportSource {
   files('Device files', 'Choose a PDF or images from device files'),
 
   /// Content handed to the application by another application.
-  shareSheet('Shared with DocForge', 'Content shared from another application');
+  shareSheet(
+    'Shared with DocScanly',
+    'Content shared from another application',
+  );
 
   const ImportSource(this.label, this.semanticsLabel);
 
@@ -60,7 +63,7 @@ enum ImportedFileKind {
   /// A PDF, which becomes a document directly.
   pdf,
 
-  /// Something DocForge cannot read.
+  /// Something DocScanly cannot read.
   unsupported,
 }
 
@@ -81,7 +84,7 @@ class ImportCandidate {
 
 /// Decisions about importing.
 abstract final class ImportRules {
-  /// Image extensions DocForge can turn into a page.
+  /// Image extensions DocScanly can turn into a page.
   ///
   /// HEIC is included because it is the iPhone camera's default format, and
   /// omitting it would reject most of a typical photo library.
@@ -97,7 +100,7 @@ abstract final class ImportRules {
     'tiff',
   };
 
-  /// The one document extension DocForge can import.
+  /// The one document extension DocScanly can import.
   static const pdfExtension = 'pdf';
 
   /// The directory name, inside app-private storage, holding imported pages.
@@ -106,7 +109,7 @@ abstract final class ImportRules {
   /// Returns the lower-cased extension of [path], without its dot.
   ///
   /// Returns an empty string when there is none — a file with no extension is
-  /// a file DocForge cannot classify, which is a rejection rather than a crash.
+  /// a file DocScanly cannot classify, which is a rejection rather than a crash.
   static String extensionOf(String path) {
     final name = path.split('/').last;
     final dot = name.lastIndexOf('.');
@@ -137,12 +140,12 @@ abstract final class ImportRules {
     for (final path in paths) ImportCandidate(path: path, kind: kindFor(path)),
   ];
 
-  /// The message shown when a selected file is of a type DocForge cannot read.
+  /// The message shown when a selected file is of a type DocScanly cannot read.
   ///
   /// Names the supported types, which the spec requires: "unsupported file" on
   /// its own leaves the user with no idea what to select instead.
   static const unsupportedTypeMessage =
-      'DocForge can import PDFs and images (JPEG, PNG, HEIC, WebP, BMP and '
+      'DocScanly can import PDFs and images (JPEG, PNG, HEIC, WebP, BMP and '
       'TIFF). That file is neither.';
 
   /// The title of a document suggested by an imported file at [path].

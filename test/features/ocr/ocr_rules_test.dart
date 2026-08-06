@@ -1,11 +1,11 @@
 /// Tests the OCR business rules.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/features/ocr/domain/ocr_rules.dart';
-import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/features/ocr/domain/ocr_rules.dart';
+import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A page reference.

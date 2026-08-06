@@ -1,26 +1,27 @@
 import 'dart:async';
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/formatting/display_formatting.dart';
-import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
-import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/document_detail_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/document_card.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/folder_tile.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/page_thumbnail.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/formatting/display_formatting.dart';
+import 'package:doc_scanly/core/previews/fixtures/fixtures.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_queries.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/folder_usecases.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/folder_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_detail_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_list_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/folder_list_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_card.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/folder_tile.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/page_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -34,12 +35,17 @@ void main() {
   late FakeFolderRepository folders;
   late FakePageRepository pages;
   late FakeDocumentFileStore files;
+  late InMemoryPublicFileStore store;
   late InMemorySecureStore secure;
   late Clock clock;
   late IdGenerator ids;
 
   setUp(() {
     documents = FakeDocumentRepository();
+    store = InMemoryPublicFileStore();
+    // Renaming moves the file as well as the record, so the file has to exist:
+    // the folder is the truth, and a record renamed alone would disagree.
+    store.files[sampleDocument.relativePath] = 'pdf';
     folders = FakeFolderRepository();
     pages = FakePageRepository();
     files = FakeDocumentFileStore();
@@ -60,13 +66,13 @@ void main() {
   DocumentDetailCubit detailCubit(DocumentId id) => DocumentDetailCubit(
     id,
     LoadDocumentDetail(documents, pages),
-    RenameDocument(documents, clock),
+    RenameDocument(documents, clock, store),
     MoveDocument(documents, clock),
     ToggleFavourite(documents, clock),
     ArchiveDocument(documents, clock),
     RestoreDocument(documents, clock),
-    DuplicateDocument(documents, pages, files, clock, ids),
-    PurgeDocument(documents, pages, files, secure),
+    DuplicateDocument(documents, pages, InMemoryPublicFileStore(), clock, ids),
+    PurgeDocument(documents, pages, InMemoryPublicFileStore(), files, secure),
   );
 
   FolderCubit folderCubit() => FolderCubit(
@@ -77,7 +83,7 @@ void main() {
       folders,
       documents,
       MoveDocument(documents, clock),
-      PurgeDocument(documents, pages, files, secure),
+      PurgeDocument(documents, pages, InMemoryPublicFileStore(), files, secure),
     ),
   );
 
@@ -460,29 +466,7 @@ void main() {
       expect(folders.folders, hasLength(1));
     });
 
-    testWidgets('deleting a folder asks what happens to its documents', (
-      tester,
-    ) async {
-      folders.folders[sampleFolder.id] = sampleFolder.copyWith(
-        documentCount: 2,
-      );
-      await tester.pumpWidget(build());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete'));
-      await tester.pumpAndSettle();
-
-      expect(
-        find.byKey(LibraryKeys.folderDeleteStrategyDialog),
-        findsOneWidget,
-      );
-      expect(find.byKey(LibraryKeys.folderDeleteMoveOut), findsOneWidget);
-      expect(find.byKey(LibraryKeys.folderDeleteWithDocuments), findsOneWidget);
-    });
-
-    testWidgets('cancelling the deletion dialog keeps the folder', (
+    testWidgets('the legacy list exposes no permanent folder deletion', (
       tester,
     ) async {
       folders.folders[sampleFolder.id] = sampleFolder;
@@ -491,33 +475,11 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.more_vert));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
 
+      expect(find.text('Rename'), findsOneWidget);
+      expect(find.text('Delete'), findsNothing);
+      expect(find.byKey(LibraryKeys.folderMenuDelete), findsNothing);
       expect(folders.folders, hasLength(1));
-    });
-
-    testWidgets('keeping the documents deletes only the folder', (
-      tester,
-    ) async {
-      folders.folders[sampleFolder.id] = sampleFolder;
-      documents.documents[sampleDocument.id] = sampleDocument.copyWith(
-        folderId: sampleFolder.id,
-      );
-      await tester.pumpWidget(build());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Delete'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(LibraryKeys.folderDeleteMoveOut));
-      await tester.pumpAndSettle();
-
-      expect(folders.folders, isEmpty);
-      expect(documents.documents[sampleDocument.id]?.folderId, isNull);
     });
 
     testWidgets('a folder row announces its name and count', (tester) async {

@@ -1,10 +1,10 @@
 /// State for the sharing options.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 import 'package:equatable/equatable.dart';
 
 /// Where a share, print or export is in its lifecycle.
@@ -15,8 +15,14 @@ enum ShareStatus {
   /// Content is being prepared for handing over.
   preparing,
 
+  /// The platform owns the export picker and provider write.
+  exporting,
+
   /// The content has been handed to the system, or the export has been written.
   done,
+
+  /// The user dismissed the platform flow without an error.
+  cancelled,
 
   /// The operation could not be completed.
   failure,
@@ -80,7 +86,8 @@ class ShareState extends Equatable {
   final String? exportedTo;
 
   /// Whether preparation is under way.
-  bool get isPreparing => status == ShareStatus.preparing;
+  bool get isPreparing =>
+      status == ShareStatus.preparing || status == ShareStatus.exporting;
 
   /// The user-facing message for [failure].
   String? get message => failure?.presentation.message;

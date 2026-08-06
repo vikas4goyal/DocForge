@@ -8,8 +8,8 @@
 /// outline, and putting the corners in the right order.
 library;
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/document_scanning/domain/page_edge_geometry.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/features/document_scanning/domain/page_edge_geometry.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A frame the size of a downscaled capture.

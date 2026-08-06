@@ -10,14 +10,14 @@
 /// data end up disagreeing about it.
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/domain/repositories/library_repositories.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
 
 /// Read access to stored documents, for capabilities outside the library.
 class LibraryDocumentReader implements DocumentReader {

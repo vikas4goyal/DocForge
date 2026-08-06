@@ -1,9 +1,9 @@
 /// A folder row in the folder list.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/formatting/display_formatting.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/formatting/display_formatting.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
 import 'package:flutter/material.dart';
 
 /// A single folder in a list, showing its current document count.
@@ -68,18 +68,21 @@ class _FolderMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Actions for ${tile.folder.name}',
+      label: LibrarySemantics.folderActions(tile.folder.name),
       child: ExcludeSemantics(
         child: PopupMenuButton<void>(
+          key: LibraryKeys.folderMenuButton(tile.folder.id.value),
           icon: const Icon(Icons.more_vert),
           itemBuilder: (context) => [
             if (tile.onRename != null)
               PopupMenuItem<void>(
+                key: LibraryKeys.folderMenuRename,
                 onTap: tile.onRename,
                 child: const Text('Rename'),
               ),
             if (tile.onDelete != null)
               PopupMenuItem<void>(
+                key: LibraryKeys.folderMenuDelete,
                 onTap: tile.onDelete,
                 child: const Text('Delete'),
               ),

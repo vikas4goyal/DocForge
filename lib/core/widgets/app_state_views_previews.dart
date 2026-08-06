@@ -10,9 +10,9 @@
 /// or fixtures — no repository, camera, network or database.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 

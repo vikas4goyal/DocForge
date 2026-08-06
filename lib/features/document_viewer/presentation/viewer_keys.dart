@@ -13,8 +13,26 @@ abstract final class ViewerKeys {
   /// The indicator showing the current page and the total.
   static const pageIndicator = Key('viewer_page_indicator');
 
-  /// The field for jumping to a page.
-  static const jumpToPageField = Key('viewer_jump_to_page_field');
+  /// Compact control that opens page-jump input.
+  static const pageJumpButton = Key('viewer_page_jump_button');
+
+  /// Dialog containing intentional numeric page input.
+  static const pageJumpDialog = Key('viewer_page_jump_dialog');
+
+  /// Numeric field shown only inside the jump dialog.
+  static const pageJumpField = Key('viewer_page_jump_field');
+
+  /// Backwards-compatible source alias for the intentional jump field.
+  static const jumpToPageField = pageJumpField;
+
+  /// Confirms a valid page jump.
+  static const pageJumpConfirm = Key('viewer_page_jump_confirm');
+
+  /// Cancels the jump dialog without changing page.
+  static const pageJumpCancel = Key('viewer_page_jump_cancel');
+
+  /// Responsive overflow containing secondary viewer actions.
+  static const actionsMenu = Key('viewer_actions_menu');
 
   /// The control that shares the document.
   static const shareButton = Key('viewer_share_button');
@@ -22,8 +40,20 @@ abstract final class ViewerKeys {
   /// The control that prints the document.
   static const printButton = Key('viewer_print_button');
 
-  /// The control that opens the editing tools.
-  static const editButton = Key('viewer_edit_button');
+  /// The control that opens PDF compression.
+  static const compressButton = Key('viewer_compress_button');
+
+  /// The control that opens PDF splitting.
+  static const splitButton = Key('viewer_split_button');
+
+  /// The control that opens watermark settings.
+  static const watermarkButton = Key('viewer_watermark_button');
+
+  /// The control that opens password settings.
+  static const passwordButton = Key('viewer_password_button');
+
+  /// Opens page selection and page-derived actions.
+  static const managePagesButton = Key('viewer_manage_pages_button');
 
   /// The field for a protected document's password.
   static const passwordField = Key('viewer_password_field');
@@ -45,4 +75,10 @@ abstract final class ViewerKeys {
 
   /// The panel showing the document's recognised text, on wide layouts.
   static const textPanel = Key('viewer_text_panel');
+}
+
+/// Semantics labels for the viewer.
+abstract final class ViewerSemantics {
+  /// Announces which page of how many the reader is on.
+  static String pageIndicator(String pageLabel) => 'Page $pageLabel';
 }

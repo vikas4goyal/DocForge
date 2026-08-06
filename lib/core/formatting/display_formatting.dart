@@ -9,7 +9,7 @@
 /// strings shown on screen are produced by the same tested functions.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:intl/intl.dart';
 
 /// Formats document and folder metadata for display.
@@ -71,9 +71,17 @@ abstract final class DisplayFormatting {
       document.title,
       pageCount(document.pageCount),
       'modified ${date(document.updatedAt)}',
+      fileSize(document.sizeInBytes),
       if (document.isFavourite) 'favourite',
       if (document.isProtected) 'password protected',
       if (document.isArchived) 'archived',
+      if (document.contentAvailability == DocumentContentAvailability.remote)
+        'stored in iCloud',
+      if (document.contentAvailability ==
+          DocumentContentAvailability.downloading)
+        'downloading from iCloud',
+      if (document.contentAvailability == DocumentContentAvailability.failed)
+        'iCloud download failed',
     ];
 
     return parts.join(', ');

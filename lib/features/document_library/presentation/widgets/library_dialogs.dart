@@ -4,9 +4,9 @@
 /// the operation and the dialog stays trivially testable in isolation.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/features/document_library/domain/library_rules.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/features/document_library/domain/library_rules.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
 import 'package:flutter/material.dart';
 
 /// Prompts for a document title or folder name.
@@ -89,7 +89,10 @@ class _NameDialogState extends State<_NameDialog> {
           if (_error != null) setState(() => _error = null);
         },
         onSubmitted: (_) => _confirm(),
-        decoration: InputDecoration(labelText: 'Name', errorText: _error),
+        decoration: InputDecoration(
+          labelText: LibrarySemantics.nameField,
+          errorText: _error,
+        ),
       ),
       actions: [
         TextButton(
@@ -125,15 +128,28 @@ Future<bool> confirmPermanentRemoval(
         'from this device. This cannot be undone.',
       ),
       actions: [
-        TextButton(
-          key: LibraryKeys.documentDeleteCancelButton,
-          onPressed: () => Navigator.of(context).pop(false),
-          child: const Text('Cancel'),
+        // Labelled with what is being deleted, not just "Delete": a listener
+        // who has lost track of which dialog is open cannot otherwise tell this
+        // from any other delete in the application.
+        Semantics(
+          button: true,
+          label: LibrarySemantics.deleteCancel,
+          excludeSemantics: true,
+          child: TextButton(
+            key: LibraryKeys.documentDeleteCancelButton,
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
         ),
-        FilledButton(
-          key: LibraryKeys.documentDeleteConfirmButton,
-          onPressed: () => Navigator.of(context).pop(true),
-          child: const Text('Delete'),
+        Semantics(
+          button: true,
+          label: LibrarySemantics.deleteConfirm(title),
+          excludeSemantics: true,
+          child: FilledButton(
+            key: LibraryKeys.documentDeleteConfirmButton,
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Delete'),
+          ),
         ),
       ],
     ),
@@ -168,18 +184,32 @@ Future<FolderDeletionStrategy?> askFolderDeletionStrategy(
           onPressed: () => Navigator.of(context).pop(),
           child: const Text('Cancel'),
         ),
-        TextButton(
-          key: LibraryKeys.folderDeleteMoveOut,
-          onPressed: () => Navigator.of(
-            context,
-          ).pop(FolderDeletionStrategy.moveDocumentsOut),
-          child: const Text('Keep documents'),
+        // Both choices name the folder as well as the outcome: "Keep
+        // documents" and "Delete documents" are indistinguishable to a listener
+        // who cannot see which folder the dialog belongs to.
+        Semantics(
+          button: true,
+          label: LibrarySemantics.folderDeleteMoveOut(folder.name),
+          excludeSemantics: true,
+          child: TextButton(
+            key: LibraryKeys.folderDeleteMoveOut,
+            onPressed: () => Navigator.of(
+              context,
+            ).pop(FolderDeletionStrategy.moveDocumentsOut),
+            child: const Text('Keep documents'),
+          ),
         ),
-        FilledButton(
-          key: LibraryKeys.folderDeleteWithDocuments,
-          onPressed: () =>
-              Navigator.of(context).pop(FolderDeletionStrategy.deleteDocuments),
-          child: const Text('Delete documents'),
+        Semantics(
+          button: true,
+          label: LibrarySemantics.folderDeleteWithDocuments(folder.name),
+          excludeSemantics: true,
+          child: FilledButton(
+            key: LibraryKeys.folderDeleteWithDocuments,
+            onPressed: () => Navigator.of(
+              context,
+            ).pop(FolderDeletionStrategy.deleteDocuments),
+            child: const Text('Delete documents'),
+          ),
         ),
       ],
     ),
@@ -220,19 +250,32 @@ Future<FolderChoice?> showFolderPicker(
   return showDialog<FolderChoice>(
     context: context,
     builder: (context) => SimpleDialog(
-      key: const Key('document_move_dialog'),
-      title: const Text('Move to folder'),
+      key: LibraryKeys.documentMoveDialog,
+      title: const Text(LibrarySemantics.moveDialog),
       children: [
-        SimpleDialogOption(
-          key: const Key('document_move_option_none'),
-          onPressed: () => Navigator.of(context).pop(const NoFolderChosen()),
-          child: const Text('No folder'),
+        Semantics(
+          button: true,
+          label: LibrarySemantics.moveOptionNone,
+          excludeSemantics: true,
+          child: SimpleDialogOption(
+            key: LibraryKeys.documentMoveOptionNone,
+            onPressed: () => Navigator.of(context).pop(const NoFolderChosen()),
+            child: const Text('No folder'),
+          ),
         ),
         for (final folder in folders)
-          SimpleDialogOption(
-            key: Key('document_move_option_${folder.id.value}'),
-            onPressed: () => Navigator.of(context).pop(FolderChosen(folder)),
-            child: Text(folder.name),
+          // Announced as the action rather than as the folder's bare name,
+          // which on its own reads as a heading rather than as something the
+          // user can choose.
+          Semantics(
+            button: true,
+            label: LibrarySemantics.moveOption(folder.name),
+            excludeSemantics: true,
+            child: SimpleDialogOption(
+              key: LibraryKeys.documentMoveOption(folder.id.value),
+              onPressed: () => Navigator.of(context).pop(FolderChosen(folder)),
+              child: Text(folder.name),
+            ),
           ),
       ],
     ),

@@ -7,7 +7,8 @@
 /// vocabulary, which is what keeps features from importing each other.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 part 'document.freezed.dart';
@@ -15,8 +16,8 @@ part 'document.g.dart';
 
 /// A stored document.
 ///
-/// Holds metadata only. The PDF itself lives on disk at [filePath], inside
-/// app-private storage, and is never loaded merely to display a list row.
+/// Holds metadata only. The PDF itself lives in the user-visible library folder
+/// at [libraryPath], and is never loaded merely to display a list row.
 @freezed
 abstract class Document with _$Document {
   /// Creates a document record.
@@ -32,10 +33,20 @@ abstract class Document with _$Document {
     /// Size of the stored PDF in bytes.
     required int sizeInBytes,
 
-    /// Path to the PDF inside app-private storage.
-    required String filePath,
+    /// Where the PDF lives, relative to the library folder.
+    ///
+    /// A library-relative address rather than a device path: the same document
+    /// resolves to a real file on iOS and to a MediaStore item on Android, and
+    /// a stored absolute path would be wrong on the next launch after a restore
+    /// and meaningless to a future sync layer (`design.md` D1).
+    required LibraryPath libraryPath,
 
     /// The folder this document belongs to, or null when unfiled.
+    ///
+    /// Retained alongside [libraryPath] because a folder carries its own
+    /// identity and creation date, and because a device that refused to create
+    /// a nested folder stores the file flat while the document still belongs to
+    /// the folder the user chose.
     FolderId? folderId,
     @Default(false) bool isFavourite,
     @Default(false) bool isArchived,
@@ -47,6 +58,30 @@ abstract class Document with _$Document {
 
     /// Whether text recognition has been run and produced a stored result.
     @Default(false) bool hasRecognisedText,
+
+    /// Stable iCloud resource identity, when Foundation supplied one.
+    ///
+    /// This is metadata only. Local and Android documents leave it null.
+    String? cloudResourceIdentifier,
+
+    /// Original path reported by iCloud for byte operations.
+    ///
+    /// Usually this equals [libraryPath]. A simultaneous same-name conflict is
+    /// indexed under a deterministic non-overwriting display path while this
+    /// field retains the actual container path that Foundation must download.
+    String? cloudRelativePath,
+
+    /// Whether the authoritative PDF bytes are readable on this device.
+    ///
+    /// Android documents always retain the default [DocumentContentAvailability.local].
+    @Default(DocumentContentAvailability.local)
+    DocumentContentAvailability contentAvailability,
+
+    /// Trash entry holding the PDF, or null while the document is active.
+    TrashId? trashId,
+
+    /// UTC instant at which this document was moved to Trash.
+    DateTime? trashedAt,
   }) = _Document;
 
   /// Creates a document from JSON.
@@ -60,10 +95,34 @@ abstract class Document with _$Document {
   /// Archived documents are excluded from recents, lists and search unless
   /// explicitly requested, so this predicate is the single definition of
   /// "visible" that every list shares.
-  bool get isVisibleInLibrary => !isArchived;
+  bool get isVisibleInLibrary => !isArchived && trashId == null;
 
   /// Whether this document is unfiled.
   bool get isUnfiled => folderId == null;
+
+  /// The document's file name including its extension.
+  String get fileName => libraryPath.fileName;
+
+  /// The document's location relative to the library folder.
+  String get relativePath => libraryPath.relative;
+}
+
+/// Availability of a document's authoritative PDF bytes on this device.
+enum DocumentContentAvailability {
+  /// The document belongs to the device-local library.
+  local,
+
+  /// iCloud metadata is known but the PDF has not been downloaded.
+  remote,
+
+  /// iCloud is currently materialising the PDF.
+  downloading,
+
+  /// The cloud-backed PDF is readable locally.
+  available,
+
+  /// The latest materialisation attempt failed and can be retried.
+  failed,
 }
 
 /// A folder grouping documents.
@@ -75,11 +134,24 @@ abstract class Folder with _$Folder {
     required String name,
     required DateTime createdAt,
 
+    /// The folder's path relative to the library root, e.g. `Invoices/2026`.
+    ///
+    /// Folders are real directories in the user-visible library folder, so a
+    /// folder needs an address as well as a name — two folders called `2026`
+    /// under different parents are different folders.
+    @Default('') String relativePath,
+
     /// Number of non-archived documents the folder currently contains.
     ///
     /// Computed at read time rather than stored, so it cannot drift out of
     /// sync with the documents themselves.
     @Default(0) int documentCount,
+
+    /// Trash entry holding this folder tree, or null while active.
+    TrashId? trashId,
+
+    /// UTC instant at which this folder moved to Trash.
+    DateTime? trashedAt,
   }) = _Folder;
 
   /// Creates a folder from JSON.
@@ -89,6 +161,9 @@ abstract class Folder with _$Folder {
 
   /// Whether the folder currently holds no visible documents.
   bool get isEmpty => documentCount == 0;
+
+  /// Whether this folder appears in active folder pickers and lists.
+  bool get isVisibleInLibrary => trashId == null;
 }
 
 /// A summary of the storage consumed by stored documents.

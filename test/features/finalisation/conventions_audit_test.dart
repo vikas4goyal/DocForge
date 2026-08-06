@@ -312,7 +312,9 @@ void main() {
       // the page-review screen's goldens are `review_*`, which is what the
       // file names actually are.
       const majorScreens = [
-        'home',
+        // The dashboard is the shell's landing destination; there is no
+        // separate Home screen behind the tab bar any more.
+        'dashboard',
         'review',
         'crop',
         'enhance',

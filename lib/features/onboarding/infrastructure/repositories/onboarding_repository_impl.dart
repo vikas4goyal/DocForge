@@ -3,11 +3,11 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/features/onboarding/domain/repositories/onboarding_repository.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/features/onboarding/domain/repositories/onboarding_repository.dart';
 
 /// Stores the onboarding-completed flag in preferences.
 ///

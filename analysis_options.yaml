@@ -1,4 +1,4 @@
-# Static analysis configuration for DocForge.
+# Static analysis configuration for DocScanly.
 #
 # The project context mandates Effective Dart, dartdoc on every public API,
 # const constructors and immutability. Those rules are enforced here so

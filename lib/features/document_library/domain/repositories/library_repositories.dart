@@ -6,10 +6,11 @@
 /// tested against an in-memory fake.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/trash.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 
 /// Stores and queries documents.
 abstract interface class DocumentRepository {
@@ -61,6 +62,13 @@ abstract interface class FolderRepository {
   /// Used to reject duplicate names before creating a folder.
   Future<Result<Folder?>> findByName(String name);
 
+  /// Returns the folder at [relativePath], or null when none exists.
+  ///
+  /// Distinct from [findByName]: folders nest, so two called `2026` under
+  /// different parents are different folders and only the path tells them
+  /// apart.
+  Future<Result<Folder?>> findByRelativePath(String relativePath);
+
   /// Creates or replaces [folder].
   Future<Result<Folder>> save(Folder folder);
 
@@ -85,4 +93,43 @@ abstract interface class PageRepository {
 
   /// Removes every page of [documentId].
   Future<Result<void>> deleteForDocument(DocumentId documentId);
+}
+
+/// Stores thumbnail-sized images derived from an authoritative document PDF.
+///
+/// The cache accepts a resolved path because device-path materialisation and
+/// secret lookup are application concerns. Implementations must treat entries
+/// as disposable derived data rather than document records.
+abstract interface class DocumentThumbnailCache {
+  /// Returns a current thumbnail path, rendering and caching it when absent.
+  Future<Result<String>> thumbnailFor(
+    Document document, {
+    required String filePath,
+    required int pageNumber,
+    String? password,
+  });
+
+  /// Removes every cached thumbnail for [id].
+  Future<Result<void>> evict(DocumentId id);
+}
+
+/// Stores recoverable Trash entries independently from active folders.
+abstract interface class TrashRepository {
+  /// Returns [id], or `Failure.notFound` when absent.
+  Future<Result<TrashEntry>> findById(TrashId id);
+
+  /// Returns newest-deleted entries first.
+  Future<Result<List<TrashEntry>>> all();
+
+  /// Creates or replaces [entry].
+  Future<Result<TrashEntry>> save(TrashEntry entry);
+
+  /// Removes only the Trash metadata row.
+  Future<Result<void>> delete(TrashId id);
+
+  /// Returns entries whose expiry is at or before [now].
+  Future<Result<List<TrashEntry>>> expiredAt(DateTime now);
+
+  /// Number of recoverable entries.
+  Future<Result<int>> count();
 }

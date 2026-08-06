@@ -7,10 +7,11 @@
 /// and gate behaviour against trivial placeholder screens.
 library;
 
-import 'package:doc_forge/app/router/app_routes.dart';
-import 'package:doc_forge/app/router/route_gates.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/app/router/route_gates.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/core/widgets/core_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -38,9 +39,6 @@ class AppScreens {
     required this.unlock,
     required this.home,
     required this.scan,
-    required this.scanReview,
-    required this.scanEnhance,
-    required this.scanPreview,
     required this.documents,
     required this.documentDetail,
     required this.viewer,
@@ -50,9 +48,11 @@ class AppScreens {
     required this.search,
     required this.favourites,
     required this.archive,
+    required this.trash,
     required this.settings,
     required this.about,
     required this.privacy,
+    this.storageLocation,
   });
 
   /// First-launch onboarding.
@@ -64,17 +64,8 @@ class AppScreens {
   /// Home.
   final ScreenBuilder home;
 
-  /// Camera capture.
+  /// The creation flow: the page table and the loop that fills it.
   final ScreenBuilder scan;
-
-  /// Captured-page review.
-  final ScreenBuilder scanReview;
-
-  /// Page enhancement.
-  final ScreenBuilder scanEnhance;
-
-  /// Document preview before saving.
-  final ScreenBuilder scanPreview;
 
   /// All documents.
   final ScreenBuilder documents;
@@ -103,6 +94,9 @@ class AppScreens {
   /// Archive.
   final ScreenBuilder archive;
 
+  /// Recoverable Trash.
+  final ScreenBuilder trash;
+
   /// Settings.
   final ScreenBuilder settings;
 
@@ -111,6 +105,9 @@ class AppScreens {
 
   /// Privacy policy.
   final ScreenBuilder privacy;
+
+  /// iOS-only storage-location screen; null removes the route on Android.
+  final ScreenBuilder? storageLocation;
 }
 
 /// Creates the application router.
@@ -119,15 +116,20 @@ class AppScreens {
 /// evaluated before the onboarding gate. [refreshListenable] causes GoRouter to
 /// re-evaluate redirects when gate state changes — without it, unlocking the
 /// app would leave the user sitting on the unlock screen.
+/// [observers] are handed to the router so a screen can learn when a route
+/// pushed over it has popped. Home needs that: it is built once and kept alive,
+/// so nothing else would tell it that a document was added while it was covered.
 GoRouter createAppRouter({
   required RouteGuard guard,
   required AppScreens screens,
   String initialLocation = AppRoutes.home,
   Listenable? refreshListenable,
+  List<NavigatorObserver> observers = const [],
 }) {
   return GoRouter(
     initialLocation: initialLocation,
     refreshListenable: refreshListenable,
+    observers: observers,
     redirect: (context, state) => guard.redirectFor(state.matchedLocation),
     errorBuilder: (context, state) => _RouteNotFound(location: state.uri.path),
     routes: [
@@ -146,18 +148,6 @@ GoRouter createAppRouter({
       GoRoute(
         path: AppRoutes.scan,
         builder: (context, state) => screens.scan(context),
-      ),
-      GoRoute(
-        path: AppRoutes.scanReview,
-        builder: (context, state) => screens.scanReview(context),
-      ),
-      GoRoute(
-        path: AppRoutes.scanEnhance,
-        builder: (context, state) => screens.scanEnhance(context),
-      ),
-      GoRoute(
-        path: AppRoutes.scanPreview,
-        builder: (context, state) => screens.scanPreview(context),
       ),
       GoRoute(
         path: AppRoutes.documents,
@@ -210,6 +200,10 @@ GoRouter createAppRouter({
         builder: (context, state) => screens.archive(context),
       ),
       GoRoute(
+        path: AppRoutes.trash,
+        builder: (context, state) => screens.trash(context),
+      ),
+      GoRoute(
         path: AppRoutes.settings,
         builder: (context, state) => screens.settings(context),
         routes: [
@@ -223,6 +217,11 @@ GoRouter createAppRouter({
           ),
         ],
       ),
+      if (screens.storageLocation != null)
+        GoRoute(
+          path: AppRoutes.storageLocation,
+          builder: (context, state) => screens.storageLocation!(context),
+        ),
     ],
   );
 }
@@ -239,10 +238,10 @@ class _RouteNotFound extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      key: const Key('route_not_found_screen'),
+      key: CoreKeys.routeNotFoundScreen,
       appBar: AppBar(title: const Text('Not found')),
       body: AppEmptyState(
-        key: const Key('route_not_found_state'),
+        key: CoreKeys.routeNotFoundState,
         title: 'That page does not exist',
         message: location,
         icon: Icons.help_outline,

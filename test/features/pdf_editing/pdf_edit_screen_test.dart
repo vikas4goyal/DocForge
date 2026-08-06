@@ -1,24 +1,30 @@
 /// Widget tests for the PDF editor screen.
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
-import 'package:doc_forge/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
-import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
-import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/pdf_edit_keys.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/widgets/pdf_edit_widgets.dart';
+import 'dart:io';
+
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/pdf_editing/application/atomic_pdf_write.dart';
+import 'package:doc_scanly/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_operation_workflow.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/pdf_edit_keys.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/widgets/pdf_edit_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -55,7 +61,12 @@ class _Inert implements DocumentReader, DocumentWriter {
 
 /// A Cubit that records what was asked of it and renders a seeded state.
 class _StubCubit extends PdfEditCubit {
-  _StubCubit() : super(const DocumentId('a'), _useCases());
+  _StubCubit()
+    : super(
+        const DocumentId('a'),
+        _useCases(),
+        const FakeDocumentFileResolver(),
+      );
 
   static PdfEditUseCases _useCases() {
     final inert = _Inert();
@@ -68,7 +79,9 @@ class _StubCubit extends PdfEditCubit {
         (path, password) => editor.pageCountOf(path, password: password),
       ),
       secrets: InMemorySecureStore(),
-      destination: (id) => '/never/${id.value}.pdf',
+      store: InMemoryPublicFileStore(),
+      files: const FakeDocumentFileResolver(),
+      workingDirectory: Directory.systemTemp,
       clock: FixedClock(DateTime.utc(2026)),
       ids: SequentialIdGenerator(),
     );
@@ -109,11 +122,16 @@ class _StubCubit extends PdfEditCubit {
   Future<void> compress() async => calls.add('compress');
 
   @override
-  Future<void> split(int afterPage) async => calls.add('split:$afterPage');
+  Future<void> split(
+    int afterPage, {
+    ({String first, String second})? outputTitles,
+  }) async => calls.add('split:$afterPage');
 
   @override
-  Future<void> merge(List<DocumentId> others) async =>
-      calls.add('merge:${others.length}');
+  Future<void> merge(
+    List<DocumentId> orderedIds, {
+    String? outputTitle,
+  }) async => calls.add('merge:${orderedIds.length}');
 
   @override
   Future<void> watermark(String text) async => calls.add('watermark:$text');
@@ -133,17 +151,18 @@ class _StubCubit extends PdfEditCubit {
 }
 
 Document doc({
+  String id = 'a',
   String title = 'Invoice',
   int pageCount = 4,
   bool isProtected = false,
 }) => Document(
-  id: const DocumentId('a'),
+  id: DocumentId(id),
   title: title,
   createdAt: DateTime.utc(2026, 3, 14),
   updatedAt: DateTime.utc(2026, 3, 14),
   pageCount: pageCount,
   sizeInBytes: 184_320,
-  filePath: '/documents/a.pdf',
+  libraryPath: LibraryPath.parse('a.pdf'),
   isProtected: isProtected,
 );
 
@@ -162,6 +181,13 @@ Widget thumbnail(BuildContext context, int index) =>
     ColoredBox(color: Colors.grey.shade300);
 
 void main() {
+  Future<void> confirmReview(WidgetTester tester) async {
+    await tester.pumpAndSettle();
+    expect(find.byKey(PdfEditKeys.operationSheet), findsOneWidget);
+    await tester.tap(find.byKey(PdfEditKeys.confirm));
+    await tester.pumpAndSettle();
+  }
+
   Future<_StubCubit> pump(
     WidgetTester tester,
     PdfEditState state, {
@@ -169,6 +195,8 @@ void main() {
     Size viewport = const Size(600, 2400),
     List<Document> mergeCandidates = const [],
     ValueChanged<Document>? onDerived,
+    PdfEditOperation? initialOperation,
+    double textScale = 1,
   }) async {
     tester.view.physicalSize = viewport;
     tester.view.devicePixelRatio = 1;
@@ -180,6 +208,12 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: BlocProvider<PdfEditCubit>.value(
           value: cubit,
           child: PdfEditScreen(
@@ -187,6 +221,7 @@ void main() {
             onClose: () {},
             onDerived: onDerived,
             mergeCandidates: mergeCandidates,
+            initialOperation: initialOperation,
           ),
         ),
       ),
@@ -208,17 +243,17 @@ void main() {
   );
 
   group('composition', () {
-    testWidgets('shows the page grid and every editing control', (
+    testWidgets('shows document tools but omits page actions until selection', (
       tester,
     ) async {
       await pump(tester, ready);
 
       expect(find.byKey(PdfEditKeys.screen), findsOneWidget);
       expect(find.byKey(PdfEditKeys.pageGrid), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.rotateButton), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.deleteButton), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.extractButton), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.duplicateButton), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.rotateButton), findsNothing);
+      expect(find.byKey(PdfEditKeys.deleteButton), findsNothing);
+      expect(find.byKey(PdfEditKeys.extractButton), findsNothing);
+      expect(find.byKey(PdfEditKeys.compressButton), findsOneWidget);
     });
 
     testWidgets('shows a tile per page', (tester) async {
@@ -237,13 +272,67 @@ void main() {
     });
   });
 
+  group('focused viewer workflows', () {
+    testWidgets('compress opens without the generic page editor', (
+      tester,
+    ) async {
+      await pump(tester, ready, initialOperation: PdfEditOperation.compress);
+
+      expect(find.text('Compress'), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.compressButton), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageGrid), findsNothing);
+      expect(find.byType(CloseButton), findsOneWidget);
+    });
+
+    testWidgets('split opens a dedicated naming screen with both outputs', (
+      tester,
+    ) async {
+      await pump(tester, ready, initialOperation: PdfEditOperation.split);
+
+      expect(find.byKey(PdfEditKeys.pageNamingScreen), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.splitBoundaryField), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.splitFirstNameField), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.splitSecondNameField), findsOneWidget);
+      expect(find.textContaining('PDF 1 · Pages'), findsOneWidget);
+      expect(find.textContaining('PDF 2 · Pages'), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageGrid), findsNothing);
+    });
+
+    testWidgets('watermark and password open only their focused controls', (
+      tester,
+    ) async {
+      await pump(tester, ready, initialOperation: PdfEditOperation.watermark);
+      expect(find.byKey(PdfEditKeys.watermarkTextField), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageGrid), findsNothing);
+
+      await pump(tester, ready, initialOperation: PdfEditOperation.protect);
+      expect(find.byKey(PdfEditKeys.protectPasswordField), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageGrid), findsNothing);
+    });
+
+    testWidgets('split naming stays scrollable at large phone text', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        ready,
+        viewport: const Size(390, 600),
+        textScale: 3,
+        initialOperation: PdfEditOperation.split,
+      );
+
+      expect(find.byKey(PdfEditKeys.pageNamingScreen), findsOneWidget);
+      expect(find.byType(Scrollable), findsWidgets);
+      expect(find.byKey(PdfEditKeys.splitConfirmButton), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   group('page controls', () {
     testWidgets('rotate is disabled with no selection', (tester) async {
       final cubit = await pump(tester, ready);
 
-      await tester.tap(find.byKey(PdfEditKeys.rotateButton));
-      await tester.pump();
-
+      expect(find.byKey(PdfEditKeys.rotateButton), findsNothing);
       expect(cubit.calls, isEmpty);
     });
 
@@ -251,7 +340,7 @@ void main() {
       final cubit = await pump(tester, ready.copyWith(selection: {1}));
 
       await tester.tap(find.byKey(PdfEditKeys.rotateButton));
-      await tester.pump();
+      await confirmReview(tester);
 
       expect(cubit.calls, ['rotate']);
     });
@@ -261,9 +350,7 @@ void main() {
     ) async {
       final cubit = await pump(tester, ready.copyWith(selection: {0, 1}));
 
-      await tester.tap(find.byKey(PdfEditKeys.rotateButton));
-      await tester.pump();
-
+      expect(find.byKey(PdfEditKeys.rotateButton), findsNothing);
       expect(cubit.calls, isEmpty);
     });
 
@@ -271,7 +358,7 @@ void main() {
       final cubit = await pump(tester, ready.copyWith(selection: {0, 2}));
 
       await tester.tap(find.byKey(PdfEditKeys.extractButton));
-      await tester.pump();
+      await confirmReview(tester);
 
       expect(cubit.calls, ['extract']);
     });
@@ -314,10 +401,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byKey(PdfEditKeys.deleteButton));
-      await tester.pumpAndSettle();
-
-      // Disabled rather than refused: the user finds out before they commit.
+      expect(find.byKey(PdfEditKeys.deleteButton), findsNothing);
       expect(find.text('Delete pages?'), findsNothing);
       expect(cubit.calls, isEmpty);
     });
@@ -329,7 +413,7 @@ void main() {
 
       await tester.ensureVisible(find.byKey(PdfEditKeys.compressButton));
       await tester.tap(find.byKey(PdfEditKeys.compressButton));
-      await tester.pump();
+      await confirmReview(tester);
 
       expect(cubit.calls, ['compress']);
     });
@@ -351,14 +435,16 @@ void main() {
       final cubit = await pump(
         tester,
         ready,
-        mergeCandidates: [doc(title: 'Receipt')],
+        mergeCandidates: [doc(id: 'b', title: 'Receipt')],
       );
 
       await tester.ensureVisible(find.byKey(PdfEditKeys.mergeConfirmButton));
       await tester.tap(find.byKey(PdfEditKeys.mergeConfirmButton));
-      await tester.pump();
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(PdfEditKeys.inputContinue));
+      await confirmReview(tester);
 
-      expect(cubit.calls, ['merge:1']);
+      expect(cubit.calls, ['merge:2']);
     });
 
     testWidgets('split is disabled for a single-page document', (tester) async {
@@ -373,6 +459,54 @@ void main() {
       await tester.ensureVisible(find.byKey(PdfEditKeys.splitConfirmButton));
       await tester.tap(find.byKey(PdfEditKeys.splitConfirmButton));
       await tester.pump();
+
+      expect(cubit.calls, isEmpty);
+    });
+
+    testWidgets('split reviews two outputs before one submission', (
+      tester,
+    ) async {
+      final cubit = await pump(tester, ready);
+
+      await tester.ensureVisible(find.byKey(PdfEditKeys.splitConfirmButton));
+      await tester.tap(find.byKey(PdfEditKeys.splitConfirmButton));
+      await tester.pumpAndSettle();
+      expect(find.byKey(PdfEditKeys.splitBoundaryField), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.splitFirstNameField), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.splitSecondNameField), findsOneWidget);
+      await tester.tap(find.byKey(PdfEditKeys.inputContinue));
+      await confirmReview(tester);
+
+      expect(cubit.calls, ['split:2']);
+    });
+
+    testWidgets('split refuses an invalid boundary before review', (
+      tester,
+    ) async {
+      final cubit = await pump(tester, ready);
+
+      await tester.ensureVisible(find.byKey(PdfEditKeys.splitConfirmButton));
+      await tester.tap(find.byKey(PdfEditKeys.splitConfirmButton));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(PdfEditKeys.splitBoundaryField), '4');
+      await tester.tap(find.byKey(PdfEditKeys.inputContinue));
+      await tester.pump();
+
+      expect(find.textContaining('split point'), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.confirm), findsNothing);
+      expect(cubit.calls, isEmpty);
+    });
+
+    testWidgets('cancelling an operation review mutates nothing', (
+      tester,
+    ) async {
+      final cubit = await pump(tester, ready);
+
+      await tester.ensureVisible(find.byKey(PdfEditKeys.compressButton));
+      await tester.tap(find.byKey(PdfEditKeys.compressButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(PdfEditKeys.cancel));
+      await tester.pumpAndSettle();
 
       expect(cubit.calls, isEmpty);
     });
@@ -415,7 +549,7 @@ void main() {
       );
       await tester.pump();
       await tester.tap(find.byKey(PdfEditKeys.watermarkConfirmButton));
-      await tester.pump();
+      await confirmReview(tester);
 
       expect(cubit.calls, ['watermark:DRAFT']);
     });
@@ -432,7 +566,7 @@ void main() {
       );
       await tester.pump();
       await tester.tap(find.byKey(PdfEditKeys.protectConfirmButton));
-      await tester.pump();
+      await confirmReview(tester);
 
       expect(cubit.calls, ['protect:hunter2']);
     });
@@ -455,7 +589,7 @@ void main() {
       );
       await tester.pump();
       await tester.tap(find.byKey(PdfEditKeys.removePasswordButton));
-      await tester.pump();
+      await confirmReview(tester);
 
       expect(cubit.calls, ['removePassword:hunter2']);
     });
@@ -543,11 +677,39 @@ void main() {
 
       await pump(
         tester,
-        ready.copyWith(derived: doc(title: 'Invoice (2 pages)')),
+        ready.copyWith(
+          derived: doc(title: 'Invoice (2 pages)'),
+          derivedDocuments: [doc(title: 'Invoice (2 pages)')],
+          result: PdfOperationResult.derived(
+            documents: [doc(title: 'Invoice (2 pages)')],
+          ),
+        ),
         onDerived: derived.add,
       );
 
+      expect(find.byKey(PdfEditKeys.result), findsOneWidget);
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
       expect(derived, hasLength(1));
+    });
+
+    testWidgets('reports a visible completion for an in-place edit', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        ready.copyWith(
+          result: PdfOperationResult.inPlace(
+            document: doc(),
+            message: 'Watermark completed.',
+          ),
+        ),
+      );
+
+      expect(find.byKey(PdfEditKeys.result), findsOneWidget);
+      expect(find.text('PDF updated'), findsOneWidget);
+      expect(find.text('Watermark completed.'), findsOneWidget);
+      expect(find.text('Open'), findsNothing);
     });
   });
 

@@ -7,15 +7,16 @@
 /// shared CI hardware and would not say *why* it got slow.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/document_card.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_queries.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_list_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -194,6 +195,6 @@ List<Document> _largeLibrary() => List.generate(
     updatedAt: _now.subtract(Duration(minutes: index + 1)),
     pageCount: (index % 9) + 1,
     sizeInBytes: (index + 1) * 1024,
-    filePath: '/documents/doc-$index/document.pdf',
+    libraryPath: LibraryPath.parse('document.pdf'),
   ),
 );

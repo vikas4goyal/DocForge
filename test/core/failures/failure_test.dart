@@ -1,5 +1,5 @@
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Every [Failure] variant, so the mapping test cannot silently miss one.

@@ -1,22 +1,20 @@
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
-import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
-import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cubits.dart';
-import 'package:doc_forge/features/document_scanning/presentation/scan_keys.dart';
-import 'package:doc_forge/features/document_scanning/presentation/screens/crop_screen.dart';
-import 'package:doc_forge/features/document_scanning/presentation/screens/page_review_screen.dart';
-import 'package:doc_forge/features/document_scanning/presentation/screens/scan_capture_screen.dart';
+import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
+import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/scan_keys.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/screens/page_review_screen.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/screens/scan_capture_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -72,8 +70,15 @@ class _Recorder {
   int exited = 0;
   int? croppedIndex;
   CapturedPage? croppedPage;
+  int? enhancedIndex;
+  CapturedPage? enhancedPage;
+  int? capturedIndex;
+  CapturedPage? capturedPage;
 }
 
+// The crop screen has its own file, `crop_screen_test.dart`: it applies in
+// place over a layered page rather than popping with a corrected capture, and
+// the harness this file uses predates that.
 void main() {
   late Directory workspace;
   late FakeScannerRepository scanner;
@@ -81,7 +86,7 @@ void main() {
   late _Recorder recorder;
 
   setUp(() {
-    workspace = Directory.systemTemp.createTempSync('docforge_scan_screens');
+    workspace = Directory.systemTemp.createTempSync('docscanly_scan_screens');
     // No directory: the fake then returns synthetic paths and writes nothing.
     // testWidgets runs in a fake-async zone, where a real file write never
     // completes, so a writing fake would hang every pumpAndSettle here. The
@@ -117,6 +122,10 @@ void main() {
         previewBuilder: (_) =>
             const ColoredBox(key: Key('fake_preview'), color: Colors.black),
         onFinished: () => recorder.finished++,
+        onPageCaptured: (index, page) async {
+          recorder.capturedIndex = index;
+          recorder.capturedPage = page;
+        },
         onCancelled: () => recorder.cancelled++,
         onOpenSettings: () => recorder.settings++,
         onImportInstead: () => recorder.importInstead++,
@@ -135,23 +144,10 @@ void main() {
           recorder.croppedIndex = index;
           recorder.croppedPage = page;
         },
-      ),
-    ),
-  );
-
-  Widget cropScreen(CapturedPage page) => host(
-    BlocProvider(
-      create: (_) => CropCubit(
-        page,
-        const ApplyPerspectiveCorrection(
-          InlineBackgroundWorker(),
-          passthroughJob,
-        ),
-      ),
-      child: CropScreen(
-        destinationPath: '/scan/corrected.jpg',
-        onCropped: (page) => recorder.croppedPage = page,
-        onCancelled: () => recorder.cancelled++,
+        onEnhancePage: (index, page) {
+          recorder.enhancedIndex = index;
+          recorder.enhancedPage = page;
+        },
       ),
     ),
   );
@@ -166,6 +162,7 @@ void main() {
       expect(find.byKey(ScanKeys.cameraScreen), findsOneWidget);
       expect(find.byKey(const Key('fake_preview')), findsOneWidget);
       expect(find.byKey(ScanKeys.shutterButton), findsOneWidget);
+      expect(scanner.captures, isEmpty);
     });
 
     testWidgets('the page counter starts at zero and follows captures', (
@@ -182,6 +179,38 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('1'), findsOneWidget);
+    });
+
+    testWidgets('a captured page is handed straight to the editors', (
+      tester,
+    ) async {
+      await tester.pumpWidget(captureScreen());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(ScanKeys.batchModeToggle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ScanKeys.shutterButton));
+      await tester.pumpAndSettle();
+
+      // Offered while the document is still in front of the user, rather than
+      // left to be found again in the review list later.
+      expect(recorder.capturedIndex, 0);
+      expect(recorder.capturedPage, isNotNull);
+    });
+
+    testWidgets('a failed capture opens no editor', (tester) async {
+      scanner.captureFailure = const Failure.camera(debugDetail: 'no camera');
+      await tester.pumpWidget(captureScreen());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(ScanKeys.batchModeToggle));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ScanKeys.shutterButton));
+      await tester.pumpAndSettle();
+
+      // Opening an editor over a page that never existed would turn a failed
+      // shot into a puzzle.
+      expect(recorder.capturedPage, isNull);
     });
 
     testWidgets('batch mode keeps the camera up between captures', (
@@ -416,16 +445,17 @@ void main() {
       expect(find.text('Page 3'), findsOneWidget);
     });
 
-    testWidgets('rotating a page updates its row immediately', (tester) async {
-      await tester.pumpWidget(reviewScreen(pages(1)));
+    testWidgets('enhancing a page reports which one', (tester) async {
+      await tester.pumpWidget(reviewScreen(pages(2)));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(ScanKeys.pageRotateButton));
+      await tester.tap(find.byKey(ScanKeys.pageEnhanceButton).last);
       await tester.pumpAndSettle();
 
-      // Rotation is metadata applied at render time, so the row reflects it on
-      // the next frame rather than after a re-encode.
-      expect(find.text('Rotated 90°'), findsOneWidget);
+      // Per page rather than for the session: pages of one document are often
+      // shot under different light.
+      expect(recorder.enhancedIndex, 1);
+      expect(recorder.enhancedPage, isNotNull);
     });
 
     testWidgets('deleting a page removes it and offers an undo', (
@@ -531,7 +561,8 @@ void main() {
 
       // A screen-reader user moving through a long list must always know which
       // page they are about to change.
-      expect(find.bySemanticsLabel('Rotate page 1'), findsOneWidget);
+      expect(find.bySemanticsLabel('Crop and rotate page 1'), findsOneWidget);
+      expect(find.bySemanticsLabel('Enhance page 1'), findsOneWidget);
       expect(find.bySemanticsLabel('Delete page 2'), findsOneWidget);
 
       handle.dispose();
@@ -547,6 +578,7 @@ void main() {
               onAddPages: () {},
               onExit: () {},
               onCropPage: (_, _) {},
+              onEnhancePage: (_, _) {},
             ),
           ),
           brightness: Brightness.dark,
@@ -555,118 +587,6 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-    });
-  });
-
-  group('CropScreen', () {
-    testWidgets('shows the overlay and four corner handles', (tester) async {
-      await tester.pumpWidget(cropScreen(pages(1).single));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(ScanKeys.cropScreen), findsOneWidget);
-      expect(find.byKey(ScanKeys.edgeOverlay), findsOneWidget);
-      for (var corner = 0; corner < 4; corner++) {
-        expect(find.byKey(ScanKeys.cropHandle(corner)), findsOneWidget);
-      }
-    });
-
-    testWidgets('dragging a handle moves that corner', (tester) async {
-      await tester.pumpWidget(cropScreen(pages(1).single));
-      await tester.pumpAndSettle();
-      final before = tester.getCenter(find.byKey(ScanKeys.cropHandle(0)));
-
-      await tester.drag(
-        find.byKey(ScanKeys.cropHandle(0)),
-        const Offset(40, 40),
-      );
-      await tester.pumpAndSettle();
-
-      final after = tester.getCenter(find.byKey(ScanKeys.cropHandle(0)));
-      expect(after.dx, greaterThan(before.dx));
-      expect(after.dy, greaterThan(before.dy));
-    });
-
-    testWidgets('a handle cannot be dragged outside the page', (tester) async {
-      await tester.pumpWidget(cropScreen(pages(1).single));
-      await tester.pumpAndSettle();
-
-      // Far past the top-left corner.
-      await tester.drag(
-        find.byKey(ScanKeys.cropHandle(0)),
-        const Offset(-4000, -4000),
-      );
-      await tester.pumpAndSettle();
-
-      // A corner outside the image would describe a crop of pixels that do not
-      // exist, which the transform would then have to guess at.
-      expect(tester.takeException(), isNull);
-      expect(find.byKey(ScanKeys.cropHandle(0)), findsOneWidget);
-    });
-
-    testWidgets('resetting returns the crop to the whole page', (tester) async {
-      final page = pages(1).single.copyWith(quad: skewedQuad);
-      await tester.pumpWidget(cropScreen(page));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(ScanKeys.cropResetButton));
-      await tester.pumpAndSettle();
-
-      final handle = tester.getCenter(find.byKey(ScanKeys.cropHandle(0)));
-      final overlay = tester.getRect(find.byKey(ScanKeys.edgeOverlay));
-      expect(handle.dx, closeTo(overlay.left, 1));
-      expect(handle.dy, closeTo(overlay.top, 1));
-    });
-
-    testWidgets('confirming reports the corrected page', (tester) async {
-      final page = pages(1).single.copyWith(quad: skewedQuad);
-      await tester.pumpWidget(cropScreen(page));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(ScanKeys.cropConfirmButton));
-      await tester.pumpAndSettle();
-
-      expect(recorder.croppedPage?.imagePath, '/scan/corrected.jpg');
-      expect(recorder.croppedPage?.isCorrected, isTrue);
-    });
-
-    testWidgets('cancelling reports it without applying anything', (
-      tester,
-    ) async {
-      await tester.pumpWidget(cropScreen(pages(1).single));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('scan_crop_cancel_button')));
-
-      expect(recorder.cancelled, 1);
-      expect(recorder.croppedPage, isNull);
-    });
-
-    testWidgets('each corner handle is labelled for a screen reader', (
-      tester,
-    ) async {
-      final handle = tester.ensureSemantics();
-      await tester.pumpWidget(cropScreen(pages(1).single));
-      await tester.pumpAndSettle();
-
-      expect(find.bySemanticsLabel('Top left crop handle'), findsOneWidget);
-      expect(find.bySemanticsLabel('Bottom right crop handle'), findsOneWidget);
-
-      handle.dispose();
-    });
-
-    testWidgets('each corner handle clears 48dp', (tester) async {
-      await tester.pumpWidget(cropScreen(pages(1).single));
-      await tester.pumpAndSettle();
-
-      for (var corner = 0; corner < 4; corner++) {
-        final size = tester.getSize(find.byKey(ScanKeys.cropHandle(corner)));
-        // The drawn dot is smaller than this on purpose; the hit area is what
-        // the accessibility baseline measures.
-        expect(
-          size.shortestSide,
-          greaterThanOrEqualTo(AppTheme.minimumTouchTarget),
-        );
-      }
     });
   });
 }

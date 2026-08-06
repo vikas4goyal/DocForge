@@ -38,7 +38,7 @@ void main() {
   group('findForbiddenPackages', () {
     test('returns nothing for a mobile-only pubspec', () {
       const pubspec = '''
-name: doc_forge
+name: doc_scanly
 dependencies:
   flutter:
     sdk: flutter
@@ -53,7 +53,7 @@ dev_dependencies:
 
     test('flags a web-only direct dependency', () {
       const pubspec = '''
-name: doc_forge
+name: doc_scanly
 dependencies:
   flutter:
     sdk: flutter
@@ -65,7 +65,7 @@ dependencies:
 
     test('flags a desktop-only dev dependency', () {
       const pubspec = '''
-name: doc_forge
+name: doc_scanly
 dependencies:
   flutter:
     sdk: flutter
@@ -78,7 +78,7 @@ dev_dependencies:
 
     test('ignores forbidden names outside dependency blocks', () {
       const pubspec = '''
-name: doc_forge
+name: doc_scanly
 # universal_html: never add this
 dependencies:
   flutter:
@@ -96,7 +96,7 @@ flutter:
       // win32 arrives transitively under share_plus and is never compiled into
       // a mobile binary, so it must not fail the build.
       const pubspec = '''
-name: doc_forge
+name: doc_scanly
 dependencies:
   flutter:
     sdk: flutter
@@ -116,6 +116,10 @@ dependencies:
       final pubspec = File('pubspec.yaml').readAsStringSync();
 
       expect(findForbiddenPackages(pubspec), isEmpty);
+    });
+
+    test('has the required DocScanly platform identity', () {
+      expect(findIdentityViolations(Directory('.')), isEmpty);
     });
   });
 }

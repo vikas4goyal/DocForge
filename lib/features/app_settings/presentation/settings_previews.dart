@@ -5,19 +5,20 @@
 /// (`design.md` §15).
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/app_settings/application/usecases/settings_usecases.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
-import 'package:doc_forge/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
-import 'package:doc_forge/features/app_settings/presentation/cubit/settings_cubit.dart';
-import 'package:doc_forge/features/app_settings/presentation/screens/settings_screen.dart';
-import 'package:doc_forge/features/app_settings/presentation/widgets/settings_widgets.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/app_settings/application/usecases/settings_usecases.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
+import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/settings_screen.dart';
+import 'package:doc_scanly/features/app_settings/presentation/widgets/settings_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -80,13 +81,19 @@ class _PreviewSettingsCubit extends SettingsCubit {
   Future<void> refreshStorage() async {}
 }
 
-Widget _screen(SettingsState state) => BlocProvider<SettingsCubit>(
+Widget _screen(
+  SettingsState state, {
+  bool supportsCloudStorage = false,
+  bool isTab = false,
+}) => BlocProvider<SettingsCubit>(
   create: (_) => _PreviewSettingsCubit(state),
   child: SettingsScreen(
-    onBack: () {},
+    onBack: isTab ? null : () {},
+    pickSaveLocation: () async => null,
     onAbout: () {},
     onPrivacyPolicy: () {},
     onToggleAppLock: (_) {},
+    onStorageLocation: supportsCloudStorage ? () {} : null,
   ),
 );
 
@@ -106,6 +113,14 @@ final _ready = const SettingsState.initial().copyWith(
 /// Settings at their defaults.
 @Preview(name: 'Settings — default', group: 'Settings', theme: appPreviewTheme)
 Widget settingsDefault() => _screen(_ready);
+
+/// Settings as the top-level tab, without a back affordance.
+@Preview(
+  name: 'Settings — tab destination',
+  group: 'Settings',
+  theme: appPreviewTheme,
+)
+Widget settingsTabDestination() => _screen(_ready, isTab: true);
 
 /// Settings still being read.
 @Preview(name: 'Settings — loading', group: 'Settings', theme: appPreviewTheme)
@@ -144,7 +159,7 @@ Widget settingsLongContent() => _screen(
       imageQuality: ImageQuality.high,
       namingPattern: NamingPattern.sequential,
       saveLocation:
-          '/storage/emulated/0/Android/data/com.example.docforge/files/'
+          '/storage/emulated/0/Android/data/com.example.docscanly/files/'
           'Documents/Exports/Quarterly',
       isAppLockEnabled: true,
     ),
@@ -195,6 +210,105 @@ Widget settingsTabletLight() => _screen(_ready);
   theme: appPreviewTheme,
 )
 Widget settingsTabletDark() => _screen(_ready);
+
+/// Settings on iOS, where storage location is an explicit option.
+@Preview(
+  name: 'Settings — iOS storage',
+  group: 'Settings',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget settingsICloudStorage() => _screen(_ready, supportsCloudStorage: true);
+
+// ---------------------------------------------------------------------------
+// Pushed Settings details
+// ---------------------------------------------------------------------------
+
+/// The scrollable recognition-language selector.
+@Preview(
+  name: 'Recognition language — phone, light',
+  group: 'Settings details',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget recognitionLanguagePhone() =>
+    RecognitionLanguageScreen(value: OcrScript.latin, onSelected: (_) async {});
+
+/// Recognition language on a dark tablet with a non-default value.
+@Preview(
+  name: 'Recognition language — tablet, dark',
+  group: 'Settings details',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget recognitionLanguageTabletDark() => RecognitionLanguageScreen(
+  value: OcrScript.japanese,
+  onSelected: (_) async {},
+);
+
+/// Default save location while exports ask every time.
+@Preview(
+  name: 'Save location — ask each time',
+  group: 'Settings details',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget saveLocationAskEachTime() => DefaultSaveLocationScreen(
+  currentPath: null,
+  pickDirectory: () async => null,
+  onSelected: (_) async {},
+);
+
+/// Default save location with a long selected folder on a dark tablet.
+@Preview(
+  name: 'Save location — long path, tablet dark',
+  group: 'Settings details',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget saveLocationLongPath() => DefaultSaveLocationScreen(
+  currentPath:
+      '/storage/emulated/0/Documents/Exports/Quarterly/Reviewed documents',
+  pickDirectory: () async => null,
+  onSelected: (_) async {},
+);
+
+Widget _storageDetails(SettingsState state, {bool iCloud = false}) =>
+    BlocProvider<SettingsCubit>(
+      create: (_) => _PreviewSettingsCubit(state),
+      child: StorageDetailsScreen(onManageLocation: iCloud ? () {} : null),
+    );
+
+/// Storage details with a current summary.
+@Preview(
+  name: 'Storage details — ready',
+  group: 'Settings details',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget storageDetailsReady() => _storageDetails(_ready, iCloud: true);
+
+/// Storage details while refreshing in dark tablet layout.
+@Preview(
+  name: 'Storage details — refreshing, tablet dark',
+  group: 'Settings details',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget storageDetailsRefreshing() =>
+    _storageDetails(_ready.copyWith(isRefreshingStorage: true));
+
+/// Storage details when a read failed.
+@Preview(
+  name: 'Storage details — error',
+  group: 'Settings details',
+  theme: appPreviewTheme,
+)
+Widget storageDetailsError() =>
+    _storageDetails(_ready.copyWith(storageFailure: const Failure.storage()));
 
 // ---------------------------------------------------------------------------
 // About and Privacy Policy
@@ -325,7 +439,7 @@ Widget valueTileEmpty() =>
 Widget valueTileLongContent() => const SettingsValueTile(
   title: 'Default save location',
   value:
-      '/storage/emulated/0/Android/data/com.example.docforge/files/Documents/'
+      '/storage/emulated/0/Android/data/com.example.docscanly/files/Documents/'
       'Exports/Quarterly',
 );
 
@@ -339,7 +453,7 @@ Widget valueTileLongContent() => const SettingsValueTile(
 Widget switchTileDefault() => SettingsSwitchTile(
   title: 'App lock',
   value: false,
-  subtitle: 'Require authentication to open DocForge',
+  subtitle: 'Require authentication to open DocScanly',
   onChanged: (_) {},
 );
 
@@ -353,7 +467,7 @@ Widget switchTileDefault() => SettingsSwitchTile(
 Widget switchTileOn() => SettingsSwitchTile(
   title: 'App lock',
   value: true,
-  subtitle: 'Require authentication to open DocForge',
+  subtitle: 'Require authentication to open DocScanly',
   onChanged: (_) {},
 );
 

@@ -7,23 +7,25 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/features/document_sharing/application/usecases/sharing_usecases.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
-import 'package:doc_forge/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
-import 'package:doc_forge/features/document_sharing/presentation/cubit/share_cubit.dart';
-import 'package:doc_forge/features/document_sharing/presentation/cubit/share_state.dart';
-import 'package:doc_forge/features/document_sharing/presentation/screens/share_options_sheet.dart';
-import 'package:doc_forge/features/document_sharing/presentation/widgets/share_widgets.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/features/document_sharing/application/usecases/sharing_usecases.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/cubit/share_cubit.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/cubit/share_state.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/screens/share_options_sheet.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/widgets/share_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -63,6 +65,9 @@ class _PreviewText implements OcrTextSource {
       const Result<String>.success('');
 }
 
+/// Resolves preview documents to a fixed, machine-independent path.
+final _files = PublicStoreDocumentFileResolver(InMemoryPublicFileStore());
+
 /// A Cubit frozen at [_seeded].
 ///
 /// Every action is overridden to do nothing: a preview that opened the system
@@ -71,7 +76,7 @@ class _PreviewShareCubit extends ShareCubit {
   _PreviewShareCubit(this._seeded)
     : super(
         const DocumentId('preview'),
-        ShareDocumentPdf(const _PreviewReader(), FakeShareRepository()),
+        ShareDocumentPdf(const _PreviewReader(), FakeShareRepository(), _files),
         SharePageImages(
           const _PreviewReader(),
           FakeShareRepository(),
@@ -84,8 +89,12 @@ class _PreviewShareCubit extends ShareCubit {
           const _PreviewText(),
           FakeShareRepository(),
         ),
-        PrintDocument(const _PreviewReader(), FakePrintRepository()),
-        ExportDocument(const _PreviewReader(), FakeExportDestinationPicker()),
+        PrintDocument(const _PreviewReader(), FakePrintRepository(), _files),
+        ExportDocument(
+          const _PreviewReader(),
+          FakeExportDestinationPicker(),
+          _files,
+        ),
       );
 
   final ShareState _seeded;
@@ -144,6 +153,37 @@ Widget shareLoading() => _sheet(
     status: ShareStatus.preparing,
     format: ShareFormat.images,
     progress: const Progress(completed: 2, total: 4),
+  ),
+);
+
+/// The platform provider currently owns the export write.
+@Preview(name: 'Share — exporting', group: 'Sharing', theme: appPreviewTheme)
+Widget shareExporting() => _sheet(
+  _ready.copyWith(
+    status: ShareStatus.exporting,
+    action: ShareAction.export,
+    format: ShareFormat.pdf,
+  ),
+);
+
+/// A completed export with its destination confirmation.
+@Preview(name: 'Share — export done', group: 'Sharing', theme: appPreviewTheme)
+Widget shareExportDone() => _sheet(
+  _ready.copyWith(
+    status: ShareStatus.done,
+    action: ShareAction.export,
+    format: ShareFormat.pdf,
+    exportedTo: 'Downloads/Invoice 2026.pdf',
+  ),
+);
+
+/// A dismissed provider flow, which is explicitly not an error.
+@Preview(name: 'Share — cancelled', group: 'Sharing', theme: appPreviewTheme)
+Widget shareCancelled() => _sheet(
+  _ready.copyWith(
+    status: ShareStatus.cancelled,
+    action: ShareAction.export,
+    format: ShareFormat.pdf,
   ),
 );
 
@@ -248,24 +288,6 @@ Widget optionTileDefault() => ShareOptionTile(
   onTap: () {},
 );
 
-/// A disabled option — the state the text control takes with no text.
-@Preview(
-  name: 'ShareOptionTile — disabled',
-  group: 'Sharing',
-  theme: appPreviewTheme,
-  wrapper: previewSurface,
-)
-Widget optionTileDisabled() => ShareOptionTile(
-  label: 'Share extracted text',
-  icon: Icons.text_snippet_outlined,
-  semanticsLabel: ShareRules.optionSemanticsLabel(
-    ShareAction.share,
-    ShareFormat.text,
-    title: 'Invoice 2026',
-  ),
-  subtitle: ShareRules.noTextMessage,
-);
-
 /// An option whose label and subtitle both have to wrap.
 @Preview(
   name: 'ShareOptionTile — long content',
@@ -285,35 +307,3 @@ Widget optionTileLongContent() => ShareOptionTile(
   subtitle: 'One JPEG per page, at up to 2400 pixels on the longest edge',
   onTap: () {},
 );
-
-// ---------------------------------------------------------------------------
-// No recognised text notice
-// ---------------------------------------------------------------------------
-
-/// The notice with its offer to run recognition.
-@Preview(
-  name: 'NoRecognisedTextNotice — default',
-  group: 'Sharing',
-  theme: appPreviewTheme,
-  wrapper: previewSurface,
-)
-Widget noTextNoticeDefault() => NoRecognisedTextNotice(onRunRecognition: () {});
-
-/// The notice with nowhere to send the user — its empty state.
-@Preview(
-  name: 'NoRecognisedTextNotice — empty',
-  group: 'Sharing',
-  theme: appPreviewTheme,
-  wrapper: previewSurface,
-)
-Widget noTextNoticeEmpty() => const NoRecognisedTextNotice();
-
-/// The notice in a narrow column, where its message wraps.
-@Preview(
-  name: 'NoRecognisedTextNotice — long content',
-  group: 'Sharing',
-  theme: appPreviewTheme,
-  wrapper: previewNarrow,
-)
-Widget noTextNoticeLongContent() =>
-    NoRecognisedTextNotice(onRunRecognition: () {});

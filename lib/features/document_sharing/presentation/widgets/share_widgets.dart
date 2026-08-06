@@ -1,8 +1,7 @@
 /// The building blocks of the sharing options.
 library;
 
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
-import 'package:doc_forge/features/document_sharing/presentation/share_keys.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 import 'package:flutter/material.dart';
 
 /// One option in the share sheet.
@@ -57,46 +56,6 @@ class ShareOptionTile extends StatelessWidget {
         subtitle: subtitle == null ? null : Text(subtitle!),
         enabled: enabled,
         onTap: onTap,
-      ),
-    );
-  }
-}
-
-/// The message shown in place of the text option when there is no text.
-///
-/// The spec allows either disabling the control or explaining the situation;
-/// this does both, because a disabled control with no explanation leaves the
-/// user guessing why.
-class NoRecognisedTextNotice extends StatelessWidget {
-  /// Creates the notice.
-  const NoRecognisedTextNotice({super.key, this.onRunRecognition});
-
-  /// Invoked when the user chooses to run recognition now.
-  final VoidCallback? onRunRecognition;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      key: ShareKeys.noTextMessage,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            ShareRules.noTextMessage,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          if (onRunRecognition != null)
-            TextButton(
-              key: ShareKeys.runRecognitionButton,
-              onPressed: onRunRecognition,
-              child: const Text(ShareRules.runRecognitionLabel),
-            ),
-        ],
       ),
     );
   }

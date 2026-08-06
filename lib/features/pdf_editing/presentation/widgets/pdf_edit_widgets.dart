@@ -1,9 +1,9 @@
 /// The building blocks of the PDF editor.
 library;
 
-import 'package:doc_forge/core/formatting/display_formatting.dart';
-import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/pdf_edit_keys.dart';
+import 'package:doc_scanly/core/formatting/display_formatting.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/pdf_edit_keys.dart';
 import 'package:flutter/material.dart';
 
 /// Builds the thumbnail image for a page.
@@ -150,10 +150,13 @@ class PdfEditActionButton extends StatelessWidget {
 /// out, and applying it rewrites the file.
 class WatermarkPreview extends StatelessWidget {
   /// Creates a preview of [text].
-  const WatermarkPreview({required this.text, super.key});
+  const WatermarkPreview({required this.text, super.key, this.page});
 
   /// The watermark text.
   final String text;
+
+  /// First-page thumbnail shown beneath the watermark when available.
+  final Widget? page;
 
   @override
   Widget build(BuildContext context) {
@@ -161,28 +164,56 @@ class WatermarkPreview extends StatelessWidget {
 
     return Container(
       key: PdfEditKeys.watermarkPreview,
-      height: 160,
+      height: 240,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         border: Border.all(color: theme.colorScheme.outlineVariant),
+        borderRadius: BorderRadius.circular(12),
       ),
-      alignment: Alignment.center,
-      child: Transform.rotate(
-        angle: -0.4,
-        child: Text(
-          text.trim().isEmpty ? 'DRAFT' : text.trim(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: theme.textTheme.headlineMedium?.copyWith(
-            // Faint enough to read as a watermark, but no fainter: at 0.28 —
-            // which is what a real watermark looks like — it fails the WCAG
-            // contrast guideline the project treats as mandatory. The preview
-            // exists to be *read* before the watermark is applied, so
-            // legibility wins over fidelity here.
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
-            fontWeight: FontWeight.bold,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ?page,
+          if (page == null)
+            Center(
+              child: Icon(
+                Icons.picture_as_pdf_outlined,
+                size: 56,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ColoredBox(color: theme.colorScheme.surface.withValues(alpha: 0.12)),
+          Center(
+            child: Transform.rotate(
+              angle: -0.4,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    child: Text(
+                      text.trim().isEmpty ? 'DRAFT' : text.trim(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        color: theme.colorScheme.onSurface,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -216,7 +247,7 @@ class PdfMetadataView extends StatelessWidget {
             // Name and value together, so a screen reader announces "Pages, 7"
             // rather than reading a label and a number as separate items the
             // user has to associate themselves.
-            label: '$label, $value',
+            label: PdfEditSemantics.metadataRow(label, value),
             excludeSemantics: true,
             child: ListTile(
               dense: true,

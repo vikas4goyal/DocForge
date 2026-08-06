@@ -1,17 +1,19 @@
 /// Cubit tests for the settings screen.
 library;
 
+import 'dart:async';
+
 import 'package:bloc_test/bloc_test.dart';
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/app_settings/application/usecases/settings_usecases.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
-import 'package:doc_forge/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
-import 'package:doc_forge/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/app_settings/application/usecases/settings_usecases.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
+import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A preference store whose writes all fail.
@@ -41,6 +43,14 @@ class _Storage implements StorageSummaryReader {
           )
         : Result<StorageSummary>.failure(configured);
   }
+}
+
+/// A controllable storage read used to observe the in-progress state.
+class _DelayedStorage implements StorageSummaryReader {
+  final result = Completer<Result<StorageSummary>>();
+
+  @override
+  Future<Result<StorageSummary>> summary() => result.future;
 }
 
 void main() {
@@ -220,6 +230,51 @@ void main() {
 
       expect(cubit.state.storage!.documentCount, 3);
       expect(cubit.state.storage!.totalBytes, 1_048_576);
+    });
+
+    test('refresh exposes progress until the new summary arrives', () async {
+      final storage = _DelayedStorage();
+      final repository = PreferenceSettingsRepository(
+        InMemoryPreferenceStore(),
+      );
+      final controlled = SettingsCubit(
+        LoadSettings(repository),
+        UpdateSetting(repository),
+        PreviewDocumentName(FixedClock(DateTime.utc(2026, 3, 14))),
+        LoadStorageSummary(storage),
+        onThemeChanged: published.add,
+      );
+      addTearDown(controlled.close);
+
+      final refresh = controlled.refreshStorage();
+      expect(controlled.state.isRefreshingStorage, isTrue);
+
+      storage.result.complete(
+        const Result<StorageSummary>.success(
+          StorageSummary(totalBytes: 1024, documentCount: 1),
+        ),
+      );
+      await refresh;
+
+      expect(controlled.state.isRefreshingStorage, isFalse);
+      expect(controlled.state.storage?.documentCount, 1);
+    });
+
+    blocTest<SettingsCubit, SettingsState>(
+      'records a refresh failure and stops progress',
+      build: () => build(storage: _Storage(failure: const Failure.storage())),
+      act: (cubit) => cubit.refreshStorage(),
+      verify: (cubit) {
+        expect(cubit.state.isRefreshingStorage, isFalse);
+        expect(cubit.state.storageFailure, isA<StorageFailure>());
+      },
+    );
+
+    test('refresh after close is safely ignored', () async {
+      final cubit = build();
+      await cubit.close();
+
+      await expectLater(cubit.refreshStorage(), completes);
     });
   });
 

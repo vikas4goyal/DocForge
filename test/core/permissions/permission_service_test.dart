@@ -1,5 +1,5 @@
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/permissions/permission_service.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -8,9 +8,9 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_import/domain/repositories/import_repository.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_import/domain/repositories/import_repository.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
@@ -85,7 +85,7 @@ class SystemSharedContentSource implements SharedContentSource {
     _subscription = ReceiveSharingIntent.instance.getMediaStream().listen(
       (files) => _controller.add([for (final file in files) file.path]),
       // A malformed share is dropped rather than crashing the application, and
-      // is not reported: the user did not ask DocForge for anything they are
+      // is not reported: the user did not ask DocScanly for anything they are
       // waiting on.
       onError: (Object _) {},
     );

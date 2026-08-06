@@ -5,12 +5,12 @@
 /// a property of one file rather than a claim spread across ten call sites.
 library;
 
-import 'package:doc_forge/core/contracts/models/settings_values.dart';
+import 'package:doc_scanly/core/contracts/models/settings_values.dart';
 
 // Re-exported so the rest of this feature has one import for "a setting's
 // value". The types live in core/contracts because the features that *act* on
 // them may not import settings, and settings may not import them.
-export 'package:doc_forge/core/contracts/models/settings_values.dart';
+export 'package:doc_scanly/core/contracts/models/settings_values.dart';
 
 /// How the application decides between the light and dark themes.
 ///
@@ -209,12 +209,21 @@ abstract final class SettingsCopy {
   /// test can assert on, and so changing it is a deliberate act rather than a
   /// copy edit in a widget tree.
   static const privacyStatement =
-      'DocForge stores every document, page image and recognised text on this '
-      'device only, in storage private to the application.\n\n'
-      'Nothing is uploaded automatically. A document leaves this device only '
-      'when you share, export or print it, and only to where you send it.\n\n'
-      'Text recognition runs on the device. DocForge has no account, no server '
-      'and makes no network request to store or read your documents.';
+      'DocScanly stores PDFs in the DocScanly folder selected for your library. '
+      'On Android this library is always on the device. On iOS you can keep it '
+      'on the device or explicitly select DocScanly’s app-owned iCloud Drive '
+      'container. Apple then transfers those PDFs between devices signed into '
+      'the same iCloud account. DocScanly never silently switches an iCloud '
+      'library to a separate local copy.\n\n'
+      'Captured page images, search and recognised-text indexes, preferences '
+      'and other database metadata remain local to each device. They are not '
+      'synchronised through iCloud, so a new device rebuilds its document list '
+      'from the PDFs it finds. Password-protected PDFs remain protected; you '
+      'may need to enter their password again on a new device.\n\n'
+      'DocScanly has no document-storage server and text recognition runs on '
+      'the device. PDFs can also leave the selected library when you explicitly '
+      'share, export or print them. Files and other applications with storage '
+      'access may be able to see PDFs in the user-visible DocScanly folder.';
 
   /// The label of the entry that opens the Privacy Policy.
   static const privacyTitle = 'Privacy Policy';

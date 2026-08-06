@@ -6,8 +6,9 @@
 /// that reports a user cancellation as a normal result.
 library;
 
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_sharing/domain/document_export_result.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 
 /// Hands prepared content to the system share sheet.
 abstract interface class ShareRepository {
@@ -30,17 +31,19 @@ abstract interface class PrintRepository {
   Future<Result<bool>> printFile(String filePath, {required String jobName});
 }
 
-/// Asks the user where an exported file should be written.
-abstract interface class ExportDestinationPicker {
-  /// Offers a destination picker seeded with [suggestedName].
+/// Owns the provider picker and the complete export write handoff.
+abstract interface class ExportDocumentRepository {
+  /// Exports [sourcePath] under [suggestedName].
   ///
-  /// Returns the chosen absolute path, or null when the user cancelled. As with
-  /// printing, cancellation is a successful null rather than a failure, because
-  /// nothing went wrong and nothing should be said about it.
+  /// Returns an explicit completed or cancelled value. Cancellation remains a
+  /// success because the provider performed no write and nothing went wrong.
   ///
   /// [initialDirectory] is the user's configured default save location, when
   /// they have one.
-  Future<Result<String?>> chooseDestination({
+  /// The application must not append sibling paths to the provider's opaque
+  /// result. Android and iOS receive [sourcePath]'s bytes in this call.
+  Future<Result<DocumentExportResult>> export({
+    required String sourcePath,
     required String suggestedName,
     String? initialDirectory,
   });

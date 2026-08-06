@@ -1,14 +1,15 @@
 /// Shared fakes for the PDF generation tests.
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
-import 'package:doc_forge/features/pdf_generation/domain/repositories/pdf_repository.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/repositories/pdf_repository.dart';
 
 /// A composer that records its requests and produces no file.
 class FakePdfComposer implements PdfComposer {
@@ -125,7 +126,7 @@ class StubDocumentReader implements DocumentReader {
           updatedAt: DateTime.utc(2026),
           pageCount: 1,
           sizeInBytes: 1024,
-          filePath: '/existing-$index.pdf',
+          libraryPath: LibraryPath.parse('Existing $index.pdf'),
         ),
     ]);
   }

@@ -76,3 +76,13 @@ class PageId extends EntityId {
   /// Creates a page identifier from its JSON string form.
   factory PageId.fromJson(String json) => PageId(json);
 }
+
+/// Identifies one recoverable Trash entry.
+@immutable
+class TrashId extends EntityId {
+  /// Creates a Trash identifier wrapping [value].
+  const TrashId(super.value);
+
+  /// Creates a Trash identifier from its JSON string form.
+  factory TrashId.fromJson(String json) => TrashId(json);
+}

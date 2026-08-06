@@ -5,12 +5,12 @@
 /// domain layer and are unit-tested there.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/app_settings/application/usecases/settings_usecases.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/app_settings/application/usecases/settings_usecases.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -34,6 +34,8 @@ class SettingsState extends Equatable {
     this.storage,
     this.namingPreview = '',
     this.failure,
+    this.isRefreshingStorage = false,
+    this.storageFailure,
   });
 
   /// Before settings have been read.
@@ -58,6 +60,12 @@ class SettingsState extends Equatable {
   /// What went wrong, when a save did.
   final Failure? failure;
 
+  /// Whether storage usage is being re-read for the details screen.
+  final bool isRefreshingStorage;
+
+  /// A failure limited to reading storage usage.
+  final Failure? storageFailure;
+
   /// The user-facing message for [failure].
   ///
   /// The domain's own wording is used rather than the generic failure message:
@@ -79,6 +87,8 @@ class SettingsState extends Equatable {
     storage,
     namingPreview,
     failure,
+    isRefreshingStorage,
+    storageFailure,
   ];
 
   /// Returns a copy with the given fields replaced.
@@ -91,12 +101,19 @@ class SettingsState extends Equatable {
     StorageSummary? storage,
     String? namingPreview,
     Failure? failure,
+    bool? isRefreshingStorage,
+    Failure? storageFailure,
+    bool clearStorageFailure = false,
   }) => SettingsState._(
     status: status ?? this.status,
     settings: settings ?? this.settings,
     storage: storage ?? this.storage,
     namingPreview: namingPreview ?? this.namingPreview,
     failure: failure,
+    isRefreshingStorage: isRefreshingStorage ?? this.isRefreshingStorage,
+    storageFailure: clearStorageFailure
+        ? null
+        : (storageFailure ?? this.storageFailure),
   );
 }
 
@@ -154,11 +171,19 @@ class SettingsCubit extends Cubit<SettingsState> {
   /// Called when the storage row is opened, which is what makes the figure fall
   /// after documents have been permanently removed.
   Future<void> refreshStorage() async {
+    if (isClosed) return;
+    emit(state.copyWith(isRefreshingStorage: true, clearStorageFailure: true));
     final storage = await _storage();
     if (isClosed) return;
 
-    final summary = storage.valueOrNull;
-    if (summary != null) emit(state.copyWith(storage: summary));
+    switch (storage) {
+      case Success(:final value):
+        emit(state.copyWith(storage: value, isRefreshingStorage: false));
+      case Failed(:final failure):
+        emit(
+          state.copyWith(isRefreshingStorage: false, storageFailure: failure),
+        );
+    }
   }
 
   /// Applies a theme choice.

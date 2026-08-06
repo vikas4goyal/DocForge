@@ -1,4 +1,4 @@
-/// The single error vocabulary shared by every layer of DocForge.
+/// The single error vocabulary shared by every layer of DocScanly.
 ///
 /// Exceptions never cross a layer boundary in this project. A repository or use
 /// case that cannot complete returns a [Failure] instead, which makes every
@@ -39,9 +39,26 @@ enum ValidationIssue {
 
   /// The operation would leave a document with no pages.
   documentWouldHaveNoPages,
+
+  /// A name contained characters that cannot be used on disk.
+  ///
+  /// Distinct from [emptyName] because the fix is different: the user has to
+  /// change a character rather than type something. Now that documents live in
+  /// a folder the user can also reach from the file browser, a name has to be
+  /// legal on both platforms' filesystems, not merely non-empty.
+  illegalName,
+
+  /// A document with the same name already exists in the target folder.
+  duplicateDocumentName,
+
+  /// A password and its confirmation did not match.
+  passwordMismatch,
+
+  /// A destructive bulk action was submitted without its reviewed confirmation.
+  bulkActionNotConfirmed,
 }
 
-/// Every way an operation in DocForge can fail.
+/// Every way an operation in DocScanly can fail.
 ///
 /// Variants carry only what a caller needs in order to recover or to explain
 /// the problem. Technical detail useful for diagnosis goes in each variant's

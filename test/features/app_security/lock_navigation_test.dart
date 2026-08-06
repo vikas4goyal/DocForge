@@ -10,11 +10,11 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/app/router/app_router.dart';
-import 'package:doc_forge/app/router/app_routes.dart';
-import 'package:doc_forge/app/router/route_gates.dart';
-import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
-import 'package:doc_forge/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/app/router/route_gates.dart';
+import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
+import 'package:doc_scanly/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -33,9 +33,6 @@ AppScreens _screens() => AppScreens(
   unlock: (_) => const Scaffold(body: Text('Locked')),
   home: (_) => _documentContent('home'),
   scan: (_) => _documentContent('scan'),
-  scanReview: (_) => _documentContent('review'),
-  scanEnhance: (_) => _documentContent('enhance'),
-  scanPreview: (_) => _documentContent('preview'),
   documents: (_) => _documentContent('documents'),
   viewer: (_, _) => _documentContent('viewer'),
   documentDetail: (_, _) => _documentContent('detail'),
@@ -44,6 +41,7 @@ AppScreens _screens() => AppScreens(
   folderDetail: (_, _) => _documentContent('folder'),
   favourites: (_) => _documentContent('favourites'),
   archive: (_) => _documentContent('archive'),
+  trash: (_) => _documentContent('trash'),
   search: (_) => _documentContent('search'),
   settings: (_) => _documentContent('settings'),
   about: (_) => _documentContent('about'),

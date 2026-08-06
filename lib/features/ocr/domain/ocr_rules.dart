@@ -3,9 +3,9 @@
 /// Pure functions, so the Cubit driving the OCR view holds no logic of its own.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 
 /// Rules for deciding what to recognise and how to present the result.
 abstract final class OcrRules {

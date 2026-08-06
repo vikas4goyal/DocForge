@@ -1,12 +1,14 @@
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
-import 'package:doc_forge/features/document_library/domain/library_rules.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/previews/fixtures/fixtures.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/folder_usecases.dart';
+import 'package:doc_scanly/features/document_library/domain/document_duplicate.dart';
+import 'package:doc_scanly/features/document_library/domain/library_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes.dart';
@@ -18,6 +20,7 @@ void main() {
   late FakeFolderRepository folders;
   late FakePageRepository pages;
   late FakeDocumentFileStore files;
+  late InMemoryPublicFileStore store;
   late InMemorySecureStore secure;
   late Clock clock;
   late IdGenerator ids;
@@ -27,6 +30,10 @@ void main() {
     folders = FakeFolderRepository();
     pages = FakePageRepository();
     files = FakeDocumentFileStore();
+    store = InMemoryPublicFileStore();
+    // Every operation that copies or reads a document needs its file to exist:
+    // the record is an index entry, and the library folder is the truth.
+    store.files[sampleDocument.relativePath] = 'pdf-bytes';
     secure = InMemorySecureStore();
     clock = FixedClock(_now);
     ids = SequentialIdGenerator(prefix: 'new');
@@ -34,7 +41,7 @@ void main() {
 
   group('RenameDocument', () {
     test('renames and refreshes the modified date', () async {
-      final result = await RenameDocument(documents, clock)(
+      final result = await RenameDocument(documents, clock, store)(
         sampleDocument.id,
         'Renamed',
       );
@@ -44,7 +51,7 @@ void main() {
     });
 
     test('never changes the creation date', () async {
-      final result = await RenameDocument(documents, clock)(
+      final result = await RenameDocument(documents, clock, store)(
         sampleDocument.id,
         'Renamed',
       );
@@ -53,7 +60,7 @@ void main() {
     });
 
     test('trims incidental whitespace', () async {
-      final result = await RenameDocument(documents, clock)(
+      final result = await RenameDocument(documents, clock, store)(
         sampleDocument.id,
         '  Spaced  ',
       );
@@ -62,7 +69,7 @@ void main() {
     });
 
     test('rejects an empty name and keeps the existing title', () async {
-      final result = await RenameDocument(documents, clock)(
+      final result = await RenameDocument(documents, clock, store)(
         sampleDocument.id,
         '   ',
       );
@@ -75,7 +82,7 @@ void main() {
     });
 
     test('reports not found for an unknown document', () async {
-      final result = await RenameDocument(documents, clock)(
+      final result = await RenameDocument(documents, clock, store)(
         const DocumentId('nope'),
         'x',
       );
@@ -85,6 +92,39 @@ void main() {
   });
 
   group('MoveDocument', () {
+    test('moves the authoritative PDF into the selected real folder', () async {
+      final destination = sampleFolder.copyWith(relativePath: 'Filed/Policies');
+      folders.folders[destination.id] = destination;
+      store.folderPaths.addAll(['Filed', 'Filed/Policies']);
+
+      final result = await MoveDocument(documents, clock, store, folders)(
+        sampleDocument.id,
+        destination.id,
+      );
+
+      expect(
+        result.valueOrNull?.relativePath,
+        'Filed/Policies/Invoice — Acme Ltd.pdf',
+      );
+      expect(store.files.containsKey(sampleDocument.relativePath), isFalse);
+      expect(store.files.containsKey(result.valueOrNull!.relativePath), isTrue);
+    });
+
+    test('refuses a destination collision without moving the source', () async {
+      final destination = sampleFolder.copyWith(relativePath: 'Filed');
+      folders.folders[destination.id] = destination;
+      store.folderPaths.add('Filed');
+      store.files['Filed/${sampleDocument.fileName}'] = 'occupied';
+
+      final result = await MoveDocument(documents, clock, store, folders)(
+        sampleDocument.id,
+        destination.id,
+      );
+
+      expect(result.failureOrNull, isA<ValidationFailure>());
+      expect(store.files.containsKey(sampleDocument.relativePath), isTrue);
+    });
+
     test('moves a document into a folder', () async {
       final result = await MoveDocument(documents, clock)(
         sampleDocument.id,
@@ -165,29 +205,101 @@ void main() {
   });
 
   group('DuplicateDocument', () {
+    test('proposes a collision-safe name without mutating storage', () async {
+      store.files['Invoice — Acme Ltd (copy).pdf'] = 'existing';
+      final useCase = DuplicateDocument(documents, pages, store, clock, ids);
+
+      final proposed = await useCase.propose(sampleDocument.id);
+
+      expect(proposed.valueOrNull?.title, 'Invoice — Acme Ltd (copy) (2)');
+      expect(documents.documents, hasLength(1));
+    });
+
+    test('uses the reviewed edited name and destination', () async {
+      store.folderPaths.add('Reviewed');
+      final request = DuplicateDocumentRequest(
+        sourceDocumentId: sampleDocument.id,
+        title: 'Policy copy',
+        destinationFolders: const ['Reviewed'],
+        destinationFolderId: const FolderId('reviewed'),
+      );
+
+      final result = await DuplicateDocument(
+        documents,
+        pages,
+        store,
+        clock,
+        ids,
+      ).execute(request);
+
+      expect(result.valueOrNull?.title, 'Policy copy');
+      expect(result.valueOrNull?.folderId, const FolderId('reviewed'));
+      expect(result.valueOrNull?.relativePath, 'Reviewed/Policy copy.pdf');
+    });
+
+    test('refuses a reviewed collision without creating a record', () async {
+      store.files['Taken.pdf'] = 'existing';
+      final request = DuplicateDocumentRequest(
+        sourceDocumentId: sampleDocument.id,
+        title: 'Taken',
+        destinationFolders: const [],
+      );
+
+      final result = await DuplicateDocument(
+        documents,
+        pages,
+        store,
+        clock,
+        ids,
+      ).execute(request);
+
+      expect(result.failureOrNull, isA<ValidationFailure>());
+      expect(documents.documents, hasLength(1));
+      expect(store.files, hasLength(2));
+    });
+
+    test('a repeated reviewed request creates exactly one copy', () async {
+      final useCase = DuplicateDocument(documents, pages, store, clock, ids);
+      final request = DuplicateDocumentRequest(
+        sourceDocumentId: sampleDocument.id,
+        title: 'Only once',
+        destinationFolders: const [],
+      );
+
+      final first = await useCase.execute(request);
+      final second = await useCase.execute(request);
+
+      expect(first.isSuccess, isTrue);
+      expect(second.isFailure, isTrue);
+      expect(documents.documents, hasLength(2));
+    });
+
     test('creates an independent copy', () async {
       final result = await DuplicateDocument(
         documents,
         pages,
-        files,
+        store,
         clock,
         ids,
       )(sampleDocument.id);
 
       final copy = result.valueOrNull!;
       expect(copy.id, isNot(sampleDocument.id));
-      expect(copy.filePath, isNot(sampleDocument.filePath));
+      expect(copy.libraryPath, isNot(sampleDocument.libraryPath));
       expect(copy.title, 'Invoice — Acme Ltd (copy)');
       expect(documents.documents, hasLength(2));
     });
 
-    test('copies the files rather than sharing them', () async {
-      await DuplicateDocument(documents, pages, files, clock, ids)(
+    test('copies the file rather than sharing it', () async {
+      final copy = await DuplicateDocument(documents, pages, store, clock, ids)(
         sampleDocument.id,
       );
 
-      expect(files.copied, hasLength(1));
-      expect(files.copied.single.$1, sampleDocument.id);
+      // Two distinct files, not two records pointing at one: editing or
+      // deleting either must not touch the other.
+      expect(store.files, hasLength(2));
+      expect(store.files.containsKey(copy.valueOrNull!.relativePath), isTrue);
+      expect(store.files.containsKey(sampleDocument.relativePath), isTrue);
     });
 
     test('gives the copied pages fresh identifiers', () async {
@@ -196,7 +308,7 @@ void main() {
       final copy = (await DuplicateDocument(
         documents,
         pages,
-        files,
+        store,
         clock,
         ids,
       )(sampleDocument.id)).valueOrNull!;
@@ -213,13 +325,13 @@ void main() {
       expect(copiedPages.every((p) => p.documentId == copy.id), isTrue);
     });
 
-    test('does not create a record when copying files fails', () async {
-      files.failure = const Failure.storageFull();
+    test('does not create a record when copying the file fails', () async {
+      store.failures['writeFile'] = const Failure.storageFull();
 
       final result = await DuplicateDocument(
         documents,
         pages,
-        files,
+        store,
         clock,
         ids,
       )(sampleDocument.id);
@@ -237,9 +349,13 @@ void main() {
         'hunter2',
       );
 
-      final result = await PurgeDocument(documents, pages, files, secure)(
-        sampleDocument.id,
-      );
+      final result = await PurgeDocument(
+        documents,
+        pages,
+        store,
+        files,
+        secure,
+      )(sampleDocument.id);
 
       expect(result.isSuccess, isTrue);
       expect(documents.documents, isEmpty);
@@ -252,9 +368,13 @@ void main() {
     test('keeps the record when file removal fails', () async {
       files.failure = const Failure.storage();
 
-      final result = await PurgeDocument(documents, pages, files, secure)(
-        sampleDocument.id,
-      );
+      final result = await PurgeDocument(
+        documents,
+        pages,
+        store,
+        files,
+        secure,
+      )(sampleDocument.id);
 
       expect(result.isFailure, isTrue);
       // An orphaned file is recoverable; a record pointing at deleted files
@@ -265,9 +385,13 @@ void main() {
     test('stops when the password cannot be removed', () async {
       secure.failNextOperation = true;
 
-      final result = await PurgeDocument(documents, pages, files, secure)(
-        sampleDocument.id,
-      );
+      final result = await PurgeDocument(
+        documents,
+        pages,
+        store,
+        files,
+        secure,
+      )(sampleDocument.id);
 
       expect(result.failureOrNull, isA<SecureStorageFailure>());
       expect(documents.documents, hasLength(1));
@@ -275,11 +399,12 @@ void main() {
   });
 
   group('ComputeStorageSummary', () {
-    test('reports bytes from disk and counts every document', () async {
-      files.bytes = 4096;
+    test('reports bytes from the library and counts every document', () async {
+      store.files.clear();
+      store.files['Big.pdf'] = 'x' * 4096;
       documents.documents[archivedDocument.id] = archivedDocument;
 
-      final summary = await ComputeStorageSummary(documents, files)();
+      final summary = await ComputeStorageSummary(documents, store)();
 
       expect(summary.valueOrNull?.totalBytes, 4096);
       // Archived documents still occupy storage, so they are counted.
@@ -289,18 +414,18 @@ void main() {
     test('reports an empty library as zero', () async {
       final summary = await ComputeStorageSummary(
         FakeDocumentRepository(),
-        files,
+        InMemoryPublicFileStore(),
       )();
 
       expect(summary.valueOrNull?.totalBytes, 0);
       expect(summary.valueOrNull?.documentCount, 0);
     });
 
-    test('fails when the filesystem cannot be read', () async {
-      files.failure = const Failure.storage();
+    test('fails when the library folder cannot be read', () async {
+      store.failures['totalBytes'] = const Failure.storage();
 
       expect(
-        (await ComputeStorageSummary(documents, files)()).isFailure,
+        (await ComputeStorageSummary(documents, store)()).isFailure,
         isTrue,
       );
     });
@@ -400,7 +525,7 @@ void main() {
         folders,
         documents,
         MoveDocument(documents, clock),
-        PurgeDocument(documents, pages, files, secure),
+        PurgeDocument(documents, pages, store, files, secure),
       );
     });
 

@@ -1,13 +1,13 @@
 /// Widget tests for the document viewer screen.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
-import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_cubit.dart';
-import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_state.dart';
-import 'package:doc_forge/features/document_viewer/presentation/screens/viewer_screen.dart';
-import 'package:doc_forge/features/document_viewer/presentation/viewer_keys.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/cubit/viewer_cubit.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/cubit/viewer_state.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/screens/viewer_screen.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/viewer_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,13 +40,13 @@ void main() {
   late int backCount;
   late int shareCount;
   late int printCount;
-  late int editCount;
+  late List<ViewerDocumentAction> actions;
 
   setUp(() {
     backCount = 0;
     shareCount = 0;
     printCount = 0;
-    editCount = 0;
+    actions = [];
   });
 
   Future<ViewerCubit> pump(
@@ -73,8 +73,10 @@ void main() {
             surfaceBuilder: fakeSurface,
             onBack: () => backCount++,
             onShare: () => shareCount++,
-            onPrint: () => printCount++,
-            onEdit: () => editCount++,
+            onAction: (action) {
+              actions.add(action);
+              if (action == ViewerDocumentAction.print) printCount++;
+            },
           ),
         ),
       ),
@@ -97,14 +99,25 @@ void main() {
       expect(find.text('1 of 3'), findsOneWidget);
     });
 
-    testWidgets('offers share, print and edit once the document is open', (
+    testWidgets('offers share and focused PDF actions once open', (
       tester,
     ) async {
       await pump(tester);
 
       expect(find.byKey(ViewerKeys.shareButton), findsOneWidget);
-      expect(find.byKey(ViewerKeys.printButton), findsOneWidget);
-      expect(find.byKey(ViewerKeys.editButton), findsOneWidget);
+      expect(find.byKey(ViewerKeys.actionsMenu), findsOneWidget);
+
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      for (final key in [
+        ViewerKeys.printButton,
+        ViewerKeys.compressButton,
+        ViewerKeys.splitButton,
+        ViewerKeys.watermarkButton,
+        ViewerKeys.passwordButton,
+      ]) {
+        expect(find.byKey(key), findsOneWidget);
+      }
     });
 
     testWidgets('shows a loading indicator while opening', (tester) async {
@@ -127,13 +140,48 @@ void main() {
       await pump(tester);
 
       await tester.tap(find.byKey(ViewerKeys.shareButton));
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViewerKeys.printButton));
-      await tester.tap(find.byKey(ViewerKeys.editButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.compressButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.managePagesButton));
       await tester.pump();
 
       expect(shareCount, 1);
       expect(printCount, 1);
-      expect(editCount, 1);
+      expect(actions, [
+        ViewerDocumentAction.print,
+        ViewerDocumentAction.compress,
+        ViewerDocumentAction.pageManagement,
+      ]);
+    });
+
+    testWidgets('compact width keeps secondary actions in a reachable menu', (
+      tester,
+    ) async {
+      await pump(tester, viewport: const Size(390, 844));
+
+      expect(find.byKey(ViewerKeys.shareButton), findsOneWidget);
+      expect(find.byKey(ViewerKeys.actionsMenu), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.printButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.splitButton));
+      await tester.pumpAndSettle();
+
+      expect(printCount, 1);
+      expect(actions.last, ViewerDocumentAction.split);
     });
 
     testWidgets('back leaves the viewer', (tester) async {
@@ -147,35 +195,49 @@ void main() {
   });
 
   group('jump to page', () {
+    Future<void> openJump(WidgetTester tester) async {
+      await tester.tap(find.byKey(ViewerKeys.pageJumpButton));
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('a valid number moves to that page', (tester) async {
       final cubit = await pump(tester);
 
+      await openJump(tester);
       await tester.enterText(find.byKey(ViewerKeys.jumpToPageField), '3');
-      await tester.testTextInput.receiveAction(TextInputAction.go);
+      await tester.tap(find.byKey(ViewerKeys.pageJumpConfirm));
       await tester.pumpAndSettle();
 
       expect(cubit.state.page, 3);
       expect(find.text('3 of 3'), findsOneWidget);
     });
 
-    testWidgets('a number past the end lands on the last page', (tester) async {
+    testWidgets('a number past the end stays visible with validation', (
+      tester,
+    ) async {
       final cubit = await pump(tester);
 
+      await openJump(tester);
       await tester.enterText(find.byKey(ViewerKeys.jumpToPageField), '99');
-      await tester.testTextInput.receiveAction(TextInputAction.go);
-      await tester.pumpAndSettle();
-
-      expect(cubit.state.page, 3);
-    });
-
-    testWidgets('a number below one lands on the first page', (tester) async {
-      final cubit = await pump(tester);
-
-      await tester.enterText(find.byKey(ViewerKeys.jumpToPageField), '0');
-      await tester.testTextInput.receiveAction(TextInputAction.go);
+      await tester.tap(find.byKey(ViewerKeys.pageJumpConfirm));
       await tester.pumpAndSettle();
 
       expect(cubit.state.page, 1);
+      expect(find.text('Enter a page from 1 to 3.'), findsOneWidget);
+      expect(find.byKey(ViewerKeys.pageJumpDialog), findsOneWidget);
+    });
+
+    testWidgets('cancel leaves the current page unchanged', (tester) async {
+      final cubit = await pump(tester);
+      cubit.goToPage(2);
+      await tester.pump();
+
+      await openJump(tester);
+      await tester.enterText(find.byKey(ViewerKeys.jumpToPageField), '3');
+      await tester.tap(find.byKey(ViewerKeys.pageJumpCancel));
+      await tester.pumpAndSettle();
+
+      expect(cubit.state.page, 2);
     });
 
     testWidgets('a non-numeric entry does nothing rather than guessing', (
@@ -185,11 +247,13 @@ void main() {
       cubit.goToPage(2);
       await tester.pumpAndSettle();
 
+      await openJump(tester);
       await tester.enterText(find.byKey(ViewerKeys.jumpToPageField), 'seven');
-      await tester.testTextInput.receiveAction(TextInputAction.go);
+      await tester.tap(find.byKey(ViewerKeys.pageJumpConfirm));
       await tester.pumpAndSettle();
 
       expect(cubit.state.page, 2);
+      expect(find.text('Enter a page from 1 to 3.'), findsOneWidget);
     });
   });
 
@@ -330,7 +394,10 @@ void main() {
       final handle = tester.ensureSemantics();
       await pump(tester);
 
-      expect(find.bySemanticsLabel('Page 1 of 3'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel('Page 1 of 3, jump to page'),
+        findsOneWidget,
+      );
 
       handle.dispose();
     });
@@ -344,11 +411,15 @@ void main() {
         findsAtLeastNWidgets(1),
       );
       expect(
-        find.bySemanticsLabel(RegExp('Print document')),
+        find.bySemanticsLabel(RegExp('More document actions')),
         findsAtLeastNWidgets(1),
       );
+
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsLabel(RegExp('Print')), findsAtLeastNWidgets(1));
       expect(
-        find.bySemanticsLabel(RegExp('Edit document')),
+        find.bySemanticsLabel(RegExp('Compress')),
         findsAtLeastNWidgets(1),
       );
 
@@ -397,8 +468,7 @@ void main() {
               surfaceBuilder: fakeSurface,
               onBack: () {},
               onShare: () {},
-              onPrint: () {},
-              onEdit: () {},
+              onAction: (_) {},
             ),
           ),
         ),

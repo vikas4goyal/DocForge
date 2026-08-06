@@ -18,11 +18,11 @@
 /// is tied to its route rather than to the application.
 library;
 
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/thumbnail_cache.dart';
-import 'package:doc_forge/core/permissions/permission_service.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/isolates/thumbnail_cache.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
 import 'package:flutter/widgets.dart';
 
 /// Everything the application needs, constructed once at startup.

@@ -1,14 +1,14 @@
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
-import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';
+import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// A correction job that records what it was asked to do and writes nothing.
@@ -46,7 +46,7 @@ void main() {
   late FakeScannerRepository scanner;
 
   setUp(() {
-    workspace = Directory.systemTemp.createTempSync('docforge_scanning');
+    workspace = Directory.systemTemp.createTempSync('docscanly_scanning');
     scanner = FakeScannerRepository(
       directory: workspace,
       ids: SequentialIdGenerator(prefix: 'page'),
@@ -420,7 +420,7 @@ void main() {
 
   group('LocalScanStagingArea', () {
     test('creates its directory on first use', () async {
-      final root = Directory.systemTemp.createTempSync('docforge_staging');
+      final root = Directory.systemTemp.createTempSync('docscanly_staging');
       addTearDown(() => root.deleteSync(recursive: true));
 
       final result = await LocalScanStagingArea(root).directory();
@@ -433,7 +433,7 @@ void main() {
     });
 
     test('clearing removes everything the session wrote', () async {
-      final root = Directory.systemTemp.createTempSync('docforge_staging');
+      final root = Directory.systemTemp.createTempSync('docscanly_staging');
       addTearDown(() {
         if (root.existsSync()) root.deleteSync(recursive: true);
       });
@@ -448,7 +448,7 @@ void main() {
     });
 
     test('clearing a session that wrote nothing succeeds', () async {
-      final root = Directory.systemTemp.createTempSync('docforge_staging');
+      final root = Directory.systemTemp.createTempSync('docscanly_staging');
       addTearDown(() => root.deleteSync(recursive: true));
 
       final result = await LocalScanStagingArea(root).clear();

@@ -1,8 +1,8 @@
 /// The contract behind PDF composition.
 library;
 
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
 
 /// What composing a PDF produced.
 class ComposedPdf {

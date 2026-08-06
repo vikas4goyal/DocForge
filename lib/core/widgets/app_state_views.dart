@@ -10,9 +10,10 @@
 /// specs mandate (`home_error_view`, `search_empty_state`, …) are preserved.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/widgets/core_keys.dart';
 import 'package:flutter/material.dart';
 
 /// A centred loading indicator.
@@ -51,6 +52,7 @@ class AppProgressIndicator extends StatelessWidget {
     super.key,
     this.label,
     this.onCancel,
+    this.cancelKey,
   });
 
   /// Units finished so far.
@@ -64,6 +66,14 @@ class AppProgressIndicator extends StatelessWidget {
 
   /// Called when the user cancels. When null, no cancel control is shown.
   final VoidCallback? onCancel;
+
+  /// Key for the cancel control.
+  ///
+  /// Supplied by the feature rather than fixed here, because five features can
+  /// each be cancelled through this one widget: a single shared key would give
+  /// a flow one finder matching five different controls, and the wrong one
+  /// would be tapped depending only on what happened to be on screen.
+  final Key? cancelKey;
 
   /// Completion as a fraction, or null when the total is unknown.
   double? get _fraction => total <= 0 ? null : completed / total;
@@ -89,7 +99,7 @@ class AppProgressIndicator extends StatelessWidget {
             if (onCancel != null) ...[
               const SizedBox(height: 16),
               TextButton(
-                key: const Key('app_progress_cancel_button'),
+                key: cancelKey ?? CoreKeys.progressCancelButton,
                 onPressed: onCancel,
                 child: const Text('Cancel'),
               ),
@@ -177,7 +187,7 @@ class AppEmptyState extends StatelessWidget {
             if (onAction != null) ...[
               const SizedBox(height: 24),
               FilledButton(
-                key: actionKey ?? const Key('app_empty_state_action_button'),
+                key: actionKey ?? CoreKeys.emptyStateActionButton,
                 onPressed: onAction,
                 child: Text(actionLabel!),
               ),
@@ -271,7 +281,7 @@ class AppErrorView extends StatelessWidget {
     return [
       const SizedBox(height: 24),
       FilledButton(
-        key: retryKey ?? const Key('app_error_view_action_button'),
+        key: retryKey ?? CoreKeys.errorViewActionButton,
         onPressed: callback,
         child: Text(label),
       ),

@@ -6,18 +6,19 @@
 /// is covered in `pdf_composer_test.dart`.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
-import 'package:doc_forge/features/pdf_generation/domain/repositories/pdf_repository.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/repositories/pdf_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'pdf_test_support.dart';
@@ -33,6 +34,7 @@ void main() {
   late FakePdfComposer composer;
   late RecordingDocumentWriter writer;
   late List<String> deleted;
+  late InMemoryPublicFileStore store;
   late SaveDocument save;
 
   final clock = FixedClock(DateTime.utc(2026, 3, 14, 9, 30));
@@ -42,6 +44,7 @@ void main() {
     composer = FakePdfComposer();
     writer = RecordingDocumentWriter();
     deleted = [];
+    store = InMemoryPublicFileStore();
     save = SaveDocument(
       BuildSearchablePdf(composer, (_) async => const {}),
       writer,
@@ -49,6 +52,8 @@ void main() {
       ids,
       (id) => '/documents/${id.value}.pdf',
       (path) async => deleted.add(path),
+      store,
+      _noProtection,
     );
   });
 
@@ -169,7 +174,8 @@ void main() {
         expect(document.title, 'Invoice 2026');
         expect(document.pageCount, 3);
         expect(document.sizeInBytes, 40960);
-        expect(document.filePath, '/documents/doc-1.pdf');
+        // Addressed inside the library, not by a device path.
+        expect(document.relativePath, 'Invoice 2026.pdf');
       },
     );
 
@@ -446,3 +452,12 @@ void main() {
     });
   });
 }
+
+/// Protection that returns the file untouched.
+///
+/// These tests assert on what the generator produces, not on the encryption —
+/// which the editing feature owns and tests separately.
+Future<Result<String>> _noProtection(
+  String sourcePath,
+  String password,
+) async => Result<String>.success(sourcePath);

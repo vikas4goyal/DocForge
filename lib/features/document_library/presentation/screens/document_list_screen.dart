@@ -7,14 +7,15 @@
 /// behaviour from each.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_state.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/document_card.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_card.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -32,6 +33,7 @@ class DocumentListScreen extends StatefulWidget {
     this.emptyMessage,
     this.onScan,
     this.actions,
+    this.loadThumbnail,
   });
 
   /// Title shown in the app bar.
@@ -54,6 +56,9 @@ class DocumentListScreen extends StatefulWidget {
 
   /// Extra app-bar actions supplied by the host route.
   final List<Widget>? actions;
+
+  /// Lazily resolves first-page previews for visible document rows.
+  final DocumentThumbnailLoader? loadThumbnail;
 
   @override
   State<DocumentListScreen> createState() => _DocumentListScreenState();
@@ -116,13 +121,14 @@ class _DocumentListScreenState extends State<DocumentListScreen> {
             // The failure the load actually produced, so the recovery offered
             // matches the cause rather than always being a bare retry.
             failure: state.failure ?? const Failure.unexpected(),
-            retryKey: const Key('document_list_retry_button'),
+            retryKey: LibraryKeys.documentListRetryButton,
             onRetry: () => context.read<DocumentListCubit>().load(),
           ),
           LoadStatus.ready => _DocumentList(
             state: state,
             controller: _scrollController,
             onOpenDocument: widget.onOpenDocument,
+            loadThumbnail: widget.loadThumbnail,
           ),
         },
       ),
@@ -136,11 +142,13 @@ class _DocumentList extends StatelessWidget {
     required this.state,
     required this.controller,
     required this.onOpenDocument,
+    required this.loadThumbnail,
   });
 
   final DocumentListState state;
   final ScrollController controller;
   final void Function(DocumentId id) onOpenDocument;
+  final DocumentThumbnailLoader? loadThumbnail;
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +185,7 @@ class _DocumentList extends StatelessWidget {
       itemBuilder: (context, index) {
         if (index >= state.documents.length) {
           return const Center(
-            key: Key('document_list_load_more'),
+            key: LibraryKeys.documentListLoadMore,
             child: Padding(
               padding: EdgeInsets.all(16),
               child: SizedBox(
@@ -192,6 +200,7 @@ class _DocumentList extends StatelessWidget {
         final document = state.documents[index];
         return DocumentCard(
           document: document,
+          loadThumbnail: loadThumbnail,
           onTap: () => onOpenDocument(document.id),
           onToggleFavourite: () =>
               context.read<DocumentListCubit>().toggleFavourite(document.id),

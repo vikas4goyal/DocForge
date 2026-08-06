@@ -6,7 +6,7 @@
 /// every one of them is tested here rather than through it.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 
 /// What the authentication mechanism reported.
 enum AuthOutcome {
@@ -54,13 +54,13 @@ abstract final class AppLockRules {
   ///
   /// Required by both platforms and shown inside the system dialogue, so it has
   /// to say what is being unlocked rather than merely "authenticate".
-  static const promptReason = 'Unlock DocForge to open your documents';
+  static const promptReason = 'Unlock DocScanly to open your documents';
 
   /// The reason shown when confirming a change to the lock itself.
   static const changeLockReason = 'Confirm it is you before changing the lock';
 
   /// The title of the unlock screen.
-  static const unlockTitle = 'DocForge is locked';
+  static const unlockTitle = 'DocScanly is locked';
 
   /// The instruction shown beneath it.
   static const unlockInstruction =
@@ -71,7 +71,7 @@ abstract final class AppLockRules {
 
   /// What a screen reader announces for the unlock control.
   static const unlockSemanticsLabel =
-      'Unlock DocForge using biometrics or your device passcode';
+      'Unlock DocScanly using biometrics or your device passcode';
 
   /// The message shown for [outcome], or null when there is nothing to say.
   ///

@@ -7,19 +7,22 @@
 library;
 
 import 'dart:io';
-
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/ocr/application/usecases/ocr_usecases.dart';
-import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/isar_ocr_text_store.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/mlkit_ocr_repository.dart';
-import 'package:doc_forge/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
-import 'package:doc_forge/features/pdf_generation/domain/repositories/pdf_repository.dart';
-import 'package:doc_forge/features/pdf_generation/infrastructure/pdf_composer.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/features/ocr/application/usecases/ocr_usecases.dart';
+import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/isar_ocr_text_store.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/mlkit_ocr_repository.dart';
+import 'package:doc_scanly/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/repositories/pdf_repository.dart';
+import 'package:doc_scanly/features/pdf_generation/infrastructure/pdf_composer.dart';
 import 'package:isar_community/isar.dart';
 
 /// Everything OCR and PDF generation need, built once.
@@ -30,6 +33,7 @@ class DocumentCreationModule {
     required this.loadRecognisedText,
     required this.forgetRecognisedText,
     required this.ocrTextSource,
+    this.extractDocumentText,
     required this.languagePacks,
     required this.saveDocument,
     required this.generateName,
@@ -47,6 +51,9 @@ class DocumentCreationModule {
 
   /// Recognised text for search and sharing.
   final OcrTextSource ocrTextSource;
+
+  /// Extracts embedded text with bounded on-device OCR fallback for imports.
+  final ExtractDocumentText? extractDocumentText;
 
   /// Which recognition scripts this build can use.
   final OcrLanguagePacks languagePacks;
@@ -70,7 +77,7 @@ class DocumentCreationModule {
 /// working unchanged.
 OcrScript _defaultScript() => OcrScript.defaultScript;
 
-/// Builds the graph over an already-open [isar] and [documentsDirectory].
+/// Builds the graph over an already-open [isar] and [publicStore].
 ///
 /// [composer] and [recogniser] default to the real implementations and are
 /// injectable so an integration test can substitute an inline composer and a
@@ -78,12 +85,16 @@ OcrScript _defaultScript() => OcrScript.defaultScript;
 /// which settings configures.
 DocumentCreationModule buildDocumentCreationModule({
   required Isar isar,
-  required Directory documentsDirectory,
+  required Directory workingDirectory,
+  required PublicFileStore publicStore,
+  required PdfProtector protectPdf,
   required Clock clock,
   required IdGenerator ids,
   required DocumentReader documentReader,
   required DocumentWriter documentWriter,
   required NamingPattern Function() namingPattern,
+  required ApplyEnhancement applyEnhancement,
+  DocumentPageAccessRepository? pageAccess,
   PdfComposer composer = const IsolatePdfComposer(),
   OcrRepository? recogniser,
   OcrScript Function() script = _defaultScript,
@@ -92,6 +103,16 @@ DocumentCreationModule buildDocumentCreationModule({
   final store = IsarOcrTextStore(isar);
   final ocr = recogniser ?? MlKitOcrRepository(clock);
   final recognise = RecogniseText(ocr, store);
+  final extract = pageAccess == null
+      ? null
+      : ExtractDocumentText(
+          documentReader,
+          documentWriter,
+          pageAccess,
+          ocr,
+          store,
+          clock,
+        );
 
   Future<Map<String, RecognisedText>> textFor(List<PageId> pageIds) async {
     final result = await store.findAll(pageIds);
@@ -99,12 +120,45 @@ DocumentCreationModule buildDocumentCreationModule({
     return {for (final entry in texts.entries) entry.key.value: entry.value};
   }
 
+  /// Renders a page's stored enhancement before it is drawn into the PDF.
+  ///
+  /// Without this the composer draws the capture, and the saved document does
+  /// not carry the settings the user chose on the enhance screen — they were
+  /// recorded against the page and then never applied to anything.
+  ///
+  /// Written beside the capture rather than over it, so the settings stay
+  /// re-editable: a page enhanced once can be enhanced differently later from
+  /// the original rather than from an already-filtered image.
+  Future<String> resolvePageImage(
+    PageRef page, {
+    required int maxDimension,
+  }) async {
+    if (!EnhancementRules.requiresProcessing(page.enhancement)) {
+      return page.imagePath;
+    }
+
+    final result = await applyEnhancement.single(
+      sourcePath: page.imagePath,
+      destinationPath: '${page.imagePath}.composed.jpg',
+      settings: page.enhancement,
+      // The size composition will draw at. Filtering the full capture would do
+      // several times the work and then throw most of it away.
+      maxDimension: maxDimension,
+    );
+
+    // A page that could not be enhanced is still drawn, unfiltered. Losing the
+    // page from the document would be far worse than losing its filter.
+    return result.valueOrNull ?? page.imagePath;
+  }
+
   final save = SaveDocument(
-    BuildSearchablePdf(composer, textFor),
+    BuildSearchablePdf(composer, textFor, resolveImage: resolvePageImage),
     documentWriter,
     clock,
     ids,
-    (id) => '${documentsDirectory.path}/${id.value}.pdf',
+    // Composed into the private working directory, then published into the
+    // user-visible library by the use case itself.
+    (id) => '${workingDirectory.path}/${id.value}.pdf',
     // Deleting an orphan must not itself fail the save: the record is already
     // gone, and a file that could not be removed is a smaller problem than an
     // error the user cannot act on.
@@ -118,6 +172,8 @@ DocumentCreationModule buildDocumentCreationModule({
         }
       }
     },
+    publicStore,
+    protectPdf,
   );
 
   final generateName = GenerateDocumentName(clock, documentReader);
@@ -126,7 +182,16 @@ DocumentCreationModule buildDocumentCreationModule({
     recogniseText: recognise,
     loadRecognisedText: LoadRecognisedText(store),
     forgetRecognisedText: ForgetRecognisedText(store),
-    ocrTextSource: OcrTextSourceImpl(store, documentReader.pagesOf),
+    ocrTextSource: pageAccess == null
+        ? OcrTextSourceImpl(store, documentReader.pagesOf)
+        : DocumentPageOcrTextSource(
+            documentReader,
+            pageAccess,
+            store,
+            extract,
+            script,
+          ),
+    extractDocumentText: extract,
     languagePacks: languagePacks,
     saveDocument: save,
     generateName: generateName,

@@ -1,12 +1,12 @@
 /// The sheet offering every way a document can leave the application.
 library;
 
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
-import 'package:doc_forge/features/document_sharing/presentation/cubit/share_cubit.dart';
-import 'package:doc_forge/features/document_sharing/presentation/cubit/share_state.dart';
-import 'package:doc_forge/features/document_sharing/presentation/share_keys.dart';
-import 'package:doc_forge/features/document_sharing/presentation/widgets/share_widgets.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/cubit/share_cubit.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/cubit/share_state.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/share_keys.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/widgets/share_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -20,15 +20,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// normative and come from `specs/document-sharing/spec.md`.
 class ShareOptionsSheet extends StatelessWidget {
   /// Creates the sheet.
-  const ShareOptionsSheet({
-    super.key,
-    this.onRunRecognition,
-    this.onDone,
-    this.initialDirectory,
-  });
-
-  /// Invoked when the user chooses to run recognition from the no-text notice.
-  final VoidCallback? onRunRecognition;
+  const ShareOptionsSheet({super.key, this.onDone, this.initialDirectory});
 
   /// Invoked once content has been handed over or an export has been written.
   ///
@@ -51,12 +43,9 @@ class ShareOptionsSheet extends StatelessWidget {
         key: ShareKeys.sheet,
         child: switch (state.status) {
           ShareStatus.preparing => _Preparing(state: state),
+          ShareStatus.exporting => _Preparing(state: state),
           ShareStatus.failure => _Failure(state: state),
-          _ => _Options(
-            state: state,
-            onRunRecognition: onRunRecognition,
-            initialDirectory: initialDirectory,
-          ),
+          _ => _Options(state: state, initialDirectory: initialDirectory),
         },
       ),
     );
@@ -65,14 +54,9 @@ class ShareOptionsSheet extends StatelessWidget {
 
 /// The list of options.
 class _Options extends StatelessWidget {
-  const _Options({
-    required this.state,
-    required this.onRunRecognition,
-    required this.initialDirectory,
-  });
+  const _Options({required this.state, required this.initialDirectory});
 
   final ShareState state;
-  final VoidCallback? onRunRecognition;
   final String? initialDirectory;
 
   @override
@@ -92,6 +76,20 @@ class _Options extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (state.exportConfirmation case final confirmation?)
+          Semantics(
+            liveRegion: true,
+            child: Padding(
+              key: ShareKeys.exportDone,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              child: Text(confirmation),
+            ),
+          ),
+        if (state.status == ShareStatus.cancelled)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(16, 12, 16, 0),
+            child: Text('Export cancelled. No file was written.'),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Text(
@@ -115,17 +113,6 @@ class _Options extends StatelessWidget {
           semanticsLabel: label(ShareAction.share, ShareFormat.images),
           onTap: cubit.shareImages,
         ),
-        ShareOptionTile(
-          key: ShareKeys.textButton,
-          label: 'Share extracted text',
-          icon: Icons.text_snippet_outlined,
-          semanticsLabel: label(ShareAction.share, ShareFormat.text),
-          // A null handler is what disables the tile, and the notice below says
-          // why — the spec's "disabled or explained" answered as both.
-          onTap: state.canShareText ? cubit.shareText : null,
-        ),
-        if (!state.canShareText)
-          NoRecognisedTextNotice(onRunRecognition: onRunRecognition),
         const Divider(height: 1),
         ShareOptionTile(
           key: ShareKeys.printButton,
@@ -166,6 +153,7 @@ class _Preparing extends StatelessWidget {
         label: state.progressLabel,
         // Only a page render can be cancelled; handing a single file to the
         // share sheet is over before a cancel control could be pressed.
+        cancelKey: ShareKeys.cancelButton,
         onCancel: state.format == ShareFormat.images
             ? context.read<ShareCubit>().cancel
             : null,

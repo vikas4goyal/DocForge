@@ -6,22 +6,23 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_import/application/usecases/import_usecases.dart';
-import 'package:doc_forge/features/document_import/domain/import_rules.dart';
-import 'package:doc_forge/features/document_import/infrastructure/repositories/fake_import_sources.dart';
-import 'package:doc_forge/features/document_import/presentation/cubit/import_cubit.dart';
-import 'package:doc_forge/features/document_import/presentation/cubit/import_state.dart';
-import 'package:doc_forge/features/document_import/presentation/screens/import_options_sheet.dart';
-import 'package:doc_forge/features/document_import/presentation/widgets/import_widgets.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_import/application/usecases/import_usecases.dart';
+import 'package:doc_scanly/features/document_import/domain/import_rules.dart';
+import 'package:doc_scanly/features/document_import/infrastructure/repositories/fake_import_sources.dart';
+import 'package:doc_scanly/features/document_import/presentation/cubit/import_cubit.dart';
+import 'package:doc_scanly/features/document_import/presentation/cubit/import_state.dart';
+import 'package:doc_scanly/features/document_import/presentation/screens/import_options_sheet.dart';
+import 'package:doc_scanly/features/document_import/presentation/widgets/import_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -66,6 +67,7 @@ class _PreviewImportCubit extends ImportCubit {
             FakePdfInspector(),
             const _PreviewWriter(),
             (id) => '/preview/${id.value}.pdf',
+            InMemoryPublicFileStore(),
             FixedClock(DateTime.utc(2026, 3, 14)),
             SequentialIdGenerator(),
           ),

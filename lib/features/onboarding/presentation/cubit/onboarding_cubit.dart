@@ -1,8 +1,8 @@
 /// Coordinates the onboarding flow's UI state.
 library;
 
-import 'package:doc_forge/features/onboarding/application/usecases/onboarding_usecases.dart';
-import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_state.dart';
+import 'package:doc_scanly/features/onboarding/application/usecases/onboarding_usecases.dart';
+import 'package:doc_scanly/features/onboarding/presentation/cubit/onboarding_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Owns which onboarding step is showing and the permission outcome.

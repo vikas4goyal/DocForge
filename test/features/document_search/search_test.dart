@@ -2,14 +2,15 @@
 library;
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_search/domain/repositories/search_repository.dart';
-import 'package:doc_forge/features/document_search/domain/search_query.dart';
-import 'package:doc_forge/features/document_search/infrastructure/repositories/indexed_search_repository.dart';
-import 'package:doc_forge/features/document_search/presentation/bloc/search_bloc.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_search/domain/repositories/search_repository.dart';
+import 'package:doc_scanly/features/document_search/domain/search_query.dart';
+import 'package:doc_scanly/features/document_search/infrastructure/repositories/indexed_search_repository.dart';
+import 'package:doc_scanly/features/document_search/presentation/bloc/search_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Document doc(
@@ -26,7 +27,7 @@ Document doc(
   updatedAt: updatedAt ?? DateTime.utc(2026, 3, 14),
   pageCount: 2,
   sizeInBytes: 20480,
-  filePath: '/documents/$id.pdf',
+  libraryPath: LibraryPath.parse('$id.pdf'),
   folderId: folderId,
   isArchived: archived,
 );

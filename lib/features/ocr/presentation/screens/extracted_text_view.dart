@@ -1,10 +1,10 @@
 /// The extracted-text view.
 library;
 
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/ocr/presentation/cubit/ocr_cubit.dart';
-import 'package:doc_forge/features/ocr/presentation/cubit/ocr_state.dart';
-import 'package:doc_forge/features/ocr/presentation/ocr_keys.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/ocr/presentation/cubit/ocr_cubit.dart';
+import 'package:doc_scanly/features/ocr/presentation/cubit/ocr_state.dart';
+import 'package:doc_scanly/features/ocr/presentation/ocr_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -163,8 +163,9 @@ class _Progress extends StatelessWidget {
       key: OcrKeys.progressIndicator,
       completed: progress?.completed ?? 0,
       total: progress?.total ?? 0,
-      label: 'Extracting text',
+      label: OcrSemantics.extractingText,
       onCancel: cubit.cancel,
+      cancelKey: OcrKeys.cancelButton,
     );
   }
 }

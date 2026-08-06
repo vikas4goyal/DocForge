@@ -43,6 +43,24 @@ abstract final class PdfEditKeys {
   /// The control that performs the split.
   static const splitConfirmButton = Key('pdf_split_confirm_button');
 
+  /// One-based page after which the split occurs.
+  static const splitBoundaryField = Key('pdf_split_boundary_field');
+
+  /// Name of the first split output.
+  static const splitFirstNameField = Key('pdf_split_first_name');
+
+  /// Name of the second split output.
+  static const splitSecondNameField = Key('pdf_split_second_name');
+
+  /// Dedicated screen used to review and name split outputs.
+  static const pageNamingScreen = Key('page_naming_screen');
+
+  /// Name reviewed for the merged output.
+  static const mergeOutputNameField = Key('pdf_merge_output_name');
+
+  /// Continues from operation-specific input to effect review.
+  static const inputContinue = Key('pdf_edit_input_continue');
+
   /// The field holding the watermark text.
   static const watermarkTextField = Key('pdf_watermark_text_field');
 
@@ -67,12 +85,38 @@ abstract final class PdfEditKeys {
   /// The indicator shown while an operation runs.
   static const progress = Key('pdf_edit_progress');
 
-  /// The control that abandons an in-progress operation.
-  static const cancelButton = Key('pdf_edit_cancel_button');
+  /// Responsive overflow holding contextual page actions.
+  static const actionsMenu = Key('pdf_edit_actions_menu');
+
+  /// Shared adaptive operation input/review surface.
+  static const operationSheet = Key('pdf_edit_operation_sheet');
+
+  /// Summary of the effect awaiting confirmation.
+  static const review = Key('pdf_edit_review');
+
+  /// Confirms one reviewed operation.
+  static const confirm = Key('pdf_edit_confirm');
+
+  /// Cancels review without mutation.
+  static const cancel = Key('pdf_edit_cancel');
+
+  /// Visible result of a completed operation.
+  static const result = Key('pdf_edit_result');
+
+  /// Finishes a result flow and returns to Dashboard.
+  static const resultDone = Key('pdf_edit_result_done');
 
   /// The view shown when an operation fails.
   static const errorView = Key('pdf_edit_error_view');
 
   /// The control that retries after a failure.
   static const errorRetryButton = Key('pdf_edit_error_retry_button');
+}
+
+/// Semantics labels for the PDF editor.
+abstract final class PdfEditSemantics {
+  /// Announces a metadata row as its name and its value together, for the same
+  /// reason the settings tiles do: two separately announced items leave the
+  /// listener to pair them.
+  static String metadataRow(String label, String value) => '$label, $value';
 }

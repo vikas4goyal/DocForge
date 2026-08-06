@@ -10,12 +10,12 @@
 /// dependency graph a graph rather than a web (`design.md` §5).
 library;
 
-import 'package:doc_forge/app/app_dependencies.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/thumbnail_cache.dart';
-import 'package:doc_forge/core/permissions/permission_service.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
+import 'package:doc_scanly/app/app_dependencies.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/isolates/thumbnail_cache.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -48,35 +48,11 @@ Future<AppDependencies> buildAppDependencies() async {
     preferences: SharedPreferencesStore(preferences),
     secureStorage: const FlutterSecureStore(secureStorage),
     permissions: const PluginPermissionService(),
-    worker: const IsolateBackgroundWorker(),
+    // One isolate shared across jobs rather than one spawned per job. A scan
+    // session runs hundreds of them — a preview render per adjustment, a
+    // correction per crop, a pass per page of a batch — and each spawn
+    // allocates a heap and starts an event loop before any pixel is touched.
+    worker: PooledIsolateBackgroundWorker(),
     thumbnailCache: ThumbnailCache(),
-  );
-}
-
-/// Constructs a dependency graph backed entirely by in-memory fakes.
-///
-/// For widget tests, previews and goldens. Nothing here touches the platform,
-/// the filesystem, the network or a database, and every collaborator is
-/// deterministic — a fixed clock and sequential ids — so a golden rendered from
-/// it is byte-stable.
-AppDependencies buildFakeAppDependencies({
-  Clock? clock,
-  IdGenerator? idGenerator,
-  PreferenceStore? preferences,
-  SecureStore? secureStorage,
-  PermissionService? permissions,
-  BackgroundWorker? worker,
-  ThumbnailCache? thumbnailCache,
-}) {
-  return AppDependencies(
-    clock: clock ?? FixedClock(DateTime.utc(2026, 7, 26, 10, 30)),
-    idGenerator: idGenerator ?? SequentialIdGenerator(),
-    preferences: preferences ?? InMemoryPreferenceStore(),
-    secureStorage: secureStorage ?? InMemorySecureStore(),
-    permissions: permissions ?? FakePermissionService(),
-    // Inline rather than isolate-backed: a test asserting on a failure should
-    // not also be exercising isolate spawn behaviour.
-    worker: worker ?? const InlineBackgroundWorker(),
-    thumbnailCache: thumbnailCache ?? ThumbnailCache(),
   );
 }

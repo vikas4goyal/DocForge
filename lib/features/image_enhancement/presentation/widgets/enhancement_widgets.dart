@@ -3,9 +3,9 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/enhance_keys.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/enhance_keys.dart';
 import 'package:flutter/material.dart';
 
 /// A selectable enhancement filter.
@@ -156,7 +156,7 @@ class EnhancementPreview extends StatelessWidget {
 
     return Semantics(
       image: true,
-      label: 'Page preview',
+      label: EnhanceSemantics.pagePreview,
       child: ExcludeSemantics(
         child: ColoredBox(
           // A fixed neutral grey in both themes, so the same enhancement is

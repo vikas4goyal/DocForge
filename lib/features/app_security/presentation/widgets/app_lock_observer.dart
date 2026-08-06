@@ -3,7 +3,7 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
+import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
 import 'package:flutter/widgets.dart';
 
 /// Notifies GoRouter when the lock state changes.

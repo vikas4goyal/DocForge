@@ -5,12 +5,13 @@
 /// the domain layer and are unit-tested there.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/features/document_sharing/application/usecases/sharing_usecases.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
-import 'package:doc_forge/features/document_sharing/presentation/cubit/share_state.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/features/document_sharing/application/usecases/sharing_usecases.dart';
+import 'package:doc_scanly/features/document_sharing/domain/document_export_result.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/features/document_sharing/presentation/cubit/share_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Drives the sharing, printing and export options for one document.
@@ -143,7 +144,7 @@ class ShareCubit extends Cubit<ShareState> {
   Future<void> export({String? initialDirectory}) async {
     emit(
       state.copyWith(
-        status: ShareStatus.preparing,
+        status: ShareStatus.exporting,
         action: ShareAction.export,
         format: ShareFormat.pdf,
       ),
@@ -157,14 +158,17 @@ class ShareCubit extends Cubit<ShareState> {
 
     switch (result) {
       case Success(:final value):
-        emit(
-          state.copyWith(
-            // A null destination means the picker was cancelled: nothing was
-            // written, so there is nothing to confirm.
-            status: value == null ? ShareStatus.idle : ShareStatus.done,
-            exportedTo: value,
-          ),
-        );
+        switch (value) {
+          case DocumentExportCompleted(:final destinationLabel):
+            emit(
+              state.copyWith(
+                status: ShareStatus.done,
+                exportedTo: destinationLabel,
+              ),
+            );
+          case DocumentExportCancelled():
+            emit(state.copyWith(status: ShareStatus.cancelled));
+        }
       case Failed(:final failure):
         emit(state.copyWith(status: ShareStatus.failure, failure: failure));
     }

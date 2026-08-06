@@ -1,10 +1,11 @@
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/infrastructure/library_contracts_impl.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/previews/fixtures/fixtures.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/library_contracts_impl.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes.dart';
@@ -15,14 +16,12 @@ void main() {
   late FakeDocumentRepository documents;
   late FakeFolderRepository folders;
   late FakePageRepository pages;
-  late FakeDocumentFileStore files;
   late Clock clock;
 
   setUp(() {
     documents = FakeDocumentRepository([sampleDocument]);
     folders = FakeFolderRepository([sampleFolder]);
     pages = FakePageRepository();
-    files = FakeDocumentFileStore();
     clock = FixedClock(_now);
   });
 
@@ -152,11 +151,15 @@ void main() {
   });
 
   group('LibraryStorageSummaryReader', () {
-    StorageSummaryReader build() =>
-        LibraryStorageSummaryReader(ComputeStorageSummary(documents, files));
+    late InMemoryPublicFileStore store;
 
-    test('reports bytes from the filesystem and the document count', () async {
-      files.bytes = 4096;
+    setUp(() => store = InMemoryPublicFileStore());
+
+    StorageSummaryReader build() =>
+        LibraryStorageSummaryReader(ComputeStorageSummary(documents, store));
+
+    test('reports bytes from the library and the document count', () async {
+      store.files['Big.pdf'] = 'x' * 4096;
       documents.documents[archivedDocument.id] = archivedDocument;
 
       final result = await build().summary();
@@ -167,7 +170,7 @@ void main() {
     });
 
     test('propagates a storage failure rather than reporting zero', () async {
-      files.failure = const Failure.storage();
+      store.failures['totalBytes'] = const Failure.storage();
 
       final result = await build().summary();
 

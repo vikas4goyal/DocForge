@@ -1,17 +1,19 @@
 /// Shared fakes for the viewer tests.
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/features/document_viewer/application/usecases/viewer_usecases.dart';
-import 'package:doc_forge/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
-import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_cubit.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/features/document_viewer/application/usecases/viewer_usecases.dart';
+import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/cubit/viewer_cubit.dart';
 
 /// The document every viewer test opens.
 Document harnessDocument() => Document(
@@ -21,7 +23,7 @@ Document harnessDocument() => Document(
   updatedAt: DateTime.utc(2026, 3, 14),
   pageCount: 3,
   sizeInBytes: 40960,
-  filePath: '/documents/doc-1.pdf',
+  libraryPath: LibraryPath.parse('doc-1.pdf'),
 );
 
 /// A secure store held in memory.
@@ -185,8 +187,12 @@ class ViewerHarness {
   final StubOcrTextSource textSource;
 
   /// The open use case over this harness.
-  OpenDocumentForViewing get openUseCase =>
-      OpenDocumentForViewing(documents, renderer, secrets);
+  OpenDocumentForViewing get openUseCase => OpenDocumentForViewing(
+    documents,
+    renderer,
+    secrets,
+    const FakeDocumentFileResolver(),
+  );
 
   /// Opens [id] through the use case.
   Future<Result<ViewableDocument>> open(DocumentId id, {String? password}) =>

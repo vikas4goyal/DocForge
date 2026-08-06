@@ -6,22 +6,28 @@
 @Tags(['golden'])
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
-import 'package:doc_forge/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
-import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
-import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
+import 'dart:io';
+
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/pdf_editing/application/atomic_pdf_write.dart';
+import 'package:doc_scanly/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/pdf_edit_keys.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,7 +71,12 @@ class _Inert implements DocumentReader, DocumentWriter {
 
 /// A Cubit frozen at a chosen state.
 class _SeededCubit extends PdfEditCubit {
-  _SeededCubit(this._seeded) : super(const DocumentId('golden'), _useCases());
+  _SeededCubit(this._seeded)
+    : super(
+        const DocumentId('golden'),
+        _useCases(),
+        const FakeDocumentFileResolver(),
+      );
 
   static PdfEditUseCases _useCases() {
     final editor = FakePdfEditor();
@@ -78,7 +89,9 @@ class _SeededCubit extends PdfEditCubit {
         (path, password) => editor.pageCountOf(path, password: password),
       ),
       secrets: InMemorySecureStore(),
-      destination: (id) => '/golden/${id.value}.pdf',
+      store: InMemoryPublicFileStore(),
+      files: const FakeDocumentFileResolver(),
+      workingDirectory: Directory.systemTemp,
       clock: FixedClock(DateTime.utc(2026, 3, 14)),
       ids: SequentialIdGenerator(),
     );
@@ -111,7 +124,7 @@ Document _document({int pageCount = 6}) => Document(
   updatedAt: DateTime.utc(2026, 4),
   pageCount: pageCount,
   sizeInBytes: 1_884_160,
-  filePath: '/golden/a.pdf',
+  libraryPath: LibraryPath.parse('a.pdf'),
 );
 
 PdfMetadata _metadata({int pageCount = 6}) => PdfMetadata(
@@ -135,6 +148,7 @@ void main() {
     Size size,
     PdfEditState state, {
     Brightness brightness = Brightness.light,
+    PdfEditOperation? initialOperation,
   }) async {
     tester.view.physicalSize = size;
     // One logical pixel per physical pixel, so the golden's dimensions are the
@@ -150,7 +164,11 @@ void main() {
         theme: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
         home: BlocProvider<PdfEditCubit>.value(
           value: cubit,
-          child: PdfEditScreen(thumbnailBuilder: _thumbnail, onClose: () {}),
+          child: PdfEditScreen(
+            thumbnailBuilder: _thumbnail,
+            onClose: () {},
+            initialOperation: initialOperation,
+          ),
         ),
       ),
     );
@@ -243,6 +261,39 @@ void main() {
       await expectLater(
         find.byType(PdfEditScreen),
         matchesGoldenFile('pdf_edit_working_light.png'),
+      );
+    });
+
+    testWidgets('split naming, phone light', (tester) async {
+      await pumpAt(
+        tester,
+        _phone,
+        ready,
+        initialOperation: PdfEditOperation.split,
+      );
+
+      await expectLater(
+        find.byKey(PdfEditKeys.pageNamingScreen),
+        matchesGoldenFile('pdf_split_naming_phone_light.png'),
+      );
+    });
+
+    testWidgets('watermark on page, phone light', (tester) async {
+      await pumpAt(
+        tester,
+        _phone,
+        ready,
+        initialOperation: PdfEditOperation.watermark,
+      );
+      await tester.enterText(
+        find.byKey(PdfEditKeys.watermarkTextField),
+        'CONFIDENTIAL',
+      );
+      await tester.pump();
+
+      await expectLater(
+        find.byType(PdfEditScreen),
+        matchesGoldenFile('pdf_watermark_preview_phone_light.png'),
       );
     });
   });

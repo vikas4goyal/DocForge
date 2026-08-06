@@ -1,4 +1,4 @@
-# Code-generation configuration for DocForge.
+# Code-generation configuration for DocScanly.
 #
 # Run with `dart run build_runner build`. Note that the current build_runner has
 # REMOVED `--delete-conflicting-outputs`; passing it is an error.

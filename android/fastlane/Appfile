@@ -1,0 +1,3 @@
+# json_key_file("../secure/android/pc-api-6464452833766395686-475-ba286418221f.json") # Path to the json secret file - Follow https://docs.fastlane.tools/actions/supply/#setup to get one
+package_name("com.bruxkey.docscanly") # e.g. com.krausefx.app
+app_identifier("com.bruxkey.docscanly")

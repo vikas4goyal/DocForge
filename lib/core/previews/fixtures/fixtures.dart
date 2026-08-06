@@ -9,11 +9,12 @@
 /// network or Isar. A preview that needs data gets it from here.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
 
 /// The instant every fixture is anchored to.
 ///
@@ -29,7 +30,7 @@ final sampleDocument = Document(
   updatedAt: fixtureNow.subtract(const Duration(hours: 3)),
   pageCount: 3,
   sizeInBytes: 482 * 1024,
-  filePath: '/documents/doc-1/document.pdf',
+  libraryPath: LibraryPath.parse('Invoice — Acme Ltd.pdf'),
   hasRecognisedText: true,
 );
 

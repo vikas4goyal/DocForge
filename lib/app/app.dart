@@ -5,21 +5,21 @@
 /// through a route.
 library;
 
-import 'package:doc_forge/app/app_dependencies.dart';
-import 'package:doc_forge/core/storage/storage_keys.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/theme/theme_mode_controller.dart';
+import 'package:doc_scanly/app/app_dependencies.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/theme/theme_mode_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
-/// The DocForge application.
-class DocForgeApp extends StatelessWidget {
+/// The DocScanly application.
+class DocScanlyApp extends StatelessWidget {
   /// Creates the root widget over an already-built [dependencies] graph and
   /// [router].
   ///
   /// Both are constructed in `main` rather than here so that a test can supply
   /// fakes without the widget reaching for anything itself.
-  const DocForgeApp({
+  const DocScanlyApp({
     required this.dependencies,
     required this.router,
     required this.themeMode,
@@ -47,7 +47,7 @@ class DocForgeApp extends StatelessWidget {
       child: ValueListenableBuilder<ThemeMode>(
         valueListenable: themeMode,
         builder: (context, mode, _) => MaterialApp.router(
-          title: 'DocForge',
+          title: 'DocScanly',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,

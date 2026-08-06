@@ -1,25 +1,26 @@
-import 'package:doc_forge/app/router/app_router.dart';
-import 'package:doc_forge/app/router/app_routes.dart';
-import 'package:doc_forge/app/router/route_gates.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
-import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/document_detail_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/folder_detail_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/document_card.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/folder_tile.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/app/router/route_gates.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/previews/fixtures/fixtures.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_queries.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/folder_usecases.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/folder_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_detail_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_list_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/folder_detail_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/folder_list_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_card.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/folder_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -108,24 +109,36 @@ void main() {
       ),
     ),
     scan: (_) => _placeholder('scan'),
-    scanReview: (_) => _placeholder('scanReview'),
-    scanEnhance: (_) => _placeholder('scanEnhance'),
-    scanPreview: (_) => _placeholder('scanPreview'),
     documents: (context) => listRoute(context, title: 'Documents'),
     viewer: (_, id) => _placeholder('viewer:${id.value}'),
     documentDetail: (context, id) => BlocProvider(
       create: (_) => DocumentDetailCubit(
         id,
         LoadDocumentDetail(documents, pages),
-        RenameDocument(documents, clock),
+        RenameDocument(documents, clock, InMemoryPublicFileStore()),
         MoveDocument(documents, clock),
         ToggleFavourite(documents, clock),
         ArchiveDocument(documents, clock),
         RestoreDocument(documents, clock),
-        DuplicateDocument(documents, pages, files, clock, ids),
-        PurgeDocument(documents, pages, files, secure),
+        DuplicateDocument(
+          documents,
+          pages,
+          InMemoryPublicFileStore(),
+          clock,
+          ids,
+        ),
+        PurgeDocument(
+          documents,
+          pages,
+          InMemoryPublicFileStore(),
+          files,
+          secure,
+        ),
       ),
-      child: DocumentDetailScreen(onClose: () => context.pop()),
+      child: DocumentDetailScreen(
+        onClose: () => context.pop(),
+        onOpenViewer: () => context.push(AppRoutes.documentView(id)),
+      ),
     ),
     documentEdit: (_, _) => _placeholder('documentEdit'),
     folders: (context) => BlocProvider(
@@ -137,7 +150,13 @@ void main() {
           folders,
           documents,
           MoveDocument(documents, clock),
-          PurgeDocument(documents, pages, files, secure),
+          PurgeDocument(
+            documents,
+            pages,
+            InMemoryPublicFileStore(),
+            files,
+            secure,
+          ),
         ),
       ),
       child: FolderListScreen(
@@ -158,6 +177,7 @@ void main() {
     ),
     archive: (context) =>
         listRoute(context, title: 'Archive', filter: DocumentFilter.archived),
+    trash: (_) => _placeholder('trash'),
     settings: (_) => _placeholder('settings'),
     about: (_) => _placeholder('about'),
     privacy: (_) => _placeholder('privacy'),
@@ -284,6 +304,22 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byKey(LibraryKeys.documentDetailScreen), findsOneWidget);
+    });
+
+    testWidgets('the detail Open action pushes the same document viewer', (
+      tester,
+    ) async {
+      documents.documents[sampleDocument.id] = sampleDocument;
+      pages.pages[sampleDocument.id] = samplePages(2);
+
+      await pumpAt(tester, AppRoutes.documentDetail(sampleDocument.id));
+      await tester.tap(find.byKey(LibraryKeys.documentOpenButton));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(Key('placeholder_viewer:${sampleDocument.id.value}')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('deleting a document returns to the list', (tester) async {

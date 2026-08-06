@@ -1,14 +1,14 @@
 /// Widget tests for the extracted-text view.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
-import 'package:doc_forge/features/ocr/presentation/cubit/ocr_cubit.dart';
-import 'package:doc_forge/features/ocr/presentation/cubit/ocr_state.dart';
-import 'package:doc_forge/features/ocr/presentation/ocr_keys.dart';
-import 'package:doc_forge/features/ocr/presentation/screens/extracted_text_view.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
+import 'package:doc_scanly/features/ocr/presentation/cubit/ocr_cubit.dart';
+import 'package:doc_scanly/features/ocr/presentation/cubit/ocr_state.dart';
+import 'package:doc_scanly/features/ocr/presentation/ocr_keys.dart';
+import 'package:doc_scanly/features/ocr/presentation/screens/extracted_text_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';

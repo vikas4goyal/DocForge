@@ -1,16 +1,16 @@
 /// The folder list.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_state.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/folder_state.dart';
-import 'package:doc_forge/features/document_library/presentation/library_keys.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/folder_tile.dart';
-import 'package:doc_forge/features/document_library/presentation/widgets/library_dialogs.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/folder_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/folder_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/folder_tile.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/library_dialogs.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -72,7 +72,7 @@ class _FolderListScreenState extends State<FolderListScreen> {
           LoadStatus.failure => AppErrorView(
             key: LibraryKeys.folderListErrorView,
             failure: state.failure ?? const Failure.unexpected(),
-            retryKey: const Key('folder_list_retry_button'),
+            retryKey: LibraryKeys.folderListRetryButton,
             onRetry: () => context.read<FolderCubit>().load(),
           ),
           LoadStatus.ready => ListView.builder(
@@ -83,7 +83,6 @@ class _FolderListScreenState extends State<FolderListScreen> {
                 folder: folder,
                 onTap: () => widget.onOpenFolder(folder.id),
                 onRename: () => _rename(context, folder),
-                onDelete: () => _delete(context, folder),
               );
             },
           ),
@@ -125,19 +124,5 @@ class _FolderListScreenState extends State<FolderListScreen> {
 
     if (name == null) return;
     await cubit.rename(folder.id, name);
-  }
-
-  /// Asks what happens to the folder's documents, then deletes it.
-  ///
-  /// Nothing happens when the user cancels: the strategy has no default,
-  /// because a folder deletion must never silently decide the fate of the
-  /// documents inside it.
-  Future<void> _delete(BuildContext context, Folder folder) async {
-    final cubit = context.read<FolderCubit>();
-
-    final strategy = await askFolderDeletionStrategy(context, folder: folder);
-    if (strategy == null) return;
-
-    await cubit.delete(folder.id, strategy);
   }
 }

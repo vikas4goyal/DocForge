@@ -1,8 +1,8 @@
 /// The seam between settings and where they are stored.
 library;
 
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 
 /// Reads and writes the user's settings.
 ///

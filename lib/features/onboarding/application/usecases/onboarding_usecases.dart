@@ -5,10 +5,10 @@
 /// the Cubit, which only coordinates UI state.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/permissions/permission_service.dart';
-import 'package:doc_forge/features/onboarding/domain/repositories/onboarding_repository.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
+import 'package:doc_scanly/features/onboarding/domain/repositories/onboarding_repository.dart';
 
 /// Reports whether the first-launch flow still needs to run.
 class IsOnboardingComplete {

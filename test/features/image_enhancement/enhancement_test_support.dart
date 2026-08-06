@@ -7,13 +7,13 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/features/image_enhancement/application/usecases/enhancement_usecases.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
 
 /// Requests seen by the fake jobs, in order.
 final recordedRequests = <EnhancementRequest>[];
@@ -154,6 +154,7 @@ class _GatedApply implements ApplyEnhancement {
     required String sourcePath,
     required String destinationPath,
     required EnhancementSettings settings,
+    int? maxDimension,
   }) => _gate._enqueue();
 
   @override

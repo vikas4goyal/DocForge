@@ -4,7 +4,7 @@ schema: spec-driven
 # This is shown to AI when creating artifacts.
 # Add your tech stack, conventions, style guides, domain knowledge, etc.
 context: |
-  # doc_forge — Project Context
+  # doc_scanly — Project Context
 
   ## General
   - Project type: Flutter (production application)
@@ -170,20 +170,65 @@ context: |
   - Avoid unnecessary rebuilds: prefer BlocSelector and `buildWhen` to rebuild
     only the smallest affected subtree, and use const widgets.
 
-  ## Testing (mandatory)
-  - Every implementation must include ALL of the following:
-      * Unit tests
-      * Widget tests
-      * Cubit tests (bloc_test — assert emitted state sequences)
-      * Repository tests
-      * Serialization tests
-      * Navigation tests
-      * Integration tests
+  ## Testing (mandatory) — the three-tier pyramid
+  Every automated test belongs to exactly one tier, and the tier is derivable
+  from where the file lives. A test never spans tiers.
+
+  ### Tier 1 — Unit  (`test/**`, outside `component/`)
+  One class, no widget tree. Covers entities, value objects, use cases, mappers,
+  failures, Cubits (bloc_test — assert emitted state sequences), repository
+  implementations, serialization, and navigation/router logic.
+
+  ### Tier 2 — Component  (`test/features/<feature>/component/`)
+  One screen or widget subtree wired to its REAL Cubit and REAL use cases, with
+  infrastructure substituted only at the repository boundary. This is what
+  proves a screen and its state machine agree. A Tier-2 test must not build the
+  router or the composition root.
+  (Pre-existing widget tests that stub the Cubit still count as Tier 1; new
+  screen work needs a Tier-2 test.)
+
+  ### Tier 3 — End-to-end UI  (`integration_test/flows/`)
+  The whole composed application under `IntegrationTestWidgetsFlutterBinding`,
+  booted through the same builder `main.dart` uses, with ONLY platform-edge
+  services faked: camera capture, OCR, edge detection, biometrics, share, print,
+  file/gallery pickers. Isar, real files and every Cubit, use case and
+  repository are the production ones. A flow drives the app exclusively by
+  widget key and semantics label — taps, scrolls, text entry, route transitions
+  — and never touches a Cubit, use case or repository directly. It asserts only
+  on what the user can see.
+  One file per user journey. Each flow seeds and cleans its own state, so flows
+  pass in any order. Flows use the robots in `integration_test/support/robots/`
+  rather than raw `tester` calls, so a screen change breaks one robot, not every
+  flow.
+  Catalogue: first launch; capture to document; page table creation; import;
+  browse and view; search; organise (rename/favourite/move/archive/trash/restore/purge);
+  edit; share; settings and app lock; iCloud library sync.
+
+  ### Additional requirements
   - Major screens additionally require golden tests.
+  - Substituted platform services must be deterministic: no wall clock, no
+    randomness, no network, no device state outside the test's own fixtures.
+  - Fixture assets are checked in and contain no real personal data.
+  - Fakes live in `lib/` (the previews need them) but must never be reachable
+    from a release build; `tool/check_layering.dart` enforces this.
   - A feature is incomplete until every required test exists and passes.
-  - Mock platform integrations where appropriate.
   - Overall code coverage must stay >= 80%. Business logic coverage target
     is >= 90%.
+
+  ### Verification gate
+  `tool/verify.dart` runs the pyramid in order — format, analyse, layering,
+  platforms, Tier 1 + Tier 2, goldens, coverage, Tier 3 — exits non-zero on the
+  first failure, and names the failing stage and, for Tier 3, the failing flow
+  and step. Tier 3 runs on an Android emulator, an attached Android device, or
+  an iOS Simulator; physical iOS devices are deliberately excluded from
+  verification. When the iOS Simulator cannot run the project's native
+  dependencies, record that local limitation and use the Android emulator or
+  device Tier-3 result as the device gate. With neither an Android emulator or
+  device nor a usable iOS Simulator available, Tier 3 is SKIPPED and the
+  overall result is INCOMPLETE, never passed.
+  This is the command to run after implementing a change. Do not report a change
+  as working on the strength of Tier 1 and Tier 2 alone — that is precisely the
+  gap that let a broken user flow ship with 118 green test files.
 
   ## AI implementation guidelines
   The codebase is optimised for AI-assisted development. Every implementation
@@ -221,10 +266,12 @@ context: |
   scripts still run through the shell; the MCP server does not replace them.
 
   ## CI
-  CI must run, in order: `flutter pub get`, `dart format --set-exit-if-changed`,
-  `flutter analyze`, `flutter test`, integration tests, golden tests, coverage.
-  The build fails when coverage < 80%, analysis fails, tests fail, or
-  formatting fails.
+  CI runs `flutter pub get` then `tool/verify.dart`, which sequences the whole
+  pyramid: `dart format --set-exit-if-changed`, `flutter analyze`,
+  `tool/check_layering.dart`, `tool/check_platforms.dart`, Tier 1 + Tier 2,
+  golden tests, `tool/check_coverage.dart`, then the Tier-3 flow suite on a
+  device. The build fails when coverage < 80%, analysis fails, any tier fails,
+  or formatting fails.
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
@@ -281,10 +328,31 @@ rules:
       behaviour as explicit requirements where relevant.
     - Reference the widget keys and semantics labels that automated UI tests
       will rely on.
+    - "Name the exact `Key('<feature>_<element>')` and semantics label for every
+      new screen and every control a user interacts with — the end-to-end flow
+      will drive the app through those keys, so a spec that omits them cannot
+      be verified."
+    - State which end-to-end flow in the catalogue covers the behaviour, or name
+      the new flow it requires.
   tasks:
     - Break tasks into chunks of at most 2 hours.
     - Pair every implementation task with its test task; a task is not done
       until its tests pass.
+    - "Every change to user-visible behaviour needs all three tiers, as separate
+      tasks: a Tier-1 unit task; a Tier-2 component task (screen + REAL Cubit +
+      REAL use cases, repositories faked) under
+      `test/features/<feature>/component/`; and a Tier-3 end-to-end flow task
+      under `integration_test/flows/` for every user journey the change touches
+      — new flow or updated existing flow."
+    - Include a task to add or update the `Key('<feature>_<element>')` entries
+      and semantics labels in the feature's `*_keys.dart` registry whenever a
+      screen or control is added, renamed or moved, and to update every flow and
+      robot that drives them — in the same change.
+    - "The final task of every change must be: run `tool/verify.dart` and report
+      its per-stage result. The change is not done while any stage fails, and a
+      run that reports Tier 3 as SKIPPED (no Android emulator/device or usable
+      iOS Simulator available) does not count as verified. Physical iOS device
+      runs are not required."
     - Include a task for `@Preview()` entries whenever a widget or screen is
       added or changed.
     - Include a Cubit test task (bloc_test) for every Cubit added or changed.

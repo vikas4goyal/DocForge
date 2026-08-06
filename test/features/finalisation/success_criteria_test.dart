@@ -20,27 +20,32 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/app/document_creation_module.dart';
-import 'package:doc_forge/app/library_module.dart';
-import 'package:doc_forge/app/pdf_editing_module.dart';
-import 'package:doc_forge/app/sharing_module.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/app_shell/application/usecases/load_home_data.dart';
-import 'package:doc_forge/features/document_library/infrastructure/models/isar_entities.dart';
-import 'package:doc_forge/features/document_search/domain/search_query.dart';
-import 'package:doc_forge/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
-import 'package:doc_forge/features/ocr/infrastructure/models/ocr_entities.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
-import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
-import 'package:doc_forge/features/pdf_generation/infrastructure/pdf_composer.dart';
+import 'package:doc_scanly/app/document_creation_module.dart';
+import 'package:doc_scanly/app/library_module.dart';
+import 'package:doc_scanly/app/pdf_editing_module.dart';
+import 'package:doc_scanly/app/sharing_module.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
+import 'package:doc_scanly/features/document_search/domain/search_query.dart';
+import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
+import 'package:doc_scanly/features/image_enhancement/application/usecases/enhancement_usecases.dart';
+import 'package:doc_scanly/features/image_enhancement/infrastructure/enhancement_job.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/infrastructure/pdf_composer.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:isar_community/isar.dart';
@@ -92,7 +97,9 @@ void _writeCapture(String path) {
 
 void main() {
   late Directory root;
+  late Directory documents;
   late Isar isar;
+  late FilesystemPublicFileStore publicStore;
   late LibraryModule library;
   late DocumentCreationModule creation;
   late _Secrets secrets;
@@ -106,29 +113,46 @@ void main() {
   setUp(() async {
     HttpOverrides.global = _AirplaneMode();
 
-    root = Directory.systemTemp.createTempSync('docforge_success');
-    final documents = Directory('${root.path}/documents')..createSync();
+    root = Directory.systemTemp.createTempSync('docscanly_success');
+    documents = Directory('${root.path}/documents')..createSync();
 
     isar = await Isar.open([
       DocumentEntitySchema,
       FolderEntitySchema,
       PageEntitySchema,
+      TrashEntitySchema,
       OcrTextEntitySchema,
     ], directory: root.path);
 
     secrets = _Secrets();
 
+    publicStore = FilesystemPublicFileStore(documents);
+    await publicStore.initialise();
+
     library = buildLibraryModuleOver(
       isar: isar,
       documentsDirectory: documents,
+      store: publicStore,
+      preferences: InMemoryPreferenceStore(),
+      // Reconciliation reads the page count of a file it has never seen;
+      // a fixed answer keeps these tests off a real renderer.
+      pageCountOf: (path, {String? password}) async =>
+          const Result<int>.success(1),
       clock: clock,
       ids: SequentialIdGenerator(prefix: 'doc'),
       secureStorage: secrets,
     );
 
     creation = buildDocumentCreationModule(
+      protectPdf: _noProtection,
+      // Inline so composition runs the real enhancement path without isolates.
+      applyEnhancement: const ApplyEnhancement(
+        InlineBackgroundWorker(),
+        enhancePageJob,
+      ),
       isar: isar,
-      documentsDirectory: documents,
+      workingDirectory: documents,
+      publicStore: publicStore,
       clock: clock,
       ids: SequentialIdGenerator(prefix: 'page'),
       documentReader: library.documentReader,
@@ -164,25 +188,27 @@ void main() {
     final document = (saved as Success<Document>).value;
 
     expect(document.pageCount, 1);
-    expect(File(document.filePath).existsSync(), isTrue);
-    // Locally: inside the directory this application owns, not anywhere shared.
-    expect(document.filePath, startsWith(root.path));
+    // Published into the user's own library folder, which is the point: it has
+    // to be reachable from the Files app and from other applications.
+    expect(
+      File('${documents.path}/DocScanly/${document.relativePath}').existsSync(),
+      isTrue,
+    );
     // Searchable: recognition ran and its text is stored.
     expect(document.hasRecognisedText, isTrue);
 
     final text = await creation.ocrTextSource.textForDocument(document.id);
     expect(text.valueOrNull, contains('Acme'));
 
-    // ---- Find it from the Home screen ------------------------------------
-    final home = await LoadHomeData(
-      library.documentReader,
-      library.folderReader,
-      library.storageSummaryReader,
-    )();
-    final homeData = (home as Success<HomeData>).value;
+    // ---- Find it from the dashboard --------------------------------------
+    final dashboard = DashboardCubit(
+      store: library.publicStore,
+      index: library.documents,
+    );
+    await dashboard.load();
 
-    expect(homeData.recentDocuments.map((d) => d.id), contains(document.id));
-    expect(homeData.storage.documentCount, 1);
+    expect(dashboard.state.recents.map((d) => d.id), contains(document.id));
+    expect(dashboard.state.documents.length, 1);
 
     // ---- Organise it into a folder ---------------------------------------
     final folder = await library.createFolder('Invoices');
@@ -207,14 +233,18 @@ void main() {
     // The real engine cannot load here, so the editor runs over the fake — what
     // this step proves is that the *pipeline* reaches editing with a document
     // the editor can act on, and that the record is updated afterwards.
-    final editable = '${root.path}/editable.pdf';
+    // Written into the library folder, which is where a document lives now.
+    final editable = '${documents.path}/DocScanly/Editable.pdf';
+    Directory(editable).parent.createSync(recursive: true);
     writeFakePdf(editable, pageCount: 3);
 
     final editing = buildPdfEditingModule(
       documentReader: library.documentReader,
       documentWriter: library.documentWriter,
       secureStorage: secrets,
-      documentsDirectory: Directory('${root.path}/documents'),
+      store: publicStore,
+      workingDirectory: Directory('${root.path}/work')
+        ..createSync(recursive: true),
       clock: clock,
       ids: SequentialIdGenerator(prefix: 'edit'),
       editor: FakePdfEditor(),
@@ -223,7 +253,7 @@ void main() {
     final editableDocument = await library.documentWriter.save(
       document.copyWith(
         id: const DocumentId('editable'),
-        filePath: editable,
+        libraryPath: LibraryPath.parse('Editable.pdf'),
         pageCount: 3,
       ),
       // Page records as well as the document: the library derives the page
@@ -253,6 +283,7 @@ void main() {
     final sharing = buildSharingModule(
       documentReader: library.documentReader,
       ocrTextSource: creation.ocrTextSource,
+      documentFiles: PublicStoreDocumentFileResolver(publicStore),
       cacheDirectory: root,
       worker: const InlineBackgroundWorker(),
       share: share,
@@ -260,7 +291,9 @@ void main() {
 
     final shared = await sharing.sharePdf(document.id);
     expect(shared, isA<Success<void>>());
-    expect(share.shared.single.filePaths, [document.filePath]);
+    // Resolved through the library rather than read off the record: the
+    // record carries an address, and the share sheet needs a real path.
+    expect(share.shared.single.filePaths.single, endsWith('.pdf'));
 
     // ---- ...without an account or an internet connection -----------------
     // Reached only because no HTTP client was ever opened; the override above
@@ -272,7 +305,7 @@ void main() {
     'the whole flow needs no account and stores nothing but documents',
     () async {
       // The secure store is the only place a secret could be, and nothing in the
-      // happy path puts one there: DocForge has no account and this document is
+      // happy path puts one there: DocScanly has no account and this document is
       // not protected.
       final capturePath = '${root.path}/capture.jpg';
       _writeCapture(capturePath);
@@ -288,3 +321,12 @@ void main() {
     },
   );
 }
+
+/// Protection that returns the file untouched.
+///
+/// These tests assert on what the generator produces, not on the encryption —
+/// which the editing feature owns and tests separately.
+Future<Result<String>> _noProtection(
+  String sourcePath,
+  String password,
+) async => Result<String>.success(sourcePath);

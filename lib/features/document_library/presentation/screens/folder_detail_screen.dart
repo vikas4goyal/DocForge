@@ -1,8 +1,10 @@
 /// The contents of a single folder.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_list_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_thumbnail.dart';
 import 'package:flutter/material.dart';
 
 /// Shows the documents inside one folder.
@@ -21,6 +23,7 @@ class FolderDetailScreen extends StatelessWidget {
     required this.folderName,
     required this.onOpenDocument,
     super.key,
+    this.loadThumbnail,
   });
 
   /// Name of the folder being shown, used as the title.
@@ -29,13 +32,26 @@ class FolderDetailScreen extends StatelessWidget {
   /// Called when a document row is activated.
   final void Function(DocumentId id) onOpenDocument;
 
+  /// Lazily resolves first-page previews for visible document rows.
+  final DocumentThumbnailLoader? loadThumbnail;
+
   @override
   Widget build(BuildContext context) {
-    return DocumentListScreen(
-      title: folderName,
-      onOpenDocument: onOpenDocument,
-      emptyTitle: 'This folder is empty',
-      emptyMessage: 'Move documents here to keep them together.',
+    // Keyed and labelled here rather than inside [DocumentListScreen]: that
+    // screen serves four routes, so its own key cannot say which one the user
+    // is on. A flow that opened a folder and asserted on the list key alone
+    // would pass without ever leaving the list it started from.
+    return Semantics(
+      key: LibraryKeys.folderDetailScreen,
+      container: true,
+      label: LibrarySemantics.folderDetailScreen(folderName),
+      child: DocumentListScreen(
+        title: folderName,
+        onOpenDocument: onOpenDocument,
+        loadThumbnail: loadThumbnail,
+        emptyTitle: 'This folder is empty',
+        emptyMessage: 'Move documents here to keep them together.',
+      ),
     );
   }
 }

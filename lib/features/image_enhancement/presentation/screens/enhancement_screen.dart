@@ -1,12 +1,13 @@
 /// The enhancement screen.
 library;
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/cubit/enhancement_state.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/enhance_keys.dart';
-import 'package:doc_forge/features/image_enhancement/presentation/widgets/enhancement_widgets.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_state.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/enhance_keys.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/widgets/enhancement_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -23,8 +24,12 @@ class EnhancementScreen extends StatelessWidget {
   /// Creates the enhancement screen.
   const EnhancementScreen({required this.onDone, super.key});
 
-  /// Called with the session's pages once the user is finished.
-  final void Function(List<PageRef> pages) onDone;
+  /// Called with the page once the user is finished.
+  ///
+  /// Carries the settings, not pixels: the full-resolution result is produced
+  /// when the document is built, which is what makes leaving without finishing
+  /// leave the page exactly as it was.
+  final void Function(PageDraft page) onDone;
 
   @override
   Widget build(BuildContext context) {
@@ -35,14 +40,34 @@ class EnhancementScreen extends StatelessWidget {
         return Scaffold(
           key: EnhanceKeys.screen,
           appBar: AppBar(
-            title: const Text('Enhance'),
+            title: Text(
+              'Enhance',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            // Undo and Reset live here rather than under the controls. Below a
+            // column of filters and sliders they sat at the very bottom of the
+            // screen — the furthest point from the thing being corrected, and
+            // off-screen entirely once the controls scrolled. Undo in
+            // particular is used *while* adjusting, so it has to stay put.
             actions: [
+              IconButton(
+                key: EnhanceKeys.undoButton,
+                tooltip: 'Undo last change',
+                onPressed: state.canUndo ? cubit.undo : null,
+                icon: const Icon(Icons.undo),
+              ),
+              IconButton(
+                key: EnhanceKeys.resetButton,
+                // Named for the layer it affects: the page's crop is not this
+                // screen's business, and a bare "Reset" would read as though
+                // it were.
+                tooltip: 'Revert enhancement',
+                onPressed: state.hasChanges ? cubit.revertEnhancement : null,
+                icon: const Icon(Icons.restart_alt),
+              ),
               TextButton(
                 key: EnhanceKeys.doneButton,
-                onPressed: () {
-                  cubit.commit();
-                  onDone(cubit.state.pages);
-                },
+                onPressed: () => onDone(cubit.edited),
                 child: const Text('Done'),
               ),
             ],
@@ -134,11 +159,6 @@ class _Controls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Disabled wholesale while a bulk apply runs: changing a setting mid-batch
-    // would produce a session where some pages carry the old settings and some
-    // the new, with nothing on screen to say which.
-    final enabled = !state.isApplyingToAll;
-
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -154,7 +174,7 @@ class _Controls extends StatelessWidget {
               return EnhancementFilterChip(
                 filter: filter,
                 selected: state.settings.filter == filter,
-                onSelected: enabled ? cubit.selectFilter : null,
+                onSelected: cubit.selectFilter,
               );
             },
           ),
@@ -162,24 +182,21 @@ class _Controls extends StatelessWidget {
         const SizedBox(height: 16),
         AdjustmentSlider(
           key: EnhanceKeys.brightnessSlider,
-          label: 'Brightness',
+          label: EnhanceSemantics.brightness,
           value: state.settings.brightness,
-          enabled: enabled,
           onChanged: cubit.setBrightness,
         ),
         AdjustmentSlider(
           key: EnhanceKeys.contrastSlider,
-          label: 'Contrast',
+          label: EnhanceSemantics.contrast,
           value: state.settings.contrast,
-          enabled: enabled,
           onChanged: cubit.setContrast,
         ),
         AdjustmentSlider(
           key: EnhanceKeys.sharpenControl,
-          label: 'Sharpen',
+          label: EnhanceSemantics.sharpen,
           value: state.settings.sharpen,
           min: 0,
-          enabled: enabled,
           onChanged: cubit.setSharpen,
         ),
         SwitchListTile(
@@ -187,79 +204,7 @@ class _Controls extends StatelessWidget {
           title: const Text('Remove shadows'),
           subtitle: const Text('Evens out uneven lighting'),
           value: state.settings.shadowRemoval,
-          onChanged: enabled
-              ? (value) => cubit.setShadowRemoval(enabled: value)
-              : null,
-        ),
-        const SizedBox(height: 8),
-        if (state.isApplyingToAll)
-          _BatchProgress(state: state, cubit: cubit)
-        else
-          _Actions(state: state, cubit: cubit),
-      ],
-    );
-  }
-}
-
-/// The reset and apply-to-all controls.
-class _Actions extends StatelessWidget {
-  const _Actions({required this.state, required this.cubit});
-
-  final EnhancementState state;
-  final EnhancementCubit cubit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            key: EnhanceKeys.resetButton,
-            onPressed: state.hasChanges ? cubit.reset : null,
-            icon: const Icon(Icons.restart_alt),
-            label: const Text('Reset'),
-          ),
-        ),
-        if (state.canApplyToAll) ...[
-          const SizedBox(width: 12),
-          Expanded(
-            child: FilledButton.icon(
-              key: EnhanceKeys.applyToAllButton,
-              onPressed: cubit.applyToAll,
-              icon: const Icon(Icons.done_all),
-              label: const Text('Apply to all'),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// Progress and cancellation for a running bulk enhancement.
-class _BatchProgress extends StatelessWidget {
-  const _BatchProgress({required this.state, required this.cubit});
-
-  final EnhancementState state;
-  final EnhancementCubit cubit;
-
-  @override
-  Widget build(BuildContext context) {
-    final progress = state.progress;
-
-    return Column(
-      children: [
-        AppProgressIndicator(
-          key: EnhanceKeys.progressIndicator,
-          completed: progress?.completed ?? 0,
-          total: progress?.total ?? 0,
-          label: 'Enhancing pages',
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton(
-          key: EnhanceKeys.cancelButton,
-          onPressed: cubit.cancelApplyToAll,
-          child: const Text('Cancel'),
+          onChanged: (value) => cubit.setShadowRemoval(enabled: value),
         ),
       ],
     );

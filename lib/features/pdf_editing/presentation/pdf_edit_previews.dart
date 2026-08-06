@@ -4,23 +4,28 @@
 /// so nothing here opens a PDF or reaches the engine (`design.md` §15).
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/pdf_editing/application/atomic_pdf_write.dart';
-import 'package:doc_forge/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
-import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
-import 'package:doc_forge/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
-import 'package:doc_forge/features/pdf_editing/presentation/widgets/pdf_edit_widgets.dart';
+import 'dart:io';
+
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/pdf_editing/application/atomic_pdf_write.dart';
+import 'package:doc_scanly/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
+import 'package:doc_scanly/features/pdf_editing/presentation/widgets/pdf_edit_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -60,7 +65,11 @@ class _PreviewLibrary implements DocumentReader, DocumentWriter {
 /// A Cubit frozen at [_seeded], with every action inert.
 class _PreviewPdfEditCubit extends PdfEditCubit {
   _PreviewPdfEditCubit(this._seeded)
-    : super(const DocumentId('preview'), _useCases());
+    : super(
+        const DocumentId('preview'),
+        _useCases(),
+        PublicStoreDocumentFileResolver(InMemoryPublicFileStore()),
+      );
 
   static PdfEditUseCases _useCases() {
     final editor = FakePdfEditor();
@@ -73,7 +82,9 @@ class _PreviewPdfEditCubit extends PdfEditCubit {
         (path, password) => editor.pageCountOf(path, password: password),
       ),
       secrets: InMemorySecureStore(),
-      destination: (id) => '/preview/${id.value}.pdf',
+      store: InMemoryPublicFileStore(),
+      files: PublicStoreDocumentFileResolver(InMemoryPublicFileStore()),
+      workingDirectory: Directory('/preview/work'),
       clock: FixedClock(DateTime.utc(2026, 3, 14)),
       ids: SequentialIdGenerator(),
     );
@@ -139,7 +150,7 @@ Document _document({
   updatedAt: DateTime.utc(2026, 4),
   pageCount: pageCount,
   sizeInBytes: 1_884_160,
-  filePath: '/preview/a.pdf',
+  libraryPath: LibraryPath.parse('Invoice 2026.pdf'),
   isProtected: isProtected,
 );
 

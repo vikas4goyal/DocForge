@@ -1,11 +1,11 @@
 /// Use cases for image enhancement.
 library;
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
 
 /// Applies enhancement settings to pages, off the UI thread.
 class ApplyEnhancement {
@@ -39,17 +39,24 @@ class ApplyEnhancement {
     ),
   );
 
-  /// Applies [settings] to one page at full resolution.
+  /// Applies [settings] to one page.
+  ///
+  /// [maxDimension] bounds the output. Left null the page keeps its captured
+  /// size; given the size the page will actually be drawn at, the filters run
+  /// over that many pixels instead of over a capture that is several times
+  /// larger and about to be scaled down anyway.
   Future<Result<String>> single({
     required String sourcePath,
     required String destinationPath,
     required EnhancementSettings settings,
+    int? maxDimension,
   }) => _worker.run(
     _job,
     EnhancementRequest(
       sourcePath: sourcePath,
       destinationPath: destinationPath,
       settings: settings,
+      maxDimension: maxDimension,
     ),
   );
 

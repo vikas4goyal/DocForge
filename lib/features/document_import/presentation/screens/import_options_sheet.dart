@@ -1,13 +1,13 @@
 /// The sheet offering every way content can enter the application.
 library;
 
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/document_import/domain/import_rules.dart';
-import 'package:doc_forge/features/document_import/presentation/cubit/import_cubit.dart';
-import 'package:doc_forge/features/document_import/presentation/cubit/import_state.dart';
-import 'package:doc_forge/features/document_import/presentation/import_keys.dart';
-import 'package:doc_forge/features/document_import/presentation/widgets/import_widgets.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/document_import/domain/import_rules.dart';
+import 'package:doc_scanly/features/document_import/presentation/cubit/import_cubit.dart';
+import 'package:doc_scanly/features/document_import/presentation/cubit/import_state.dart';
+import 'package:doc_scanly/features/document_import/presentation/import_keys.dart';
+import 'package:doc_scanly/features/document_import/presentation/widgets/import_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -140,6 +140,7 @@ class _Importing extends StatelessWidget {
         total: progress?.total ?? 0,
         label: state.progressLabel,
         onCancel: context.read<ImportCubit>().cancel,
+        cancelKey: ImportKeys.cancelButton,
       ),
     );
   }

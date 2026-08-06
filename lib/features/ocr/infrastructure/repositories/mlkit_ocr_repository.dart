@@ -7,12 +7,12 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart'
     as mlkit;
 import 'package:image/image.dart' as img;

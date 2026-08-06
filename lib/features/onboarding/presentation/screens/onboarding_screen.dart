@@ -10,11 +10,11 @@
 /// scale, in dark mode, on both phone and tablet.
 library;
 
-import 'package:doc_forge/core/permissions/permission_service.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_cubit.dart';
-import 'package:doc_forge/features/onboarding/presentation/cubit/onboarding_state.dart';
-import 'package:doc_forge/features/onboarding/presentation/onboarding_keys.dart';
+import 'package:doc_scanly/core/permissions/permission_service.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/features/onboarding/presentation/cubit/onboarding_cubit.dart';
+import 'package:doc_scanly/features/onboarding/presentation/cubit/onboarding_state.dart';
+import 'package:doc_scanly/features/onboarding/presentation/onboarding_keys.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -129,7 +129,7 @@ class _WelcomeStep extends StatelessWidget {
     return _OnboardingScaffold(
       screenKey: OnboardingKeys.welcomeScreen,
       icon: Icons.document_scanner_outlined,
-      title: 'Welcome to DocForge',
+      title: 'Welcome to DocScanly',
       content: [
         Text(
           'Scan, organise, search and share your documents — quickly and '
@@ -247,7 +247,7 @@ class _PermissionStep extends StatelessWidget {
       title: 'Allow camera access',
       content: [
         Text(
-          'DocForge needs your camera to scan documents. You can change this '
+          'DocScanly needs your camera to scan documents. You can change this '
           'later in Settings.',
           style: Theme.of(context).textTheme.bodyLarge,
           textAlign: TextAlign.center,
@@ -256,7 +256,7 @@ class _PermissionStep extends StatelessWidget {
             state.permission == PermissionState.permanentlyDenied) ...[
           const SizedBox(height: 16),
           Text(
-            'Camera access was not granted. You can still use DocForge and '
+            'Camera access was not granted. You can still use DocScanly and '
             'grant it later.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,

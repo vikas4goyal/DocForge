@@ -5,9 +5,9 @@
 /// Cubit.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
 
 /// A page captured in the current session, before it becomes a document page.
 ///

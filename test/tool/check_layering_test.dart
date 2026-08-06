@@ -20,7 +20,7 @@ void main() {
 
     test('handles absolute paths', () {
       expect(
-        featureOf('/Users/x/doc_forge/lib/features/ocr/domain/thing.dart'),
+        featureOf('/Users/x/doc_scanly/lib/features/ocr/domain/thing.dart'),
         'ocr',
       );
     });
@@ -29,14 +29,14 @@ void main() {
   group('importedFeatureOf', () {
     test('extracts the feature name from a package URI', () {
       expect(
-        importedFeatureOf('package:doc_forge/features/ocr/domain/thing.dart'),
+        importedFeatureOf('package:doc_scanly/features/ocr/domain/thing.dart'),
         'ocr',
       );
     });
 
     test('returns null for non-feature imports', () {
       expect(
-        importedFeatureOf('package:doc_forge/core/contracts/x.dart'),
+        importedFeatureOf('package:doc_scanly/core/contracts/x.dart'),
         isNull,
       );
       expect(importedFeatureOf('package:flutter/material.dart'), isNull);
@@ -79,7 +79,7 @@ void main() {
     test('flags an infrastructure import in application', () {
       final violations = checkFile(
         'lib/features/ocr/application/usecases/recognise_text.dart',
-        "import 'package:doc_forge/features/ocr/infrastructure/repositories/ocr_repository_impl.dart';",
+        "import 'package:doc_scanly/features/ocr/infrastructure/repositories/ocr_repository_impl.dart';",
       );
 
       expect(violations, isNotEmpty);
@@ -92,7 +92,7 @@ void main() {
     test('allows a domain import in application', () {
       final violations = checkFile(
         'lib/features/ocr/application/usecases/recognise_text.dart',
-        "import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';",
+        "import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';",
       );
 
       expect(violations, isEmpty);
@@ -103,7 +103,7 @@ void main() {
     test('flags an import of another feature', () {
       final violations = checkFile(
         'lib/features/document_search/application/usecases/search_documents.dart',
-        "import 'package:doc_forge/features/ocr/domain/entities/recognised_text.dart';",
+        "import 'package:doc_scanly/features/ocr/domain/entities/recognised_text.dart';",
       );
 
       expect(violations, hasLength(1));
@@ -113,7 +113,7 @@ void main() {
     test('allows an import within the same feature', () {
       final violations = checkFile(
         'lib/features/ocr/application/usecases/recognise_text.dart',
-        "import 'package:doc_forge/features/ocr/domain/entities/recognised_text.dart';",
+        "import 'package:doc_scanly/features/ocr/domain/entities/recognised_text.dart';",
       );
 
       expect(violations, isEmpty);
@@ -122,7 +122,7 @@ void main() {
     test('allows an import of core contracts', () {
       final violations = checkFile(
         'lib/features/document_search/application/usecases/search_documents.dart',
-        "import 'package:doc_forge/core/contracts/ocr_text_source.dart';",
+        "import 'package:doc_scanly/core/contracts/ocr_text_source.dart';",
       );
 
       expect(violations, isEmpty);
@@ -131,7 +131,7 @@ void main() {
     test('does not flag cross-feature imports from core', () {
       final violations = checkFile(
         'lib/app/composition_root.dart',
-        "import 'package:doc_forge/features/ocr/infrastructure/repositories/ocr_repository_impl.dart';",
+        "import 'package:doc_scanly/features/ocr/infrastructure/repositories/ocr_repository_impl.dart';",
       );
 
       expect(violations, isEmpty);
@@ -142,7 +142,7 @@ void main() {
     test('flags a cross-feature export', () {
       final violations = checkFile(
         'lib/features/document_search/domain/entities/result.dart',
-        "export 'package:doc_forge/features/ocr/domain/entities/recognised_text.dart';",
+        "export 'package:doc_scanly/features/ocr/domain/entities/recognised_text.dart';",
       );
 
       expect(violations, hasLength(1));
@@ -173,8 +173,8 @@ void main() {
     test('a clean file produces no violations', () {
       const content = '''
 import 'dart:io';
-import 'package:doc_forge/core/contracts/document_reader.dart';
-import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
+import 'package:doc_scanly/core/contracts/document_reader.dart';
+import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
 
 class RecogniseText {}
 ''';
@@ -193,7 +193,7 @@ class RecogniseText {}
     test('reports every violation in a file, not just the first', () {
       const content = '''
 import 'package:flutter/material.dart';
-import 'package:doc_forge/features/other/domain/thing.dart';
+import 'package:doc_scanly/features/other/domain/thing.dart';
 ''';
 
       final violations = checkFile(
@@ -203,6 +203,192 @@ import 'package:doc_forge/features/other/domain/thing.dart';
 
       expect(violations, hasLength(2));
       expect(violations.map((v) => v.line), [1, 2]);
+    });
+  });
+
+  group('libPathOf', () {
+    test('maps a package URI to its path under lib/', () {
+      expect(
+        libPathOf('package:doc_scanly/app/doc_scanly.dart'),
+        'lib/app/doc_scanly.dart',
+      );
+    });
+
+    test('returns null for a URI that leaves the package', () {
+      expect(libPathOf('dart:io'), isNull);
+      expect(libPathOf('package:flutter/material.dart'), isNull);
+      expect(libPathOf('../support/harness.dart'), isNull);
+    });
+  });
+
+  group('withoutComments', () {
+    test('removes line comments so prose is not read as code', () {
+      expect(
+        withoutComments('// uses FakeScannerRepository\nfinal a = 1;'),
+        '\nfinal a = 1;',
+      );
+    });
+
+    test('removes block comments', () {
+      expect(
+        withoutComments('/* FakeThing */ final a = 1;').trim(),
+        'final a = 1;',
+      );
+    });
+
+    test('keeps a // that appears inside a string literal', () {
+      const line = "const url = 'https://example.com';";
+      expect(withoutComments(line), line);
+    });
+  });
+
+  group('reachableFrom', () {
+    test('follows imports transitively', () {
+      final sources = {
+        'lib/main.dart': "import 'package:doc_scanly/app/a.dart';",
+        'lib/app/a.dart': "import 'package:doc_scanly/app/b.dart';",
+        'lib/app/b.dart': '',
+        'lib/app/unreached.dart': '',
+      };
+
+      expect(reachableFrom('lib/main.dart', sources), {
+        'lib/main.dart',
+        'lib/app/a.dart',
+        'lib/app/b.dart',
+      });
+    });
+
+    test('terminates on a cycle', () {
+      final sources = {
+        'lib/main.dart': "import 'package:doc_scanly/app/a.dart';",
+        'lib/app/a.dart': "import 'package:doc_scanly/main.dart';",
+      };
+
+      expect(reachableFrom('lib/main.dart', sources), hasLength(2));
+    });
+  });
+
+  group('checkProductionEntrypoint', () {
+    test('fails when the entrypoint uses a fake', () {
+      final sources = {
+        'lib/main.dart': """
+import 'package:doc_scanly/app/fakes.dart';
+
+void main() => run(FakeScannerRepository());
+""",
+        'lib/app/fakes.dart': 'class FakeScannerRepository {}',
+      };
+
+      final violations = checkProductionEntrypoint(
+        entrypoint: 'lib/main.dart',
+        sources: sources,
+      );
+
+      expect(violations, hasLength(1));
+      expect(violations.single.file, 'lib/main.dart');
+      expect(violations.single.importPath, 'FakeScannerRepository');
+    });
+
+    test('fails when a fake is used anywhere in the transitive closure', () {
+      final sources = {
+        'lib/main.dart': "import 'package:doc_scanly/app/root.dart';",
+        'lib/app/root.dart': """
+import 'package:doc_scanly/app/fakes.dart';
+
+final authenticator = FakeDeviceAuthenticator();
+""",
+        'lib/app/fakes.dart': 'class FakeDeviceAuthenticator {}',
+      };
+
+      final violations = checkProductionEntrypoint(
+        entrypoint: 'lib/main.dart',
+        sources: sources,
+      );
+
+      expect(violations.single.file, 'lib/app/root.dart');
+    });
+
+    test('passes when the fake is only declared, never used', () {
+      // The shape the repository actually has: the fake ships beside the real
+      // implementation so previews can reach it, and nothing production uses
+      // it.
+      final sources = {
+        'lib/main.dart': "import 'package:doc_scanly/app/scanner.dart';",
+        'lib/app/scanner.dart': '''
+class CameraScannerRepository {}
+
+class FakeScannerRepository {}
+''',
+      };
+
+      expect(
+        checkProductionEntrypoint(
+          entrypoint: 'lib/main.dart',
+          sources: sources,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('passes when a fake is only named in a doc comment', () {
+      final sources = {
+        'lib/main.dart': '''
+/// Defaults to the real scanner; a flow substitutes [FakeScannerRepository].
+void main() {}
+''',
+      };
+
+      expect(
+        checkProductionEntrypoint(
+          entrypoint: 'lib/main.dart',
+          sources: sources,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('ignores a fake that only an unreached file uses', () {
+      final sources = {
+        'lib/main.dart': '',
+        'lib/app/fake_dependencies.dart':
+            'final permissions = FakePermissionService();',
+      };
+
+      expect(
+        checkProductionEntrypoint(
+          entrypoint: 'lib/main.dart',
+          sources: sources,
+        ),
+        isEmpty,
+      );
+    });
+
+    test('fails when the entrypoint imports outside the package', () {
+      final sources = {
+        'lib/main.dart': "import '../integration_test/support/app_boot.dart';",
+      };
+
+      final violations = checkProductionEntrypoint(
+        entrypoint: 'lib/main.dart',
+        sources: sources,
+      );
+
+      expect(violations, hasLength(1));
+      expect(violations.single.rule, contains('must not reach outside lib/'));
+    });
+
+    test('does not mistake a builder whose name contains "Fake" for one', () {
+      final sources = {
+        'lib/main.dart': 'final dependencies = buildFakeAppDependencies();',
+      };
+
+      expect(
+        checkProductionEntrypoint(
+          entrypoint: 'lib/main.dart',
+          sources: sources,
+        ),
+        isEmpty,
+      );
     });
   });
 }

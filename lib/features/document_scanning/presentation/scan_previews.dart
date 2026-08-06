@@ -8,25 +8,27 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/previews/fakes/fake_cubit.dart';
-import 'package:doc_forge/core/previews/preview_scaffold.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
-import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
-import 'package:doc_forge/features/document_scanning/infrastructure/camera_scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_cubits.dart';
-import 'package:doc_forge/features/document_scanning/presentation/cubit/scan_states.dart';
-import 'package:doc_forge/features/document_scanning/presentation/screens/crop_screen.dart';
-import 'package:doc_forge/features/document_scanning/presentation/screens/page_review_screen.dart';
-import 'package:doc_forge/features/document_scanning/presentation/screens/scan_capture_screen.dart';
-import 'package:doc_forge/features/document_scanning/presentation/widgets/scan_error_views.dart';
+import 'package:doc_scanly/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_cubit.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_page_renderer.dart';
+import 'package:doc_scanly/core/previews/preview_scaffold.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
+import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_states.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/screens/crop_screen.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/screens/page_review_screen.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/screens/scan_capture_screen.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/widgets/scan_error_views.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -102,6 +104,7 @@ Widget _capture(ScanCaptureState state) {
     child: ScanCaptureScreen(
       previewBuilder: _previewPlaceholder,
       onFinished: () {},
+      onPageCaptured: (_, _) async {},
       onCancelled: () {},
       onOpenSettings: () {},
       onImportInstead: () {},
@@ -116,22 +119,13 @@ Widget _review(List<CapturedPage> pages) => BlocProvider<PageReviewCubit>(
     onAddPages: () {},
     onExit: () {},
     onCropPage: (_, _) {},
+    onEnhancePage: (_, _) {},
   ),
 );
 
-Widget _crop(CapturedPage page) => BlocProvider<CropCubit>(
-  create: (_) => CropCubit(
-    page,
-    const ApplyPerspectiveCorrection(
-      InlineBackgroundWorker(),
-      previewCorrectionJob,
-    ),
-  ),
-  child: CropScreen(
-    destinationPath: '/preview/corrected.jpg',
-    onCropped: (_) {},
-    onCancelled: () {},
-  ),
+Widget _crop(PageDraft page) => BlocProvider<CropCubit>(
+  create: (_) => CropCubit(page, const FakePageRenderer()),
+  child: CropScreen(onNext: (_) {}, onCancelled: () {}),
 );
 
 /// A correction job that does nothing, for previews.
@@ -352,14 +346,36 @@ Widget reviewLargeText() => _review(_capturedPages(3));
 // Crop screen
 // ---------------------------------------------------------------------------
 
-/// The crop screen with the full page selected.
-@Preview(name: 'Crop — full page', group: 'Scanning', theme: appPreviewTheme)
-Widget cropFullPage() => _crop(_capturedPages(1).single);
+/// A page with nothing applied to it yet.
+PageDraft _draft() => const PageDraft(
+  id: PageId('preview-page-0'),
+  originalImagePath: '/preview/page-0.jpg',
+);
 
-/// The crop screen with a skewed quadrilateral, as a tilted capture produces.
-@Preview(name: 'Crop — skewed', group: 'Scanning', theme: appPreviewTheme)
-Widget cropSkewed() =>
-    _crop(_capturedPages(1).single.copyWith(quad: _skewedQuad));
+/// A page that has already been cropped once, so Revert is live.
+PageDraft _croppedDraft({int times = 1}) {
+  var draft = _draft();
+  for (var i = 0; i < times; i++) {
+    draft = draft.withCrop(const CropOp(quad: _skewedQuad));
+  }
+  return draft;
+}
+
+/// The crop screen before anything has been applied.
+@Preview(name: 'Crop — adjusting', group: 'Scanning', theme: appPreviewTheme)
+Widget cropAdjusting() => _crop(_draft());
+
+/// After one crop: the screen has stayed put, and Revert is now available.
+@Preview(name: 'Crop — applied once', group: 'Scanning', theme: appPreviewTheme)
+Widget cropAppliedOnce() => _crop(_croppedDraft());
+
+/// After a second crop, which is the whole point of applying in place.
+@Preview(
+  name: 'Crop — applied twice',
+  group: 'Scanning',
+  theme: appPreviewTheme,
+)
+Widget cropAppliedTwice() => _crop(_croppedDraft(times: 2));
 
 /// The crop screen in dark mode.
 @Preview(
@@ -368,8 +384,7 @@ Widget cropSkewed() =>
   theme: appPreviewTheme,
   brightness: Brightness.dark,
 )
-Widget cropDark() =>
-    _crop(_capturedPages(1).single.copyWith(quad: _skewedQuad));
+Widget cropDark() => _crop(_croppedDraft());
 
 /// The crop screen on a tablet.
 @Preview(
@@ -378,5 +393,4 @@ Widget cropDark() =>
   theme: appPreviewTheme,
   size: PreviewSize.tablet,
 )
-Widget cropTablet() =>
-    _crop(_capturedPages(1).single.copyWith(quad: _skewedQuad));
+Widget cropTablet() => _crop(_croppedDraft());

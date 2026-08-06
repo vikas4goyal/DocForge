@@ -1,6 +1,6 @@
 /// Fails the build if web or desktop support leaks into the project.
 ///
-/// DocForge targets Android and iOS only. That constraint is easy to violate by
+/// DocScanly targets Android and iOS only. That constraint is easy to violate by
 /// accident — `flutter create .` regenerates every platform folder, and a
 /// well-meaning dependency addition can pull in a desktop-only plugin — so it is
 /// asserted in CI rather than trusted to reviewer memory.
@@ -36,6 +36,27 @@ const forbiddenPackages = <String>[
   'fluent_ui',
   'yaru',
 ];
+
+/// Files and fragments that define the DocScanly platform identity.
+const requiredIdentityFragments = <String, List<String>>{
+  'android/app/build.gradle.kts': [
+    'namespace = "com.bruxkey.docscanly"',
+    'applicationId = "com.bruxkey.docscanly"',
+  ],
+  'android/app/src/main/AndroidManifest.xml': ['android:label="DocScanly"'],
+  'ios/Runner.xcodeproj/project.pbxproj': [
+    'PRODUCT_BUNDLE_IDENTIFIER = com.bruxkey.docscanly;',
+    'CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;',
+  ],
+  'ios/Runner/Info.plist': [
+    '<string>DocScanly</string>',
+    '<key>iCloud.com.bruxkey.docscanly</key>',
+  ],
+  'ios/Runner/Runner.entitlements': [
+    '<string>iCloud.com.bruxkey.docscanly</string>',
+    '<string>CloudDocuments</string>',
+  ],
+};
 
 /// Returns the names of forbidden platform folders present under [root].
 List<String> findForbiddenDirs(Directory root) {
@@ -76,13 +97,45 @@ List<String> findForbiddenPackages(String pubspecContent) {
   return found;
 }
 
+/// Returns missing or forbidden DocScanly platform-identity configuration.
+List<String> findIdentityViolations(Directory root) {
+  final violations = <String>[];
+  for (final entry in requiredIdentityFragments.entries) {
+    final file = File('${root.path}/${entry.key}');
+    if (!file.existsSync()) {
+      violations.add('${entry.key} is missing');
+      continue;
+    }
+    final content = file.readAsStringSync();
+    for (final fragment in entry.value) {
+      if (!content.contains(fragment)) {
+        violations.add('${entry.key} lacks $fragment');
+      }
+    }
+  }
+
+  final entitlements = File('${root.path}/ios/Runner/Runner.entitlements');
+  if (entitlements.existsSync()) {
+    final content = entitlements.readAsStringSync();
+    for (final forbidden in [
+      'CloudKit',
+      'com.apple.developer.icloud-extended-share-access',
+    ]) {
+      if (content.contains(forbidden)) {
+        violations.add('Runner.entitlements must not enable $forbidden');
+      }
+    }
+  }
+  return violations;
+}
+
 /// Runs the platform check and exits non-zero on any violation.
 void main() {
   final violations = <String>[];
 
   for (final dir in findForbiddenDirs(Directory('.'))) {
     violations.add(
-      'Platform folder "$dir/" exists. DocForge targets Android and iOS only.',
+      'Platform folder "$dir/" exists. DocScanly targets Android and iOS only.',
     );
   }
 
@@ -94,6 +147,8 @@ void main() {
       );
     }
   }
+
+  violations.addAll(findIdentityViolations(Directory('.')));
 
   if (violations.isEmpty) {
     stdout.writeln('Platform check passed: Android and iOS only.');

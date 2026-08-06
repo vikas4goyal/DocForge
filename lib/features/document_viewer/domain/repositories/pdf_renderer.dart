@@ -1,7 +1,7 @@
 /// The contract behind PDF rendering, and the rules governing the viewer.
 library;
 
-import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 
 /// What a PDF file turned out to be when it was opened.
 class OpenedDocument {

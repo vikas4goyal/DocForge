@@ -6,21 +6,27 @@
 @Tags(['golden'])
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/theme/app_theme.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
-import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_state.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/folder_state.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/document_list_screen.dart';
-import 'package:doc_forge/features/document_library/presentation/screens/folder_list_screen.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/previews/fixtures/fixtures.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/theme/app_theme.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_queries.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/folder_usecases.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/folder_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/folder_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_detail_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_list_screen.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/folder_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -41,7 +47,7 @@ Document _document(int index) => Document(
   updatedAt: DateTime.utc(2026, 3, 14),
   pageCount: 4,
   sizeInBytes: 184_320,
-  filePath: '/golden/$index.pdf',
+  libraryPath: LibraryPath.parse('$index.pdf'),
 );
 
 Folder _folder(int index) => Folder(
@@ -94,7 +100,13 @@ class _SeededFolderCubit extends FolderCubit {
           _folders,
           _documents,
           MoveDocument(_documents, _clock),
-          PurgeDocument(_documents, _pages, _files, InMemorySecureStore()),
+          PurgeDocument(
+            _documents,
+            _pages,
+            InMemoryPublicFileStore(),
+            _files,
+            InMemorySecureStore(),
+          ),
         ),
       );
 
@@ -102,6 +114,42 @@ class _SeededFolderCubit extends FolderCubit {
 
   @override
   FolderState get state => _seeded;
+
+  @override
+  Future<void> load() async {}
+}
+
+/// A detail Cubit frozen at a chosen ready state.
+class _SeededDetailCubit extends DocumentDetailCubit {
+  _SeededDetailCubit(this._seeded)
+    : super(
+        _seeded.document!.id,
+        LoadDocumentDetail(_documents, _pages),
+        RenameDocument(_documents, _clock, InMemoryPublicFileStore()),
+        MoveDocument(_documents, _clock),
+        ToggleFavourite(_documents, _clock),
+        ArchiveDocument(_documents, _clock),
+        RestoreDocument(_documents, _clock),
+        DuplicateDocument(
+          _documents,
+          _pages,
+          InMemoryPublicFileStore(),
+          _clock,
+          SequentialIdGenerator(),
+        ),
+        PurgeDocument(
+          _documents,
+          _pages,
+          InMemoryPublicFileStore(),
+          _files,
+          InMemorySecureStore(),
+        ),
+      );
+
+  final DocumentDetailState _seeded;
+
+  @override
+  DocumentDetailState get state => _seeded;
 
   @override
   Future<void> load() async {}
@@ -166,6 +214,30 @@ void main() {
     await tester.pump();
   }
 
+  Future<void> pumpDetail(
+    WidgetTester tester,
+    Size size,
+    DocumentDetailState state,
+  ) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    final cubit = _SeededDetailCubit(state);
+    addTearDown(cubit.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: BlocProvider<DocumentDetailCubit>.value(
+          value: cubit,
+          child: DocumentDetailScreen(onClose: () {}, onOpenViewer: () {}),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+  }
+
   final documents = const DocumentListState.initial().copyWith(
     status: LoadStatus.ready,
     documents: [for (var i = 0; i < 6; i++) _document(i)],
@@ -175,6 +247,41 @@ void main() {
     status: LoadStatus.ready,
     folders: [for (var i = 1; i <= 4; i++) _folder(i)],
   );
+
+  final detail = const DocumentDetailState.initial().copyWith(
+    status: LoadStatus.ready,
+    document: _document(0),
+    pages: samplePages(4),
+  );
+
+  group('document detail goldens', () {
+    testWidgets('phone, light', (tester) async {
+      await pumpDetail(tester, _phone, detail);
+
+      await expectLater(
+        find.byType(DocumentDetailScreen),
+        matchesGoldenFile('document_detail_phone_light.png'),
+      );
+    });
+
+    testWidgets('remote iCloud document', (tester) async {
+      await pumpDetail(
+        tester,
+        _phone,
+        detail.copyWith(
+          document: _document(0).copyWith(
+            cloudResourceIdentifier: 'golden-resource',
+            contentAvailability: DocumentContentAvailability.remote,
+          ),
+        ),
+      );
+
+      await expectLater(
+        find.byType(DocumentDetailScreen),
+        matchesGoldenFile('document_detail_icloud_remote.png'),
+      );
+    });
+  });
 
   group('document list goldens', () {
     testWidgets('phone, light', (tester) async {
@@ -240,6 +347,33 @@ void main() {
       await expectLater(
         find.byType(DocumentListScreen),
         matchesGoldenFile('document_list_error_dark.png'),
+      );
+    });
+
+    testWidgets('mixed iCloud availability', (tester) async {
+      final values = [
+        DocumentContentAvailability.remote,
+        DocumentContentAvailability.downloading,
+        DocumentContentAvailability.available,
+        DocumentContentAvailability.failed,
+      ];
+      await pumpList(
+        tester,
+        _phone,
+        documents.copyWith(
+          documents: [
+            for (var index = 0; index < values.length; index++)
+              _document(index).copyWith(
+                cloudResourceIdentifier: 'resource-$index',
+                contentAvailability: values[index],
+              ),
+          ],
+        ),
+      );
+
+      await expectLater(
+        find.byType(DocumentListScreen),
+        matchesGoldenFile('document_list_icloud_statuses.png'),
       );
     });
   });

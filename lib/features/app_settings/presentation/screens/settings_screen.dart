@@ -1,12 +1,13 @@
 /// The settings screen and the two screens it opens.
 library;
 
-import 'package:doc_forge/core/formatting/display_formatting.dart';
-import 'package:doc_forge/core/widgets/app_state_views.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
-import 'package:doc_forge/features/app_settings/presentation/cubit/settings_cubit.dart';
-import 'package:doc_forge/features/app_settings/presentation/settings_keys.dart';
-import 'package:doc_forge/features/app_settings/presentation/widgets/settings_widgets.dart';
+import 'package:doc_scanly/core/formatting/display_formatting.dart';
+import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
+import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
+import 'package:doc_scanly/features/app_settings/presentation/widgets/settings_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -17,15 +18,20 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class SettingsScreen extends StatelessWidget {
   /// Creates the settings screen.
   const SettingsScreen({
-    required this.onBack,
     required this.onAbout,
     required this.onPrivacyPolicy,
+    required this.pickSaveLocation,
     super.key,
+    this.onBack,
     this.onToggleAppLock,
+    this.onStorageLocation,
   });
 
   /// Invoked when the user leaves settings.
-  final VoidCallback onBack;
+  final VoidCallback? onBack;
+
+  /// Opens the platform directory picker used by export defaults.
+  final DirectoryPicker pickSaveLocation;
 
   /// Invoked when the About entry is chosen.
   final VoidCallback onAbout;
@@ -40,6 +46,9 @@ class SettingsScreen extends StatelessWidget {
   /// flag lives in secure storage, not in preferences.
   final ValueChanged<bool>? onToggleAppLock;
 
+  /// Opens iOS storage selection; null keeps cloud UI absent on Android.
+  final VoidCallback? onStorageLocation;
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<SettingsCubit, SettingsState>(
@@ -50,7 +59,11 @@ class SettingsScreen extends StatelessWidget {
           key: SettingsKeys.screen,
           appBar: AppBar(
             title: const Text('Settings'),
-            leading: BackButton(onPressed: onBack),
+            // A tab switch creates no route history, so automatic leading
+            // controls are deliberately suppressed unless composition gives
+            // this pushed instance a real back action.
+            automaticallyImplyLeading: false,
+            leading: onBack == null ? null : BackButton(onPressed: onBack),
           ),
           body: state.status == SettingsStatus.loading
               ? const AppLoadingIndicator()
@@ -79,6 +92,9 @@ class SettingsScreen extends StatelessWidget {
     final settings = state.settings;
 
     return ListView(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.paddingOf(context).bottom + 24,
+      ),
       children: [
         if (state.status == SettingsStatus.failure)
           _SaveFailure(state: state, onDismiss: cubit.dismissError),
@@ -91,15 +107,16 @@ class SettingsScreen extends StatelessWidget {
           labelFor: (choice) => choice.label,
           onSelected: cubit.setTheme,
         ),
-        SettingsChoiceTile<OcrScript>(
+        SettingsValueTile(
           key: SettingsKeys.ocrLanguage,
           title: 'Recognition language',
-          value: settings.ocrScript,
-          valueLabel: settings.ocrScript.label,
-          options: OcrScript.values,
-          labelFor: (script) => script.label,
-          descriptionFor: SettingsCopy.ocrScriptDescription,
-          onSelected: cubit.setOcrScript,
+          value: settings.ocrScript.label,
+          onTap: () => Navigator.of(context).push<void>(
+            SettingsDetailRoutes.recognitionLanguage(
+              value: settings.ocrScript,
+              onSelected: cubit.setOcrScript,
+            ),
+          ),
         ),
         SettingsChoiceTile<PdfQuality>(
           key: SettingsKeys.pdfQuality,
@@ -139,17 +156,19 @@ class SettingsScreen extends StatelessWidget {
           key: SettingsKeys.saveLocation,
           title: 'Default save location',
           value: state.saveLocationLabel,
-          // Clearing is the only change offered here: choosing a directory
-          // opens the system picker, which belongs to the export flow.
-          onTap: settings.saveLocation == null
-              ? null
-              : () => cubit.setSaveLocation(null),
+          onTap: () => Navigator.of(context).push<void>(
+            SettingsDetailRoutes.saveLocation(
+              currentPath: settings.saveLocation,
+              pickDirectory: pickSaveLocation,
+              onSelected: cubit.setSaveLocation,
+            ),
+          ),
         ),
         SettingsSwitchTile(
           key: SettingsKeys.biometricLock,
           title: 'App lock',
           value: settings.isAppLockEnabled,
-          subtitle: 'Require authentication to open DocForge',
+          subtitle: 'Require authentication to open DocScanly',
           onChanged: onToggleAppLock,
         ),
         SettingsValueTile(
@@ -161,7 +180,36 @@ class SettingsScreen extends StatelessWidget {
                   DisplayFormatting.fileSize(state.storage!.totalBytes),
                   state.storage!.documentCount,
                 ),
-          onTap: cubit.refreshStorage,
+          onTap: () => Navigator.of(context).push<void>(
+            SettingsDetailRoutes.storage(
+              settings: cubit,
+              onManageLocation: onStorageLocation,
+            ),
+          ),
+        ),
+        if (onStorageLocation != null)
+          SettingsValueTile(
+            key: SettingsKeys.storageLocation,
+            title: 'Storage location',
+            value: 'On this device or iCloud Drive',
+            onTap: onStorageLocation,
+          ),
+        // Stated plainly rather than left to be discovered. Saved PDFs are
+        // deliberately visible to other applications — that is what makes them
+        // reachable from the Files app — and a user who assumes otherwise has
+        // assumed something about their own documents that is not true.
+        const ListTile(
+          key: SettingsKeys.storageVisibility,
+          leading: Icon(Icons.folder_shared_outlined),
+          title: Text('Where your PDFs are kept'),
+          subtitle: Text(
+            'Saved PDFs live in a DocScanly folder other apps can see, so you '
+            'can open them from Files and share them anywhere. '
+            'Password-protected PDFs cannot be read without their password. '
+            'Page images you capture stay private and are deleted once the '
+            'PDF is made.',
+          ),
+          isThreeLine: true,
         ),
         const Divider(),
         SettingsValueTile(
@@ -225,7 +273,7 @@ class AboutScreen extends StatelessWidget {
     required this.version,
     required this.onBack,
     super.key,
-    this.appName = 'DocForge',
+    this.appName = 'DocScanly',
   });
 
   /// The application's version string.
@@ -258,13 +306,14 @@ class AboutScreen extends StatelessWidget {
           Semantics(
             // Named together, so a screen reader announces "Version, 1.0.0"
             // rather than a bare number the user has to interpret.
-            label: 'Version, $version',
+            label: SettingsSemantics.version(version),
             excludeSemantics: true,
             child: Text('Version $version', style: theme.textTheme.bodyLarge),
           ),
           const SizedBox(height: 24),
           Text(
-            'A document scanner that keeps your documents on your device.',
+            'A private document scanner with device-local storage and optional '
+            'iCloud Drive storage on iOS.',
             style: theme.textTheme.bodyMedium,
           ),
         ],

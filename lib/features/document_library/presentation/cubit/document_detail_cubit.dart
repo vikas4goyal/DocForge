@@ -1,13 +1,15 @@
 /// Drives the document detail screen.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_state.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_state.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_queries.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/trash_usecases.dart';
+import 'package:doc_scanly/features/document_library/domain/document_duplicate.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Owns the state of one document's detail screen.
@@ -26,8 +28,10 @@ class DocumentDetailCubit extends Cubit<DocumentDetailState> {
     this._archive,
     this._restore,
     this._duplicate,
-    this._purge,
-  ) : super(const DocumentDetailState.initial());
+    this._purge, {
+    this.moveToTrash,
+    this.loadFolderOptions,
+  }) : super(const DocumentDetailState.initial());
 
   /// The document this screen shows.
   final DocumentId documentId;
@@ -40,6 +44,47 @@ class DocumentDetailCubit extends Cubit<DocumentDetailState> {
   final RestoreDocument _restore;
   final DuplicateDocument _duplicate;
   final PurgeDocument _purge;
+
+  /// Recoverable deletion used by production; null only in legacy unit fakes.
+  final MoveDocumentToTrash? moveToTrash;
+
+  /// Loads current folder destinations when Move or Duplicate opens.
+  final LoadFolderOptions? loadFolderOptions;
+
+  /// Loads real active folders for reviewed Detail actions.
+  Future<void> loadMoveOptions() async {
+    final loader = loadFolderOptions;
+    if (loader == null) {
+      emit(state.copyWith(folderOptionsStatus: FolderOptionsStatus.empty));
+      return;
+    }
+    emit(state.copyWith(folderOptionsStatus: FolderOptionsStatus.loading));
+    final result = await loader();
+    if (isClosed) return;
+    switch (result) {
+      case Success(:final value):
+        final current = state.document?.folderId;
+        final eligible = [
+          for (final folder in value)
+            if (folder.id != current) folder,
+        ];
+        emit(
+          state.copyWith(
+            folderOptionsStatus: eligible.isEmpty
+                ? FolderOptionsStatus.empty
+                : FolderOptionsStatus.ready,
+            folderOptions: eligible,
+          ),
+        );
+      case Failed(:final failure):
+        emit(
+          state.copyWith(
+            folderOptionsStatus: FolderOptionsStatus.failure,
+            failure: failure,
+          ),
+        );
+    }
+  }
 
   /// Loads the document and its pages.
   Future<void> load() async {
@@ -54,6 +99,7 @@ class DocumentDetailCubit extends Cubit<DocumentDetailState> {
             status: LoadStatus.ready,
             document: value.document,
             pages: value.pages,
+            pageHandles: value.pageHandles,
             isWorking: false,
           ),
         );
@@ -93,21 +139,115 @@ class DocumentDetailCubit extends Cubit<DocumentDetailState> {
   /// Returns the copy so the caller can navigate to it. The current screen
   /// keeps showing the original, which is what the user still has open.
   Future<Document?> duplicate() async {
-    emit(state.copyWith(isWorking: true));
+    if (state.duplicateStatus == DuplicateStatus.submitting) return null;
+    if (state.duplicateRequest == null) await beginDuplicate();
+    return confirmDuplicate();
+  }
 
-    final result = await _duplicate(documentId);
+  /// Opens duplicate review with a collision-safe proposed name.
+  Future<void> beginDuplicate() async {
+    if (state.duplicateStatus == DuplicateStatus.submitting) return;
+    final proposed = await _duplicate.propose(documentId);
+    if (isClosed) return;
+    switch (proposed) {
+      case Success(:final value):
+        emit(
+          state.copyWith(
+            duplicateStatus: DuplicateStatus.reviewing,
+            duplicateRequest: value,
+          ),
+        );
+      case Failed(:final failure):
+        emit(
+          state.copyWith(
+            duplicateStatus: DuplicateStatus.failure,
+            failure: failure,
+          ),
+        );
+    }
+  }
+
+  /// Updates the reviewed duplicate name without mutation.
+  void updateDuplicateTitle(String title) {
+    final request = state.duplicateRequest;
+    if (request == null ||
+        state.duplicateStatus == DuplicateStatus.submitting) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        duplicateStatus: DuplicateStatus.reviewing,
+        duplicateRequest: request.copyWith(title: title),
+      ),
+    );
+  }
+
+  /// Updates the reviewed destination; null represents the library Root.
+  void updateDuplicateDestination(Folder? destination) {
+    final request = state.duplicateRequest;
+    if (request == null ||
+        state.duplicateStatus == DuplicateStatus.submitting) {
+      return;
+    }
+    emit(
+      state.copyWith(
+        duplicateStatus: DuplicateStatus.reviewing,
+        duplicateRequest: request.copyWith(
+          destinationFolders:
+              destination == null || destination.relativePath.isEmpty
+              ? const []
+              : destination.relativePath.split('/'),
+          destinationFolderId: destination?.id,
+        ),
+      ),
+    );
+  }
+
+  /// Submits the reviewed request once and returns the created document.
+  Future<Document?> confirmDuplicate() async {
+    final request = state.duplicateRequest;
+    if (request == null ||
+        state.duplicateStatus == DuplicateStatus.submitting) {
+      return null;
+    }
+    emit(
+      state.copyWith(
+        isWorking: true,
+        duplicateStatus: DuplicateStatus.submitting,
+      ),
+    );
+
+    final result = await _duplicate.execute(request);
 
     switch (result) {
       case Success(:final value):
-        emit(state.copyWith(isWorking: false));
+        emit(
+          state.copyWith(
+            isWorking: false,
+            duplicateStatus: DuplicateStatus.succeeded,
+            duplicateOutcome: DuplicateDocumentOutcome(document: value),
+          ),
+        );
         return value;
       case Failed(:final failure):
-        emit(state.copyWith(isWorking: false, failure: failure));
+        emit(
+          state.copyWith(
+            isWorking: false,
+            duplicateStatus: DuplicateStatus.failure,
+            failure: failure,
+          ),
+        );
         return null;
     }
   }
 
-  /// Permanently removes the document and everything belonging to it.
+  /// Cancels duplicate review without creating a file or record.
+  void cancelDuplicate() {
+    if (state.duplicateStatus == DuplicateStatus.submitting) return;
+    emit(state.copyWith(duplicateStatus: DuplicateStatus.idle));
+  }
+
+  /// Moves the document to recoverable Trash.
   ///
   /// The caller confirms first — this method does not ask. On success it sets
   /// `isDeleted` rather than reloading, because there is nothing left to load
@@ -115,7 +255,9 @@ class DocumentDetailCubit extends Cubit<DocumentDetailState> {
   Future<void> delete() async {
     emit(state.copyWith(isWorking: true));
 
-    final result = await _purge(documentId);
+    final result = moveToTrash == null
+        ? await _purge(documentId)
+        : await moveToTrash!(documentId);
 
     switch (result) {
       case Success():

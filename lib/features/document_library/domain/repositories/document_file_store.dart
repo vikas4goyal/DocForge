@@ -8,8 +8,8 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/result.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 
 /// Resolves and manages paths for a document's files.
 abstract interface class DocumentFileStore {

@@ -1,8 +1,8 @@
 /// The building blocks of the import flow.
 library;
 
-import 'package:doc_forge/features/document_import/domain/import_rules.dart';
-import 'package:doc_forge/features/document_import/presentation/import_keys.dart';
+import 'package:doc_scanly/features/document_import/domain/import_rules.dart';
+import 'package:doc_scanly/features/document_import/presentation/import_keys.dart';
 import 'package:flutter/material.dart';
 
 /// One import source in the options sheet.

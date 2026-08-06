@@ -7,8 +7,8 @@
 /// through it (`design.md` §29).
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/failure.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 
 /// An editing operation the user can invoke.
 enum PdfEditOperation {

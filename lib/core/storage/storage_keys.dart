@@ -1,4 +1,4 @@
-/// The single source of truth for every persisted key in DocForge.
+/// The single source of truth for every persisted key in DocScanly.
 ///
 /// Keys are declared here rather than inline at their call sites for two
 /// reasons. A typo in an inline string silently reads back a default instead of
@@ -49,6 +49,26 @@ abstract final class PreferenceKeys {
   /// Directory offered first when the user exports a document.
   static const defaultSaveLocation = 'settings.defaultSaveLocation';
 
+  /// Dashboard thumbnail density: large or small.
+  static const libraryDisplayDensity = 'settings.libraryDisplayDensity';
+
+  /// Versioned authoritative public-library location.
+  static const libraryStorageLocation = 'settings.storage.location.v1';
+
+  /// Source of an interrupted library-location migration.
+  static const migrationSource = 'settings.storage.migration.v1.source';
+
+  /// Destination of an interrupted library-location migration.
+  static const migrationDestination =
+      'settings.storage.migration.v1.destination';
+
+  /// Durable phase of an interrupted library-location migration.
+  static const migrationPhase = 'settings.storage.migration.v1.phase';
+
+  /// Newline-delimited, verified relative payload paths.
+  static const migrationVerifiedPaths =
+      'settings.storage.migration.v1.verifiedPaths';
+
   /// Every preference key, for tests that assert uniqueness and namespacing.
   static const all = <String>[
     onboardingComplete,
@@ -59,6 +79,12 @@ abstract final class PreferenceKeys {
     imageQuality,
     fileNamingPattern,
     defaultSaveLocation,
+    libraryDisplayDensity,
+    libraryStorageLocation,
+    migrationSource,
+    migrationDestination,
+    migrationPhase,
+    migrationVerifiedPaths,
   ];
 }
 

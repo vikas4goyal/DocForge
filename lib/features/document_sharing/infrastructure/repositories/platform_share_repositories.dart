@@ -8,11 +8,13 @@
 library;
 
 import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_sharing/domain/repositories/share_repository.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_sharing/domain/document_export_result.dart';
+import 'package:doc_scanly/features/document_sharing/domain/repositories/share_repository.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
@@ -86,27 +88,69 @@ class SystemPrintRepository implements PrintRepository {
   }
 }
 
-/// An [ExportDestinationPicker] backed by the system file picker.
-class SystemExportDestinationPicker implements ExportDestinationPicker {
-  /// Creates the picker.
-  const SystemExportDestinationPicker();
+/// Signature used to hand bytes to the platform document provider.
+typedef SaveProviderFile =
+    Future<String?> Function({
+      required String fileName,
+      String? initialDirectory,
+      required List<String> allowedExtensions,
+      required Uint8List bytes,
+    });
+
+Future<String?> _saveProviderFile({
+  required String fileName,
+  String? initialDirectory,
+  required List<String> allowedExtensions,
+  required Uint8List bytes,
+}) => FilePicker.platform.saveFile(
+  fileName: fileName,
+  initialDirectory: initialDirectory,
+  type: FileType.custom,
+  allowedExtensions: allowedExtensions,
+  bytes: bytes,
+);
+
+/// An [ExportDocumentRepository] backed by the system document provider.
+class SystemExportDocumentRepository implements ExportDocumentRepository {
+  /// Creates the platform-owned exporter.
+  const SystemExportDocumentRepository({this.saveFile = _saveProviderFile});
+
+  /// Provider handoff, replaceable only to make the platform boundary testable.
+  final SaveProviderFile saveFile;
 
   @override
-  Future<Result<String?>> chooseDestination({
+  Future<Result<DocumentExportResult>> export({
+    required String sourcePath,
     required String suggestedName,
     String? initialDirectory,
   }) async {
     try {
-      final chosen = await FilePicker.platform.saveFile(
+      final source = File(sourcePath);
+      if (!source.existsSync()) {
+        return const Result<DocumentExportResult>.failure(Failure.notFound());
+      }
+      // Android and iOS require bytes here and perform the provider write
+      // themselves. Treating the returned provider value as a writable local
+      // path is what caused exports to fail and create invalid `.partial`
+      // siblings beside content-provider items.
+      final chosen = await saveFile(
         fileName: suggestedName,
         initialDirectory: initialDirectory,
-        type: FileType.custom,
         allowedExtensions: [suggestedName.split('.').last],
+        bytes: await source.readAsBytes(),
       );
 
-      return Result<String?>.success(chosen);
+      return chosen == null
+          ? const Result<DocumentExportResult>.success(
+              DocumentExportResult.cancelled(),
+            )
+          : Result<DocumentExportResult>.success(
+              DocumentExportResult.completed(destinationLabel: chosen),
+            );
     } on Object catch (error) {
-      return Result<String?>.failure(Failure.export(debugDetail: '$error'));
+      return Result<DocumentExportResult>.failure(
+        Failure.export(debugDetail: '$error'),
+      );
     }
   }
 }

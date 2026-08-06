@@ -6,7 +6,7 @@
 /// list of ten settings that is guesswork.
 library;
 
-import 'package:doc_forge/features/app_settings/presentation/settings_keys.dart';
+import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
 import 'package:flutter/material.dart';
 
 /// A setting whose value is chosen from a fixed set.
@@ -58,7 +58,7 @@ class SettingsChoiceTile<T> extends StatelessWidget {
       children: [
         Semantics(
           button: true,
-          label: '$title, $valueLabel',
+          label: SettingsSemantics.choiceTile(title, valueLabel),
           excludeSemantics: true,
           child: ListTile(
             title: Text(title),
@@ -77,38 +77,49 @@ class SettingsChoiceTile<T> extends StatelessWidget {
       context: context,
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-              child: Text(
-                title,
-                style: Theme.of(sheetContext).textTheme.titleMedium,
+        key: SettingsKeys.choiceSheet,
+        top: false,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.8,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                child: Text(
+                  title,
+                  style: Theme.of(sheetContext).textTheme.titleMedium,
+                ),
               ),
-            ),
-            // `RadioGroup` rather than per-tile `groupValue`/`onChanged`,
-            // which Flutter deprecated: the group owns the selection, so a
-            // tile cannot disagree with its siblings about what is selected.
-            RadioGroup<T>(
-              groupValue: value,
-              onChanged: (chosen) => Navigator.of(sheetContext).pop(chosen),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final option in options)
-                    RadioListTile<T>(
-                      value: option,
-                      title: Text(labelFor(option)),
-                      subtitle: descriptionFor == null
-                          ? null
-                          : Text(descriptionFor!(option)),
-                    ),
-                ],
+              // Keep the options scrollable so quality descriptions remain
+              // reachable on short devices and with large accessibility text.
+              Flexible(
+                child: RadioGroup<T>(
+                  groupValue: value,
+                  onChanged: (chosen) => Navigator.of(sheetContext).pop(chosen),
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.only(bottom: 8),
+                    children: [
+                      for (final option in options)
+                        RadioListTile<T>(
+                          key: SettingsKeys.choiceOption(
+                            SettingsKeys.optionNameOf(option),
+                          ),
+                          value: option,
+                          title: Text(labelFor(option)),
+                          subtitle: descriptionFor == null
+                              ? null
+                              : Text(descriptionFor!(option)),
+                        ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -180,7 +191,7 @@ class SettingsSwitchTile extends StatelessWidget {
     return Semantics(
       toggled: value,
       enabled: onChanged != null,
-      label: '$title, ${value ? 'on' : 'off'}',
+      label: SettingsSemantics.switchTile(title, on: value),
       excludeSemantics: true,
       child: SwitchListTile(
         title: Text(title),
@@ -211,7 +222,7 @@ class NamingPatternPreview extends StatelessWidget {
       key: SettingsKeys.namingPreview,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
       child: Semantics(
-        label: 'Example name, $example',
+        label: SettingsSemantics.namingPreview(example),
         excludeSemantics: true,
         child: Text(
           'Example: $example',

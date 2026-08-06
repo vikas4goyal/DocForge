@@ -9,7 +9,7 @@
 /// anything already pointing at it (`design.md` §8).
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
 
 /// Path templates for every route, and helpers to build concrete locations.
 abstract final class AppRoutes {
@@ -19,20 +19,21 @@ abstract final class AppRoutes {
   /// Application lock screen.
   static const unlock = '/unlock';
 
-  /// Home screen — the application's primary screen.
+  /// The application's primary screen — the dashboard.
+  ///
+  /// Kept at the root so a deep link, a share and a cold start all land in the
+  /// same place, which is the folder the user's documents are in.
   static const home = '/';
 
-  /// Camera capture.
+  /// The dashboard, as a named destination for the tab bar.
+  static const dashboard = '/';
+
+  /// Creating a document: one page table, and the loop that fills it.
+  ///
+  /// The crop, enhancement and camera screens are pushed by the flow rather
+  /// than declared here: they are steps of a transient session, and a deep link
+  /// into one would land on a session that does not exist.
   static const scan = '/scan';
-
-  /// Review of the pages captured in the current session.
-  static const scanReview = '/scan/review';
-
-  /// Enhancement of the current session's pages.
-  static const scanEnhance = '/scan/enhance';
-
-  /// Preview of the document about to be saved.
-  static const scanPreview = '/scan/preview';
 
   /// All documents.
   static const documents = '/documents';
@@ -67,6 +68,9 @@ abstract final class AppRoutes {
   /// Archived documents.
   static const archive = '/archive';
 
+  /// Recoverable items waiting for automatic permanent deletion.
+  static const trash = '/trash';
+
   /// Settings.
   static const settings = '/settings';
 
@@ -75,6 +79,9 @@ abstract final class AppRoutes {
 
   /// Privacy policy.
   static const privacy = '/settings/privacy';
+
+  /// iOS-only app-owned iCloud storage selection.
+  static const storageLocation = '/settings/storage-location';
 
   /// Name of the `:id` path parameter shared by the templated routes.
   static const idParameter = 'id';
@@ -97,16 +104,26 @@ abstract final class AppRoutes {
     unlock,
     home,
     scan,
-    scanReview,
-    scanEnhance,
-    scanPreview,
     documents,
     folders,
     search,
     favourites,
     archive,
+    trash,
     settings,
     about,
     privacy,
   ];
+
+  /// Routes that are registered only when the platform supports them.
+  static const iosOnly = <String>[storageLocation];
+}
+
+/// Typed iOS storage-location destination.
+class StorageLocationRoute {
+  /// Creates the destination value.
+  const StorageLocationRoute();
+
+  /// Stable route location.
+  String get location => AppRoutes.storageLocation;
 }

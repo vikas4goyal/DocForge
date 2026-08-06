@@ -10,8 +10,8 @@
 /// share; it only describes one that has been asked for (`design.md` §27).
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
 
 /// The form in which a document's content is handed to the system.
 enum ShareFormat {
@@ -115,7 +115,7 @@ abstract final class ShareRules {
   /// available; the control is disabled and labelled, which is the option a
   /// screen reader can convey without the user having to activate it first.
   static bool canShareText(Document document, String recognisedText) =>
-      document.hasRecognisedText && recognisedText.trim().isNotEmpty;
+      recognisedText.trim().isNotEmpty;
 
   /// The pages of a document in the order they must be shared.
   ///

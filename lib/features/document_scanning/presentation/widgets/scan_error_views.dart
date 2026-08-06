@@ -5,9 +5,9 @@
 /// rather than a generic retry.
 library;
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/features/document_scanning/presentation/scan_keys.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/scan_keys.dart';
 import 'package:flutter/material.dart';
 
 /// Shown when camera permission has been refused.
@@ -44,7 +44,7 @@ class ScanPermissionDeniedView extends StatelessWidget {
       // States what the permission is for, not merely that it is missing. A
       // user deciding whether to grant it needs the reason.
       message:
-          'DocForge uses the camera only to capture the pages you scan. '
+          'DocScanly uses the camera only to capture the pages you scan. '
           'Nothing is uploaded, and images stay on this device.',
       colour: theme.colorScheme.primary,
       actions: [

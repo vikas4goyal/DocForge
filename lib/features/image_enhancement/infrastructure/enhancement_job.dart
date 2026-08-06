@@ -11,10 +11,11 @@ library;
 
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_maths.dart';
-import 'package:doc_forge/features/image_enhancement/domain/enhancement_rules.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_maths.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:image/image.dart' as img;
 
 /// JPEG quality used for an enhanced page.
@@ -40,7 +41,13 @@ const previewQuality = 80;
 /// one page's memory rather than fifty.
 String enhancePageJob(EnhancementRequest request) {
   final settings = EnhancementRules.clamp(request.settings);
-  final bytes = File(request.sourcePath).readAsBytesSync();
+
+  // Previews read a cached downscaled copy rather than the capture itself.
+  // Decoding a ~12 megapixel JPEG only to shrink it to the preview bound cost
+  // more than the filtering did, and it was paid again on every slider
+  // movement — which is what made the enhance screen feel stuck.
+  final readPath = _sourceForRequest(request);
+  final bytes = File(readPath).readAsBytesSync();
   final decoded = img.decodeImage(bytes);
 
   if (decoded == null) {
@@ -57,7 +64,10 @@ String enhancePageJob(EnhancementRequest request) {
   // original file is copied instead of rewritten.
   if (!EnhancementRules.requiresProcessing(settings)) {
     if (identical(source, decoded)) {
-      File(request.sourcePath).copySync(request.destinationPath);
+      // Copies whatever was actually read: for a preview that is the working
+      // copy, so an unfiltered preview does not hand the UI the full-resolution
+      // capture to decode and display.
+      File(readPath).copySync(request.destinationPath);
     } else {
       File(
         request.destinationPath,
@@ -132,6 +142,48 @@ img.Image enhance(img.Image source, EnhancementSettings settings) {
   return working;
 }
 
+/// The path a request should actually decode.
+///
+/// A full-resolution render reads the capture. A preview reads a downscaled
+/// working copy kept beside it, creating that copy the first time it is asked
+/// for. Every later preview of the same page then decodes roughly one megapixel
+/// instead of twelve, which is the difference between a slider that tracks the
+/// finger and one that does not.
+///
+/// The working copy is derived data: if anything goes wrong producing it, the
+/// capture is used directly. A slow preview is worth far more than a failed one.
+String _sourceForRequest(EnhancementRequest request) {
+  final maxDimension = request.maxDimension;
+  if (maxDimension == null) return request.sourcePath;
+
+  final source = File(request.sourcePath);
+  final working = File('${request.sourcePath}.work.jpg');
+
+  try {
+    // Regenerated when the capture is newer, so a re-crop of the same page
+    // cannot leave a stale working copy behind for the enhance screen to show.
+    if (working.existsSync() &&
+        !working.lastModifiedSync().isBefore(source.lastModifiedSync())) {
+      return working.path;
+    }
+
+    final decoded = img.decodeImage(source.readAsBytesSync());
+    if (decoded == null) return request.sourcePath;
+
+    final scaled = _downscaled(decoded, maxDimension);
+    if (identical(scaled, decoded)) {
+      // Already within the bound — a working copy would be a second file with
+      // nothing to offer over the original.
+      return request.sourcePath;
+    }
+
+    working.writeAsBytesSync(img.encodeJpg(scaled, quality: previewQuality));
+    return working.path;
+  } on Object {
+    return request.sourcePath;
+  }
+}
+
 /// Returns [source] scaled so its longest edge is at most [maxDimension].
 ///
 /// Returns [source] itself when no downscale is needed, which the caller uses
@@ -151,16 +203,6 @@ img.Image _downscaled(img.Image source, int? maxDimension) {
   );
 }
 
-/// Reads the four channel values at ([x], [y]) as plain numbers.
-///
-/// Values are read out immediately rather than the pixel being held, because
-/// `getPixel` returns a live view into the image's own buffer: keeping two of
-/// them would leave both aliasing whatever was read last.
-({num r, num g, num b, num a}) _channelsAt(img.Image source, int x, int y) {
-  final pixel = source.getPixel(x, y);
-  return (r: pixel.r, g: pixel.g, b: pixel.b, a: pixel.a);
-}
-
 /// Builds a blurred luminance map of [source] with the given [radius].
 ///
 /// Returned as a flat `Float64List`-shaped list rather than an image because
@@ -172,19 +214,23 @@ img.Image _downscaled(img.Image source, int? maxDimension) {
 /// naive two-dimensional box blur costs `radius²` reads per pixel, which at the
 /// radii shadow removal needs — a twentieth of the page — makes a
 /// full-resolution page take minutes rather than moments.
-List<double> _boxBlurLuminance(img.Image source, int radius) {
+Float64List _boxBlurLuminance(img.Image source, int radius) {
   final width = source.width;
   final height = source.height;
-  final luminance = List<double>.filled(width * height, 0);
 
-  for (var y = 0; y < height; y++) {
-    for (var x = 0; x < width; x++) {
-      final c = _channelsAt(source, x, y);
-      luminance[y * width + x] = EnhancementMaths.luminance(c.r, c.g, c.b);
-    }
+  // Float64List rather than List<double>: a plain list of doubles stores boxed
+  // values, so every read and write of these three page-sized buffers costs a
+  // pointer dereference and every write an allocation. A typed list holds the
+  // bits inline. Same arithmetic, same results — this is the single cheapest
+  // change in the pipeline.
+  final luminance = Float64List(width * height);
+
+  var index = 0;
+  for (final pixel in source) {
+    luminance[index++] = EnhancementMaths.luminance(pixel.r, pixel.g, pixel.b);
   }
 
-  final horizontal = List<double>.filled(width * height, 0);
+  final horizontal = Float64List(width * height);
   for (var y = 0; y < height; y++) {
     final row = y * width;
     var sum = 0.0;
@@ -205,7 +251,7 @@ List<double> _boxBlurLuminance(img.Image source, int radius) {
     }
   }
 
-  final blurred = List<double>.filled(width * height, 0);
+  final blurred = Float64List(width * height);
   for (var x = 0; x < width; x++) {
     var sum = 0.0;
     for (var offset = -radius; offset <= radius; offset++) {
@@ -240,19 +286,31 @@ img.Image _map(
 ) {
   final output = img.Image(width: source.width, height: source.height);
 
-  for (var y = 0; y < source.height; y++) {
-    for (var x = 0; x < source.width; x++) {
-      final pixel = _channelsAt(source, x, y);
-      final mapped = transform(pixel, x, y);
-      output.setPixelRgba(x, y, mapped.r, mapped.g, mapped.b, pixel.a);
-    }
+  // Walked with the images' own iterators rather than by coordinate. `getPixel`
+  // and `setPixelRgba` re-derive a buffer offset from x and y on every call,
+  // where an iterator already holds one and advances it — and package:image
+  // reuses a single Pixel for the whole walk, so nothing is allocated per pixel
+  // either. On a multi-megapixel page that difference is the bulk of the time
+  // these filters spend.
+  final read = source.iterator;
+  final write = output.iterator;
+
+  while (read.moveNext() && write.moveNext()) {
+    final pixel = read.current;
+    final r = pixel.r;
+    final g = pixel.g;
+    final b = pixel.b;
+    final a = pixel.a;
+
+    final mapped = transform((r: r, g: g, b: b, a: a), pixel.x, pixel.y);
+    write.current.setRgba(mapped.r, mapped.g, mapped.b, a);
   }
 
   return output;
 }
 
 /// Divides out the uneven illumination described by [background].
-img.Image _removeShadows(img.Image source, List<double> background) {
+img.Image _removeShadows(img.Image source, Float64List background) {
   final width = source.width;
   final reference = EnhancementMaths.illuminationReference(background);
 
@@ -285,17 +343,16 @@ img.Image _grayscale(img.Image source) => _map(source, (pixel, _, _) {
 /// light has a blue channel that never reaches its maximum, and stretching each
 /// channel to its own bounds is what neutralises that.
 img.Image _autoEnhance(img.Image source) {
-  final red = List<int>.filled(256, 0);
-  final green = List<int>.filled(256, 0);
-  final blue = List<int>.filled(256, 0);
+  // Typed and iterated for the same reasons as the blur: this pass reads every
+  // pixel of the page, and it runs for the filter most pages are given.
+  final red = Int32List(256);
+  final green = Int32List(256);
+  final blue = Int32List(256);
 
-  for (var y = 0; y < source.height; y++) {
-    for (var x = 0; x < source.width; x++) {
-      final pixel = _channelsAt(source, x, y);
-      red[pixel.r.round().clamp(0, 255)]++;
-      green[pixel.g.round().clamp(0, 255)]++;
-      blue[pixel.b.round().clamp(0, 255)]++;
-    }
+  for (final pixel in source) {
+    red[pixel.r.round().clamp(0, 255)]++;
+    green[pixel.g.round().clamp(0, 255)]++;
+    blue[pixel.b.round().clamp(0, 255)]++;
   }
 
   final redBounds = EnhancementMaths.autoLevelBounds(red);
@@ -366,7 +423,7 @@ img.Image _magicColour(img.Image source) {
 }
 
 /// Reduces [source] to black and white against the local mean in [background].
-img.Image _blackAndWhite(img.Image source, List<double> background) {
+img.Image _blackAndWhite(img.Image source, Float64List background) {
   final width = source.width;
 
   return _map(source, (pixel, x, y) {
@@ -407,7 +464,7 @@ img.Image _brightnessContrast(
 /// One offset, derived from luminance, is added to all three channels. See
 /// [EnhancementMaths.unsharpOffset] for why sharpening each channel
 /// independently against a shared blur would distort colour.
-img.Image _sharpen(img.Image source, List<double> blurred, double amount) {
+img.Image _sharpen(img.Image source, Float64List blurred, double amount) {
   final width = source.width;
 
   return _map(source, (pixel, x, y) {

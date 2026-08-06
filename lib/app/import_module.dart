@@ -8,16 +8,17 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_import/application/usecases/import_usecases.dart';
-import 'package:doc_forge/features/document_import/domain/import_rules.dart';
-import 'package:doc_forge/features/document_import/domain/repositories/import_repository.dart';
-import 'package:doc_forge/features/document_import/infrastructure/import_job.dart';
-import 'package:doc_forge/features/document_import/infrastructure/repositories/platform_import_sources.dart';
-import 'package:doc_forge/features/document_viewer/domain/repositories/pdf_renderer.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_import/application/usecases/import_usecases.dart';
+import 'package:doc_scanly/features/document_import/domain/import_rules.dart';
+import 'package:doc_scanly/features/document_import/domain/repositories/import_repository.dart';
+import 'package:doc_scanly/features/document_import/infrastructure/import_job.dart';
+import 'package:doc_scanly/features/document_import/infrastructure/repositories/platform_import_sources.dart';
+import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
 
 /// Adapts a [PdfRenderer] into the [ImportedPdfInspector] import declares.
 ///
@@ -75,14 +76,14 @@ class ImportModule {
 
 /// Builds the import module.
 ///
-/// [documentsDirectory] is where an imported PDF is stored permanently and
-/// [cacheDirectory] is where imported images are staged until the review step
-/// turns them into a document. The split matters: a staged image that is never
-/// reviewed is disposable, and a stored PDF is not.
+/// [store] is the user-visible library an imported PDF is published into, and
+/// [cacheDirectory] is where imported images and partial copies are staged. The
+/// split matters: a staged file that is never reviewed is disposable and must
+/// never appear in the user's folder, and a published PDF is neither.
 ImportModule buildImportModule({
   required PdfRenderer renderer,
   required DocumentWriter documentWriter,
-  required Directory documentsDirectory,
+  required PublicFileStore store,
   required Directory cacheDirectory,
   required Clock clock,
   required IdGenerator ids,
@@ -110,7 +111,10 @@ ImportModule buildImportModule({
       ImportPdf(
         RendererPdfInspector(renderer),
         documentWriter,
-        (id) => '${documentsDirectory.path}/${id.value}.pdf',
+        // Staged in the cache, then published into the library: the folder is
+        // user-visible, so a partial copy must never land there.
+        (id) => '${cacheDirectory.path}/import/${id.value}.pdf',
+        store,
         clock,
         ids,
       ),

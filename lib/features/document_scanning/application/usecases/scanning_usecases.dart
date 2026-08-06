@@ -1,12 +1,12 @@
 /// Use cases for the scanning flow.
 library;
 
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/background_worker.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/features/document_scanning/domain/perspective_transform.dart';
-import 'package:doc_forge/features/document_scanning/domain/repositories/scanner_repository.dart';
-import 'package:doc_forge/features/document_scanning/domain/scan_session.dart';
+import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
 
 /// Captures one page and adds it to the session.
 class CapturePage {
@@ -26,7 +26,23 @@ class CapturePage {
   /// Only a path is ever held. The bytes are read by whichever step needs them
   /// and released again, which is what lets a long batch run on a low-end
   /// device without exhausting memory (`design.md` §7).
+  ///
+  /// Opens the camera first when it is not already open. The capture screen
+  /// opens it on mount, but the page table captures through this use case
+  /// without ever showing that screen — so leaving it to the caller meant "Add
+  /// page → Camera" failed with "capture before initialise" every time, staged
+  /// nothing, and added no page without saying why.
   Future<Result<CapturedPage>> call() async {
+    if (!_scanner.isReady) {
+      final opened = await _scanner.initialise();
+      // A permission refusal or an unopenable camera is reported as itself:
+      // the two lead to different recovery actions and must not be collapsed
+      // into a generic capture failure.
+      if (opened case Failed(:final failure)) {
+        return Result<CapturedPage>.failure(failure);
+      }
+    }
+
     final captured = await _scanner.capture();
 
     return captured.flatMapAsync((result) async {

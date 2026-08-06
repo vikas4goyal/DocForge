@@ -7,9 +7,9 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_import/domain/repositories/import_repository.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_import/domain/repositories/import_repository.dart';
 
 /// A [GalleryPicker] answering with a fixed selection.
 class FakeGalleryPicker implements GalleryPicker {

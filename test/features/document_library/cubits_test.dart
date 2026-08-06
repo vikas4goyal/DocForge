@@ -1,21 +1,22 @@
 import 'package:bloc_test/bloc_test.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/failure_messages.dart';
-import 'package:doc_forge/core/previews/fixtures/fixtures.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_lifecycle.dart';
-import 'package:doc_forge/features/document_library/application/usecases/document_queries.dart';
-import 'package:doc_forge/features/document_library/application/usecases/folder_usecases.dart';
-import 'package:doc_forge/features/document_library/domain/library_rules.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_detail_state.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/document_list_state.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/folder_cubit.dart';
-import 'package:doc_forge/features/document_library/presentation/cubit/folder_state.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/failure_messages.dart';
+import 'package:doc_scanly/core/previews/fixtures/fixtures.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_lifecycle.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/document_queries.dart';
+import 'package:doc_scanly/features/document_library/application/usecases/folder_usecases.dart';
+import 'package:doc_scanly/features/document_library/domain/library_rules.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_state.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/folder_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/folder_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes.dart';
@@ -29,6 +30,7 @@ void main() {
   late FakeFolderRepository folders;
   late FakePageRepository pages;
   late FakeDocumentFileStore files;
+  late InMemoryPublicFileStore store;
   late InMemorySecureStore secure;
   late Clock clock;
   late IdGenerator ids;
@@ -38,6 +40,10 @@ void main() {
     folders = FakeFolderRepository();
     pages = FakePageRepository();
     files = FakeDocumentFileStore();
+    store = InMemoryPublicFileStore();
+    // Duplicating reads the original's bytes, so the file has to be there:
+    // the record is an index entry and the library folder is the truth.
+    store.files[sampleDocument.relativePath] = 'pdf-bytes';
     secure = InMemorySecureStore();
     clock = FixedClock(_now);
     ids = SequentialIdGenerator(prefix: 'new');
@@ -58,18 +64,19 @@ void main() {
   DocumentDetailCubit buildDetail(DocumentId id) => DocumentDetailCubit(
     id,
     LoadDocumentDetail(documents, pages),
-    RenameDocument(documents, clock),
+    RenameDocument(documents, clock, store),
     MoveDocument(documents, clock),
     ToggleFavourite(documents, clock),
     ArchiveDocument(documents, clock),
     RestoreDocument(documents, clock),
-    DuplicateDocument(documents, pages, files, clock, ids),
-    PurgeDocument(documents, pages, files, secure),
+    DuplicateDocument(documents, pages, store, clock, ids),
+    PurgeDocument(documents, pages, store, files, secure),
+    loadFolderOptions: LoadFolderOptions(folders),
   );
 
   FolderCubit buildFolders() {
     final move = MoveDocument(documents, clock);
-    final purge = PurgeDocument(documents, pages, files, secure);
+    final purge = PurgeDocument(documents, pages, store, files, secure);
 
     return FolderCubit(
       LoadFolders(folders),
@@ -493,6 +500,82 @@ void main() {
       expect(copy.title, isNot(sampleDocument.title));
       // The screen still shows the original, which is what the user has open.
       expect(cubit.state.document?.id, sampleDocument.id);
+      await cubit.close();
+    });
+
+    blocTest<DocumentDetailCubit, DocumentDetailState>(
+      'folder options distinguish loading, ready, and current-folder exclusion',
+      setUp: () {
+        documents.documents[sampleDocument.id] = sampleDocument.copyWith(
+          folderId: sampleFolder.id,
+        );
+        folders.folders[sampleFolder.id] = sampleFolder;
+        final other = sampleFolder.copyWith(
+          id: const FolderId('other'),
+          name: 'Other',
+          relativePath: 'Other',
+        );
+        folders.folders[other.id] = other;
+      },
+      build: () => buildDetail(sampleDocument.id),
+      act: (cubit) async {
+        await cubit.load();
+        await cubit.loadMoveOptions();
+      },
+      verify: (cubit) {
+        expect(cubit.state.folderOptionsStatus, FolderOptionsStatus.ready);
+        expect(cubit.state.folderOptions.map((folder) => folder.name), [
+          'Other',
+        ]);
+      },
+    );
+
+    blocTest<DocumentDetailCubit, DocumentDetailState>(
+      'folder option failure remains retryable and retry recovers',
+      build: () => buildDetail(sampleDocument.id),
+      act: (cubit) async {
+        await cubit.load();
+        folders.failure = _storageFailure;
+        await cubit.loadMoveOptions();
+        folders.failure = null;
+        final other = sampleFolder.copyWith(
+          id: const FolderId('retry-folder'),
+          name: 'Retry folder',
+          relativePath: 'Retry folder',
+        );
+        folders.folders[other.id] = other;
+        await cubit.loadMoveOptions();
+      },
+      verify: (cubit) {
+        expect(cubit.state.folderOptionsStatus, FolderOptionsStatus.ready);
+        expect(cubit.state.folderOptions.single.name, 'Retry folder');
+      },
+    );
+
+    test('duplicate review cancellation creates nothing', () async {
+      final cubit = buildDetail(sampleDocument.id);
+      await cubit.load();
+      await cubit.beginDuplicate();
+
+      cubit.cancelDuplicate();
+
+      expect(cubit.state.duplicateStatus, DuplicateStatus.idle);
+      expect(documents.documents, hasLength(1));
+      await cubit.close();
+    });
+
+    test('repeated duplicate confirmation submits and returns once', () async {
+      final cubit = buildDetail(sampleDocument.id);
+      await cubit.load();
+      await cubit.beginDuplicate();
+
+      final first = cubit.confirmDuplicate();
+      final repeated = cubit.confirmDuplicate();
+      final results = await Future.wait([first, repeated]);
+
+      expect(results.whereType<Document>(), hasLength(1));
+      expect(documents.documents, hasLength(2));
+      expect(cubit.state.duplicateStatus, DuplicateStatus.succeeded);
       await cubit.close();
     });
 

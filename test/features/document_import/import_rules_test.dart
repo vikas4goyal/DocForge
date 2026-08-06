@@ -1,9 +1,9 @@
 /// Tests for the import domain rules.
 library;
 
-import 'package:doc_forge/core/contracts/models/scanned_page_bundle.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/features/document_import/domain/import_rules.dart';
+import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/features/document_import/domain/import_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

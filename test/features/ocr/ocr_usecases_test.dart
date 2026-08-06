@@ -1,16 +1,16 @@
 /// Tests the OCR use cases and the store contract.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/features/ocr/application/usecases/ocr_usecases.dart';
-import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
-import 'package:doc_forge/features/ocr/infrastructure/repositories/mlkit_ocr_repository.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/features/ocr/application/usecases/ocr_usecases.dart';
+import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/fake_ocr_repository.dart';
+import 'package:doc_scanly/features/ocr/infrastructure/repositories/mlkit_ocr_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _document = DocumentId('doc-1');

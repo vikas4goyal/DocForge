@@ -1,10 +1,11 @@
 /// Tests for the sharing domain rules.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Document doc({String title = 'Invoice', bool hasRecognisedText = false}) =>
@@ -15,7 +16,7 @@ Document doc({String title = 'Invoice', bool hasRecognisedText = false}) =>
       updatedAt: DateTime.utc(2026, 3, 14),
       pageCount: 3,
       sizeInBytes: 2048,
-      filePath: '/documents/a.pdf',
+      libraryPath: LibraryPath.parse('a.pdf'),
       hasRecognisedText: hasRecognisedText,
     );
 
@@ -40,8 +41,8 @@ void main() {
   });
 
   group('canShareText', () {
-    test('is false when the document has no recognised text', () {
-      expect(ShareRules.canShareText(doc(), 'anything'), isFalse);
+    test('is true when text exists despite stale document metadata', () {
+      expect(ShareRules.canShareText(doc(), 'anything'), isTrue);
     });
 
     test('is false when the recognised text is blank', () {

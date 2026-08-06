@@ -1,36 +1,12 @@
-import 'package:doc_forge/app/router/app_router.dart';
-import 'package:doc_forge/app/router/app_routes.dart';
-import 'package:doc_forge/app/router/route_gates.dart';
-import 'package:doc_forge/core/contracts/models/ids.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/app/router/route_gates.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 
-/// A placeholder screen that announces which route rendered it.
-Widget marker(String name) => Scaffold(body: Center(child: Text(name)));
-
-/// Screens that render their own route name, so a test can assert on it.
-final testScreens = AppScreens(
-  onboarding: (_) => marker('onboarding'),
-  unlock: (_) => marker('unlock'),
-  home: (_) => marker('home'),
-  scan: (_) => marker('scan'),
-  scanReview: (_) => marker('scanReview'),
-  scanEnhance: (_) => marker('scanEnhance'),
-  scanPreview: (_) => marker('scanPreview'),
-  documents: (_) => marker('documents'),
-  documentDetail: (_, id) => marker('documentDetail:${id.value}'),
-  viewer: (_, id) => marker('viewer:${id.value}'),
-  documentEdit: (_, id) => marker('documentEdit:${id.value}'),
-  folders: (_) => marker('folders'),
-  folderDetail: (_, id) => marker('folderDetail:${id.value}'),
-  search: (_) => marker('search'),
-  favourites: (_) => marker('favourites'),
-  archive: (_) => marker('archive'),
-  settings: (_) => marker('settings'),
-  about: (_) => marker('about'),
-  privacy: (_) => marker('privacy'),
-);
+import '../../support/marker_screens.dart';
 
 /// Pumps the router at [location] with the given gate states.
 Future<GoRouter> pumpRouter(
@@ -38,13 +14,14 @@ Future<GoRouter> pumpRouter(
   String location = AppRoutes.home,
   bool locked = false,
   bool needsOnboarding = false,
+  bool includeStorageLocation = false,
 }) async {
   final router = createAppRouter(
     guard: RouteGuard(
       lockGate: FakeAppLockGate(isLocked: locked),
       onboardingGate: FakeOnboardingGate(needsOnboarding: needsOnboarding),
     ),
-    screens: testScreens,
+    screens: markerScreens(includeStorageLocation: includeStorageLocation),
     initialLocation: location,
   );
 
@@ -58,14 +35,12 @@ void main() {
     final expected = <String, String>{
       AppRoutes.home: 'home',
       AppRoutes.scan: 'scan',
-      AppRoutes.scanReview: 'scanReview',
-      AppRoutes.scanEnhance: 'scanEnhance',
-      AppRoutes.scanPreview: 'scanPreview',
       AppRoutes.documents: 'documents',
       AppRoutes.folders: 'folders',
       AppRoutes.search: 'search',
       AppRoutes.favourites: 'favourites',
       AppRoutes.archive: 'archive',
+      AppRoutes.trash: 'trash',
       AppRoutes.settings: 'settings',
       AppRoutes.about: 'about',
       AppRoutes.privacy: 'privacy',
@@ -125,6 +100,33 @@ void main() {
         '/documents/a/edit',
       );
       expect(AppRoutes.folderDetail(const FolderId('b')), '/folders/b');
+    });
+  });
+
+  group('iOS-only storage route', () {
+    testWidgets('is registered when iOS composition supplies the screen', (
+      tester,
+    ) async {
+      await pumpRouter(
+        tester,
+        location: AppRoutes.storageLocation,
+        includeStorageLocation: true,
+      );
+
+      expect(find.text('storageLocation'), findsOneWidget);
+    });
+
+    testWidgets('is absent from Android composition', (tester) async {
+      await pumpRouter(tester, location: AppRoutes.storageLocation);
+
+      expect(find.text('That page does not exist'), findsOneWidget);
+      expect(find.text('storageLocation'), findsNothing);
+    });
+
+    test('typed destination uses the stable location', () {
+      expect(const StorageLocationRoute().location, AppRoutes.storageLocation);
+      expect(AppRoutes.iosOnly, [AppRoutes.storageLocation]);
+      expect(AppRoutes.all, isNot(contains(AppRoutes.storageLocation)));
     });
   });
 

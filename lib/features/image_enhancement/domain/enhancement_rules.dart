@@ -5,7 +5,7 @@
 /// use case, and emits again.
 library;
 
-import 'package:doc_forge/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
 
 /// Rules for building and combining [EnhancementSettings].
 abstract final class EnhancementRules {

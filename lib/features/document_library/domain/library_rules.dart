@@ -5,7 +5,7 @@
 /// no storage, no clock, so each one is directly unit-testable.
 library;
 
-import 'package:doc_forge/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
 
 /// Why a proposed library operation was rejected.
 enum LibraryRuleViolation {
@@ -64,11 +64,13 @@ abstract final class DocumentRules {
     FolderMatcher? folderMatcher,
   }) {
     return switch (filter) {
-      DocumentFilter.all => !document.isArchived,
-      DocumentFilter.favourites => !document.isArchived && document.isFavourite,
-      DocumentFilter.archived => document.isArchived,
+      DocumentFilter.all => document.isVisibleInLibrary,
+      DocumentFilter.favourites =>
+        document.isVisibleInLibrary && document.isFavourite,
+      DocumentFilter.archived =>
+        document.trashId == null && document.isArchived,
       DocumentFilter.folder =>
-        !document.isArchived && (folderMatcher?.call(document) ?? false),
+        document.isVisibleInLibrary && (folderMatcher?.call(document) ?? false),
     };
   }
 

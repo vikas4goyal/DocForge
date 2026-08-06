@@ -75,3 +75,6 @@ build/
 # Environment
 .env
 .env.local
+/.junie/
+/ios/.bundle/
+/ios/vendor/

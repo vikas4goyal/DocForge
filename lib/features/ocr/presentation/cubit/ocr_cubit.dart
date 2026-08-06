@@ -7,15 +7,15 @@ library;
 
 import 'dart:async';
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/isolates/cancellation.dart';
-import 'package:doc_forge/features/ocr/application/usecases/ocr_usecases.dart';
-import 'package:doc_forge/features/ocr/domain/ocr_rules.dart';
-import 'package:doc_forge/features/ocr/domain/repositories/ocr_repository.dart';
-import 'package:doc_forge/features/ocr/presentation/cubit/ocr_state.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/features/ocr/application/usecases/ocr_usecases.dart';
+import 'package:doc_scanly/features/ocr/domain/ocr_rules.dart';
+import 'package:doc_scanly/features/ocr/domain/repositories/ocr_repository.dart';
+import 'package:doc_scanly/features/ocr/presentation/cubit/ocr_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Puts text on the system clipboard.

@@ -4,13 +4,13 @@
 /// is the only place allowed to do (`design.md` §5).
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/storage/key_value_store.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/app_settings/application/usecases/settings_usecases.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
-import 'package:doc_forge/features/app_settings/domain/repositories/settings_repository.dart';
-import 'package:doc_forge/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/app_settings/application/usecases/settings_usecases.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/domain/repositories/settings_repository.dart';
+import 'package:doc_scanly/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
 import 'package:flutter/material.dart';
 
 /// Everything settings exposes to the rest of the application.

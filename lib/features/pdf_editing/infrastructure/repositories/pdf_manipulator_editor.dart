@@ -13,10 +13,10 @@ library;
 
 import 'dart:io';
 
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/pdf_editing/domain/pdf_edit_rules.dart';
-import 'package:doc_forge/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
 import 'package:pdf_manipulator/io.dart';
 import 'package:pdf_manipulator/pdf_manipulator.dart';
 
@@ -115,7 +115,7 @@ class PdfManipulatorEditor implements PdfEditorRepository {
     String destinationPath, {
     required String password,
   }) => _run(destinationPath, (sink) async {
-    // The same password is both owner and user password. DocForge offers one
+    // The same password is both owner and user password. DocScanly offers one
     // password, and an owner password the user does not know would leave them
     // unable to remove the protection they added.
     await _pdf.encrypt(

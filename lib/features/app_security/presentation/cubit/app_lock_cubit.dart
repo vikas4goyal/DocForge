@@ -5,8 +5,8 @@
 /// domain layer and are unit-tested there.
 library;
 
-import 'package:doc_forge/features/app_security/application/usecases/app_lock_usecases.dart';
-import 'package:doc_forge/features/app_security/domain/app_lock.dart';
+import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
+import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

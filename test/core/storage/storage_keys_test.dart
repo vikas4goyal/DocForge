@@ -1,4 +1,4 @@
-import 'package:doc_forge/core/storage/storage_keys.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

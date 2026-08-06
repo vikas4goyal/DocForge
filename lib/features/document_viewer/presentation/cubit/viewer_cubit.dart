@@ -5,12 +5,12 @@
 /// unit-tested there.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/failures/failure.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/features/document_viewer/application/usecases/viewer_usecases.dart';
-import 'package:doc_forge/features/document_viewer/domain/repositories/pdf_renderer.dart';
-import 'package:doc_forge/features/document_viewer/presentation/cubit/viewer_state.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/document_viewer/application/usecases/viewer_usecases.dart';
+import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/cubit/viewer_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Drives the document viewer.
@@ -102,6 +102,7 @@ class ViewerCubit extends Cubit<ViewerState> {
       state.copyWith(
         status: ViewerStatus.ready,
         document: viewable.document,
+        filePath: viewable.filePath,
         pageCount: viewable.pageCount,
         password: viewable.password,
         page: ViewerRules.clampPage(state.page, pageCount: viewable.pageCount),

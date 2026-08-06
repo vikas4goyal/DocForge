@@ -1,9 +1,9 @@
-import 'package:doc_forge/app/app.dart';
-import 'package:doc_forge/app/composition_root.dart';
-import 'package:doc_forge/app/router/app_router.dart';
-import 'package:doc_forge/app/router/app_routes.dart';
-import 'package:doc_forge/app/router/route_gates.dart';
-import 'package:doc_forge/core/theme/theme_mode_controller.dart';
+import 'package:doc_scanly/app/app.dart';
+import 'package:doc_scanly/app/fake_dependencies.dart';
+import 'package:doc_scanly/app/router/app_router.dart';
+import 'package:doc_scanly/app/router/app_routes.dart';
+import 'package:doc_scanly/app/router/route_gates.dart';
+import 'package:doc_scanly/core/theme/theme_mode_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -18,9 +18,6 @@ AppScreens _screens() {
     unlock: (_) => page('unlock'),
     home: (_) => page('home'),
     scan: (_) => page('scan'),
-    scanReview: (_) => page('scanReview'),
-    scanEnhance: (_) => page('scanEnhance'),
-    scanPreview: (_) => page('scanPreview'),
     documents: (_) => page('documents'),
     documentDetail: (_, _) => page('documentDetail'),
     viewer: (_, _) => page('viewer'),
@@ -30,6 +27,7 @@ AppScreens _screens() {
     search: (_) => page('search'),
     favourites: (_) => page('favourites'),
     archive: (_) => page('archive'),
+    trash: (_) => page('trash'),
     settings: (_) => page('settings'),
     about: (_) => page('about'),
     privacy: (_) => page('privacy'),
@@ -59,7 +57,7 @@ void main() {
   Widget build({Brightness platformBrightness = Brightness.light}) =>
       MediaQuery(
         data: MediaQueryData(platformBrightness: platformBrightness),
-        child: DocForgeApp(
+        child: DocScanlyApp(
           dependencies: buildFakeAppDependencies(),
           router: router,
           themeMode: themeMode,

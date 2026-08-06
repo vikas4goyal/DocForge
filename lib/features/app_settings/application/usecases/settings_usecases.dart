@@ -1,12 +1,12 @@
 /// Use cases for reading and changing settings.
 library;
 
-import 'package:doc_forge/core/contracts/contracts.dart';
-import 'package:doc_forge/core/contracts/models/document.dart';
-import 'package:doc_forge/core/failures/result.dart';
-import 'package:doc_forge/core/time/clock.dart';
-import 'package:doc_forge/features/app_settings/domain/app_settings.dart';
-import 'package:doc_forge/features/app_settings/domain/repositories/settings_repository.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/domain/repositories/settings_repository.dart';
 
 /// Loads every setting.
 class LoadSettings {

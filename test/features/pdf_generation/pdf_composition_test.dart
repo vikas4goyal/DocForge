@@ -6,10 +6,10 @@
 /// itself is covered in `pdf_composer_test.dart`.
 library;
 
-import 'package:doc_forge/core/contracts/models/ids.dart';
-import 'package:doc_forge/core/contracts/models/page.dart';
-import 'package:doc_forge/core/contracts/models/recognised_text.dart';
-import 'package:doc_forge/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 PageRef page(String id, {PageRotation rotation = PageRotation.none}) =>
