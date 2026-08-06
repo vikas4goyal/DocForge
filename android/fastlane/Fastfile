@@ -33,6 +33,7 @@ platform :android do
     FIREBASE_APP_ID = firebase_client.dig("client_info", "mobilesdk_app_id")
     UI.user_error!("mobilesdk_app_id is missing from #{GSP_PATH}") if FIREBASE_APP_ID.to_s.empty?
     FIREBASE_CLI_TOKEN = ENV["FIREBASE_CLI_TOKEN"]
+    FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT = ENV["FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT"]
     GOOGLE_SERVICE_ACCOUNT_JSON_KEY_PATH = ENV["GOOGLE_SERVICE_ACCOUNT_JSON_KEY_PATH"]
     ANDROID_SIGNING_STORE_FILE = ENV["ANDROID_SIGNING_STORE_FILE"]
     ANDROID_SIGNING_STORE_PASSWORD = ENV["ANDROID_SIGNING_STORE_PASSWORD"]
@@ -53,15 +54,21 @@ platform :android do
 
   desc "Submit a new Beta Build to firebase"
   lane :release_firebase do
+    if FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT.to_s.empty?
+      UI.user_error!("Set FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT to upload Android builds to Firebase")
+    end
+    unless File.exist?(FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT)
+      UI.user_error!("FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT points at #{FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT}, which does not exist")
+    end
+
     firebase_app_distribution(
       app: FIREBASE_APP_ID,
       groups: "QA",
       # Firebase gets the staging APK; the Play Store gets the production AAB.
       # Both are built by the Release Firebase / Release PlayStore stages.
       apk_path: "../build/app/outputs/apk/release/app-release.apk",
-      firebase_cli_token: FIREBASE_CLI_TOKEN,
       googleservice_info_plist_path:GSP_PATH,
-      service_credentials_file:GOOGLE_SERVICE_ACCOUNT_JSON_KEY_PATH,
+      service_credentials_file:FIREBASE_DISTRIBUTION_SERVICE_ACCOUNT,
       debug: true
     )
     # sh "your_script.sh"
