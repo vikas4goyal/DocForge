@@ -250,7 +250,14 @@ platform :ios do
     bundleIdentifiers = [BUNDLE_ID]
     match(type: options[:certificate],
           app_identifier: bundleIdentifiers,
-          force_for_new_devices: true,
+          # Ad Hoc profiles must be recreated when the registered-device set
+          # changes. App Store profiles contain no devices, so Fastlane ignores
+          # this option for them and emits a warning if it is enabled.
+          force_for_new_devices: options[:certificate] == "adhoc",
+          # Keep the write-enabled maintenance lanes able to replace an expired
+          # signing certificate and regenerate profiles against the replacement.
+          # The fetch lanes used by normal CI remain readonly.
+          renew_expired_certs: true,
           keychain_password: KEYCHAIN_PASSWORD)
   end
 
