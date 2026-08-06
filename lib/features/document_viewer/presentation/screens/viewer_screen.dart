@@ -40,6 +40,9 @@ enum ViewerDocumentAction {
 
   /// Opens the focused set/remove password workflow.
   protection,
+
+  /// Opens contextual page selection and page-derived actions.
+  pageManagement,
 }
 
 /// Displays a document and offers the actions that act on it.
@@ -148,6 +151,14 @@ class ViewerScreen extends StatelessWidget {
                                 ? 'Remove password'
                                 : 'Set password',
                           ),
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        key: ViewerKeys.managePagesButton,
+                        value: ViewerDocumentAction.pageManagement,
+                        child: ListTile(
+                          leading: Icon(Icons.view_module_outlined),
+                          title: Text('Manage pages'),
                         ),
                       ),
                     ],

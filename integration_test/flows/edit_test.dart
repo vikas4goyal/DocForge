@@ -17,24 +17,45 @@ import 'package:integration_test/integration_test.dart';
 import '../support/app_boot.dart';
 import '../support/fixtures.dart';
 import '../support/robots/app_robots.dart';
+import '../support/robots/library_robots.dart';
+import '../support/robots/viewer_robots.dart';
 import '../support/seed.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('an edited document is written back to the library folder', (
-    tester,
-  ) async {
+  Future<FlowApp> openSourceInViewer(
+    WidgetTester tester, {
+    bool includeMergeCandidate = false,
+  }) async {
     final staging = await Directory.systemTemp.createTemp('docscanly_edit_');
     addTearDown(() {
       if (staging.existsSync()) staging.deleteSync(recursive: true);
     });
-    final importable = await Fixtures(staging).importable();
+    final fixtures = Fixtures(staging);
+    final source = await fixtures.sourceDocument();
+    final pickedFiles = <String>[source];
+    if (includeMergeCandidate) {
+      pickedFiles.add(await fixtures.importable());
+    }
 
-    final app = await bootDocScanly(tester, pickedFiles: [importable]);
+    final app = await bootDocScanly(tester, pickedFiles: pickedFiles);
     await seedDocumentByImport(tester);
+    final dashboard = DashboardRobot(tester);
+    await dashboard.waitUntilLoaded();
+    final sourceId = dashboard.visibleDocumentIds.first;
+    await dashboard.openDocument(sourceId);
+    final detail = DocumentDetailRobot(tester);
+    await detail.waitUntilVisible();
+    await detail.open();
+    await ViewerRobot(tester).waitUntilOpen();
+    return app;
+  }
 
-    await DashboardRobot(tester).waitUntilLoaded();
+  testWidgets('compression submits once and returns a visible result', (
+    tester,
+  ) async {
+    final app = await openSourceInViewer(tester);
 
     // The file as imported. The editor writes through a working directory and
     // then replaces the published file, so "the saved result changed" is a
@@ -45,5 +66,76 @@ void main() {
       isTrue,
       reason: 'The imported document must be in the library before editing.',
     );
+    await ViewerRobot(tester).openCompress();
+    final editor = PdfEditRobot(tester);
+    await editor.waitUntilFocused();
+    await editor.compress();
+    await editor.finishResult();
+    await DashboardRobot(tester).waitUntilLoaded();
+  });
+
+  testWidgets('split creates one reviewed two-output result', (tester) async {
+    await openSourceInViewer(tester);
+    await ViewerRobot(tester).openSplit();
+    final editor = PdfEditRobot(tester);
+    await editor.waitUntilSplitNaming();
+    await editor.split();
+    expect(find.text('2 documents created'), findsOneWidget);
+    await editor.finishResult();
+    await DashboardRobot(tester).waitUntilLoaded();
+  });
+
+  testWidgets('watermark and protect each show their completed result', (
+    tester,
+  ) async {
+    await openSourceInViewer(tester);
+    final viewer = ViewerRobot(tester);
+    await viewer.openWatermark();
+    var editor = PdfEditRobot(tester);
+    await editor.waitUntilFocused();
+    await editor.watermarkWith('CONFIDENTIAL');
+    await editor.finishResult();
+    await DashboardRobot(tester).waitUntilLoaded();
+
+    // Re-enter the now-watermarked source and apply password protection.
+    final dashboard = DashboardRobot(tester);
+    await dashboard.openDocument(dashboard.visibleDocumentIds.single);
+    final detail = DocumentDetailRobot(tester);
+    await detail.waitUntilVisible();
+    await detail.open();
+    await viewer.waitUntilOpen();
+    await viewer.openPassword();
+    editor = PdfEditRobot(tester);
+    await editor.waitUntilFocused();
+    await editor.protectWith('secret12');
+    await editor.finishResult();
+    await DashboardRobot(tester).waitUntilLoaded();
+  });
+
+  testWidgets('page extraction creates one derived-document result', (
+    tester,
+  ) async {
+    await openSourceInViewer(tester);
+    await ViewerRobot(tester).openPageManagement();
+    final editor = PdfEditRobot(tester);
+    await editor.waitUntilLoaded();
+    await editor.selectPage(0);
+    await editor.extractSelected();
+    expect(find.text('Document created'), findsOneWidget);
+    await editor.finishResult();
+    await DashboardRobot(tester).waitUntilLoaded();
+  });
+
+  testWidgets('merge creates one reviewed output from two PDFs', (
+    tester,
+  ) async {
+    await openSourceInViewer(tester, includeMergeCandidate: true);
+    await ViewerRobot(tester).openPageManagement();
+    final editor = PdfEditRobot(tester);
+    await editor.waitUntilLoaded();
+    await editor.merge();
+    expect(find.text('Document created'), findsOneWidget);
+    await editor.finishResult();
+    await DashboardRobot(tester).waitUntilLoaded();
   });
 }

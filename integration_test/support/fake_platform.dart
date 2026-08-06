@@ -23,6 +23,7 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
 import 'package:doc_scanly/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
 import 'package:doc_scanly/features/document_import/infrastructure/repositories/fake_import_sources.dart';
@@ -103,6 +104,7 @@ class FakePlatform {
 ///
 /// [exportDestination] is where an export lands. Null means the user dismissed
 /// the destination chooser.
+/// [shareFailure] and [exportFailure] exercise deterministic recovery paths.
 ///
 /// [unlocksSuccessfully] decides what the biometric prompt would have answered.
 /// A flow proving the lock actually locks sets it false.
@@ -113,6 +115,8 @@ FakePlatform buildFakePlatform({
   List<String> pickedFiles = const [],
   List<String> pendingSharedContent = const [],
   String? exportDestination,
+  Failure? shareFailure,
+  Failure? exportFailure,
   bool unlocksSuccessfully = true,
 }) {
   return FakePlatform(
@@ -136,9 +140,12 @@ FakePlatform buildFakePlatform({
           ? AuthOutcome.succeeded
           : AuthOutcome.rejected,
     ),
-    share: FakeShareRepository(),
+    share: FakeShareRepository(failure: shareFailure),
     printer: FakePrintRepository(),
-    exportPicker: FakeExportDestinationPicker(destination: exportDestination),
+    exportPicker: FakeExportDestinationPicker(
+      destination: exportDestination,
+      failure: exportFailure,
+    ),
     gallery: FakeGalleryPicker(paths: galleryImages),
     files: FakeFileBrowser(paths: pickedFiles),
     sharedContent: FakeSharedContentSource(pendingPaths: pendingSharedContent),

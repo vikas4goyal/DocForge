@@ -92,6 +92,10 @@ class ViewerRobot extends Robot {
   Future<void> openPassword() =>
       _openOperation(ViewerKeys.passwordButton, 'opening password settings');
 
+  /// Opens contextual page selection for derived page operations.
+  Future<void> openPageManagement() =>
+      _openOperation(ViewerKeys.managePagesButton, 'opening page management');
+
   Future<void> _openOperation(Key key, String description) =>
       step(description, () async {
         await waitUntilVisible();
@@ -193,7 +197,61 @@ class PdfEditRobot extends Robot {
           PdfEditKeys.progress,
           timeout: const Duration(seconds: 60),
         );
+        await waitFor(PdfEditKeys.result);
       });
+
+  /// Confirms focused compression once and waits for its visible result.
+  Future<void> compress() => step('compressing the document once', () async {
+    await tap(PdfEditKeys.compressButton);
+    await waitFor(PdfEditKeys.review);
+    await tap(PdfEditKeys.confirm);
+    await waitFor(PdfEditKeys.result, timeout: const Duration(seconds: 60));
+  });
+
+  /// Reviews both split names and creates the two outputs once.
+  Future<void> split() => step('splitting the document once', () async {
+    await tap(PdfEditKeys.splitConfirmButton);
+    await waitFor(PdfEditKeys.review);
+    await tap(PdfEditKeys.confirm);
+    await waitFor(PdfEditKeys.result, timeout: const Duration(seconds: 60));
+  });
+
+  /// Applies [text] as a watermark and waits for the in-place result.
+  Future<void> watermarkWith(String text) =>
+      step('watermarking the document once', () async {
+        await type(PdfEditKeys.watermarkTextField, text);
+        await tap(PdfEditKeys.watermarkConfirmButton);
+        await waitFor(PdfEditKeys.review);
+        await tap(PdfEditKeys.confirm);
+        await waitFor(PdfEditKeys.result, timeout: const Duration(seconds: 60));
+      });
+
+  /// Extracts the selected pages and waits for the derived document result.
+  Future<void> extractSelected() =>
+      step('extracting the selected pages once', () async {
+        if (has(PdfEditKeys.actionsMenu)) await tap(PdfEditKeys.actionsMenu);
+        await tap(PdfEditKeys.extractButton);
+        await waitFor(PdfEditKeys.review);
+        await tap(PdfEditKeys.confirm);
+        await waitFor(PdfEditKeys.result, timeout: const Duration(seconds: 60));
+      });
+
+  /// Merges the current PDF with every initially selected candidate.
+  Future<void> merge() => step('merging the selected documents once', () async {
+    await tester.ensureVisible(find.byKey(PdfEditKeys.mergeConfirmButton));
+    await tester.pump();
+    await tap(PdfEditKeys.mergeConfirmButton);
+    await waitFor(PdfEditKeys.operationSheet);
+    await tap(PdfEditKeys.inputContinue);
+    await waitFor(PdfEditKeys.review);
+    await tap(PdfEditKeys.confirm);
+    await waitFor(PdfEditKeys.result, timeout: const Duration(seconds: 60));
+  });
+
+  /// Finishes a visible derived-document result.
+  Future<void> finishResult() => step('finishing the edit result', () async {
+    await tap(PdfEditKeys.resultDone);
+  });
 
   /// Closes the editor and returns to the viewer.
   Future<void> close() => step('closing the editor', () async {
@@ -243,6 +301,26 @@ class ShareRobot extends Robot {
     await tap(ShareKeys.exportButton);
     await _waitUntilHandedOver();
   });
+
+  /// Cancels export without presenting the cancellation as an error.
+  Future<void> cancelExport() => step('cancelling export', () async {
+    await waitUntilVisible();
+    await tap(ShareKeys.exportButton);
+    await tester.pumpAndSettle();
+    expect(find.text('Export cancelled. No file was written.'), findsOneWidget);
+    expect(find.byKey(ShareKeys.errorView), findsNothing);
+  });
+
+  /// Observes an export failure and returns through its recovery control.
+  Future<void> recoverFromExportFailure() =>
+      step('recovering from export failure', () async {
+        await waitUntilVisible();
+        await tap(ShareKeys.exportButton);
+        await waitFor(ShareKeys.errorView);
+        await tap(ShareKeys.errorRetryButton);
+        await tester.pumpAndSettle();
+        await waitFor(ShareKeys.exportButton);
+      });
 
   /// Whether the removed extracted-text action has accidentally returned.
   bool get offersExtractedText => tester.any(find.text('Share extracted text'));

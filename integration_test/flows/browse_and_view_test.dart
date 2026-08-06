@@ -58,6 +58,11 @@ void main() {
 
     final detail = DocumentDetailRobot(tester);
     await detail.waitUntilVisible();
+    expect(
+      detail.pagePreviewCount,
+      greaterThan(0),
+      reason: 'Dashboard and Detail must both preview the imported PDF.',
+    );
     await detail.open();
 
     // The viewer renders through the real pdfrx surface, so reaching a page

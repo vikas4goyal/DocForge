@@ -156,6 +156,37 @@ Widget shareLoading() => _sheet(
   ),
 );
 
+/// The platform provider currently owns the export write.
+@Preview(name: 'Share — exporting', group: 'Sharing', theme: appPreviewTheme)
+Widget shareExporting() => _sheet(
+  _ready.copyWith(
+    status: ShareStatus.exporting,
+    action: ShareAction.export,
+    format: ShareFormat.pdf,
+  ),
+);
+
+/// A completed export with its destination confirmation.
+@Preview(name: 'Share — export done', group: 'Sharing', theme: appPreviewTheme)
+Widget shareExportDone() => _sheet(
+  _ready.copyWith(
+    status: ShareStatus.done,
+    action: ShareAction.export,
+    format: ShareFormat.pdf,
+    exportedTo: 'Downloads/Invoice 2026.pdf',
+  ),
+);
+
+/// A dismissed provider flow, which is explicitly not an error.
+@Preview(name: 'Share — cancelled', group: 'Sharing', theme: appPreviewTheme)
+Widget shareCancelled() => _sheet(
+  _ready.copyWith(
+    status: ShareStatus.cancelled,
+    action: ShareAction.export,
+    format: ShareFormat.pdf,
+  ),
+);
+
 /// A document with nothing to share as text — this sheet's empty state.
 @Preview(name: 'Share — empty', group: 'Sharing', theme: appPreviewTheme)
 Widget shareEmpty() =>

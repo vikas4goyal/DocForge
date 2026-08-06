@@ -18,6 +18,7 @@ import 'dart:io';
 import 'package:doc_scanly/app/app_dependencies.dart';
 import 'package:doc_scanly/app/doc_scanly.dart';
 import 'package:doc_scanly/app/fake_dependencies.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
@@ -113,6 +114,8 @@ Future<FlowApp> bootDocScanly(
   List<String> pickedFiles = const [],
   List<String> pendingSharedContent = const [],
   String? exportDestination,
+  Failure? shareFailure,
+  Failure? exportFailure,
   ICloudPlatformApi? iCloudPlatform,
   bool? isIOS,
   StorageLocation? storageLocation,
@@ -199,6 +202,8 @@ Future<FlowApp> bootDocScanly(
     pickedFiles: pickedFiles,
     pendingSharedContent: pendingSharedContent,
     exportDestination: exportDestination,
+    shareFailure: shareFailure,
+    exportFailure: exportFailure,
     unlocksSuccessfully: unlocksSuccessfully,
   );
 

@@ -13,6 +13,8 @@ import 'package:doc_scanly/app/router/app_router.dart';
 import 'package:doc_scanly/app/router/app_routes.dart';
 import 'package:doc_scanly/app/screens/screen_support.dart';
 import 'package:doc_scanly/app/sharing_module.dart';
+import 'package:doc_scanly/core/contracts/contracts.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/failures/failure_messages.dart';
 import 'package:doc_scanly/core/failures/result.dart';
@@ -123,6 +125,7 @@ ViewerScreens buildViewerScreens({
                 editing,
                 documentFiles,
                 id,
+                documentReader: library.documentReader,
                 initialOperation: PdfEditOperation.compress,
               );
             case ViewerDocumentAction.split:
@@ -131,6 +134,7 @@ ViewerScreens buildViewerScreens({
                 editing,
                 documentFiles,
                 id,
+                documentReader: library.documentReader,
                 initialOperation: PdfEditOperation.split,
               );
             case ViewerDocumentAction.watermark:
@@ -139,6 +143,7 @@ ViewerScreens buildViewerScreens({
                 editing,
                 documentFiles,
                 id,
+                documentReader: library.documentReader,
                 initialOperation: PdfEditOperation.watermark,
               );
             case ViewerDocumentAction.protection:
@@ -147,7 +152,16 @@ ViewerScreens buildViewerScreens({
                 editing,
                 documentFiles,
                 id,
+                documentReader: library.documentReader,
                 initialOperation: PdfEditOperation.protect,
+              );
+            case ViewerDocumentAction.pageManagement:
+              openEditor(
+                context,
+                editing,
+                documentFiles,
+                id,
+                documentReader: library.documentReader,
               );
           }
         },
@@ -167,46 +181,58 @@ Future<void> openEditor(
   PdfEditingModule editing,
   DocumentFileResolver documentFiles,
   DocumentId id, {
+  required DocumentReader documentReader,
   PdfEditOperation? initialOperation,
-}) => Navigator.of(context).push<void>(
-  MaterialPageRoute(
-    builder: (routeContext) => BlocProvider(
-      create: (_) => PdfEditCubit(id, editing.useCases, documentFiles)..load(),
-      child: Builder(
-        builder: (screenContext) {
-          final path = screenContext.watch<PdfEditCubit>().state.filePath;
+}) async {
+  final available = await documentReader.query();
+  if (!context.mounted) return;
+  final mergeCandidates = [
+    for (final document in available.valueOrNull ?? const <Document>[])
+      if (document.id != id && !document.isArchived) document,
+  ];
 
-          return PdfEditScreen(
-            initialOperation: initialOperation,
-            // The real thumbnail is a rendered PDF page. Supplied here rather
-            // than by the screen, because rendering is plugin-backed and a
-            // screen that built its own could be neither previewed nor tested.
-            thumbnailBuilder: (context, index) => path == null
-                ? const ColoredBox(color: Color(0xFFE0E0E0))
-                : PdfDocumentViewBuilder.file(
-                    path,
-                    builder: (context, document) => document == null
-                        ? const ColoredBox(color: Color(0xFFE0E0E0))
-                        : PdfPageView(
-                            document: document,
-                            pageNumber: index + 1,
-                          ),
-                  ),
-            onClose: () => Navigator.of(routeContext).pop(),
-            onDone: () {
-              Navigator.of(routeContext).pop();
-              context.go(AppRoutes.home);
-            },
-            onDerived: (document) {
-              Navigator.of(routeContext).pop();
-              context.go(AppRoutes.documentDetail(document.id));
-            },
-          );
-        },
+  return Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (routeContext) => BlocProvider(
+        create: (_) =>
+            PdfEditCubit(id, editing.useCases, documentFiles)..load(),
+        child: Builder(
+          builder: (screenContext) {
+            final path = screenContext.watch<PdfEditCubit>().state.filePath;
+
+            return PdfEditScreen(
+              initialOperation: initialOperation,
+              mergeCandidates: mergeCandidates,
+              // The real thumbnail is a rendered PDF page. Supplied here rather
+              // than by the screen, because rendering is plugin-backed and a
+              // screen that built its own could be neither previewed nor tested.
+              thumbnailBuilder: (context, index) => path == null
+                  ? const ColoredBox(color: Color(0xFFE0E0E0))
+                  : PdfDocumentViewBuilder.file(
+                      path,
+                      builder: (context, document) => document == null
+                          ? const ColoredBox(color: Color(0xFFE0E0E0))
+                          : PdfPageView(
+                              document: document,
+                              pageNumber: index + 1,
+                            ),
+                    ),
+              onClose: () => Navigator.of(routeContext).pop(),
+              onDone: () {
+                Navigator.of(routeContext).pop();
+                context.go(AppRoutes.home);
+              },
+              onDerived: (document) {
+                Navigator.of(routeContext).pop();
+                context.go(AppRoutes.documentDetail(document.id));
+              },
+            );
+          },
+        ),
       ),
     ),
-  ),
-);
+  );
+}
 
 /// Opens the share options for [id] as a modal bottom sheet.
 ///

@@ -139,9 +139,10 @@ const hostStages = <Stage>[
 
 /// Returns the id of a device the flow suite can run on, or null.
 ///
-/// Prefers a physical device or simulator over anything else. Returns null
-/// rather than throwing when there is none, because a device-less run is a
-/// legitimate thing to do — it just is not a complete one.
+/// Prefers Android, then an iOS Simulator, and excludes physical iOS devices.
+///
+/// Returns null rather than throwing when neither supported gate is available,
+/// because a device-less run is legitimate — it is simply incomplete.
 Future<String?> findDevice() async {
   final result = await Process.run('flutter', [
     'devices',
@@ -152,20 +153,20 @@ Future<String?> findDevice() async {
 
   try {
     final devices = jsonDecode(result.stdout as String) as List<dynamic>;
+    String? iosSimulator;
     for (final entry in devices.cast<Map<String, dynamic>>()) {
       final platform = entry['targetPlatform'] as String? ?? '';
-      // Android and iOS only, which is also the only thing the project
-      // targets: a desktop or web device here would run a suite that cannot
-      // mean anything.
-      if (platform.startsWith('android') || platform.startsWith('ios')) {
+      if (platform.startsWith('android')) {
         return entry['id'] as String?;
       }
+      if (platform.startsWith('ios') && entry['emulator'] == true) {
+        iosSimulator ??= entry['id'] as String?;
+      }
     }
+    return iosSimulator;
   } on FormatException {
     return null;
   }
-
-  return null;
 }
 
 /// Every flow file, in a stable order.

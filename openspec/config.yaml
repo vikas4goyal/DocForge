@@ -219,8 +219,13 @@ context: |
   `tool/verify.dart` runs the pyramid in order — format, analyse, layering,
   platforms, Tier 1 + Tier 2, goldens, coverage, Tier 3 — exits non-zero on the
   first failure, and names the failing stage and, for Tier 3, the failing flow
-  and step. With no device attached it reports Tier 3 as SKIPPED and the overall
-  result as INCOMPLETE, never as passed.
+  and step. Tier 3 runs on an Android emulator, an attached Android device, or
+  an iOS Simulator; physical iOS devices are deliberately excluded from
+  verification. When the iOS Simulator cannot run the project's native
+  dependencies, record that local limitation and use the Android emulator or
+  device Tier-3 result as the device gate. With neither an Android emulator or
+  device nor a usable iOS Simulator available, Tier 3 is SKIPPED and the
+  overall result is INCOMPLETE, never passed.
   This is the command to run after implementing a change. Do not report a change
   as working on the strength of Tier 1 and Tier 2 alone — that is precisely the
   gap that let a broken user flow ship with 118 green test files.
@@ -345,8 +350,9 @@ rules:
       robot that drives them — in the same change.
     - "The final task of every change must be: run `tool/verify.dart` and report
       its per-stage result. The change is not done while any stage fails, and a
-      run that reports Tier 3 as SKIPPED (no device attached) does not count as
-      verified."
+      run that reports Tier 3 as SKIPPED (no Android emulator/device or usable
+      iOS Simulator available) does not count as verified. Physical iOS device
+      runs are not required."
     - Include a task for `@Preview()` entries whenever a widget or screen is
       added or changed.
     - Include a Cubit test task (bloc_test) for every Cubit added or changed.

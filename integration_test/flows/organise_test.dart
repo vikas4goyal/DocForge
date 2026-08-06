@@ -17,6 +17,7 @@ import 'package:integration_test/integration_test.dart';
 import '../support/app_boot.dart';
 import '../support/fixtures.dart';
 import '../support/robots/app_robots.dart';
+import '../support/robots/library_robots.dart';
 import '../support/seed.dart';
 
 void main() {
@@ -31,6 +32,23 @@ void main() {
     final importable = await Fixtures(staging).importable();
 
     final app = await bootDocScanly(tester, pickedFiles: [importable]);
+    await seedDocumentByImport(tester);
+    return app;
+  }
+
+  Future<FlowApp> bootWithTwoDocuments(WidgetTester tester) async {
+    final staging = await Directory.systemTemp.createTemp('docscanly_org_two_');
+    addTearDown(() {
+      if (staging.existsSync()) staging.deleteSync(recursive: true);
+    });
+    final fixtures = Fixtures(staging);
+    final app = await bootDocScanly(
+      tester,
+      pickedFiles: [
+        await fixtures.importable(),
+        await fixtures.sourceDocument(),
+      ],
+    );
     await seedDocumentByImport(tester);
     return app;
   }
@@ -102,4 +120,59 @@ void main() {
     final listed = await app.publicStore.list(const []);
     expect(listed.isSuccess, isTrue);
   });
+
+  testWidgets('search, clear and bulk archive keep a stable selection', (
+    tester,
+  ) async {
+    await bootWithTwoDocuments(tester);
+    final dashboard = DashboardRobot(tester);
+    await dashboard.waitUntilLoaded();
+    expect(dashboard.visibleDocumentIds, hasLength(2));
+
+    await dashboard.search('importable');
+    expect(dashboard.visibleDocumentIds, hasLength(1));
+    final foundId = dashboard.visibleDocumentIds.single;
+    await dashboard.openDocument(foundId);
+    await DocumentDetailRobot(tester).waitUntilVisible();
+    await tester.pageBack();
+    await dashboard.waitUntilLoaded();
+
+    await dashboard.clearSearch();
+    expect(dashboard.visibleDocumentIds, hasLength(2));
+    await dashboard.selectDocument(dashboard.visibleDocumentIds.first);
+    await dashboard.selectAll();
+    await dashboard.archiveSelection();
+    expect(dashboard.isEmpty, isTrue);
+  });
+
+  testWidgets(
+    'Detail discovers a folder, moves and duplicates once, then folder bulk Trash works',
+    (tester) async {
+      await bootWithTwoDocuments(tester);
+      final dashboard = DashboardRobot(tester);
+      await dashboard.waitUntilLoaded();
+      await dashboard.createFolder('Projects');
+
+      final movingId = dashboard.visibleDocumentIds.first;
+      await dashboard.openDocument(movingId);
+      final detail = DocumentDetailRobot(tester);
+      await detail.waitUntilVisible();
+      final folder = await detail.moveToFirstFolder();
+      await detail.duplicate(name: 'Reviewed copy', folderName: folder.name);
+
+      // Duplicate navigates once to the newly-created document's Detail.
+      await detail.waitUntilVisible();
+      expect(find.text('Reviewed copy'), findsWidgets);
+
+      await tester.pageBack();
+      await dashboard.waitUntilLoaded();
+      await dashboard.openFolder('Projects');
+      await dashboard.waitUntilLoaded();
+      expect(dashboard.visibleDocumentIds, hasLength(2));
+      await dashboard.selectDocument(dashboard.visibleDocumentIds.first);
+      await dashboard.selectAll();
+      await dashboard.trashSelection();
+      expect(dashboard.isEmpty, isTrue);
+    },
+  );
 }

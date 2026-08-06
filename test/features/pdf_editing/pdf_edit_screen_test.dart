@@ -18,6 +18,7 @@ import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/pdf_editing/application/atomic_pdf_write.dart';
 import 'package:doc_scanly/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/pdf_operation_workflow.dart';
 import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
@@ -679,6 +680,9 @@ void main() {
         ready.copyWith(
           derived: doc(title: 'Invoice (2 pages)'),
           derivedDocuments: [doc(title: 'Invoice (2 pages)')],
+          result: PdfOperationResult.derived(
+            documents: [doc(title: 'Invoice (2 pages)')],
+          ),
         ),
         onDerived: derived.add,
       );
@@ -687,6 +691,25 @@ void main() {
       await tester.tap(find.text('Open'));
       await tester.pumpAndSettle();
       expect(derived, hasLength(1));
+    });
+
+    testWidgets('reports a visible completion for an in-place edit', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        ready.copyWith(
+          result: PdfOperationResult.inPlace(
+            document: doc(),
+            message: 'Watermark completed.',
+          ),
+        ),
+      );
+
+      expect(find.byKey(PdfEditKeys.result), findsOneWidget);
+      expect(find.text('PDF updated'), findsOneWidget);
+      expect(find.text('Watermark completed.'), findsOneWidget);
+      expect(find.text('Open'), findsNothing);
     });
   });
 

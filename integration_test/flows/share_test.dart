@@ -13,6 +13,9 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/viewer_keys.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -25,6 +28,36 @@ import '../support/seed.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+
+  Future<FlowApp> openShareSheet(
+    WidgetTester tester, {
+    String? exportDestination,
+    Failure? exportFailure,
+  }) async {
+    final staging = await Directory.systemTemp.createTemp(
+      'docscanly_share_action_',
+    );
+    addTearDown(() {
+      if (staging.existsSync()) staging.deleteSync(recursive: true);
+    });
+    final importable = await Fixtures(staging).importable();
+    final app = await bootDocScanly(
+      tester,
+      pickedFiles: [importable],
+      exportDestination: exportDestination,
+      exportFailure: exportFailure,
+    );
+    await seedDocumentByImport(tester);
+    final dashboard = DashboardRobot(tester);
+    await dashboard.openDocument(dashboard.visibleDocumentIds.single);
+    final detail = DocumentDetailRobot(tester);
+    await detail.waitUntilVisible();
+    await detail.open();
+    final viewer = ViewerRobot(tester);
+    await viewer.waitUntilOpen();
+    await viewer.openShare();
+    return app;
+  }
 
   testWidgets('nothing is shared until the user asks for it', (tester) async {
     final staging = await Directory.systemTemp.createTemp('docscanly_share_');
@@ -73,5 +106,53 @@ void main() {
     expect(app.platform.share.shared, hasLength(1));
     expect(app.platform.share.shared.single.filePaths, hasLength(1));
     expect(app.platform.share.shared.single.text, isEmpty);
+
+    // The imported fixture contains embedded text. On a wide layout Viewer
+    // exposes that locally extracted text beside the same rendered PDF.
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(1180, 900);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.pumpAndSettle();
+    expect(find.byKey(ViewerKeys.textPanel), findsOneWidget);
+    expect(find.textContaining('DocScanly importable fixture'), findsOneWidget);
+  });
+
+  testWidgets('export writes once through the destination provider', (
+    tester,
+  ) async {
+    final destination = File(
+      '${Directory.systemTemp.path}/docscanly_export_flow.pdf',
+    );
+    if (destination.existsSync()) destination.deleteSync();
+    addTearDown(() {
+      if (destination.existsSync()) destination.deleteSync();
+    });
+
+    final app = await openShareSheet(
+      tester,
+      exportDestination: destination.path,
+    );
+    await ShareRobot(tester).export();
+
+    expect(destination.existsSync(), isTrue);
+    expect(app.platform.exportPicker.suggestions, hasLength(1));
+  });
+
+  testWidgets('cancelled export writes nothing and shows no error', (
+    tester,
+  ) async {
+    await openShareSheet(tester);
+    await ShareRobot(tester).cancelExport();
+  });
+
+  testWidgets('provider failure is stage-specific and recoverable', (
+    tester,
+  ) async {
+    await openShareSheet(
+      tester,
+      exportFailure: const Failure.export(debugDetail: 'provider denied write'),
+    );
+    await ShareRobot(tester).recoverFromExportFailure();
   });
 }

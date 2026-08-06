@@ -52,6 +52,9 @@ abstract final class ViewerKeys {
   /// The control that opens password settings.
   static const passwordButton = Key('viewer_password_button');
 
+  /// Opens page selection and page-derived actions.
+  static const managePagesButton = Key('viewer_manage_pages_button');
+
   /// The field for a protected document's password.
   static const passwordField = Key('viewer_password_field');
 

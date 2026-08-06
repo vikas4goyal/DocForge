@@ -147,6 +147,10 @@ void main() {
       await tester.tap(find.byKey(ViewerKeys.actionsMenu));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(ViewerKeys.compressButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.managePagesButton));
       await tester.pump();
 
       expect(shareCount, 1);
@@ -154,6 +158,7 @@ void main() {
       expect(actions, [
         ViewerDocumentAction.print,
         ViewerDocumentAction.compress,
+        ViewerDocumentAction.pageManagement,
       ]);
     });
 

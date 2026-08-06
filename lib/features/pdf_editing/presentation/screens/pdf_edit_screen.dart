@@ -51,10 +51,9 @@ class PdfEditScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocConsumer<PdfEditCubit, PdfEditState>(
       listenWhen: (previous, current) =>
-          previous.derivedDocuments != current.derivedDocuments &&
-          current.derivedDocuments.isNotEmpty,
+          previous.result != current.result && current.result != null,
       listener: (context, state) {
-        _showResult(context, state.derivedDocuments);
+        _showResult(context, state.result!);
       },
       builder: (context, state) {
         final cubit = context.read<PdfEditCubit>();
@@ -186,26 +185,38 @@ class PdfEditScreen extends StatelessWidget {
 
   Future<void> _showResult(
     BuildContext context,
-    List<Document> documents,
+    PdfOperationResult result,
   ) async {
+    final documents = switch (result) {
+      PdfInPlaceOperationResult(:final document) => [document],
+      PdfDerivedOperationResult(:final documents) => documents,
+    };
+    final isInPlace = result is PdfInPlaceOperationResult;
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
         key: PdfEditKeys.result,
         title: Text(
-          documents.length == 1
+          isInPlace
+              ? 'PDF updated'
+              : documents.length == 1
               ? 'Document created'
               : '${documents.length} documents created',
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (result case PdfInPlaceOperationResult(:final message?))
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(message),
+              ),
             for (final document in documents)
               ListTile(
                 title: Text(document.title),
                 subtitle: Text('${document.pageCount} pages'),
-                trailing: onDerived == null
+                trailing: isInPlace || onDerived == null
                     ? null
                     : TextButton(
                         onPressed: () {

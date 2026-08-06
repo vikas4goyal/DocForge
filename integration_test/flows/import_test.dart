@@ -18,6 +18,7 @@ import 'package:integration_test/integration_test.dart';
 import '../support/app_boot.dart';
 import '../support/fixtures.dart';
 import '../support/robots/app_robots.dart';
+import '../support/robots/library_robots.dart';
 import '../support/seed.dart';
 
 void main() {
@@ -42,7 +43,6 @@ void main() {
       isTrue,
       reason: 'The flow must start from an empty library to prove anything.',
     );
-
     await seedDocumentByImport(tester);
 
     expect(
@@ -51,6 +51,16 @@ void main() {
       reason:
           'The imported document should be in the library the user can see, '
           'not only in the database.',
+    );
+    final documentId = dashboard.visibleDocumentIds.single;
+    await dashboard.waitForDocumentThumbnail(documentId);
+    await dashboard.openDocument(documentId);
+    final detail = DocumentDetailRobot(tester);
+    await detail.waitUntilVisible();
+    expect(
+      detail.pagePreviewCount,
+      greaterThan(0),
+      reason: 'An imported PDF must expose its real page preview on Detail.',
     );
 
     // And genuinely written where another application could read it, which is

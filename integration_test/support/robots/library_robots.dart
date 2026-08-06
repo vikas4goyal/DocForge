@@ -152,21 +152,82 @@ class DocumentDetailRobot extends Robot {
         await waitUntilGone(LibraryKeys.documentMovePicker);
       });
 
-  /// Duplicates into [folderId] under the reviewed [name].
-  Future<void> duplicate({required String name, String? folderId}) =>
-      step('duplicating as "$name"', () async {
+  /// Opens the move picker, chooses its first real folder and returns its id.
+  ///
+  /// Tier-3 flows intentionally discover the id from the rendered destination
+  /// row instead of reaching into Isar. That proves a folder created elsewhere
+  /// in the UI is actually available from Detail.
+  Future<({String id, String name})> moveToFirstFolder() =>
+      step('moving to the first available folder', () async {
         await waitUntilVisible();
         await _openMenuIfPresent();
-        await tap(LibraryKeys.documentDuplicateButton);
-        await waitFor(LibraryKeys.documentDuplicateDialog);
-        await type(LibraryKeys.documentDuplicateName, name);
-        if (folderId != null) {
-          await tap(LibraryKeys.documentDuplicateFolder);
-          await tap(LibraryKeys.documentDuplicateFolderOption(folderId));
-        }
-        await tap(LibraryKeys.documentDuplicateConfirm);
-        await waitUntilGone(LibraryKeys.documentDuplicateDialog);
+        await tap(LibraryKeys.documentMoveButton);
+        await waitFor(LibraryKeys.documentMovePicker);
+        final keys = find
+            .byWidgetPredicate(
+              (widget) =>
+                  widget.key is ValueKey<String> &&
+                  (widget.key! as ValueKey<String>).value.startsWith(
+                    'document_move_folder_',
+                  ) &&
+                  (widget.key! as ValueKey<String>).value !=
+                      'document_move_folder_root',
+            )
+            .evaluate()
+            .map((element) => (element.widget.key! as ValueKey<String>).value)
+            .toSet()
+            .toList();
+        expect(
+          keys,
+          hasLength(1),
+          reason: 'The created folder must be discoverable from Detail.',
+        );
+        final folderId = keys.single.substring('document_move_folder_'.length);
+        final folderName = tester
+            .widgetList<Text>(
+              find.descendant(
+                of: find.byKey(LibraryKeys.documentMoveFolder(folderId)),
+                matching: find.byType(Text),
+              ),
+            )
+            .map((text) => text.data)
+            .whereType<String>()
+            .first;
+        await tap(LibraryKeys.documentMoveFolder(folderId));
+        await tap(LibraryKeys.documentMoveConfirm);
+        await waitUntilGone(LibraryKeys.documentMovePicker);
+        return (id: folderId, name: folderName);
       });
+
+  /// Duplicates into [folderId] under the reviewed [name].
+  Future<void> duplicate({
+    required String name,
+    String? folderId,
+    String? folderName,
+  }) => step('duplicating as "$name"', () async {
+    await waitUntilVisible();
+    await _openMenuIfPresent();
+    await tap(LibraryKeys.documentDuplicateButton);
+    await waitFor(LibraryKeys.documentDuplicateDialog);
+    await type(LibraryKeys.documentDuplicateName, name);
+    if (folderName != null) {
+      expect(
+        find.text(folderName),
+        findsWidgets,
+        reason: 'The reviewed duplicate destination must be visible.',
+      );
+    }
+    if (folderId != null) {
+      await tap(LibraryKeys.documentDuplicateFolder);
+      // Dropdown routes retain a copy of the selected item behind the
+      // overlay. The visible label is the actual tappable menu surface.
+      expect(folderName, isNotNull);
+      await tester.tap(find.text(folderName!).hitTestable().last);
+      await tester.pump();
+    }
+    await tap(LibraryKeys.documentDuplicateConfirm);
+    await waitUntilGone(LibraryKeys.documentDuplicateDialog);
+  });
 
   /// Archives the document.
   Future<void> archive() => step('archiving the document', () async {
@@ -201,6 +262,23 @@ class DocumentDetailRobot extends Robot {
 
   /// Whether the document is marked as password protected.
   bool get isProtected => has(LibraryKeys.documentProtectedBadge);
+
+  /// Number of rendered page previews on Detail.
+  int get pagePreviewCount => find
+      .byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith(
+              'page_thumbnail_',
+            ) &&
+            !(widget.key! as ValueKey<String>).value.startsWith(
+              'page_thumbnail_loading_',
+            ),
+      )
+      .evaluate()
+      .map((element) => (element.widget.key! as ValueKey<String>).value)
+      .toSet()
+      .length;
 
   /// Opens the overflow menu when the actions live behind one.
   ///
