@@ -95,12 +95,13 @@ pipeline {
     stage('Flutter Clean Build') {
       steps {
         sh 'flutter clean'
-        sh 'rm -rf ios/pods'
-        sh 'rm -rf ios/podfile.lock'
+        // CocoaPods is no longer used; iOS dependencies are resolved with SPM.
+        // sh 'rm -rf ios/pods'
+        // sh 'rm -rf ios/podfile.lock'
         sh 'flutter pub get'
-        dir(path: 'ios') {
-          sh 'pod install --repo-update'
-        }
+        // dir(path: 'ios') {
+        //   sh 'pod install --repo-update'
+        // }
         sh 'flutter build ios --release --no-codesign'
         sh 'flutter build appbundle --debug'
       }
@@ -154,7 +155,7 @@ pipeline {
               sh 'bundle exec fastlane update_plugins'
               sh 'bundle exec fastlane ios update_build_number --verbose'
               sh 'bundle exec fastlane ios fetch_adhoc_certificate --verbose'
-              sh 'pod install --repo-update'
+              // sh 'pod install --repo-update'
             }
             sh "flutter build ipa --dart-define=\"ENVIRONMENT=staging\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --export-options-plist=\"\$EXPORT_OPTION_AD_HOC\" --verbose"
             // `flutter build ipa` exits 0 even when xcodebuild prints
@@ -217,7 +218,7 @@ pipeline {
           steps {
             dir(path: 'ios') {
               sh 'bundle exec fastlane ios fetch_appstore_certificate --verbose'
-              sh 'pod install --repo-update'
+              // sh 'pod install --repo-update'
             }
             sh "flutter build ipa --dart-define=\"ENVIRONMENT=production\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --export-options-plist=\"\$EXPORT_OPTION_APP_STORE\" --verbose"
             sh 'ls build/ios/ipa/*.ipa >/dev/null 2>&1 || { echo "No IPA produced - look for \'** EXPORT FAILED **\' above"; exit 1; }'
