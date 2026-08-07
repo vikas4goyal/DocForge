@@ -49,6 +49,12 @@ pipeline {
     // profile / teamID, so use them directly and drop the lookup.
     EXPORT_OPTION_AD_HOC = "${WORKSPACE}/Jenkins/ios/export-options/ad-hoc.plist"
     EXPORT_OPTION_APP_STORE = "${WORKSPACE}/Jenkins/ios/export-options/app-store.plist"
+
+    // These values are compiled into the Flutter binary and attached to every
+    // Crashlytics event. Keep distribution channels explicit: Firebase Ad Hoc
+    // is staging, while TestFlight/App Store is production.
+    AD_HOC_APP_ENV = 'staging'
+    APP_STORE_APP_ENV = 'production'
   }
   stages {
     stage('Prepare Agent') {
@@ -158,7 +164,8 @@ pipeline {
               sh 'bundle exec fastlane ios fetch_adhoc_certificate --verbose'
               // sh 'pod install --repo-update'
             }
-            sh "flutter build ipa --dart-define=\"ENVIRONMENT=staging\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --export-options-plist=\"\$EXPORT_OPTION_AD_HOC\" --verbose"
+            sh 'test "$AD_HOC_APP_ENV" = staging && echo "Building iOS Ad Hoc environment: $AD_HOC_APP_ENV"'
+            sh "flutter build ipa --dart-define=\"ENVIRONMENT=\$AD_HOC_APP_ENV\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --export-options-plist=\"\$EXPORT_OPTION_AD_HOC\" --verbose"
             // `flutter build ipa` exits 0 even when xcodebuild prints
             // "** EXPORT FAILED **", so an export error would otherwise surface much
             // later as a confusing "couldn't find ipa" from the upload lane.
@@ -188,7 +195,8 @@ pipeline {
                     > key.properties
               '''
             }
-            sh "flutter build apk --dart-define=\"ENVIRONMENT=staging\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --verbose"
+            sh 'test "$AD_HOC_APP_ENV" = staging && echo "Building Android Firebase environment: $AD_HOC_APP_ENV"'
+            sh "flutter build apk --dart-define=\"ENVIRONMENT=\$AD_HOC_APP_ENV\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --verbose"
             dir(path: 'android') {
               sh 'bundle exec fastlane android release_firebase --verbose'
             }
@@ -221,7 +229,8 @@ pipeline {
               sh 'bundle exec fastlane ios fetch_appstore_certificate --verbose'
               // sh 'pod install --repo-update'
             }
-            sh "flutter build ipa --dart-define=\"ENVIRONMENT=production\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --export-options-plist=\"\$EXPORT_OPTION_APP_STORE\" --verbose"
+            sh 'test "$APP_STORE_APP_ENV" = production && echo "Building iOS App Store environment: $APP_STORE_APP_ENV"'
+            sh "flutter build ipa --dart-define=\"ENVIRONMENT=\$APP_STORE_APP_ENV\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --export-options-plist=\"\$EXPORT_OPTION_APP_STORE\" --verbose"
             sh 'ls build/ios/ipa/*.ipa >/dev/null 2>&1 || { echo "No IPA produced - look for \'** EXPORT FAILED **\' above"; exit 1; }'
             dir(path: 'ios') {
               sh 'bundle exec fastlane ios release_appstore --verbose'
@@ -243,7 +252,8 @@ pipeline {
                     > key.properties
               '''
             }
-            sh "flutter build aab --dart-define=\"ENVIRONMENT=production\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --verbose"
+            sh 'test "$APP_STORE_APP_ENV" = production && echo "Building Android Play Store environment: $APP_STORE_APP_ENV"'
+            sh "flutter build aab --dart-define=\"ENVIRONMENT=\$APP_STORE_APP_ENV\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --verbose"
             dir(path: 'android') {
               sh 'bundle exec fastlane android send_to_play_store --verbose'
             }

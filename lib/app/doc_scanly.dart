@@ -183,7 +183,9 @@ Future<Widget> buildDocScanly({
     final builtCloud = await buildCloudStorageModule(
       preferences: resolvedDependencies.preferences,
       documentsDirectory: resolvedDocuments,
-      platform: iCloudPlatform ?? const IosICloudChannel(),
+      platform:
+          iCloudPlatform ??
+          IosICloudChannel(telemetry: resolvedDependencies.telemetry),
     );
     if (builtCloud case Success(:final value)) {
       cloudStorage = value;

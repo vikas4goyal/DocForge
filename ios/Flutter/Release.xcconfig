@@ -1,1 +1,7 @@
 #include "Generated.xcconfig"
+
+// Isar is called through Dart FFI, so Xcode cannot see static references to
+// its exported functions. Retain the complete SwiftPM archive for lookup via
+// DynamicLibrary.process(). Profile and Release both use this configuration.
+OTHER_LDFLAGS = $(inherited) -Wl,-force_load,$(BUILT_PRODUCTS_DIR)/libisar.a
+DEAD_CODE_STRIPPING = NO

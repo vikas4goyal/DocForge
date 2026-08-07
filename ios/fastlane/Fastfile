@@ -5,25 +5,26 @@ EXPORT_OPTIONS_BY_TYPE = {
   "appstore" => { method: "app-store", file: "app-store.plist" }
 }.freeze
 
-# `flutter build ipa` names the artifact after CFBundleName, which drifts whenever
-# the display name changes. Resolve it by glob so a rename does not break the
-# upload lanes, and fail with the directory listing rather than a bare path.
-def resolve_ipa_path(preferred)
-  return preferred if File.exist?(preferred)
-
+# `flutter build ipa` derives the artifact name from application metadata.
+# Resolve the generated artifact without coupling CI to any product name.
+def resolve_ipa_path
   ipa_dir = File.join(REPO_ROOT, "build/ios/ipa")
   matches = Dir.glob(File.join(ipa_dir, "*.ipa"))
   if matches.empty?
     contents = Dir.exist?(ipa_dir) ? Dir.children(ipa_dir).join(", ") : "directory does not exist"
     UI.user_error!("No .ipa found in #{ipa_dir} (#{contents}). Did `flutter build ipa` run and export successfully?")
   end
-  UI.important("Expected #{preferred}, using #{matches.first} instead") if matches.size == 1
-  UI.important("Multiple ipas found, using #{matches.first}: #{matches.join(', ')}") if matches.size > 1
+  if matches.size > 1
+    UI.user_error!("Expected one .ipa in #{ipa_dir}, found: #{matches.join(', ')}")
+  end
   matches.first
 end
 
 platform :ios do
   private_lane :setup_variables do
+    # Resolve all artifacts from the repository root. Fastlane's working
+    # directory differs between local and Jenkins runs.
+    REPO_ROOT = File.expand_path("../..", FastlaneCore::FastlaneFolder.path)
     APPLE_ID = "6797710684"
     USERNAME = "admin.bruxkey@gmail.com"
     BUNDLE_ID = "com.bruxkey.docscanly"
@@ -32,11 +33,10 @@ platform :ios do
     WORKSPACE = "Runner.xcworkspace"
     SCHEME = "Runner"
     CONFIGURATION = "Release"
-    BUILD_DEBUG_SYMBOL_PATH = "../build/ios/archive/Runner.xcarchive/dSYMs/Runner.app.dSYM"
-    # Absolute, because fastlane's working directory is not ios/ for every action
-    # and a relative path here silently misses the artifact.
-    BUILD_BUILD_PATH = File.join(File.expand_path("../..", FastlaneCore::FastlaneFolder.path),
-                                 "build/ios/ipa/My Budget Assistant.ipa")
+    BUILD_DEBUG_SYMBOL_PATH = File.join(
+      REPO_ROOT,
+      "build/ios/archive/Runner.xcarchive/dSYMs/Runner.app.dSYM"
+    )
     BUILD_NUMBER_PATH = "../../Jenkins/build_number"
     BUILD_VERSION_PATH = "../../Jenkins/build_version"
     GSP_PATH = File.expand_path("../Runner/GoogleService-Info.plist", FastlaneCore::FastlaneFolder.path)
@@ -56,9 +56,6 @@ platform :ios do
     KEYCHAIN_PASSWORD = ENV["MAC_NODE_PASSWORD"]
     APPSTORE_API_KEY_ID = ENV["APPSTORE_API_KEY_ID"]
     APPSTORE_ISSUER_ID = ENV["APPSTORE_ISSUER_ID"]
-    # Resolve against the repo root rather than the working directory, which differs
-    # between a local `fastlane` run and the Jenkins pipeline.
-    REPO_ROOT = File.expand_path("../..", FastlaneCore::FastlaneFolder.path)
     APPSTORE_API_KEY_PATH = ENV["APPSTORE_API_KEY_PATH"] ||
       File.join(REPO_ROOT, "secure/IOS/API_KEY/AuthKey_#{APPSTORE_API_KEY_ID}.p8")
 
@@ -109,23 +106,36 @@ platform :ios do
     end
   end
 
+  private_lane :upload_crashlytics_symbols do
+    unless File.directory?(BUILD_DEBUG_SYMBOL_PATH)
+      UI.user_error!("Runner dSYM is missing at #{BUILD_DEBUG_SYMBOL_PATH}")
+    end
+
+    upload_symbols_binary = File.join(
+      REPO_ROOT,
+      "build/ios/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols"
+    )
+    unless File.file?(upload_symbols_binary)
+      UI.user_error!("Crashlytics upload-symbols is missing at #{upload_symbols_binary}")
+    end
+
+    uuids = sh("dwarfdump --uuid '#{BUILD_DEBUG_SYMBOL_PATH}'", log: false).strip
+    UI.message("Uploading Runner dSYM: #{uuids}")
+    upload_symbols_to_crashlytics(
+      dsym_path: BUILD_DEBUG_SYMBOL_PATH,
+      gsp_path: GSP_PATH,
+      binary_path: upload_symbols_binary,
+      app_id: FIREBASE_APP_ID
+    )
+  end
+
   desc "Upload app to Firebase"
   lane :release_firebase do
-    # The Flutter plugins resolve through Swift Package Manager now, so
-    # FirebaseCrashlytics no longer lands in ./Pods where the action looks by
-    # default. Resolve it from the Swift Package Manager checkout.
-    upload_symbols_binary = File.join(REPO_ROOT, "build/ios/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/upload-symbols")
-    UI.user_error!("Could not find the Crashlytics upload-symbols binary") if upload_symbols_binary.nil?
-
-    upload_symbols_to_crashlytics(
-                dsym_path: BUILD_DEBUG_SYMBOL_PATH,
-                 gsp_path: GSP_PATH,
-                 binary_path: upload_symbols_binary,
-                 app_id:FIREBASE_APP_ID)
+    upload_crashlytics_symbols
     release = firebase_app_distribution({
                 app: FIREBASE_APP_ID,
                 googleservice_info_plist_path: GSP_PATH,
-                ipa_path: resolve_ipa_path(BUILD_BUILD_PATH),
+                ipa_path: resolve_ipa_path,
                 debug: true,
                 groups: "QA"
             }.merge(firebase_auth_options))
@@ -149,6 +159,9 @@ platform :ios do
   desc "Upload app to appstore"
   lane :release_appstore do
 #     build_ipa_appstore
+    # TestFlight builds have a different Runner UUID from the earlier Ad Hoc
+    # archive, so their dSYM must be uploaded as part of this lane as well.
+    upload_crashlytics_symbols
     app_store_connect_api_key(
       key_id: APPSTORE_API_KEY_ID,
       issuer_id: APPSTORE_ISSUER_ID,
@@ -162,7 +175,7 @@ platform :ios do
       team_id: TEAMID,
       itc_provider:TEAMID,
       skip_waiting_for_build_processing: true,
-      ipa:resolve_ipa_path(BUILD_BUILD_PATH),
+      ipa:resolve_ipa_path,
       distribute_external: true,
       notify_external_testers: true,
       groups: ["QA","ExtQA"],

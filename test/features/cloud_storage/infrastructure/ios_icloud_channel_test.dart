@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/ios_icloud_channel.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -87,4 +89,37 @@ void main() {
     expect(calls.last.method, 'releaseImportFolder');
     expect(calls.last.arguments, {'paths': paths});
   });
+
+  test('startup reads fall back when native iCloud does not respond', () async {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(methods, (_) => Completer<Object?>().future);
+    const api = IosICloudChannel(
+      methods: methods,
+      events: events,
+      invocationTimeout: Duration(milliseconds: 10),
+    );
+
+    expect(await api.availability(), 'unavailable');
+    expect(await api.documentRootPath(), isNull);
+    expect(await api.readMarker(), isNull);
+  });
+
+  test(
+    'interactive and mutating calls are not limited by startup timeout',
+    () async {
+      final response = Completer<Object?>();
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(methods, (_) => response.future);
+      const api = IosICloudChannel(
+        methods: methods,
+        events: events,
+        invocationTimeout: Duration(milliseconds: 10),
+      );
+
+      final deletion = api.deleteMarker();
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      response.complete();
+      await deletion;
+    },
+  );
 }
