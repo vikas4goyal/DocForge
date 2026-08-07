@@ -869,7 +869,7 @@ class _SelectionPainter extends CustomPainter {
 }
 
 /// One draggable corner of the selection.
-class _CornerHandle extends StatelessWidget {
+class _CornerHandle extends StatefulWidget {
   const _CornerHandle({
     required this.corner,
     required this.quad,
@@ -888,38 +888,62 @@ class _CornerHandle extends StatelessWidget {
   static const _hitTarget = 64.0;
 
   @override
+  State<_CornerHandle> createState() => _CornerHandleState();
+}
+
+class _CornerHandleState extends State<_CornerHandle> {
+  Offset _grabOffset = Offset.zero;
+  Offset? _dragStartGlobal;
+  Offset? _dragStartCentre;
+  PageQuad? _dragStartQuad;
+  PageTransform? _dragStartTransform;
+
+  @override
   Widget build(BuildContext context) {
-    final centre = transform.toScreen(quad.corners[corner]);
+    final centre = widget.transform.toScreen(
+      widget.quad.corners[widget.corner],
+    );
 
     return Positioned(
-      // The hit area is 48dp square and centred on the corner, while the drawn
+      // The hit area is 64dp square and centred on the corner, while the drawn
       // handle is much smaller: a 24dp target under a fingertip is unusable,
       // and the accessibility baseline requires 48dp regardless.
-      left: centre.dx - _hitTarget / 2,
-      top: centre.dy - _hitTarget / 2,
+      left: centre.dx - _CornerHandle._hitTarget / 2,
+      top: centre.dy - _CornerHandle._hitTarget / 2,
       child: Semantics(
-        label: _labelFor(corner),
+        label: _labelFor(widget.corner),
         child: ExcludeSemantics(
           child: GestureDetector(
-            key: ScanKeys.cropHandle(corner),
-            onPanStart: enabled ? (_) => onDragPoint(centre) : null,
-            onPanUpdate: enabled
-                ? (details) => _drag(
-                    context,
-                    centre -
-                        const Offset(_hitTarget / 2, _hitTarget / 2) +
-                        details.localPosition,
-                  )
+            key: ScanKeys.cropHandle(widget.corner),
+            onPanDown: widget.enabled
+                ? (details) {
+                    _grabOffset =
+                        details.localPosition -
+                        const Offset(
+                          _CornerHandle._hitTarget / 2,
+                          _CornerHandle._hitTarget / 2,
+                        );
+                    _dragStartGlobal = details.globalPosition;
+                    _dragStartCentre = centre;
+                    _dragStartQuad = widget.quad;
+                    _dragStartTransform = widget.transform;
+                  }
                 : null,
-            onPanEnd: enabled ? (_) => onDragPoint(null) : null,
-            onPanCancel: enabled ? () => onDragPoint(null) : null,
+            onPanStart: widget.enabled
+                ? (_) => widget.onDragPoint(centre + _grabOffset)
+                : null,
+            onPanUpdate: widget.enabled
+                ? (details) => _drag(context, details.globalPosition)
+                : null,
+            onPanEnd: widget.enabled ? (_) => widget.onDragPoint(null) : null,
+            onPanCancel: widget.enabled ? () => widget.onDragPoint(null) : null,
             child: SizedBox(
-              width: _hitTarget,
-              height: _hitTarget,
+              width: _CornerHandle._hitTarget,
+              height: _CornerHandle._hitTarget,
               child: Center(
                 child: Container(
-                  width: _radius * 2,
-                  height: _radius * 2,
+                  width: _CornerHandle._radius * 2,
+                  height: _CornerHandle._radius * 2,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Theme.of(context).colorScheme.primary,
@@ -934,10 +958,22 @@ class _CornerHandle extends StatelessWidget {
     );
   }
 
-  void _drag(BuildContext context, Offset moved) {
-    onDragPoint(moved);
+  void _drag(BuildContext context, Offset globalPosition) {
+    final startGlobal = _dragStartGlobal;
+    final startCentre = _dragStartCentre;
+    final startQuad = _dragStartQuad;
+    final startTransform = _dragStartTransform;
+    if (startGlobal == null ||
+        startCentre == null ||
+        startQuad == null ||
+        startTransform == null) {
+      return;
+    }
+
+    final moved = startCentre + globalPosition - startGlobal;
+    widget.onDragPoint(moved + _grabOffset);
     context.read<CropCubit>().adjust(
-      replaceCorner(quad, corner, transform.toPage(moved)),
+      replaceCorner(startQuad, widget.corner, startTransform.toPage(moved)),
     );
   }
 
@@ -954,7 +990,7 @@ class _CornerHandle extends StatelessWidget {
 /// Moves both of the edge's corners together, which is how a page is squared up
 /// against a margin — chasing the two corners separately to straighten one side
 /// is the fiddliest part of adjusting a selection by hand.
-class _EdgeHandle extends StatelessWidget {
+class _EdgeHandle extends StatefulWidget {
   const _EdgeHandle({
     required this.edge,
     required this.quad,
@@ -971,8 +1007,19 @@ class _EdgeHandle extends StatelessWidget {
 
   static const _hitTarget = 64.0;
 
+  @override
+  State<_EdgeHandle> createState() => _EdgeHandleState();
+}
+
+class _EdgeHandleState extends State<_EdgeHandle> {
+  Offset _grabOffset = Offset.zero;
+  Offset? _dragStartGlobal;
+  Offset? _dragStartCentre;
+  PageQuad? _dragStartQuad;
+  PageTransform? _dragStartTransform;
+
   /// The two corner indices this edge joins, clockwise from the top edge.
-  (int, int) get _corners => switch (edge) {
+  (int, int) get _corners => switch (widget.edge) {
     0 => (0, 1),
     1 => (1, 2),
     2 => (2, 3),
@@ -982,33 +1029,43 @@ class _EdgeHandle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (first, second) = _corners;
-    final start = transform.toScreen(quad.corners[first]);
-    final end = transform.toScreen(quad.corners[second]);
+    final start = widget.transform.toScreen(widget.quad.corners[first]);
+    final end = widget.transform.toScreen(widget.quad.corners[second]);
     final centre = Offset.lerp(start, end, 0.5)!;
 
     return Positioned(
-      left: centre.dx - _hitTarget / 2,
-      top: centre.dy - _hitTarget / 2,
+      left: centre.dx - _EdgeHandle._hitTarget / 2,
+      top: centre.dy - _EdgeHandle._hitTarget / 2,
       child: Semantics(
-        label: _labelFor(edge),
+        label: _labelFor(widget.edge),
         child: ExcludeSemantics(
           child: GestureDetector(
-            key: ScanKeys.cropEdgeHandle(edge),
-            onPanStart: enabled ? (_) => onDragPoint(centre) : null,
-            onPanUpdate: enabled
-                ? (details) => _drag(
-                    context,
-                    centre -
-                        const Offset(_hitTarget / 2, _hitTarget / 2) +
-                        details.localPosition,
-                    centre,
-                  )
+            key: ScanKeys.cropEdgeHandle(widget.edge),
+            onPanDown: widget.enabled
+                ? (details) {
+                    _grabOffset =
+                        details.localPosition -
+                        const Offset(
+                          _EdgeHandle._hitTarget / 2,
+                          _EdgeHandle._hitTarget / 2,
+                        );
+                    _dragStartGlobal = details.globalPosition;
+                    _dragStartCentre = centre;
+                    _dragStartQuad = widget.quad;
+                    _dragStartTransform = widget.transform;
+                  }
                 : null,
-            onPanEnd: enabled ? (_) => onDragPoint(null) : null,
-            onPanCancel: enabled ? () => onDragPoint(null) : null,
+            onPanStart: widget.enabled
+                ? (_) => widget.onDragPoint(centre + _grabOffset)
+                : null,
+            onPanUpdate: widget.enabled
+                ? (details) => _drag(context, details.globalPosition)
+                : null,
+            onPanEnd: widget.enabled ? (_) => widget.onDragPoint(null) : null,
+            onPanCancel: widget.enabled ? () => widget.onDragPoint(null) : null,
             child: SizedBox(
-              width: _hitTarget,
-              height: _hitTarget,
+              width: _EdgeHandle._hitTarget,
+              height: _EdgeHandle._hitTarget,
               child: Center(
                 // Aligned with the edge it moves, so it reads as "this whole
                 // side moves" rather than "this point moves".
@@ -1032,16 +1089,32 @@ class _EdgeHandle extends StatelessWidget {
     );
   }
 
-  void _drag(BuildContext context, Offset pointer, Offset originalCentre) {
+  void _drag(BuildContext context, Offset globalPosition) {
+    final startGlobal = _dragStartGlobal;
+    final startCentre = _dragStartCentre;
+    final startQuad = _dragStartQuad;
+    final startTransform = _dragStartTransform;
+    if (startGlobal == null ||
+        startCentre == null ||
+        startQuad == null ||
+        startTransform == null) {
+      return;
+    }
+
     final (first, second) = _corners;
-    final delta = pointer - originalCentre;
+    final delta = globalPosition - startGlobal;
 
-    Offset moved(int index) => transform.toScreen(quad.corners[index]) + delta;
+    Offset moved(int index) =>
+        startTransform.toScreen(startQuad.corners[index]) + delta;
 
-    onDragPoint(Offset.lerp(moved(first), moved(second), 0.5));
+    widget.onDragPoint(startCentre + delta + _grabOffset);
 
-    var next = replaceCorner(quad, first, transform.toPage(moved(first)));
-    next = replaceCorner(next, second, transform.toPage(moved(second)));
+    var next = replaceCorner(
+      startQuad,
+      first,
+      startTransform.toPage(moved(first)),
+    );
+    next = replaceCorner(next, second, startTransform.toPage(moved(second)));
 
     context.read<CropCubit>().adjust(next);
   }

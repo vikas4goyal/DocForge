@@ -140,6 +140,87 @@ void main() {
       expect(edge, const Size.square(64));
     });
 
+    testWidgets('a corner follows the finger without snapping to it', (
+      tester,
+    ) async {
+      await pumpCrop(tester);
+      final finder = find.byKey(ScanKeys.cropHandle(0));
+      final before = tester.getCenter(finder);
+      var detector = tester.widget<GestureDetector>(finder);
+      const grabPoint = Offset(50, 44);
+      const firstMovement = Offset(10, 8);
+      const fingerMovement = Offset(24, 18);
+
+      // Grab away from the visual centre, as a real fingertip usually does.
+      detector.onPanDown!(
+        DragDownDetails(globalPosition: grabPoint, localPosition: grabPoint),
+      );
+      detector.onPanStart!(
+        DragStartDetails(globalPosition: grabPoint, localPosition: grabPoint),
+      );
+      detector.onPanUpdate!(
+        DragUpdateDetails(
+          globalPosition: grabPoint + firstMovement,
+          localPosition: grabPoint + firstMovement,
+          delta: firstMovement,
+        ),
+      );
+      await tester.pump();
+
+      // A rebuild moves the handle between pointer events. The next update
+      // must still be measured from the original touch-down position.
+      detector = tester.widget<GestureDetector>(finder);
+      detector.onPanUpdate!(
+        DragUpdateDetails(
+          globalPosition: grabPoint + fingerMovement,
+          localPosition: grabPoint + fingerMovement,
+          delta: fingerMovement - firstMovement,
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.getCenter(finder) - before, fingerMovement);
+    });
+
+    testWidgets('an edge follows the finger without snapping to it', (
+      tester,
+    ) async {
+      await pumpCrop(tester);
+      final finder = find.byKey(ScanKeys.cropEdgeHandle(0));
+      final before = tester.getCenter(finder);
+      var detector = tester.widget<GestureDetector>(finder);
+      const grabPoint = Offset(50, 44);
+      const firstMovement = Offset(0, 10);
+      const fingerMovement = Offset(0, 24);
+
+      detector.onPanDown!(
+        DragDownDetails(globalPosition: grabPoint, localPosition: grabPoint),
+      );
+      detector.onPanStart!(
+        DragStartDetails(globalPosition: grabPoint, localPosition: grabPoint),
+      );
+      detector.onPanUpdate!(
+        DragUpdateDetails(
+          globalPosition: grabPoint + firstMovement,
+          localPosition: grabPoint + firstMovement,
+          delta: firstMovement,
+        ),
+      );
+      await tester.pump();
+
+      detector = tester.widget<GestureDetector>(finder);
+      detector.onPanUpdate!(
+        DragUpdateDetails(
+          globalPosition: grabPoint + fingerMovement,
+          localPosition: grabPoint + fingerMovement,
+          delta: fingerMovement - firstMovement,
+        ),
+      );
+      await tester.pump();
+
+      expect(tester.getCenter(finder) - before, fingerMovement);
+    });
+
     testWidgets('revert is disabled until a crop has been applied', (
       tester,
     ) async {
