@@ -101,6 +101,54 @@ void main() {
     },
   );
 
+  test('missing stored image falls back to the saved PDF', () async {
+    final handle = DocumentPageHandle(
+      id: samplePages(1).single.id,
+      documentId: sampleDocument.id,
+      pageNumber: 1,
+      source: const DocumentPageSource.storedImage(
+        imagePath: '/removed/capture-staging/page.jpg',
+        thumbnailPath: '/removed/capture-staging/thumbnail.jpg',
+      ),
+    );
+
+    final result = await access.materialize(
+      sampleDocument,
+      handle,
+      DocumentPageRenderPurpose.thumbnail,
+    );
+
+    expect(result.valueOrNull, isA<CachedDocumentPage>());
+    expect(File(result.valueOrNull!.path).existsSync(), isTrue);
+    expect(engine.renderCount, 1);
+    expect(files.released, 1);
+  });
+
+  test('missing thumbnail uses the retained full-size page image', () async {
+    final image = File('${directory.path}/page.jpg')..writeAsBytesSync([1]);
+    final handle = DocumentPageHandle(
+      id: samplePages(1).single.id,
+      documentId: sampleDocument.id,
+      pageNumber: 1,
+      source: DocumentPageSource.storedImage(
+        imagePath: image.path,
+        thumbnailPath: '/removed/thumbnail.jpg',
+      ),
+    );
+
+    final result = await access.materialize(
+      sampleDocument,
+      handle,
+      DocumentPageRenderPurpose.thumbnail,
+    );
+
+    expect(
+      result.valueOrNull,
+      MaterializedDocumentPage.authoritative(path: image.path),
+    );
+    expect(engine.renderCount, 0);
+  });
+
   test(
     'PDF materialisation respects purpose bounds, password, and cleanup',
     () async {

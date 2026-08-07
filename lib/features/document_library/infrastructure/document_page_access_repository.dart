@@ -107,17 +107,23 @@ class LibraryDocumentPageAccessRepository
 
     return page.source.when(
       storedImage: (imagePath, thumbnailPath) async {
-        final selected = purpose == DocumentPageRenderPurpose.thumbnail
-            ? (thumbnailPath ?? imagePath)
-            : imagePath;
-        if (!File(selected).existsSync()) {
-          return const Result<MaterializedDocumentPage>.failure(
-            Failure.notFound(debugDetail: 'Stored page image is missing.'),
+        // Saved scan rows can still point into capture staging, which is
+        // deliberately removed once the PDF has been created. Prefer any
+        // retained page pixels, but fall back to the authoritative PDF instead
+        // of turning a perfectly readable page into a placeholder.
+        if (purpose == DocumentPageRenderPurpose.thumbnail &&
+            thumbnailPath != null &&
+            File(thumbnailPath).existsSync()) {
+          return Result<MaterializedDocumentPage>.success(
+            MaterializedDocumentPage.authoritative(path: thumbnailPath),
           );
         }
-        return Result<MaterializedDocumentPage>.success(
-          MaterializedDocumentPage.authoritative(path: selected),
-        );
+        if (File(imagePath).existsSync()) {
+          return Result<MaterializedDocumentPage>.success(
+            MaterializedDocumentPage.authoritative(path: imagePath),
+          );
+        }
+        return _materializePdf(document, page, purpose);
       },
       pdfPage: () => _materializePdf(document, page, purpose),
     );
