@@ -130,8 +130,11 @@ pipeline {
           // Assigned without `def` so they stay visible to later stages.
           BUILD_VERSION = sh(script: 'cat Jenkins/build_version', returnStdout: true).trim()
           BUILD_NUMBER = sh(script: 'echo $(($(date +%s)/60))', returnStdout: true).trim()
-          echo "BUILD_NUMBER: ${BUILD_VERSION}"
+          env.IMAGE_TAG = "${BUILD_VERSION} (${BUILD_NUMBER})"
+          currentBuild.description = "${env.IMAGE_TAG}"
+          echo "BUILD_VERSION: ${BUILD_VERSION}"
           echo "BUILD_NUMBER: ${BUILD_NUMBER}"
+          echo "BUILD_DESCRIPTION: ${currentBuild.description}"
           sh "echo ${BUILD_NUMBER} > Jenkins/build_number"
           sh "git tag \"${BUILD_VERSION}(${BUILD_NUMBER})\""
           sh "git push origin \"${BUILD_VERSION}(${BUILD_NUMBER})\""
