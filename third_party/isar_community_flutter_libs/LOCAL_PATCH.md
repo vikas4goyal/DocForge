@@ -9,7 +9,8 @@ that keeps the static Isar library linked for Dart FFI. It lets Flutter build
 the iOS app without CocoaPods while retaining the upstream binaries unchanged.
 
 The Runner Release xcconfig also force-loads
-`$(BUILT_PRODUCTS_DIR)/libisar.a` and disables dead-code stripping.
+`$(BUILT_PRODUCTS_DIR)/libisar.a`, disables dead-code stripping, and preserves
+global symbols when Xcode strips the archived application.
 Referencing a single symbol in the registration shim is not sufficient for a
 Release build: the linker otherwise dead-strips the remaining Isar entry points
 because Dart FFI resolves them dynamically through `DynamicLibrary.process()`.

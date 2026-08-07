@@ -5,3 +5,10 @@
 // DynamicLibrary.process(). Profile and Release both use this configuration.
 OTHER_LDFLAGS = $(inherited) -Wl,-force_load,$(BUILT_PRODUCTS_DIR)/libisar.a
 DEAD_CODE_STRIPPING = NO
+
+// `flutter build ipa` archives with STRIP_INSTALLED_PRODUCT=YES. The default
+// `all` style removes the Isar exports after the linker retained them, so a
+// regular Release run works while TestFlight fails in initializeCoreBinary.
+// Keep global symbols used by DynamicLibrary.process(), while still stripping
+// non-global implementation symbols from distribution builds.
+STRIP_STYLE = non-global

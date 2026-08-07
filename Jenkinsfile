@@ -169,10 +169,10 @@ pipeline {
             }
             sh 'test "$AD_HOC_APP_ENV" = staging && echo "Building iOS Ad Hoc environment: $AD_HOC_APP_ENV"'
             sh "flutter build ipa --dart-define=\"ENVIRONMENT=\$AD_HOC_APP_ENV\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --export-options-plist=\"\$EXPORT_OPTION_AD_HOC\" --verbose"
-            // `flutter build ipa` exits 0 even when xcodebuild prints
-            // "** EXPORT FAILED **", so an export error would otherwise surface much
-            // later as a confusing "couldn't find ipa" from the upload lane.
-            sh 'ls build/ios/ipa/*.ipa >/dev/null 2>&1 || { echo "No IPA produced - look for \'** EXPORT FAILED **\' above"; exit 1; }'
+            // Validate the exported binary itself. A regular Release build can
+            // retain Isar while Xcode's Archive post-processing strips the FFI
+            // exports required by TestFlight/App Store builds.
+            sh 'sh Jenkins/verify_ios_ipa.sh'
             dir(path: 'ios') {
               sh 'bundle exec fastlane ios release_firebase --verbose'
             }
@@ -234,7 +234,7 @@ pipeline {
             }
             sh 'test "$APP_STORE_APP_ENV" = production && echo "Building iOS App Store environment: $APP_STORE_APP_ENV"'
             sh "flutter build ipa --dart-define=\"ENVIRONMENT=\$APP_STORE_APP_ENV\" --build-name=${BUILD_VERSION} --build-number=${BUILD_NUMBER} --release --export-options-plist=\"\$EXPORT_OPTION_APP_STORE\" --verbose"
-            sh 'ls build/ios/ipa/*.ipa >/dev/null 2>&1 || { echo "No IPA produced - look for \'** EXPORT FAILED **\' above"; exit 1; }'
+            sh 'sh Jenkins/verify_ios_ipa.sh'
             dir(path: 'ios') {
               sh 'bundle exec fastlane ios release_appstore --verbose'
             }
