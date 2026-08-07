@@ -1,4 +1,22 @@
-# Local AGP 9 compatibility patch
+# Local compatibility patches
+
+## iOS: document-only Swift package
+
+DocScanly uses `file_picker` for document import, directory selection, and
+document export. Gallery import uses `image_picker`, and the app never calls
+the file picker's media or audio modes.
+
+Upstream's Swift package nevertheless enables all picker modes and therefore
+links `DKImagePickerController` and `DKCamera`. `DKCamera` includes optional
+GPS-metadata support that references `CLLocationManager`. App Store Connect
+then reports ITMS-90683 and asks for `NSLocationWhenInUseUsageDescription`,
+even though the GPS feature defaults to off and DocScanly never enables it.
+
+The local iOS `Package.swift` now compiles only `PICKER_DOCUMENT` and removes
+the unused DK dependency. This keeps document/directory/save behavior intact
+without linking location APIs or declaring a permission the app does not use.
+
+## Android: AGP 9 compatibility
 
 The upstream `file_picker` 11.0.3 Android build assumes every AGP 9 project
 uses Android's built-in Kotlin and therefore skips applying the Kotlin Gradle
