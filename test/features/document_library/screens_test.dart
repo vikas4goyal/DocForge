@@ -194,6 +194,31 @@ void main() {
       expect(documents.documents[sampleDocument.id]?.isFavourite, isTrue);
     });
 
+    testWidgets('Archive rows restore instead of showing a favourite star', (
+      tester,
+    ) async {
+      documents.documents[sampleDocument.id] = sampleDocument.copyWith(
+        isArchived: true,
+        isFavourite: true,
+      );
+      await tester.pumpWidget(build(filter: DocumentFilter.archived));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(LibraryKeys.documentListRestore(sampleDocument.id.value)),
+        findsOneWidget,
+      );
+      expect(find.byKey(LibraryKeys.documentFavouriteToggle), findsNothing);
+
+      await tester.tap(
+        find.byKey(LibraryKeys.documentListRestore(sampleDocument.id.value)),
+      );
+      await tester.pumpAndSettle();
+
+      expect(documents.documents[sampleDocument.id]?.isArchived, isFalse);
+      expect(find.byType(DocumentCard), findsNothing);
+    });
+
     testWidgets('a document row announces its metadata to a screen reader', (
       tester,
     ) async {
@@ -254,6 +279,35 @@ void main() {
         child: DocumentDetailScreen(onClose: onClose ?? () {}),
       ),
     );
+
+    Widget lifecycleHost(
+      DocumentLifecycleAction action, {
+      ValueChanged<DocumentLifecycleActionResult>? onResult,
+    }) {
+      final cubit = detailCubit(sampleDocument.id)..load();
+      return host(
+        BlocProvider(
+          create: (_) => cubit,
+          child: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                key: const Key('run_lifecycle_action'),
+                onPressed: () async {
+                  final result = await runDocumentLifecycleAction(
+                    context,
+                    cubit: cubit,
+                    document: documents.documents[sampleDocument.id]!,
+                    action: action,
+                  );
+                  onResult?.call(result);
+                },
+                child: const Text('Run action'),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     setUp(() {
       documents.documents[sampleDocument.id] = sampleDocument;
@@ -343,17 +397,15 @@ void main() {
         findsWidgets,
       );
       expect(find.byKey(LibraryKeys.documentFavouriteToggle), findsOneWidget);
-      expect(find.byKey(LibraryKeys.documentDetailMenu), findsOneWidget);
+      expect(find.byKey(LibraryKeys.documentDetailMenu), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('renaming updates the title', (tester) async {
-      await tester.pumpWidget(build());
+    testWidgets('Viewer-hosted renaming updates the title', (tester) async {
+      await tester.pumpWidget(lifecycleHost(DocumentLifecycleAction.rename));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('document_detail_menu')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(LibraryKeys.documentRenameButton));
+      await tester.tap(find.byKey(const Key('run_lifecycle_action')));
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -366,15 +418,13 @@ void main() {
       expect(documents.documents[sampleDocument.id]?.title, 'Renamed');
     });
 
-    testWidgets('an empty rename is refused and the dialog stays open', (
+    testWidgets('Viewer-hosted empty rename is refused and stays open', (
       tester,
     ) async {
-      await tester.pumpWidget(build());
+      await tester.pumpWidget(lifecycleHost(DocumentLifecycleAction.rename));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('document_detail_menu')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(LibraryKeys.documentRenameButton));
+      await tester.tap(find.byKey(const Key('run_lifecycle_action')));
       await tester.pumpAndSettle();
 
       await tester.enterText(
@@ -393,13 +443,13 @@ void main() {
       );
     });
 
-    testWidgets('permanent removal requires confirmation', (tester) async {
-      await tester.pumpWidget(build());
+    testWidgets('Viewer-hosted removal requires confirmation', (tester) async {
+      await tester.pumpWidget(
+        lifecycleHost(DocumentLifecycleAction.moveToTrash),
+      );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('document_detail_menu')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(LibraryKeys.documentDeleteButton));
+      await tester.tap(find.byKey(const Key('run_lifecycle_action')));
       await tester.pumpAndSettle();
 
       expect(
@@ -414,47 +464,33 @@ void main() {
       expect(documents.documents, hasLength(1));
     });
 
-    testWidgets('confirming removal deletes and closes the screen', (
+    testWidgets('confirming Viewer-hosted removal reports unavailable', (
       tester,
     ) async {
-      var closed = false;
-      await tester.pumpWidget(build(onClose: () => closed = true));
+      DocumentLifecycleActionResult? outcome;
+      await tester.pumpWidget(
+        lifecycleHost(
+          DocumentLifecycleAction.moveToTrash,
+          onResult: (result) => outcome = result,
+        ),
+      );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('document_detail_menu')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(LibraryKeys.documentDeleteButton));
+      await tester.tap(find.byKey(const Key('run_lifecycle_action')));
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(LibraryKeys.documentDeleteConfirmButton));
       await tester.pumpAndSettle();
 
       expect(documents.documents, isEmpty);
-      expect(closed, isTrue);
+      expect(outcome?.unavailable, isTrue);
     });
 
-    testWidgets('archiving is offered for an active document', (tester) async {
+    testWidgets('Details has no lifecycle overflow menu', (tester) async {
       await tester.pumpWidget(build());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('document_detail_menu')));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(LibraryKeys.documentArchiveButton), findsOneWidget);
-      expect(find.byKey(LibraryKeys.documentRestoreButton), findsNothing);
-    });
-
-    testWidgets('restoring is offered instead once archived', (tester) async {
-      documents.documents[sampleDocument.id] = sampleDocument.copyWith(
-        isArchived: true,
-      );
-      await tester.pumpWidget(build());
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.byKey(const Key('document_detail_menu')));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(LibraryKeys.documentRestoreButton), findsOneWidget);
-      expect(find.byKey(LibraryKeys.documentArchiveButton), findsNothing);
+      expect(find.byKey(LibraryKeys.documentDetailMenu), findsNothing);
+      expect(find.byKey(LibraryKeys.documentFavouriteToggle), findsOneWidget);
     });
 
     testWidgets(

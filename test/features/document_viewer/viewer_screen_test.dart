@@ -115,6 +115,11 @@ void main() {
       await tester.pumpAndSettle();
       for (final key in [
         ViewerKeys.documentDetailsButton,
+        ViewerKeys.renameButton,
+        ViewerKeys.moveButton,
+        ViewerKeys.duplicateButton,
+        ViewerKeys.archiveButton,
+        ViewerKeys.moveToTrashButton,
         ViewerKeys.printButton,
         ViewerKeys.compressButton,
         ViewerKeys.splitButton,
@@ -123,6 +128,23 @@ void main() {
       ]) {
         expect(find.byKey(key), findsOneWidget);
       }
+      expect(find.byKey(ViewerKeys.restoreButton), findsNothing);
+    });
+
+    testWidgets('an archived document offers Restore instead of Archive', (
+      tester,
+    ) async {
+      final harness = ViewerHarness();
+      harness.documents.document = harness.documents.document!.copyWith(
+        isArchived: true,
+      );
+      await pump(tester, harness: harness);
+
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(ViewerKeys.restoreButton), findsOneWidget);
+      expect(find.byKey(ViewerKeys.archiveButton), findsNothing);
     });
 
     testWidgets('shows a loading indicator while opening', (tester) async {

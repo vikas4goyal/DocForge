@@ -161,7 +161,7 @@ void main() {
     });
 
     test(
-      'a stored password opens a protected document without asking',
+      'a stored password never bypasses the protected document prompt',
       () async {
         final harness = ViewerHarness(
           renderer: FakePdfRenderer(requiredPassword: 'secret'),
@@ -173,8 +173,35 @@ void main() {
 
         final result = await harness.open(const DocumentId('doc-1'));
 
+        expect(
+          (result as Failed<ViewableDocument>).failure,
+          isA<AuthFailure>(),
+        );
+      },
+    );
+
+    test(
+      'an explicitly saved password automatically opens next time',
+      () async {
+        final harness = ViewerHarness(
+          renderer: FakePdfRenderer(requiredPassword: 'secret'),
+        );
+        harness.documents.document = harness.documents.document!.copyWith(
+          isProtected: true,
+        );
+        await harness.secrets.write(
+          SecureStorageKeys.pdfPassword('doc-1'),
+          'secret',
+        );
+        await harness.secrets.write(
+          SecureStorageKeys.pdfPasswordRemembered('doc-1'),
+          'true',
+        );
+
+        final result = await harness.open(const DocumentId('doc-1'));
+
         expect(result, isA<Success<ViewableDocument>>());
-        expect((result as Success<ViewableDocument>).value.isProtected, isTrue);
+        expect(result.valueOrNull!.passwordRemembered, isTrue);
       },
     );
 
@@ -303,7 +330,7 @@ void main() {
       },
     );
 
-    test('the correct password unlocks and is remembered', () async {
+    test('the correct password is retained for protected editing', () async {
       final locked = ViewerHarness(
         renderer: FakePdfRenderer(requiredPassword: 'secret'),
       );
@@ -320,6 +347,33 @@ void main() {
         'secret',
       );
 
+      await cubit.close();
+    });
+
+    test('opt-in enables auto-open and forgetting removes it', () async {
+      final locked = ViewerHarness(
+        renderer: FakePdfRenderer(requiredPassword: 'secret'),
+      );
+      final cubit = locked.cubit();
+
+      await cubit.load();
+      await cubit.unlock('secret', remember: true);
+      expect(cubit.state.passwordRemembered, isTrue);
+      expect(
+        (await locked.secrets.read(
+          SecureStorageKeys.pdfPasswordRemembered('doc-1'),
+        )).valueOrNull,
+        'true',
+      );
+
+      await cubit.forgetPassword();
+      expect(cubit.state.passwordRemembered, isFalse);
+      expect(
+        (await locked.secrets.read(
+          SecureStorageKeys.pdfPassword('doc-1'),
+        )).valueOrNull,
+        isNull,
+      );
       await cubit.close();
     });
 

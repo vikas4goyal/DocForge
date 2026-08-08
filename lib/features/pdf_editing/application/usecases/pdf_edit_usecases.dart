@@ -227,6 +227,8 @@ abstract class PdfEditUseCase {
     FolderId? folderId,
     List<String> folders = const [],
     String? verifyPassword,
+    bool isProtected = false,
+    String? storedPassword,
   }) async {
     final id = DocumentId(context.ids.generate());
     final working = workingPathFor(id);
@@ -275,6 +277,7 @@ abstract class PdfEditUseCase {
         sizeInBytes: result.sizeInBytes,
         libraryPath: libraryPath.valueOrNull!,
         folderId: folderId,
+        isProtected: isProtected,
       ),
       const [],
     );
@@ -284,6 +287,13 @@ abstract class PdfEditUseCase {
       // the user's file browser, which is worse than not writing it at all.
       await context.store.delete(libraryPath.valueOrNull!);
       return Result<Document>.failure(failure);
+    }
+
+    if (storedPassword != null) {
+      await context.secrets.write(
+        SecureStorageKeys.pdfPassword(id.value),
+        storedPassword,
+      );
     }
 
     return saved;
@@ -391,6 +401,45 @@ class DeletePages extends PdfEditUseCase {
         password: password,
       ),
       expectedPageCount: remaining.length,
+      verifyPassword: password,
+    );
+  }
+}
+
+/// Moves one page to another position in the same document.
+class ReorderPage extends PdfEditUseCase {
+  /// Creates the use case.
+  const ReorderPage(super.context);
+
+  /// Moves zero-based [from] to [to], preserving every page exactly once.
+  Future<Result<Document>> call(DocumentId id, int from, int to) async {
+    final found = await loadDocument(id);
+    if (found case Failed(:final failure)) {
+      return Result<Document>.failure(failure);
+    }
+    final document = found.valueOrNull!;
+    if (from < 0 ||
+        from >= document.pageCount ||
+        to < 0 ||
+        to >= document.pageCount ||
+        from == to) {
+      return const Result<Document>.failure(
+        Failure.notFound(debugDetail: 'invalid page move'),
+      );
+    }
+    final order = List<int>.generate(document.pageCount, (index) => index);
+    final page = order.removeAt(from);
+    order.insert(to, page);
+    final password = await passwordFor(document);
+    return replaceInPlace(
+      document,
+      (source, destination) => context.editor.writePages(
+        source,
+        destination,
+        order,
+        password: password,
+      ),
+      expectedPageCount: document.pageCount,
       verifyPassword: password,
     );
   }
@@ -697,7 +746,10 @@ class CompressDocument extends PdfEditUseCase {
   /// already-optimal images adds overhead — and the spec requires the original
   /// to be kept in that case, which is only possible if the decision happens
   /// before the replace rather than after it.
-  Future<Result<CompressionOutcome>> call(DocumentId id) async {
+  Future<Result<CompressionOutcome>> call(
+    DocumentId id, {
+    bool saveAsCopy = false,
+  }) async {
     final found = await loadDocument(id);
     if (found case Failed(:final failure)) {
       return Result<CompressionOutcome>.failure(failure);
@@ -724,10 +776,12 @@ class CompressDocument extends PdfEditUseCase {
 
     if (produced case Failed(:final failure)) {
       if (candidate.existsSync()) candidate.deleteSync();
+      await releaseSource(document);
       return Result<CompressionOutcome>.failure(failure);
     }
 
     if (!candidate.existsSync()) {
+      await releaseSource(document);
       return const Result<CompressionOutcome>.failure(
         Failure.pdf(debugDetail: 'compression produced no file'),
       );
@@ -741,12 +795,42 @@ class CompressDocument extends PdfEditUseCase {
       compressedBytes: newBytes,
     )) {
       candidate.deleteSync();
+      await releaseSource(document);
       return Result<CompressionOutcome>.success(
         CompressionOutcome(
           document: document,
           originalBytes: originalBytes,
           newBytes: newBytes,
           wasKept: false,
+        ),
+      );
+    }
+
+    if (saveAsCopy) {
+      final derived = await deriveDocument(
+        title: '${document.title} (compressed)',
+        folderId: document.folderId,
+        folders: document.libraryPath.folders,
+        expectedPageCount: document.pageCount,
+        verifyPassword: password,
+        isProtected: document.isProtected,
+        storedPassword: password,
+        produce: (destination) async {
+          candidate.copySync(destination);
+          return const Result<void>.success(null);
+        },
+      );
+      if (candidate.existsSync()) candidate.deleteSync();
+      await releaseSource(document);
+      if (derived case Failed(:final failure)) {
+        return Result<CompressionOutcome>.failure(failure);
+      }
+      return Result<CompressionOutcome>.success(
+        CompressionOutcome(
+          document: derived.valueOrNull!,
+          originalBytes: originalBytes,
+          newBytes: newBytes,
+          wasKept: true,
         ),
       );
     }
@@ -760,6 +844,7 @@ class CompressDocument extends PdfEditUseCase {
       if (candidate.existsSync()) candidate.deleteSync();
       return Result<CompressionOutcome>.failure(failure);
     }
+    await releaseSource(document);
 
     return Result<CompressionOutcome>.success(
       CompressionOutcome(
@@ -778,7 +863,11 @@ class WatermarkDocument extends PdfEditUseCase {
   const WatermarkDocument(super.context);
 
   /// Applies [text] to every page of [id].
-  Future<Result<Document>> call(DocumentId id, String text) async {
+  Future<Result<Document>> call(
+    DocumentId id,
+    String text, {
+    bool saveAsCopy = false,
+  }) async {
     if (!PdfEditRules.isValidWatermark(text)) {
       return const Result<Document>.failure(
         Failure.validation(issue: ValidationIssue.emptyName),
@@ -791,6 +880,30 @@ class WatermarkDocument extends PdfEditUseCase {
     }
     final document = found.valueOrNull!;
     final password = await passwordFor(document);
+
+    if (saveAsCopy) {
+      final source = await sourcePathFor(document);
+      if (source case Failed(:final failure)) {
+        return Result<Document>.failure(failure);
+      }
+      final derived = await deriveDocument(
+        title: '${document.title} (watermarked)',
+        folderId: document.folderId,
+        folders: document.libraryPath.folders,
+        expectedPageCount: document.pageCount,
+        verifyPassword: password,
+        isProtected: document.isProtected,
+        storedPassword: password,
+        produce: (destination) => context.editor.watermark(
+          source.valueOrNull!,
+          destination,
+          text: text.trim(),
+          password: password,
+        ),
+      );
+      await releaseSource(document);
+      return derived;
+    }
 
     return replaceInPlace(
       document,
@@ -849,6 +962,10 @@ class ProtectDocument extends PdfEditUseCase {
       SecureStorageKeys.pdfPassword(id.value),
       password,
     );
+    // Setting or changing protection never grants automatic viewing consent.
+    await context.secrets.delete(
+      SecureStorageKeys.pdfPasswordRemembered(id.value),
+    );
 
     // A secret that could not be stored is not fatal: the file is protected and
     // the user knows the password. They will simply be asked for it.
@@ -897,6 +1014,9 @@ class RemoveDocumentPassword extends PdfEditUseCase {
     // Deleted only once the file genuinely opens without it. Deleting first
     // would strand a still-encrypted document with no password anywhere.
     await context.secrets.delete(SecureStorageKeys.pdfPassword(id.value));
+    await context.secrets.delete(
+      SecureStorageKeys.pdfPasswordRemembered(id.value),
+    );
 
     return replaced;
   }

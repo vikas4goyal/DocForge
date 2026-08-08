@@ -80,6 +80,12 @@ class SearchCleared extends SearchEvent {
   const SearchCleared();
 }
 
+/// The visible search results may have changed while Viewer covered them.
+class SearchRefreshRequested extends SearchEvent {
+  /// Creates a refresh request for the current query.
+  const SearchRefreshRequested();
+}
+
 /// Where the search screen is in its lifecycle.
 enum SearchStatus {
   /// Nothing has been searched for yet.
@@ -196,6 +202,11 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
 
     on<SearchCleared>(
       (event, emit) => emit(const SearchState.initial()),
+      transformer: restartable(),
+    );
+
+    on<SearchRefreshRequested>(
+      (event, emit) => _run(state.query, emit),
       transformer: restartable(),
     );
   }

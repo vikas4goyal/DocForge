@@ -29,6 +29,24 @@ enum ViewerDocumentAction {
   /// Opens metadata and lifecycle controls for the document.
   details,
 
+  /// Renames the open document.
+  rename,
+
+  /// Moves the open document to another folder.
+  move,
+
+  /// Creates a reviewed independent copy.
+  duplicate,
+
+  /// Archives the open document.
+  archive,
+
+  /// Restores the open archived document.
+  restore,
+
+  /// Moves the open document to recoverable Trash.
+  moveToTrash,
+
   /// Opens the system print dialog.
   print,
 
@@ -43,6 +61,9 @@ enum ViewerDocumentAction {
 
   /// Opens the focused set/remove password workflow.
   protection,
+
+  /// Deletes the explicitly saved automatic-unlock password.
+  forgetPassword,
 
   /// Opens contextual page selection and page-derived actions.
   pageManagement,
@@ -100,6 +121,7 @@ class ViewerScreen extends StatelessWidget {
           previous.filePath != current.filePath ||
           previous.pageCount != current.pageCount ||
           previous.password != current.password ||
+          previous.passwordRemembered != current.passwordRemembered ||
           previous.failure != current.failure ||
           previous.passwordRejected != current.passwordRejected ||
           previous.isUnavailable != current.isUnavailable,
@@ -160,6 +182,65 @@ class ViewerScreen extends StatelessWidget {
                               title: Text('Document details'),
                             ),
                           ),
+                        ),
+                      ),
+                      if (state.passwordRemembered)
+                        const PopupMenuItem(
+                          key: ViewerKeys.forgetPasswordButton,
+                          value: ViewerDocumentAction.forgetPassword,
+                          child: ListTile(
+                            leading: Icon(Icons.lock_reset_outlined),
+                            title: Text('Forget saved password'),
+                          ),
+                        ),
+                      const PopupMenuItem(
+                        key: ViewerKeys.renameButton,
+                        value: ViewerDocumentAction.rename,
+                        child: ListTile(
+                          leading: Icon(Icons.edit_outlined),
+                          title: Text('Rename'),
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        key: ViewerKeys.moveButton,
+                        value: ViewerDocumentAction.move,
+                        child: ListTile(
+                          leading: Icon(Icons.drive_file_move_outline),
+                          title: Text('Move to folder'),
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        key: ViewerKeys.duplicateButton,
+                        value: ViewerDocumentAction.duplicate,
+                        child: ListTile(
+                          leading: Icon(Icons.copy_outlined),
+                          title: Text('Duplicate'),
+                        ),
+                      ),
+                      if (state.document?.isArchived ?? false)
+                        const PopupMenuItem(
+                          key: ViewerKeys.restoreButton,
+                          value: ViewerDocumentAction.restore,
+                          child: ListTile(
+                            leading: Icon(Icons.unarchive_outlined),
+                            title: Text('Restore'),
+                          ),
+                        )
+                      else
+                        const PopupMenuItem(
+                          key: ViewerKeys.archiveButton,
+                          value: ViewerDocumentAction.archive,
+                          child: ListTile(
+                            leading: Icon(Icons.archive_outlined),
+                            title: Text('Archive'),
+                          ),
+                        ),
+                      const PopupMenuItem(
+                        key: ViewerKeys.moveToTrashButton,
+                        value: ViewerDocumentAction.moveToTrash,
+                        child: ListTile(
+                          leading: Icon(Icons.delete_outline),
+                          title: Text('Move to Trash'),
                         ),
                       ),
                       const PopupMenuItem(
@@ -310,6 +391,7 @@ class _PasswordPrompt extends StatefulWidget {
 
 class _PasswordPromptState extends State<_PasswordPrompt> {
   final _controller = TextEditingController();
+  var _remember = false;
 
   @override
   void dispose() {
@@ -323,7 +405,7 @@ class _PasswordPromptState extends State<_PasswordPrompt> {
 
   void _submit() {
     if (_controller.text.isEmpty) return;
-    widget.cubit.unlock(_controller.text);
+    widget.cubit.unlock(_controller.text, remember: _remember);
   }
 
   @override
@@ -369,6 +451,17 @@ class _PasswordPromptState extends State<_PasswordPrompt> {
                     ? 'That password did not work'
                     : null,
               ),
+            ),
+            CheckboxListTile(
+              key: ViewerKeys.rememberPasswordCheckbox,
+              value: _remember,
+              contentPadding: EdgeInsets.zero,
+              controlAffinity: ListTileControlAffinity.leading,
+              title: const Text('Save password in DocScanly'),
+              subtitle: const Text(
+                'This PDF will open automatically on this device. You can forget it from the PDF menu.',
+              ),
+              onChanged: (value) => setState(() => _remember = value ?? false),
             ),
             const SizedBox(height: 16),
             SizedBox(

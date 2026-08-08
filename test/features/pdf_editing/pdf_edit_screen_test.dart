@@ -90,6 +90,7 @@ class _StubCubit extends PdfEditCubit {
       rotate: RotatePage(context),
       delete: DeletePages(context),
       duplicate: DuplicatePage(context),
+      reorder: ReorderPage(context),
       extract: ExtractPages(context),
       merge: MergeDocuments(context),
       split: SplitDocument(context),
@@ -116,10 +117,15 @@ class _StubCubit extends PdfEditCubit {
   Future<void> duplicate() async => calls.add('duplicate');
 
   @override
+  Future<void> moveSelectedPage(int offset) async =>
+      calls.add(offset < 0 ? 'moveEarlier' : 'moveLater');
+
+  @override
   Future<void> extract() async => calls.add('extract');
 
   @override
-  Future<void> compress() async => calls.add('compress');
+  Future<void> compress({bool saveAsCopy = false}) async =>
+      calls.add(saveAsCopy ? 'compressCopy' : 'compress');
 
   @override
   Future<void> split(
@@ -134,7 +140,8 @@ class _StubCubit extends PdfEditCubit {
   }) async => calls.add('merge:${orderedIds.length}');
 
   @override
-  Future<void> watermark(String text) async => calls.add('watermark:$text');
+  Future<void> watermark(String text, {bool saveAsCopy = false}) async =>
+      calls.add(saveAsCopy ? 'watermarkCopy:$text' : 'watermark:$text');
 
   @override
   Future<void> protect(String password) async => calls.add('protect:$password');
@@ -243,7 +250,7 @@ void main() {
   );
 
   group('composition', () {
-    testWidgets('shows document tools but omits page actions until selection', (
+    testWidgets('shows only page management until a page is selected', (
       tester,
     ) async {
       await pump(tester, ready);
@@ -253,7 +260,10 @@ void main() {
       expect(find.byKey(PdfEditKeys.rotateButton), findsNothing);
       expect(find.byKey(PdfEditKeys.deleteButton), findsNothing);
       expect(find.byKey(PdfEditKeys.extractButton), findsNothing);
-      expect(find.byKey(PdfEditKeys.compressButton), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.compressButton), findsNothing);
+      expect(find.byKey(PdfEditKeys.watermarkTextField), findsNothing);
+      expect(find.byKey(PdfEditKeys.protectPasswordField), findsNothing);
+      expect(find.byKey(PdfEditKeys.splitConfirmButton), findsNothing);
     });
 
     testWidgets('shows a tile per page', (tester) async {
@@ -282,6 +292,21 @@ void main() {
       expect(find.byKey(PdfEditKeys.compressButton), findsOneWidget);
       expect(find.byKey(PdfEditKeys.pageGrid), findsNothing);
       expect(find.byType(CloseButton), findsOneWidget);
+    });
+
+    testWidgets('compression can preserve the original as a copy', (
+      tester,
+    ) async {
+      final cubit = await pump(
+        tester,
+        ready,
+        initialOperation: PdfEditOperation.compress,
+      );
+
+      await tester.tap(find.byKey(PdfEditKeys.compressCopyButton));
+      await confirmReview(tester);
+
+      expect(cubit.calls, ['compressCopy']);
     });
 
     testWidgets('split opens a dedicated naming screen with both outputs', (
@@ -329,6 +354,19 @@ void main() {
   });
 
   group('page controls', () {
+    testWidgets('a selected page can move earlier or later', (tester) async {
+      final cubit = await pump(tester, ready.copyWith(selection: {1}));
+
+      await tester.tap(find.byKey(PdfEditKeys.moveEarlierButton));
+      await confirmReview(tester);
+      expect(cubit.calls, ['moveEarlier']);
+
+      cubit.calls.clear();
+      await tester.tap(find.byKey(PdfEditKeys.moveLaterButton));
+      await confirmReview(tester);
+      expect(cubit.calls, ['moveLater']);
+    });
+
     testWidgets('rotate is disabled with no selection', (tester) async {
       final cubit = await pump(tester, ready);
 
@@ -407,114 +445,26 @@ void main() {
     });
   });
 
-  group('document tools', () {
-    testWidgets('compress runs', (tester) async {
-      final cubit = await pump(tester, ready);
-
-      await tester.ensureVisible(find.byKey(PdfEditKeys.compressButton));
-      await tester.tap(find.byKey(PdfEditKeys.compressButton));
-      await confirmReview(tester);
-
-      expect(cubit.calls, ['compress']);
-    });
-
-    testWidgets('merge is disabled with fewer than two documents', (
-      tester,
-    ) async {
-      final cubit = await pump(tester, ready);
-
-      await tester.ensureVisible(find.byKey(PdfEditKeys.mergeConfirmButton));
-      await tester.tap(find.byKey(PdfEditKeys.mergeConfirmButton));
-      await tester.pump();
-
-      expect(cubit.calls, isEmpty);
-      expect(find.textContaining('at least one other'), findsOneWidget);
-    });
-
-    testWidgets('merge runs once there is another document', (tester) async {
+  group('watermark', () {
+    testWidgets('can save the watermark as a copy', (tester) async {
       final cubit = await pump(
         tester,
         ready,
-        mergeCandidates: [doc(id: 'b', title: 'Receipt')],
+        initialOperation: PdfEditOperation.watermark,
       );
-
-      await tester.ensureVisible(find.byKey(PdfEditKeys.mergeConfirmButton));
-      await tester.tap(find.byKey(PdfEditKeys.mergeConfirmButton));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(PdfEditKeys.inputContinue));
+      await tester.enterText(
+        find.byKey(PdfEditKeys.watermarkTextField),
+        'DRAFT',
+      );
+      await tester.pump();
+      await tester.tap(find.byKey(PdfEditKeys.watermarkCopyButton));
       await confirmReview(tester);
 
-      expect(cubit.calls, ['merge:2']);
+      expect(cubit.calls, ['watermarkCopy:DRAFT']);
     });
 
-    testWidgets('split is disabled for a single-page document', (tester) async {
-      final cubit = await pump(
-        tester,
-        ready.copyWith(
-          document: doc(pageCount: 1),
-          metadata: metadata(pageCount: 1),
-        ),
-      );
-
-      await tester.ensureVisible(find.byKey(PdfEditKeys.splitConfirmButton));
-      await tester.tap(find.byKey(PdfEditKeys.splitConfirmButton));
-      await tester.pump();
-
-      expect(cubit.calls, isEmpty);
-    });
-
-    testWidgets('split reviews two outputs before one submission', (
-      tester,
-    ) async {
-      final cubit = await pump(tester, ready);
-
-      await tester.ensureVisible(find.byKey(PdfEditKeys.splitConfirmButton));
-      await tester.tap(find.byKey(PdfEditKeys.splitConfirmButton));
-      await tester.pumpAndSettle();
-      expect(find.byKey(PdfEditKeys.splitBoundaryField), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.splitFirstNameField), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.splitSecondNameField), findsOneWidget);
-      await tester.tap(find.byKey(PdfEditKeys.inputContinue));
-      await confirmReview(tester);
-
-      expect(cubit.calls, ['split:2']);
-    });
-
-    testWidgets('split refuses an invalid boundary before review', (
-      tester,
-    ) async {
-      final cubit = await pump(tester, ready);
-
-      await tester.ensureVisible(find.byKey(PdfEditKeys.splitConfirmButton));
-      await tester.tap(find.byKey(PdfEditKeys.splitConfirmButton));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byKey(PdfEditKeys.splitBoundaryField), '4');
-      await tester.tap(find.byKey(PdfEditKeys.inputContinue));
-      await tester.pump();
-
-      expect(find.textContaining('split point'), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.confirm), findsNothing);
-      expect(cubit.calls, isEmpty);
-    });
-
-    testWidgets('cancelling an operation review mutates nothing', (
-      tester,
-    ) async {
-      final cubit = await pump(tester, ready);
-
-      await tester.ensureVisible(find.byKey(PdfEditKeys.compressButton));
-      await tester.tap(find.byKey(PdfEditKeys.compressButton));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(PdfEditKeys.cancel));
-      await tester.pumpAndSettle();
-
-      expect(cubit.calls, isEmpty);
-    });
-  });
-
-  group('watermark', () {
     testWidgets('the preview tracks what is typed', (tester) async {
-      await pump(tester, ready);
+      await pump(tester, ready, initialOperation: PdfEditOperation.watermark);
 
       await tester.ensureVisible(find.byKey(PdfEditKeys.watermarkTextField));
       await tester.enterText(
@@ -528,7 +478,11 @@ void main() {
     });
 
     testWidgets('applying is disabled until there is text', (tester) async {
-      final cubit = await pump(tester, ready);
+      final cubit = await pump(
+        tester,
+        ready,
+        initialOperation: PdfEditOperation.watermark,
+      );
 
       await tester.ensureVisible(
         find.byKey(PdfEditKeys.watermarkConfirmButton),
@@ -540,7 +494,11 @@ void main() {
     });
 
     testWidgets('applying passes the text through', (tester) async {
-      final cubit = await pump(tester, ready);
+      final cubit = await pump(
+        tester,
+        ready,
+        initialOperation: PdfEditOperation.watermark,
+      );
 
       await tester.ensureVisible(find.byKey(PdfEditKeys.watermarkTextField));
       await tester.enterText(
@@ -557,7 +515,11 @@ void main() {
 
   group('protection', () {
     testWidgets('an unprotected document offers protection', (tester) async {
-      final cubit = await pump(tester, ready);
+      final cubit = await pump(
+        tester,
+        ready,
+        initialOperation: PdfEditOperation.protect,
+      );
 
       await tester.ensureVisible(find.byKey(PdfEditKeys.protectPasswordField));
       await tester.enterText(
@@ -578,6 +540,7 @@ void main() {
           document: doc(isProtected: true),
           metadata: metadata(isProtected: true),
         ),
+        initialOperation: PdfEditOperation.protect,
       );
 
       expect(find.byKey(PdfEditKeys.protectConfirmButton), findsNothing);
@@ -604,30 +567,11 @@ void main() {
           metadata: metadata(isProtected: true),
           passwordRejected: true,
         ),
+        initialOperation: PdfEditOperation.protect,
       );
 
       expect(find.byKey(PdfEditKeys.errorView), findsNothing);
       expect(find.textContaining('did not work'), findsAtLeastNWidgets(1));
-    });
-  });
-
-  group('metadata', () {
-    testWidgets('shows every field the spec names', (tester) async {
-      await pump(tester, ready);
-
-      await tester.ensureVisible(find.byKey(PdfEditKeys.metadataView));
-
-      expect(find.byKey(PdfEditKeys.metadataView), findsOneWidget);
-      for (final label in [
-        'Title',
-        'Pages',
-        'Size',
-        'Created',
-        'Modified',
-        'Protected',
-      ]) {
-        expect(find.text(label), findsOneWidget, reason: '$label is missing');
-      }
     });
   });
 
@@ -751,13 +695,15 @@ void main() {
       handle.dispose();
     });
 
-    testWidgets('metadata rows announce their name and value together', (
+    testWidgets('manage pages omits document metadata and tools', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
       await pump(tester, ready);
 
-      expect(find.bySemanticsLabel('Pages, 4'), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.metadataView), findsNothing);
+      expect(find.byKey(PdfEditKeys.compressButton), findsNothing);
+      expect(find.byKey(PdfEditKeys.watermarkTextField), findsNothing);
 
       handle.dispose();
     });

@@ -83,9 +83,6 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
               style: Theme.of(context).textTheme.titleMedium,
             ),
           ),
-          actions: state.document == null
-              ? null
-              : [_ActionMenu(document: state.document!, host: widget)],
         ),
         body: switch (state.status) {
           LoadStatus.initial ||
@@ -101,6 +98,154 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
         },
       ),
     );
+  }
+}
+
+/// Lifecycle operations that Viewer can host beside its reading actions.
+enum DocumentLifecycleAction {
+  /// Changes the document title.
+  rename,
+
+  /// Moves the document to another library folder.
+  move,
+
+  /// Creates an independently named copy.
+  duplicate,
+
+  /// Removes the document from active library lists.
+  archive,
+
+  /// Returns an archived document to active lists.
+  restore,
+
+  /// Moves the document to recoverable Trash.
+  moveToTrash,
+}
+
+/// Result of a lifecycle operation hosted by Viewer.
+@immutable
+class DocumentLifecycleActionResult {
+  /// Creates an operation result.
+  const DocumentLifecycleActionResult({
+    this.changed = false,
+    this.unavailable = false,
+    this.openedDocument,
+  });
+
+  /// Whether persisted metadata changed.
+  final bool changed;
+
+  /// Whether the source document can no longer remain open in Viewer.
+  final bool unavailable;
+
+  /// A duplicate that should replace the source Viewer, when one was created.
+  final Document? openedDocument;
+}
+
+/// Runs one document lifecycle action using the existing reviewed dialogs.
+///
+/// The application layer calls this from Viewer's overflow menu. Keeping the
+/// dialogs here preserves the feature boundary while allowing Detail itself to
+/// remain a metadata-only screen without a second action menu.
+Future<DocumentLifecycleActionResult> runDocumentLifecycleAction(
+  BuildContext context, {
+  required DocumentDetailCubit cubit,
+  required Document document,
+  required DocumentLifecycleAction action,
+}) async {
+  // PopupMenuButton reports its selection while its route is closing. Waiting
+  // one frame prevents a dialog opened by that selection from being removed
+  // together with the menu on slower devices.
+  await WidgetsBinding.instance.endOfFrame;
+  if (!context.mounted) return const DocumentLifecycleActionResult();
+
+  switch (action) {
+    case DocumentLifecycleAction.rename:
+      final name = await showNameDialog(
+        context,
+        title: 'Rename document',
+        confirmLabel: 'Rename',
+        initialValue: document.title,
+      );
+      if (name == null) return const DocumentLifecycleActionResult();
+      await cubit.rename(name);
+      return DocumentLifecycleActionResult(
+        changed: cubit.state.failure == null,
+      );
+    case DocumentLifecycleAction.move:
+      final moved = await showDialog<bool>(
+        context: context,
+        builder: (_) => BlocProvider.value(
+          value: cubit,
+          child: _MovePickerDialog(currentFolderId: document.folderId),
+        ),
+      );
+      return DocumentLifecycleActionResult(changed: moved ?? false);
+    case DocumentLifecycleAction.duplicate:
+      await Future.wait([cubit.beginDuplicate(), cubit.loadMoveOptions()]);
+      if (!context.mounted || cubit.state.duplicateRequest == null) {
+        return const DocumentLifecycleActionResult();
+      }
+      final copy = await showDialog<Document>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => BlocProvider.value(
+          value: cubit,
+          child: _DuplicateDialog(source: document),
+        ),
+      );
+      if (copy != null && context.mounted) {
+        await SemanticsService.sendAnnouncement(
+          View.of(context),
+          'Created ${copy.title}',
+          TextDirection.ltr,
+        );
+      }
+      return DocumentLifecycleActionResult(
+        changed: copy != null,
+        openedDocument: copy,
+      );
+    case DocumentLifecycleAction.archive:
+      await cubit.archive();
+      return DocumentLifecycleActionResult(
+        changed: cubit.state.failure == null,
+      );
+    case DocumentLifecycleAction.restore:
+      await cubit.restore();
+      return DocumentLifecycleActionResult(
+        changed: cubit.state.failure == null,
+      );
+    case DocumentLifecycleAction.moveToTrash:
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          key: LibraryKeys.documentDeleteConfirmDialog,
+          title: Text('Move ${document.title} to Trash?'),
+          content: const Text(
+            'You can restore this document for 30 days. After that it will be permanently deleted.',
+          ),
+          actions: [
+            TextButton(
+              key: LibraryKeys.documentDeleteCancelButton,
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              key: LibraryKeys.documentDeleteConfirmButton,
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Move to Trash'),
+            ),
+          ],
+        ),
+      );
+      if (!(confirmed ?? false)) {
+        return const DocumentLifecycleActionResult();
+      }
+      await cubit.delete();
+      return DocumentLifecycleActionResult(
+        changed: cubit.state.isDeleted,
+        unavailable: cubit.state.isDeleted,
+      );
   }
 }
 
@@ -243,144 +388,6 @@ class _FavouriteRow extends StatelessWidget {
   }
 }
 
-/// The lifecycle action menu.
-class _ActionMenu extends StatelessWidget {
-  const _ActionMenu({required this.document, required this.host});
-
-  final Document document;
-  final DocumentDetailScreen host;
-
-  @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<DocumentDetailCubit>();
-
-    return PopupMenuButton<void>(
-      key: LibraryKeys.documentDetailMenu,
-      icon: const Icon(Icons.more_vert),
-      itemBuilder: (context) => [
-        PopupMenuItem<void>(
-          key: LibraryKeys.documentRenameButton,
-          onTap: () => _rename(context, cubit),
-          child: const Text('Rename'),
-        ),
-        PopupMenuItem<void>(
-          key: LibraryKeys.documentMoveButton,
-          onTap: () => _move(context, cubit),
-          child: const Text('Move to folder'),
-        ),
-        PopupMenuItem<void>(
-          key: LibraryKeys.documentDuplicateButton,
-          onTap: () => _duplicate(context, cubit),
-          child: const Text('Duplicate'),
-        ),
-        if (document.isArchived)
-          PopupMenuItem<void>(
-            key: LibraryKeys.documentRestoreButton,
-            onTap: cubit.restore,
-            child: const Text('Restore'),
-          )
-        else
-          PopupMenuItem<void>(
-            key: LibraryKeys.documentArchiveButton,
-            onTap: cubit.archive,
-            child: const Text('Archive'),
-          ),
-        PopupMenuItem<void>(
-          key: LibraryKeys.documentDeleteButton,
-          onTap: () => _delete(context, cubit),
-          child: const Text('Move to Trash'),
-        ),
-      ],
-    );
-  }
-
-  /// Asks for a new title, then applies it.
-  ///
-  /// `onTap` fires as the menu closes, so the dialog is opened on the next
-  /// frame — showing it while the menu route is still popping loses it.
-  void _rename(BuildContext context, DocumentDetailCubit cubit) {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final name = await showNameDialog(
-        context,
-        title: 'Rename document',
-        confirmLabel: 'Rename',
-        initialValue: document.title,
-      );
-
-      if (name != null) await cubit.rename(name);
-    });
-  }
-
-  void _move(BuildContext context, DocumentDetailCubit cubit) {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!context.mounted) return;
-      await showDialog<void>(
-        context: context,
-        builder: (_) => BlocProvider.value(
-          value: cubit,
-          child: _MovePickerDialog(currentFolderId: document.folderId),
-        ),
-      );
-    });
-  }
-
-  void _duplicate(BuildContext context, DocumentDetailCubit cubit) {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Future.wait([cubit.beginDuplicate(), cubit.loadMoveOptions()]);
-      if (!context.mounted || cubit.state.duplicateRequest == null) return;
-      final copy = await showDialog<Document>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => BlocProvider.value(
-          value: cubit,
-          child: _DuplicateDialog(source: document),
-        ),
-      );
-      if (copy == null || !context.mounted) return;
-      await SemanticsService.sendAnnouncement(
-        View.of(context),
-        'Created ${copy.title}',
-        TextDirection.ltr,
-      );
-      host.onOpenDocument?.call(copy);
-    });
-  }
-
-  /// Confirms, then moves the document to recoverable Trash.
-  ///
-  /// The confirmation is mandatory and lives here rather than in the Cubit:
-  /// asking is a UI concern, and a Cubit that showed a dialog could not be
-  /// unit-tested.
-  void _delete(BuildContext context, DocumentDetailCubit cubit) {
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          key: LibraryKeys.documentDeleteConfirmDialog,
-          title: Text('Move ${document.title} to Trash?'),
-          content: const Text(
-            'You can restore this document for 30 days. After that it will be permanently deleted.',
-          ),
-          actions: [
-            TextButton(
-              key: LibraryKeys.documentDeleteCancelButton,
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              key: LibraryKeys.documentDeleteConfirmButton,
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text('Move to Trash'),
-            ),
-          ],
-        ),
-      );
-
-      if (confirmed ?? false) await cubit.delete();
-    });
-  }
-}
-
 class _MovePickerDialog extends StatefulWidget {
   const _MovePickerDialog({required this.currentFolderId});
 
@@ -478,7 +485,7 @@ class _MovePickerDialogState extends State<_MovePickerDialog> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(context, false),
               child: const Text('Cancel'),
             ),
             FilledButton(
@@ -492,7 +499,7 @@ class _MovePickerDialogState extends State<_MovePickerDialog> {
                             : FolderId(selectedToken!),
                       );
                       if (context.mounted && cubit.state.failure == null) {
-                        Navigator.pop(context);
+                        Navigator.pop(context, true);
                       }
                     },
               child: const Text('Move'),

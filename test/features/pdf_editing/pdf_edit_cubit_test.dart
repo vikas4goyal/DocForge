@@ -167,6 +167,7 @@ void main() {
         rotate: RotatePage(context),
         delete: DeletePages(context),
         duplicate: DuplicatePage(context),
+        reorder: ReorderPage(context),
         extract: ExtractPages(context),
         merge: MergeDocuments(context),
         split: SplitDocument(context),

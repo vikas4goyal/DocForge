@@ -450,6 +450,12 @@ class PurgeDocument {
     if (passwordRemoved case Failed<void>(:final failure)) {
       return Result<void>.failure(failure);
     }
+    final consentRemoved = await _secureStorage.delete(
+      SecureStorageKeys.pdfPasswordRemembered(id.value),
+    );
+    if (consentRemoved case Failed<void>(:final failure)) {
+      return Result<void>.failure(failure);
+    }
 
     final found = await _documents.findById(id);
     if (found case Success<Document>(:final value)) {

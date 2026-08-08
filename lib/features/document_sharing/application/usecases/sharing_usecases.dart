@@ -269,41 +269,48 @@ class SharePageImages {
     final ordered = [...selected]
       ..sort((a, b) => a.pageNumber.compareTo(b.pageNumber));
     final materialized = <MaterializedDocumentPage>[];
-    try {
-      for (var index = 0; index < ordered.length; index++) {
-        if (token?.isCancelled ?? false) {
-          yield const SharePreparationFailed(Failure.cancelled());
-          return;
-        }
-        final rendered = await access.materialize(
-          document,
-          ordered[index],
-          DocumentPageRenderPurpose.sharing,
-        );
-        if (rendered case Failed(:final failure)) {
-          yield SharePreparationFailed(failure);
-          return;
-        }
-        materialized.add(rendered.valueOrNull!);
-        yield SharePreparationProgress(
-          Progress(completed: index + 1, total: ordered.length),
-        );
-      }
-      final payload = SharePayload(
-        filePaths: [for (final page in materialized) page.path],
-        subject: ShareRules.subjectFor(document),
-      );
-      final shared = await _share.share(payload);
-      yield switch (shared) {
-        Success() => SharePreparationReady(payload),
-        Failed(:final failure) => SharePreparationFailed(failure),
-      };
-    } finally {
-      // The share repository returns after the platform has accepted the
-      // handoff, so temporary renders can now be reclaimed safely.
+    Future<void> releasePrepared() async {
       for (final page in materialized) {
         await access.release(page);
       }
+    }
+
+    for (var index = 0; index < ordered.length; index++) {
+      if (token?.isCancelled ?? false) {
+        await releasePrepared();
+        yield const SharePreparationFailed(Failure.cancelled());
+        return;
+      }
+      final rendered = await access.materialize(
+        document,
+        ordered[index],
+        DocumentPageRenderPurpose.sharing,
+      );
+      if (rendered case Failed(:final failure)) {
+        await releasePrepared();
+        yield SharePreparationFailed(failure);
+        return;
+      }
+      materialized.add(rendered.valueOrNull!);
+      yield SharePreparationProgress(
+        Progress(completed: index + 1, total: ordered.length),
+      );
+    }
+    final payload = SharePayload(
+      filePaths: [for (final page in materialized) page.path],
+      subject: ShareRules.subjectFor(document),
+    );
+    final shared = await _share.share(payload);
+    switch (shared) {
+      case Success():
+        // Platform share APIs report when the handoff is accepted, not when
+        // every receiving app has finished reading every attachment. Keep
+        // successful renders in cache so multi-page shares cannot race their
+        // deletion; the cache directory is OS-reclaimable.
+        yield SharePreparationReady(payload);
+      case Failed(:final failure):
+        await releasePrepared();
+        yield SharePreparationFailed(failure);
     }
   }
 

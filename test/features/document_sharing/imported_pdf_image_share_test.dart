@@ -32,7 +32,9 @@ void main() {
       '/tmp/imported-1.png',
       '/tmp/imported-2.png',
     ]);
-    expect(access.released, 2);
+    // The receiving app may open attachments after the platform accepts the
+    // handoff, so successful share files must remain in cache.
+    expect(access.released, 0);
   });
 }
 

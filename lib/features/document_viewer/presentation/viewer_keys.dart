@@ -40,6 +40,24 @@ abstract final class ViewerKeys {
   /// Opens the metadata-focused document Detail screen.
   static const documentDetailsButton = Key('viewer_document_details_button');
 
+  /// Opens reviewed document renaming from Viewer.
+  static const renameButton = Key('viewer_document_rename_button');
+
+  /// Opens the document folder picker from Viewer.
+  static const moveButton = Key('viewer_document_move_button');
+
+  /// Opens reviewed duplication from Viewer.
+  static const duplicateButton = Key('viewer_document_duplicate_button');
+
+  /// Archives the open document from Viewer.
+  static const archiveButton = Key('viewer_document_archive_button');
+
+  /// Restores the open archived document from Viewer.
+  static const restoreButton = Key('viewer_document_restore_button');
+
+  /// Moves the open document to recoverable Trash from Viewer.
+  static const moveToTrashButton = Key('viewer_document_move_to_trash_button');
+
   /// The control that shares the document.
   static const shareButton = Key('viewer_share_button');
 
@@ -58,11 +76,19 @@ abstract final class ViewerKeys {
   /// The control that opens password settings.
   static const passwordButton = Key('viewer_password_button');
 
+  /// The option that deletes a saved automatic-unlock password.
+  static const forgetPasswordButton = Key('viewer_forget_password_button');
+
   /// Opens page selection and page-derived actions.
   static const managePagesButton = Key('viewer_manage_pages_button');
 
   /// The field for a protected document's password.
   static const passwordField = Key('viewer_password_field');
+
+  /// Explicit consent to reuse the entered password on this device.
+  static const rememberPasswordCheckbox = Key(
+    'viewer_remember_password_checkbox',
+  );
 
   /// The control that submits the password.
   static const unlockButton = Key('viewer_unlock_button');

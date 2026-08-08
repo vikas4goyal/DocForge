@@ -4,10 +4,9 @@ library;
 import 'package:doc_scanly/core/contracts/document_page_access.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/document_page_handle.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
-import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
-import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
 
 /// Resolves, renders and releases one thumbnail-sized document page.
@@ -17,30 +16,26 @@ import 'package:doc_scanly/features/document_library/domain/repositories/library
 /// non-fatal: the platform cache can reclaim an orphaned materialised copy.
 class LoadDocumentPageThumbnail {
   /// Creates the use case from explicit storage boundaries.
-  const LoadDocumentPageThumbnail(this._cache, this._files, this._secrets);
+  const LoadDocumentPageThumbnail(this._cache, this._files);
 
   final DocumentThumbnailCache _cache;
   final DocumentFileResolver _files;
-  final SecureStore _secrets;
 
   /// Returns a private derived thumbnail path for [pageNumber].
   Future<Result<String>> call(Document document, int pageNumber) async {
+    if (document.isProtected) {
+      return const Result<String>.failure(Failure.auth());
+    }
     final resolved = await _files.pathFor(document);
     if (resolved case Failed(:final failure)) {
       return Result<String>.failure(failure);
     }
 
     try {
-      final password = document.isProtected
-          ? (await _secrets.read(
-              SecureStorageKeys.pdfPassword(document.id.value),
-            )).valueOrNull
-          : null;
       return await _cache.thumbnailFor(
         document,
         filePath: resolved.valueOrNull!,
         pageNumber: pageNumber,
-        password: password,
       );
     } finally {
       // Android materialises MediaStore content into cache for native PDFium.

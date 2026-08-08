@@ -20,6 +20,8 @@ import 'package:doc_scanly/core/failures/failure_messages.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
+import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_cubit.dart';
+import 'package:doc_scanly/features/document_library/presentation/screens/document_detail_screen.dart';
 import 'package:doc_scanly/features/document_sharing/presentation/cubit/share_cubit.dart';
 import 'package:doc_scanly/features/document_sharing/presentation/cubit/share_state.dart';
 import 'package:doc_scanly/features/document_sharing/presentation/screens/share_options_sheet.dart';
@@ -75,7 +77,7 @@ ViewerScreens buildViewerScreens({
 }) {
   return ViewerScreens(
     viewer: (context, id) {
-      final cubit = ViewerCubit(
+      final viewerCubit = ViewerCubit(
         id,
         OpenDocumentForViewing(
           library.documentReader,
@@ -84,6 +86,7 @@ ViewerScreens buildViewerScreens({
           documentFiles,
         ),
         RememberDocumentPassword(secureStorage),
+        ForgetDocumentPassword(secureStorage),
         (documentId) async {
           final found = await library.documentReader.findById(documentId);
           // Trash keeps the record for recovery, but it is no longer available
@@ -97,9 +100,49 @@ ViewerScreens buildViewerScreens({
         },
         library.toggleFavourite.call,
       );
+      final lifecycleCubit = DocumentDetailCubit(
+        id,
+        library.loadDocumentDetail,
+        library.renameDocument,
+        library.moveDocument,
+        library.toggleFavourite,
+        library.archiveDocument,
+        library.restoreDocument,
+        library.duplicateDocument,
+        library.purgeDocument,
+        moveToTrash: library.moveDocumentToTrash,
+        loadFolderOptions: library.loadFolderOptions,
+      );
 
-      return BlocProvider(
-        create: (_) => cubit..load(),
+      Future<void> runLifecycle(DocumentLifecycleAction action) async {
+        final document = viewerCubit.state.document;
+        if (document == null) return;
+
+        final result = await runDocumentLifecycleAction(
+          context,
+          cubit: lifecycleCubit,
+          document: document,
+          action: action,
+        );
+        if (!context.mounted) return;
+
+        final opened = result.openedDocument;
+        if (opened != null) {
+          context.pushReplacement(AppRoutes.documentView(opened.id));
+          return;
+        }
+        if (result.unavailable) {
+          context.pop();
+          return;
+        }
+        if (result.changed) await viewerCubit.refreshMetadata();
+      }
+
+      return MultiBlocProvider(
+        providers: [
+          BlocProvider(create: (_) => viewerCubit..load()),
+          BlocProvider(create: (_) => lifecycleCubit..load()),
+        ],
         child: ViewerScreen(
           // The rendering surface comes from here rather than from the screen:
           // it is a plugin-backed widget, and a screen that built its own could
@@ -138,7 +181,7 @@ ViewerScreens buildViewerScreens({
               return;
             }
 
-            await cubit.refreshMetadata();
+            await viewerCubit.refreshMetadata();
           },
           // Printing goes straight to the system dialogue rather than through the
           // sheet: the viewer's print control names the action exactly, and an
@@ -148,6 +191,18 @@ ViewerScreens buildViewerScreens({
               case ViewerDocumentAction.details:
                 // Handled by [onShowDetails] so Viewer can refresh afterwards.
                 break;
+              case ViewerDocumentAction.rename:
+                runLifecycle(DocumentLifecycleAction.rename);
+              case ViewerDocumentAction.move:
+                runLifecycle(DocumentLifecycleAction.move);
+              case ViewerDocumentAction.duplicate:
+                runLifecycle(DocumentLifecycleAction.duplicate);
+              case ViewerDocumentAction.archive:
+                runLifecycle(DocumentLifecycleAction.archive);
+              case ViewerDocumentAction.restore:
+                runLifecycle(DocumentLifecycleAction.restore);
+              case ViewerDocumentAction.moveToTrash:
+                runLifecycle(DocumentLifecycleAction.moveToTrash);
               case ViewerDocumentAction.print:
                 printDocument(context, sharing, id);
               case ViewerDocumentAction.compress:
@@ -186,6 +241,8 @@ ViewerScreens buildViewerScreens({
                   documentReader: library.documentReader,
                   initialOperation: PdfEditOperation.protect,
                 );
+              case ViewerDocumentAction.forgetPassword:
+                viewerCubit.forgetPassword();
               case ViewerDocumentAction.pageManagement:
                 openEditor(
                   context,

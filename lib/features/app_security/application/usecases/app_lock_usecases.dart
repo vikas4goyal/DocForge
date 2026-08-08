@@ -108,8 +108,15 @@ class ForgetDocumentPassword {
   /// Deleting a key that was never written is a success, not a failure: a
   /// document that was never protected has no password to forget, and that is
   /// the common case.
-  Future<Result<void>> call(String documentId) =>
-      _secrets.delete(SecureStorageKeys.pdfPassword(documentId));
+  Future<Result<void>> call(String documentId) async {
+    final removed = await _secrets.delete(
+      SecureStorageKeys.pdfPassword(documentId),
+    );
+    if (removed case Failed(:final failure)) {
+      return Result<void>.failure(failure);
+    }
+    return _secrets.delete(SecureStorageKeys.pdfPasswordRemembered(documentId));
+  }
 }
 
 /// The lock gate the router consults.

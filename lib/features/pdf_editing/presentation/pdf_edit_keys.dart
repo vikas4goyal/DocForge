@@ -31,8 +31,17 @@ abstract final class PdfEditKeys {
   /// The control that duplicates the selected page.
   static const duplicateButton = Key('pdf_edit_duplicate_button');
 
+  /// Moves the selected page one place toward the beginning.
+  static const moveEarlierButton = Key('pdf_edit_move_earlier_button');
+
+  /// Moves the selected page one place toward the end.
+  static const moveLaterButton = Key('pdf_edit_move_later_button');
+
   /// The control that compresses the document.
   static const compressButton = Key('pdf_compress_button');
+
+  /// Compresses into a new document while preserving the source.
+  static const compressCopyButton = Key('pdf_compress_copy_button');
 
   /// The list of documents being merged, in the order chosen.
   static const mergeOrderList = Key('pdf_merge_order_list');
@@ -69,6 +78,9 @@ abstract final class PdfEditKeys {
 
   /// The control that applies the watermark.
   static const watermarkConfirmButton = Key('pdf_watermark_confirm_button');
+
+  /// Applies a watermark to a new copy while preserving the source.
+  static const watermarkCopyButton = Key('pdf_watermark_copy_button');
 
   /// The field holding a new password.
   static const protectPasswordField = Key('pdf_protect_password_field');

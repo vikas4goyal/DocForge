@@ -101,12 +101,19 @@ abstract final class SecureStorageKeys {
   /// Use [pdfPassword] to build the full key; never concatenate this inline.
   static const pdfPasswordPrefix = 'secure.pdfPassword.';
 
+  /// Prefix for explicit consent to automatic unlocking of one PDF.
+  static const pdfPasswordRememberedPrefix = 'secure.pdfPasswordRemembered.';
+
   /// Returns the secure-storage key holding the password for [documentId].
   ///
   /// The entry is deleted when the document is permanently removed, so a
   /// password never outlives the document it protects.
   static String pdfPassword(String documentId) =>
       '$pdfPasswordPrefix$documentId';
+
+  /// Returns the key recording that the user chose to reuse this password.
+  static String pdfPasswordRemembered(String documentId) =>
+      '$pdfPasswordRememberedPrefix$documentId';
 
   /// Every fixed secure key, for tests that assert uniqueness and namespacing.
   ///

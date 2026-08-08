@@ -83,15 +83,22 @@ LibraryScreens buildLibraryScreens({required LibraryModule library}) {
       filter: filter,
       folderId: folderId,
     ),
-    child: DocumentListScreen(
-      title: title,
-      emptyTitle: emptyTitle,
-      emptyMessage: emptyMessage,
-      // The archive and favourites deliberately offer no scan action: "scan
-      // your first document" is not what an empty archive should suggest.
-      onScan: offerScan ? () => context.push(AppRoutes.scan) : null,
-      onOpenDocument: (id) => context.push(AppRoutes.documentView(id)),
-      loadThumbnail: library.loadDocumentPageThumbnail.call,
+    child: Builder(
+      builder: (listContext) => DocumentListScreen(
+        title: title,
+        emptyTitle: emptyTitle,
+        emptyMessage: emptyMessage,
+        // The archive and favourites deliberately offer no scan action: "scan
+        // your first document" is not what an empty archive should suggest.
+        onScan: offerScan ? () => context.push(AppRoutes.scan) : null,
+        onOpenDocument: (id) async {
+          await context.push(AppRoutes.documentView(id));
+          if (listContext.mounted) {
+            await listContext.read<DocumentListCubit>().load();
+          }
+        },
+        loadThumbnail: library.loadDocumentPageThumbnail.call,
+      ),
     ),
   );
 
@@ -142,11 +149,17 @@ LibraryScreens buildLibraryScreens({required LibraryModule library}) {
         filter: DocumentFilter.folder,
         folderId: id,
       ),
-      child: FolderDetailScreen(
-        folderName: 'Folder',
-        loadThumbnail: library.loadDocumentPageThumbnail.call,
-        onOpenDocument: (documentId) =>
-            context.push(AppRoutes.documentView(documentId)),
+      child: Builder(
+        builder: (listContext) => FolderDetailScreen(
+          folderName: 'Folder',
+          loadThumbnail: library.loadDocumentPageThumbnail.call,
+          onOpenDocument: (documentId) async {
+            await context.push(AppRoutes.documentView(documentId));
+            if (listContext.mounted) {
+              await listContext.read<DocumentListCubit>().load();
+            }
+          },
+        ),
       ),
     ),
     favourites: (context) => documentList(

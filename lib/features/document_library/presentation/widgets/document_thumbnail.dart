@@ -56,6 +56,7 @@ class _DocumentThumbnailState extends State<DocumentThumbnail> {
   void didUpdateWidget(covariant DocumentThumbnail oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.document.id != widget.document.id ||
+        oldWidget.document.isProtected != widget.document.isProtected ||
         (oldWidget.loadThumbnail == null && widget.loadThumbnail != null)) {
       _requestThumbnail();
     }
@@ -64,7 +65,9 @@ class _DocumentThumbnailState extends State<DocumentThumbnail> {
   void _requestThumbnail() {
     // Store the Future once so an unrelated parent rebuild cannot reopen and
     // rerender the same PDF while the row remains mounted.
-    _request = widget.loadThumbnail?.call(widget.document, 1);
+    _request = widget.document.isProtected
+        ? null
+        : widget.loadThumbnail?.call(widget.document, 1);
   }
 
   @override
@@ -96,6 +99,7 @@ class _DocumentThumbnailState extends State<DocumentThumbnail> {
   }
 
   Widget _content(BuildContext context, ThemeData theme) {
+    if (widget.document.isProtected) return _protectedPlaceholder(theme);
     final request = _request;
     if (request == null) return _placeholder(theme);
 
@@ -134,5 +138,9 @@ class _DocumentThumbnailState extends State<DocumentThumbnail> {
       size: 24,
       color: theme.colorScheme.primary,
     ),
+  );
+
+  Widget _protectedPlaceholder(ThemeData theme) => Center(
+    child: Icon(Icons.lock_outline, size: 24, color: theme.colorScheme.primary),
   );
 }

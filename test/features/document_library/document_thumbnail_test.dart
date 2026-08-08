@@ -81,6 +81,29 @@ void main() {
     semantics.dispose();
   });
 
+  testWidgets('a protected document never requests or exposes a thumbnail', (
+    tester,
+  ) async {
+    var calls = 0;
+    final protected = _document.copyWith(isProtected: true);
+
+    await tester.pumpWidget(
+      _host(
+        DocumentThumbnail(
+          document: protected,
+          loadThumbnail: (_, _) async {
+            calls++;
+            return const Result<String>.success('/private/page.png');
+          },
+        ),
+      ),
+    );
+
+    expect(calls, 0);
+    expect(find.byIcon(Icons.lock_outline), findsOneWidget);
+    expect(find.byType(Image), findsNothing);
+  });
+
   testWidgets('DocumentCard injects thumbnail loading but remains one button', (
     tester,
   ) async {

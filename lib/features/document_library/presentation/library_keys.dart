@@ -77,6 +77,10 @@ abstract final class LibraryKeys {
   /// Control that restores an archived document.
   static const documentRestoreButton = Key('document_restore_button');
 
+  /// Restores one archived document directly from its Archive row.
+  static Key documentListRestore(String documentId) =>
+      Key('document_list_restore_$documentId');
+
   /// Control that duplicates a document.
   static const documentDuplicateButton = Key('document_duplicate_button');
 

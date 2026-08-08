@@ -207,6 +207,7 @@ class ViewerHarness {
     const DocumentId('doc-1'),
     openUseCase,
     RememberDocumentPassword(secrets),
+    ForgetDocumentPassword(secrets),
     documents.findById,
     _toggleFavourite,
   );

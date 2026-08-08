@@ -74,15 +74,20 @@ void main() {
     FolderId? folderId,
   }) => BlocProvider(
     create: (_) => listCubit(filter: filter, folderId: folderId),
-    child: folderId == null
-        ? DocumentListScreen(
-            title: title,
-            onOpenDocument: (id) => context.push(AppRoutes.documentView(id)),
-          )
-        : FolderDetailScreen(
-            folderName: title,
-            onOpenDocument: (id) => context.push(AppRoutes.documentView(id)),
-          ),
+    child: Builder(
+      builder: (listContext) {
+        void open(DocumentId id) async {
+          await context.push(AppRoutes.documentView(id));
+          if (listContext.mounted) {
+            await listContext.read<DocumentListCubit>().load();
+          }
+        }
+
+        return folderId == null
+            ? DocumentListScreen(title: title, onOpenDocument: open)
+            : FolderDetailScreen(folderName: title, onOpenDocument: open);
+      },
+    ),
   );
 
   /// The library's real screens, wired into the real router.
@@ -112,7 +117,17 @@ void main() {
     ),
     scan: (_) => _placeholder('scan'),
     documents: (context) => listRoute(context, title: 'Documents'),
-    viewer: (_, id) => _placeholder('viewer:${id.value}'),
+    viewer: (context, id) => Scaffold(
+      key: Key('placeholder_viewer:${id.value}'),
+      body: TextButton(
+        key: const Key('viewer_toggle_favourite_and_back'),
+        onPressed: () async {
+          await ToggleFavourite(documents, clock)(id);
+          if (context.mounted) context.pop();
+        },
+        child: const Text('Toggle favourite and back'),
+      ),
+    ),
     documentDetail: (context, id) => BlocProvider(
       create: (_) => DocumentDetailCubit(
         id,
@@ -310,22 +325,36 @@ void main() {
       expect(find.byKey(LibraryKeys.documentDetailScreen), findsNothing);
     });
 
-    testWidgets('deleting a document returns to the list', (tester) async {
+    testWidgets('Favourites reloads after Viewer removes the favourite', (
+      tester,
+    ) async {
+      documents.documents[favouriteDocument.id] = favouriteDocument;
+
+      await pumpAt(tester, AppRoutes.favourites);
+      await tester.tap(find.byType(DocumentCard));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(const Key('viewer_toggle_favourite_and_back')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DocumentCard), findsNothing);
+      expect(find.byKey(LibraryKeys.documentListEmptyState), findsOneWidget);
+    });
+
+    testWidgets('metadata Details has no duplicate lifecycle menu', (
+      tester,
+    ) async {
       documents.documents[sampleDocument.id] = sampleDocument;
 
       final router = await pumpAt(tester, AppRoutes.documents);
       unawaited(router.push(AppRoutes.documentDetail(sampleDocument.id)));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byKey(const Key('document_detail_menu')));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(LibraryKeys.documentDeleteButton));
-      await tester.pumpAndSettle();
-      await tester.tap(find.byKey(LibraryKeys.documentDeleteConfirmButton));
+      expect(find.byKey(LibraryKeys.documentDetailMenu), findsNothing);
+      await tester.pageBack();
       await tester.pumpAndSettle();
 
-      // Staying on a detail screen for a document that no longer exists would
-      // show metadata the user can no longer act on.
       expect(find.byKey(LibraryKeys.documentDetailScreen), findsNothing);
       expect(find.byKey(LibraryKeys.documentListScreen), findsOneWidget);
     });

@@ -20,6 +20,7 @@ class DocumentCard extends StatelessWidget {
     super.key,
     this.onTap,
     this.onToggleFavourite,
+    this.onRestore,
     this.loadThumbnail,
   });
 
@@ -31,6 +32,9 @@ class DocumentCard extends StatelessWidget {
 
   /// Called when the favourite control is activated.
   final VoidCallback? onToggleFavourite;
+
+  /// Restores this document when it is shown in the Archive list.
+  final VoidCallback? onRestore;
 
   /// Lazily resolves the document's first-page preview.
   final DocumentThumbnailLoader? loadThumbnail;
@@ -110,15 +114,36 @@ class DocumentCard extends StatelessWidget {
                 ),
             ],
           ),
-          trailing: switch (onToggleFavourite) {
-            null => null,
-            final onPressed => _FavouriteButton(
-              isFavourite: document.isFavourite,
-              onPressed: onPressed,
-            ),
-          },
+          trailing: onRestore != null
+              ? _RestoreButton(document: document, onPressed: onRestore!)
+              : switch (onToggleFavourite) {
+                  null => null,
+                  final onPressed => _FavouriteButton(
+                    isFavourite: document.isFavourite,
+                    onPressed: onPressed,
+                  ),
+                },
         ),
       ),
+    );
+  }
+}
+
+/// Restores an archived document without opening it first.
+class _RestoreButton extends StatelessWidget {
+  const _RestoreButton({required this.document, required this.onPressed});
+
+  final Document document;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final label = 'Restore ${document.title} from Archive';
+    return IconButton(
+      key: LibraryKeys.documentListRestore(document.id.value),
+      onPressed: onPressed,
+      tooltip: label,
+      icon: const Icon(Icons.unarchive_outlined, semanticLabel: 'Restore'),
     );
   }
 }

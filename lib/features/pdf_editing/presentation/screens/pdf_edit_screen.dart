@@ -13,7 +13,7 @@ import 'package:doc_scanly/features/pdf_editing/presentation/widgets/pdf_edit_wi
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Edits one document's pages, protection, watermark and size.
+/// Manages one document's pages or hosts one focused document operation.
 ///
 /// Keys: [PdfEditKeys.screen] on the root, and one key per control. The keys
 /// are normative and come from `specs/pdf-editing/spec.md`.
@@ -90,6 +90,10 @@ class PdfEditScreen extends StatelessWidget {
                           await _runPageOperation(context, cubit, operation);
                         case PdfEditOperation.duplicate:
                           await _runPageOperation(context, cubit, operation);
+                        case PdfEditOperation.moveEarlier:
+                          await _runPageOperation(context, cubit, operation);
+                        case PdfEditOperation.moveLater:
+                          await _runPageOperation(context, cubit, operation);
                         case PdfEditOperation.extract:
                           await _runPageOperation(context, cubit, operation);
                         case PdfEditOperation.delete:
@@ -105,6 +109,20 @@ class PdfEditScreen extends StatelessWidget {
                           value: PdfEditOperation.rotate,
                           child: Text('Rotate page'),
                         ),
+                      if (state.selectedPage case final page?)
+                        if (page > 0)
+                          const PopupMenuItem(
+                            key: PdfEditKeys.moveEarlierButton,
+                            value: PdfEditOperation.moveEarlier,
+                            child: Text('Move page earlier'),
+                          ),
+                      if (state.selectedPage case final page?)
+                        if (page < state.pageCount - 1)
+                          const PopupMenuItem(
+                            key: PdfEditKeys.moveLaterButton,
+                            value: PdfEditOperation.moveLater,
+                            child: Text('Move page later'),
+                          ),
                       if (state.hasSinglePageSelected)
                         const PopupMenuItem(
                           key: PdfEditKeys.duplicateButton,
@@ -136,6 +154,30 @@ class PdfEditScreen extends StatelessWidget {
                         PdfEditOperation.rotate,
                       ),
                     ),
+                  if (state.selectedPage case final page?) ...[
+                    if (page > 0)
+                      IconButton(
+                        key: PdfEditKeys.moveEarlierButton,
+                        tooltip: 'Move page earlier',
+                        onPressed: () => _runPageOperation(
+                          context,
+                          cubit,
+                          PdfEditOperation.moveEarlier,
+                        ),
+                        icon: const Icon(Icons.arrow_back),
+                      ),
+                    if (page < state.pageCount - 1)
+                      IconButton(
+                        key: PdfEditKeys.moveLaterButton,
+                        tooltip: 'Move page later',
+                        onPressed: () => _runPageOperation(
+                          context,
+                          cubit,
+                          PdfEditOperation.moveLater,
+                        ),
+                        icon: const Icon(Icons.arrow_forward),
+                      ),
+                  ],
                   if (state.hasSinglePageSelected)
                     PdfEditActionButton(
                       key: PdfEditKeys.duplicateButton,
@@ -174,7 +216,6 @@ class PdfEditScreen extends StatelessWidget {
             PdfEditStatus.ready => _Editor(
               state: state,
               thumbnailBuilder: thumbnailBuilder,
-              mergeCandidates: mergeCandidates,
               initialOperation: initialOperation,
             ),
           },
@@ -279,6 +320,10 @@ class PdfEditScreen extends StatelessWidget {
         'A copy of the selected page will be inserted in the current PDF.',
       PdfEditOperation.extract =>
         '${cubit.state.selection.length} selected pages will become a new PDF. The source stays unchanged.',
+      PdfEditOperation.moveEarlier =>
+        'The selected page will move one position earlier in the current PDF.',
+      PdfEditOperation.moveLater =>
+        'The selected page will move one position later in the current PDF.',
       _ => null,
     };
     if (summary == null) return;
@@ -303,24 +348,26 @@ class PdfEditScreen extends StatelessWidget {
         await cubit.duplicate();
       case PdfEditOperation.extract:
         await cubit.extract();
+      case PdfEditOperation.moveEarlier:
+        await cubit.moveSelectedPage(-1);
+      case PdfEditOperation.moveLater:
+        await cubit.moveSelectedPage(1);
       default:
         return;
     }
   }
 }
 
-/// The page grid and the document-level tools beneath it.
+/// The page grid, or one document-level workflow opened from Viewer.
 class _Editor extends StatelessWidget {
   const _Editor({
     required this.state,
     required this.thumbnailBuilder,
-    required this.mergeCandidates,
     required this.initialOperation,
   });
 
   final PdfEditState state;
   final PageThumbnailBuilder thumbnailBuilder;
-  final List<Document> mergeCandidates;
   final PdfEditOperation? initialOperation;
 
   @override
@@ -395,13 +442,7 @@ class _Editor extends StatelessWidget {
             ),
           ),
         ),
-        SliverToBoxAdapter(
-          child: _DocumentTools(
-            state: state,
-            mergeCandidates: mergeCandidates,
-            thumbnailBuilder: thumbnailBuilder,
-          ),
-        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 24)),
       ],
     );
   }
@@ -416,7 +457,6 @@ class _FocusedCompress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      key: PdfEditKeys.operationSheet,
       padding: const EdgeInsets.all(20),
       children: [
         Text(
@@ -426,7 +466,7 @@ class _FocusedCompress extends StatelessWidget {
         const SizedBox(height: 8),
         const Text(
           'DocScanly will create a smaller version when compression helps. '
-          'The original is kept when the result would not be smaller.',
+          'Choose whether to keep the original or replace it.',
         ),
         if (state.compression case final compression?) ...[
           const SizedBox(height: 16),
@@ -434,17 +474,38 @@ class _FocusedCompress extends StatelessWidget {
         ],
         const SizedBox(height: 24),
         FilledButton.icon(
-          key: PdfEditKeys.compressButton,
+          key: PdfEditKeys.compressCopyButton,
           icon: const Icon(Icons.compress),
-          label: const Text('Compress PDF'),
+          label: const Text('Save compressed copy'),
+          onPressed: () async {
+            final confirmed = await _reviewOperation(
+              context,
+              draft: const PdfOperationDraft.compress(
+                sourceEffect: PdfSourceEffect.preserve,
+              ),
+              title: 'Save a compressed copy?',
+              summary:
+                  'A new compressed PDF will be created. The original stays unchanged.',
+              confirmLabel: 'Save copy',
+            );
+            if (confirmed && context.mounted) {
+              await context.read<PdfEditCubit>().compress(saveAsCopy: true);
+            }
+          },
+        ),
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          key: PdfEditKeys.compressButton,
+          icon: const Icon(Icons.find_replace_outlined),
+          label: const Text('Replace original'),
           onPressed: () async {
             final confirmed = await _reviewOperation(
               context,
               draft: const PdfOperationDraft.compress(),
-              title: 'Compress this PDF?',
+              title: 'Replace with compressed PDF?',
               summary:
-                  'A smaller PDF will replace this file only when compression is beneficial.',
-              confirmLabel: 'Compress',
+                  'The current PDF will be replaced only when compression makes it smaller.',
+              confirmLabel: 'Replace original',
             );
             if (confirmed && context.mounted) {
               await context.read<PdfEditCubit>().compress();
@@ -603,124 +664,6 @@ class _FocusedSplitState extends State<_FocusedSplit> {
   }
 }
 
-/// The tools that act on the whole document rather than on selected pages.
-class _DocumentTools extends StatelessWidget {
-  const _DocumentTools({
-    required this.state,
-    required this.mergeCandidates,
-    required this.thumbnailBuilder,
-  });
-
-  final PdfEditState state;
-  final List<Document> mergeCandidates;
-  final PageThumbnailBuilder thumbnailBuilder;
-
-  @override
-  Widget build(BuildContext context) {
-    final cubit = context.read<PdfEditCubit>();
-    final metadata = state.metadata;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const Divider(),
-        ListTile(
-          key: PdfEditKeys.compressButton,
-          leading: const Icon(Icons.compress),
-          title: Text(PdfEditOperation.compress.label),
-          onTap: () async {
-            final confirmed = await _reviewOperation(
-              context,
-              draft: const PdfOperationDraft.compress(),
-              title: 'Compress this PDF?',
-              summary:
-                  'DocScanly will try a smaller file and keep the original when compression is not beneficial.',
-              confirmLabel: 'Compress',
-            );
-            if (confirmed) await cubit.compress();
-          },
-        ),
-        ListTile(
-          key: PdfEditKeys.splitConfirmButton,
-          leading: const Icon(Icons.horizontal_split),
-          title: Text(PdfEditOperation.split.label),
-          // Split needs at least two pages; offering it for one would be an
-          // action that can only fail.
-          onTap: state.pageCount > 1
-              ? () async {
-                  final draft = await _collectSplitDraft(context, state);
-                  if (draft == null || !context.mounted) return;
-                  final confirmed = await _reviewOperation(
-                    context,
-                    draft: draft,
-                    title: 'Split into two documents?',
-                    summary:
-                        'Pages 1–${draft.boundary} become “${draft.firstTitle}”; pages ${draft.boundary + 1}–${state.pageCount} become “${draft.secondTitle}”. The source stays unchanged.',
-                    confirmLabel: 'Create two PDFs',
-                  );
-                  if (confirmed) {
-                    await cubit.split(
-                      draft.boundary,
-                      outputTitles: (
-                        first: draft.firstTitle,
-                        second: draft.secondTitle,
-                      ),
-                    );
-                  }
-                }
-              : null,
-          enabled: state.pageCount > 1,
-        ),
-        ListTile(
-          key: PdfEditKeys.mergeConfirmButton,
-          leading: const Icon(Icons.merge),
-          title: Text(PdfEditOperation.merge.label),
-          subtitle: mergeCandidates.isEmpty
-              ? const Text('Needs at least one other document')
-              : null,
-          // Disabled below two documents, which the spec requires explicitly.
-          onTap: mergeCandidates.isEmpty
-              ? null
-              : () async {
-                  final draft = await _collectMergeDraft(
-                    context,
-                    state.document!,
-                    mergeCandidates,
-                  );
-                  if (draft == null || !context.mounted) return;
-                  final confirmed = await _reviewOperation(
-                    context,
-                    draft: draft,
-                    title: 'Merge two documents?',
-                    summary:
-                        '${draft.documentIds.length} documents will be combined in the reviewed order as “${draft.outputTitle}”. Every source PDF stays unchanged.',
-                    confirmLabel: 'Create merged PDF',
-                  );
-                  if (confirmed) {
-                    await cubit.merge(
-                      draft.documentIds,
-                      outputTitle: draft.outputTitle,
-                    );
-                  }
-                },
-          enabled: mergeCandidates.isNotEmpty,
-        ),
-        if (mergeCandidates.length > 1)
-          MergeOrderList(
-            titles: [for (final d in mergeCandidates) d.title],
-            // Reordering is presentational; the order is handed to the merge
-            // use case, which passes it straight through.
-            onReorder: (_, _) {},
-          ),
-        _WatermarkTool(state: state, thumbnailBuilder: thumbnailBuilder),
-        _PasswordTool(state: state),
-        if (metadata != null) PdfMetadataView(metadata: metadata),
-        const SizedBox(height: 24),
-      ],
-    );
-  }
-}
-
 /// The watermark field, its preview and its confirm control.
 class _WatermarkTool extends StatefulWidget {
   const _WatermarkTool({required this.state, required this.thumbnailBuilder});
@@ -763,6 +706,31 @@ class _WatermarkToolState extends State<_WatermarkTool> {
           ),
           const SizedBox(height: 8),
           FilledButton(
+            key: PdfEditKeys.watermarkCopyButton,
+            onPressed: PdfEditRules.isValidWatermark(_controller.text)
+                ? () async {
+                    final confirmed = await _reviewOperation(
+                      context,
+                      draft: PdfOperationDraft.watermark(
+                        text: _controller.text.trim(),
+                      ),
+                      title: 'Save a watermarked copy?',
+                      summary:
+                          '“${_controller.text.trim()}” will be placed on every page of a new PDF. The original stays unchanged.',
+                      confirmLabel: 'Save copy',
+                    );
+                    if (confirmed && context.mounted) {
+                      await context.read<PdfEditCubit>().watermark(
+                        _controller.text,
+                        saveAsCopy: true,
+                      );
+                    }
+                  }
+                : null,
+            child: const Text('Save watermarked copy'),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton(
             key: PdfEditKeys.watermarkConfirmButton,
             onPressed: PdfEditRules.isValidWatermark(_controller.text)
                 ? () async {
@@ -771,10 +739,10 @@ class _WatermarkToolState extends State<_WatermarkTool> {
                       draft: PdfOperationDraft.watermark(
                         text: _controller.text.trim(),
                       ),
-                      title: 'Apply watermark?',
+                      title: 'Replace original with watermark?',
                       summary:
                           '“${_controller.text.trim()}” will be placed on every page and replace the current PDF.',
-                      confirmLabel: 'Apply watermark',
+                      confirmLabel: 'Replace original',
                     );
                     if (confirmed && context.mounted) {
                       await context.read<PdfEditCubit>().watermark(
@@ -783,7 +751,7 @@ class _WatermarkToolState extends State<_WatermarkTool> {
                     }
                   }
                 : null,
-            child: Text(PdfEditOperation.watermark.label),
+            child: const Text('Replace original'),
           ),
         ],
       ),
@@ -930,6 +898,8 @@ class _Failure extends StatelessWidget {
   }
 }
 
+// Retained for the merge/split dialog components exercised by previews.
+// ignore: unused_element
 Future<PdfSplitDraft?> _collectSplitDraft(
   BuildContext context,
   PdfEditState state,
@@ -1019,6 +989,7 @@ Future<PdfSplitDraft?> _collectSplitDraft(
   return draft;
 }
 
+// ignore: unused_element
 Future<PdfMergeDraft?> _collectMergeDraft(
   BuildContext context,
   Document source,

@@ -109,6 +109,7 @@ class _PreviewViewerCubit extends ViewerCubit with SeededCubit<ViewerState> {
           PublicStoreDocumentFileResolver(InMemoryPublicFileStore()),
         ),
         const RememberDocumentPassword(_InertSecrets()),
+        const ForgetDocumentPassword(_InertSecrets()),
         _loadPreviewMetadata,
         _togglePreviewFavourite,
       ) {

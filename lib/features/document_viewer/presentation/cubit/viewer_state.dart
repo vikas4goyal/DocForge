@@ -31,6 +31,7 @@ class ViewerState extends Equatable {
     this.filePath,
     this.pageCount = 0,
     this.password,
+    this.passwordRemembered = false,
     this.failure,
     this.passwordRejected = false,
     this.isFavouriteWorking = false,
@@ -65,6 +66,9 @@ class ViewerState extends Equatable {
   /// Held in memory for the life of this state only. Nothing in the
   /// presentation layer writes it anywhere.
   final String? password;
+
+  /// Whether this document has an explicitly saved automatic-unlock password.
+  final bool passwordRemembered;
 
   /// What went wrong, when something did.
   final Failure? failure;
@@ -115,6 +119,7 @@ class ViewerState extends Equatable {
     String? filePath,
     int? pageCount,
     String? password,
+    bool? passwordRemembered,
     Failure? failure,
     bool passwordRejected = false,
     bool? isFavouriteWorking,
@@ -128,6 +133,7 @@ class ViewerState extends Equatable {
     filePath: filePath ?? this.filePath,
     pageCount: pageCount ?? this.pageCount,
     password: password ?? this.password,
+    passwordRemembered: passwordRemembered ?? this.passwordRemembered,
     failure: failure,
     passwordRejected: passwordRejected,
     isFavouriteWorking: isFavouriteWorking ?? this.isFavouriteWorking,
@@ -145,6 +151,7 @@ class ViewerState extends Equatable {
     filePath,
     pageCount,
     password,
+    passwordRemembered,
     failure,
     passwordRejected,
     isFavouriteWorking,

@@ -519,6 +519,21 @@ void main() {
   });
 
   group('CompressDocument', () {
+    test('can save a smaller result as a copy', () async {
+      final document = given(padding: 500);
+      final before = File(pathOf(document)).readAsStringSync();
+
+      final result = await CompressDocument(contextFor([document]))(
+        id,
+        saveAsCopy: true,
+      );
+
+      final outcome = (result as Success<CompressionOutcome>).value;
+      expect(outcome.document.id, isNot(document.id));
+      expect(outcome.document.title, contains('compressed'));
+      expect(File(pathOf(document)).readAsStringSync(), before);
+    });
+
     test('replaces the file and reports the saving', () async {
       final document = given(padding: 500);
 
@@ -579,6 +594,22 @@ void main() {
   });
 
   group('WatermarkDocument', () {
+    test('can save a watermarked copy without changing the source', () async {
+      final document = given(pageCount: 2);
+      final before = File(pathOf(document)).readAsStringSync();
+
+      final result = await WatermarkDocument(contextFor([document]))(
+        id,
+        'COPY',
+        saveAsCopy: true,
+      );
+
+      final copy = (result as Success<Document>).value;
+      expect(copy.id, isNot(document.id));
+      expect(copy.title, contains('watermarked'));
+      expect(File(pathOf(document)).readAsStringSync(), before);
+    });
+
     test('applies the watermark to every page', () async {
       final document = given(pageCount: 3);
 

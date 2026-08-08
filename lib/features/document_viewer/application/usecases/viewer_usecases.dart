@@ -33,6 +33,7 @@ class ViewableDocument {
     required this.filePath,
     required this.pageCount,
     this.password,
+    this.passwordRemembered = false,
   });
 
   /// The document's metadata.
@@ -58,16 +59,21 @@ class ViewableDocument {
   /// anywhere by this layer.
   final String? password;
 
+  /// Whether automatic unlocking was explicitly enabled for this document.
+  final bool passwordRemembered;
+
   /// Whether the file is password-protected.
   bool get isProtected => password != null;
 }
 
 /// Opens a document for viewing.
 ///
-/// A protected document is opened with the password held in secure storage when
-/// one is there, so a document the user protected on this device opens without
-/// asking again. When there is none, or it no longer works, the caller is told
-/// authentication is needed and prompts.
+/// A protected document requires an entered password unless the user explicitly
+/// opted into automatic unlocking for this document.
+///
+/// Editing workflows may retain a credential in secure storage so they can
+/// safely transform encrypted bytes, but viewing is an access boundary: a
+/// stored credential must never silently reveal the document or its pages.
 class OpenDocumentForViewing {
   /// Creates the use case.
   const OpenDocumentForViewing(
@@ -84,9 +90,8 @@ class OpenDocumentForViewing {
 
   /// Opens the document identified by [id].
   ///
-  /// [password] is what the user has just typed, when they have. It takes
-  /// precedence over anything stored, because a user retyping a password is
-  /// correcting something.
+  /// [password] is what the user has just typed. A protected document returns
+  /// an authentication failure until one is supplied.
   Future<Result<ViewableDocument>> call(
     DocumentId id, {
     String? password,
@@ -94,7 +99,13 @@ class OpenDocumentForViewing {
     final found = await _documents.findById(id);
 
     return found.flatMapAsync((document) async {
-      final stored = password ?? await _storedPassword(id);
+      final remembered = password == null && document.isProtected
+          ? await _rememberedPassword(id)
+          : null;
+      final offered = password ?? remembered;
+      if (document.isProtected && offered == null) {
+        return const Result<ViewableDocument>.failure(documentLockedFailure);
+      }
 
       // The document is addressed by library path, not by device path: on
       // Android the file is a MediaStore item and the renderer needs a real
@@ -106,7 +117,7 @@ class OpenDocumentForViewing {
 
       final opened = await _renderer.open(
         resolved.valueOrNull!,
-        password: stored,
+        password: offered,
       );
 
       return opened.map(
@@ -114,20 +125,21 @@ class OpenDocumentForViewing {
           document: document,
           filePath: resolved.valueOrNull!,
           pageCount: opened.pageCount,
-          password: opened.isProtected ? stored : null,
+          password: opened.isProtected ? offered : null,
+          passwordRemembered: opened.isProtected && remembered != null,
         ),
       );
     });
   }
 
-  /// The stored password for [id], or null.
-  ///
-  /// A secure store that cannot be read degrades to "no stored password", which
-  /// prompts the user rather than failing the open: being asked for a password
-  /// is recoverable, being unable to open your own document is not.
-  Future<String?> _storedPassword(DocumentId id) async {
-    final result = await _secrets.read(SecureStorageKeys.pdfPassword(id.value));
-    return result.valueOrNull;
+  Future<String?> _rememberedPassword(DocumentId id) async {
+    final consent = await _secrets.read(
+      SecureStorageKeys.pdfPasswordRemembered(id.value),
+    );
+    if (consent.valueOrNull != 'true') return null;
+    return (await _secrets.read(
+      SecureStorageKeys.pdfPassword(id.value),
+    )).valueOrNull;
   }
 }
 
@@ -147,8 +159,53 @@ class RememberDocumentPassword {
   /// A failure is returned rather than swallowed, but the caller treats it as
   /// non-fatal: the document is already open, and the only consequence is being
   /// asked again next time.
-  Future<Result<void>> call(DocumentId id, String password) =>
-      _secrets.write(SecureStorageKeys.pdfPassword(id.value), password);
+  Future<Result<void>> call(
+    DocumentId id,
+    String password, {
+    bool autoUnlock = true,
+  }) async {
+    final saved = await _secrets.write(
+      SecureStorageKeys.pdfPassword(id.value),
+      password,
+    );
+    if (saved case Failed(:final failure)) return Result<void>.failure(failure);
+
+    final consent = autoUnlock
+        ? await _secrets.write(
+            SecureStorageKeys.pdfPasswordRemembered(id.value),
+            'true',
+          )
+        : await _secrets.delete(
+            SecureStorageKeys.pdfPasswordRemembered(id.value),
+          );
+    if (consent case Failed(:final failure)) {
+      await _secrets.delete(SecureStorageKeys.pdfPassword(id.value));
+      return Result<void>.failure(failure);
+    }
+    return const Result<void>.success(null);
+  }
+}
+
+/// Deletes a document's saved automatic-unlock credential.
+class ForgetDocumentPassword {
+  /// Creates the use case.
+  const ForgetDocumentPassword(this._secrets);
+
+  final SecureStore _secrets;
+
+  /// Forgets both the secret and the automatic-unlock consent marker.
+  Future<Result<void>> call(DocumentId id) async {
+    final password = await _secrets.delete(
+      SecureStorageKeys.pdfPassword(id.value),
+    );
+    final consent = await _secrets.delete(
+      SecureStorageKeys.pdfPasswordRemembered(id.value),
+    );
+    if (password case Failed(:final failure)) {
+      return Result<void>.failure(failure);
+    }
+    return consent;
+  }
 }
 
 /// The failure a locked document produces.

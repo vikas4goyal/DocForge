@@ -27,6 +27,7 @@ class PdfEditUseCases {
     required this.rotate,
     required this.delete,
     required this.duplicate,
+    required this.reorder,
     required this.extract,
     required this.merge,
     required this.split,
@@ -45,6 +46,9 @@ class PdfEditUseCases {
 
   /// Duplicates one page.
   final DuplicatePage duplicate;
+
+  /// Moves one page within the current PDF.
+  final ReorderPage reorder;
 
   /// Extracts selected pages into a new document.
   final ExtractPages extract;
@@ -161,15 +165,48 @@ class PdfEditCubit extends Cubit<PdfEditState> {
     );
   }
 
+  /// Moves the selected page by one position when that destination exists.
+  Future<void> moveSelectedPage(int offset) async {
+    final page = state.selectedPage;
+    if (page == null) return;
+    final destination = page + offset;
+    if (destination < 0 || destination >= state.pageCount) return;
+    await _inPlace(
+      offset < 0 ? PdfEditOperation.moveEarlier : PdfEditOperation.moveLater,
+      () => _useCases.reorder(_documentId, page, destination),
+      clearSelectionAfter: true,
+    );
+  }
+
   /// Compresses the document.
-  Future<void> compress() async {
+  Future<void> compress({bool saveAsCopy = false}) async {
     if (!_beginSubmission(PdfEditOperation.compress)) return;
 
-    final result = await _useCases.compress(_documentId);
+    final result = await _useCases.compress(
+      _documentId,
+      saveAsCopy: saveAsCopy,
+    );
     if (isClosed) return;
 
     switch (result) {
       case Success(:final value):
+        if (value.document.id != _documentId) {
+          emit(
+            state.copyWith(
+              status: PdfEditStatus.ready,
+              derived: value.document,
+              derivedDocuments: [value.document],
+              compression: CompressionOutcomeView(
+                message: value.message,
+                wasKept: value.wasKept,
+              ),
+              workflowPhase: PdfOperationPhase.succeeded,
+              result: PdfOperationResult.derived(documents: [value.document]),
+              clearWorkflow: true,
+            ),
+          );
+          return;
+        }
         await _refresh(
           compression: CompressionOutcomeView(
             message: value.message,
@@ -183,10 +220,15 @@ class PdfEditCubit extends Cubit<PdfEditState> {
   }
 
   /// Applies [text] as a watermark to every page.
-  Future<void> watermark(String text) => _inPlace(
-    PdfEditOperation.watermark,
-    () => _useCases.watermark(_documentId, text),
-  );
+  Future<void> watermark(String text, {bool saveAsCopy = false}) => saveAsCopy
+      ? _derive(
+          PdfEditOperation.watermark,
+          () => _useCases.watermark(_documentId, text, saveAsCopy: true),
+        )
+      : _inPlace(
+          PdfEditOperation.watermark,
+          () => _useCases.watermark(_documentId, text),
+        );
 
   /// Protects the document with [password].
   Future<void> protect(String password) => _inPlace(

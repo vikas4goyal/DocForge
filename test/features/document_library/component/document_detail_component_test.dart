@@ -5,7 +5,6 @@
 /// code. This closes the gap between isolated widget tests and the device flow.
 library;
 
-import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/previews/fixtures/fixtures.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
@@ -42,39 +41,34 @@ void main() {
     secrets = InMemorySecureStore();
   });
 
-  Future<void> pumpDetail(
-    WidgetTester tester, {
-    void Function(Document document)? onOpenDocument,
-  }) async {
+  Future<DocumentDetailCubit> pumpDetail(WidgetTester tester) async {
     final clock = FixedClock(DateTime.utc(2026, 8, 3));
+    final cubit = DocumentDetailCubit(
+      sampleDocument.id,
+      LoadDocumentDetail(documents),
+      RenameDocument(documents, clock, publicStore),
+      MoveDocument(documents, clock),
+      ToggleFavourite(documents, clock),
+      ArchiveDocument(documents, clock),
+      RestoreDocument(documents, clock),
+      DuplicateDocument(
+        documents,
+        pages,
+        publicStore,
+        clock,
+        SequentialIdGenerator(),
+      ),
+      PurgeDocument(documents, pages, publicStore, derivedFiles, secrets),
+      loadFolderOptions: LoadFolderOptions(folders),
+    );
 
     await pumpComponent(
       tester,
-      DocumentDetailScreen(onClose: () {}, onOpenDocument: onOpenDocument),
-      providers: [
-        BlocProvider(
-          create: (_) => DocumentDetailCubit(
-            sampleDocument.id,
-            LoadDocumentDetail(documents),
-            RenameDocument(documents, clock, publicStore),
-            MoveDocument(documents, clock),
-            ToggleFavourite(documents, clock),
-            ArchiveDocument(documents, clock),
-            RestoreDocument(documents, clock),
-            DuplicateDocument(
-              documents,
-              pages,
-              publicStore,
-              clock,
-              SequentialIdGenerator(),
-            ),
-            PurgeDocument(documents, pages, publicStore, derivedFiles, secrets),
-            loadFolderOptions: LoadFolderOptions(folders),
-          ),
-        ),
-      ],
+      DocumentDetailScreen(onClose: () {}),
+      providers: [BlocProvider.value(value: cubit)],
     );
     await settleComponent(tester);
+    return cubit;
   }
 
   testWidgets('ready detail loads metadata without requesting pages', (
@@ -109,11 +103,13 @@ void main() {
       relativePath: 'Created folder',
     );
     folders.folders[destination.id] = destination;
-    await pumpDetail(tester);
-
-    await tester.tap(find.byKey(LibraryKeys.documentDetailMenu));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(LibraryKeys.documentMoveButton));
+    final cubit = await pumpDetail(tester);
+    final action = runDocumentLifecycleAction(
+      tester.element(find.byType(DocumentDetailScreen)),
+      cubit: cubit,
+      document: cubit.state.document!,
+      action: DocumentLifecycleAction.move,
+    );
     await tester.pumpAndSettle();
 
     expect(find.byKey(LibraryKeys.documentMovePicker), findsOneWidget);
@@ -127,6 +123,7 @@ void main() {
     await tester.pump();
     await tester.tap(find.byKey(LibraryKeys.documentMoveConfirm));
     await tester.pumpAndSettle();
+    await action;
 
     expect(documents.documents[sampleDocument.id]?.folderId, destination.id);
   });
@@ -134,12 +131,13 @@ void main() {
   testWidgets('duplicate requires review and navigates exactly once', (
     tester,
   ) async {
-    final opened = <Document>[];
-    await pumpDetail(tester, onOpenDocument: opened.add);
-
-    await tester.tap(find.byKey(LibraryKeys.documentDetailMenu));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byKey(LibraryKeys.documentDuplicateButton));
+    final cubit = await pumpDetail(tester);
+    final action = runDocumentLifecycleAction(
+      tester.element(find.byType(DocumentDetailScreen)),
+      cubit: cubit,
+      document: cubit.state.document!,
+      action: DocumentLifecycleAction.duplicate,
+    );
     await tester.pumpAndSettle();
 
     expect(find.byKey(LibraryKeys.documentDuplicateDialog), findsOneWidget);
@@ -149,9 +147,9 @@ void main() {
     );
     await tester.tap(find.byKey(LibraryKeys.documentDuplicateConfirm));
     await tester.pumpAndSettle();
+    final outcome = await action;
 
-    expect(opened, hasLength(1));
-    expect(opened.single.title, 'Reviewed policy copy');
+    expect(outcome.openedDocument?.title, 'Reviewed policy copy');
     expect(documents.documents, hasLength(2));
   });
 }

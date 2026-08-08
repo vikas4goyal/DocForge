@@ -20,6 +20,7 @@ class ViewerCubit extends Cubit<ViewerState> {
     this._documentId,
     this._open,
     this._rememberPassword,
+    this._forgetPassword,
     this._loadMetadata,
     this._toggleFavourite,
   ) : super(const ViewerState.initial());
@@ -27,6 +28,7 @@ class ViewerCubit extends Cubit<ViewerState> {
   final DocumentId _documentId;
   final OpenDocumentForViewing _open;
   final RememberDocumentPassword _rememberPassword;
+  final ForgetDocumentPassword _forgetPassword;
   final LoadViewerMetadata _loadMetadata;
   final ToggleViewerFavourite _toggleFavourite;
 
@@ -55,18 +57,17 @@ class ViewerCubit extends Cubit<ViewerState> {
   }
 
   /// Opens the document with the password the user has entered.
-  Future<void> unlock(String password) async {
+  Future<void> unlock(String password, {bool remember = false}) async {
     emit(state.copyWith(status: ViewerStatus.loading));
 
     final result = await _open(_documentId, password: password);
 
     switch (result) {
       case Success(:final value):
-        // Remembered only after it has actually worked, and only in secure
-        // storage. A failure here is not fatal — the document is open, and the
-        // only consequence is being asked again next time.
-        await _rememberPassword(_documentId, password);
-        await _showDocument(value);
+        // Keep the credential in secure storage for password-preserving edits;
+        // only the explicit checkbox enables automatic viewing next time.
+        await _rememberPassword(_documentId, password, autoUnlock: remember);
+        await _showDocument(value, passwordRemembered: remember);
       case Failed(:final failure):
         emit(
           state.copyWith(
@@ -79,6 +80,21 @@ class ViewerCubit extends Cubit<ViewerState> {
             passwordRejected: failure is AuthFailure,
           ),
         );
+    }
+  }
+
+  /// Forgets automatic unlocking while keeping the currently open PDF usable.
+  Future<void> forgetPassword() async {
+    if (!state.passwordRemembered) return;
+    final result = await _forgetPassword(_documentId);
+    if (isClosed) return;
+    switch (result) {
+      case Success():
+        emit(
+          state.copyWith(passwordRemembered: false, clearActionFailure: true),
+        );
+      case Failed(:final failure):
+        emit(state.copyWith(actionFailure: failure));
     }
   }
 
@@ -152,7 +168,10 @@ class ViewerCubit extends Cubit<ViewerState> {
   Future<void> retry() => load();
 
   /// Emits the open document.
-  Future<void> _showDocument(ViewableDocument viewable) async {
+  Future<void> _showDocument(
+    ViewableDocument viewable, {
+    bool? passwordRemembered,
+  }) async {
     emit(
       state.copyWith(
         status: ViewerStatus.ready,
@@ -160,6 +179,7 @@ class ViewerCubit extends Cubit<ViewerState> {
         filePath: viewable.filePath,
         pageCount: viewable.pageCount,
         password: viewable.password,
+        passwordRemembered: passwordRemembered ?? viewable.passwordRemembered,
         page: ViewerRules.clampPage(state.page, pageCount: viewable.pageCount),
         isUnavailable: false,
         isFavouriteWorking: false,

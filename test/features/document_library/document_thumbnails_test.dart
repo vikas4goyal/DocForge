@@ -5,9 +5,7 @@ import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/previews/fixtures/fixtures.dart';
-import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
-import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/features/document_library/application/usecases/document_thumbnails.dart';
 import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,39 +13,25 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   late _ThumbnailCache cache;
   late _DocumentFiles files;
-  late InMemorySecureStore secrets;
   late LoadDocumentPageThumbnail load;
 
   setUp(() {
     cache = _ThumbnailCache();
     files = _DocumentFiles();
-    secrets = InMemorySecureStore();
-    load = LoadDocumentPageThumbnail(cache, files, secrets);
+    load = LoadDocumentPageThumbnail(cache, files);
   });
 
-  test('forwards resolved path, page and protected password', () async {
+  test('refuses to derive content from a protected document', () async {
     final protected = sampleDocument.copyWith(isProtected: true);
-    await secrets.write(
-      SecureStorageKeys.pdfPassword(protected.id.value),
-      'secret',
-    );
 
     final result = await load(protected, 3);
 
-    expect(result.valueOrNull, '/cache/page.png');
-    expect(cache.document, protected);
-    expect(cache.filePath, '/materialised/document.pdf');
-    expect(cache.pageNumber, 3);
-    expect(cache.password, 'secret');
-    expect(files.released, [protected.id]);
+    expect(result.failureOrNull, isA<AuthFailure>());
+    expect(cache.document, isNull);
+    expect(files.released, isEmpty);
   });
 
   test('does not pass a secret for an unprotected document', () async {
-    await secrets.write(
-      SecureStorageKeys.pdfPassword(sampleDocument.id.value),
-      'stale',
-    );
-
     await load(sampleDocument, 1);
 
     expect(cache.password, isNull);

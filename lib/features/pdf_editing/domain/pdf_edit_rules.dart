@@ -24,6 +24,12 @@ enum PdfEditOperation {
   /// Insert a copy of a page after it.
   duplicate('Duplicate', 'Insert a copy of the selected page after it'),
 
+  /// Move the selected page one position toward the start.
+  moveEarlier('Move earlier', 'Move the selected page earlier'),
+
+  /// Move the selected page one position toward the end.
+  moveLater('Move later', 'Move the selected page later'),
+
   /// Join several documents into one.
   merge('Merge', 'Combine the selected documents into one'),
 
@@ -55,7 +61,9 @@ enum PdfEditOperation {
     PdfEditOperation.rotate ||
     PdfEditOperation.delete ||
     PdfEditOperation.extract ||
-    PdfEditOperation.duplicate => true,
+    PdfEditOperation.duplicate ||
+    PdfEditOperation.moveEarlier ||
+    PdfEditOperation.moveLater => true,
     _ => false,
   };
 

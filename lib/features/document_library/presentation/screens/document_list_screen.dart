@@ -7,6 +7,7 @@
 /// behaviour from each.
 library;
 
+import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/theme/app_theme.dart';
@@ -202,8 +203,14 @@ class _DocumentList extends StatelessWidget {
           document: document,
           loadThumbnail: loadThumbnail,
           onTap: () => onOpenDocument(document.id),
-          onToggleFavourite: () =>
-              context.read<DocumentListCubit>().toggleFavourite(document.id),
+          onToggleFavourite: state.filter == DocumentFilter.archived
+              ? null
+              : () => context.read<DocumentListCubit>().toggleFavourite(
+                  document.id,
+                ),
+          onRestore: state.filter == DocumentFilter.archived
+              ? () => context.read<DocumentListCubit>().restore(document.id)
+              : null,
         );
       },
     );

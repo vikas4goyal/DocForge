@@ -304,11 +304,7 @@ LibraryModule buildLibraryModuleOver({
   );
   final fileResolver =
       documentFileResolver ?? PublicStoreDocumentFileResolver(store);
-  final loadThumbnail = LoadDocumentPageThumbnail(
-    thumbnailCache,
-    fileResolver,
-    secureStorage,
-  );
+  final loadThumbnail = LoadDocumentPageThumbnail(thumbnailCache, fileResolver);
   final pageAccess = LibraryDocumentPageAccessRepository(
     pages,
     fileResolver,
