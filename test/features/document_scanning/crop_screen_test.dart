@@ -41,7 +41,7 @@ void main() {
         width: 1000,
         height: 800,
       )),
-      render: (plan, {required destinationPath, transform}) async {
+      render: (plan, {required destinationPath, transform, scope}) async {
         File(destinationPath).writeAsStringSync('rendered');
         return const Result<void>.success(null);
       },

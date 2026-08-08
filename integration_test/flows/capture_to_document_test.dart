@@ -14,6 +14,10 @@
 /// `Navigator.push` calls that no route addresses (`design.md` D5).
 library;
 
+import 'package:doc_scanly/app/cpu_image_processing_backend.dart';
+import 'package:doc_scanly/core/contracts/image_processing/image_processing.dart';
+import 'package:doc_scanly/features/image_enhancement/infrastructure/repositories/native_first_image_renderer.dart';
+import 'package:doc_scanly/features/image_enhancement/presentation/enhance_keys.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
@@ -45,11 +49,16 @@ void main() {
     await CropRobot(tester).acceptAndContinue();
     await EnhanceRobot(tester).backToCrop();
     await CropRobot(tester).acceptAndContinue();
+    await EnhanceRobot(tester).exerciseEveryControl();
     await EnhanceRobot(tester).done();
     await pageTable.waitUntilLoaded();
 
     // The second page follows the ordinary crop-then-enhance loop.
-    await pageTable.addPageFromCamera();
+    await pageTable.beginAddingPageFromCamera();
+    await CropRobot(tester).acceptAndContinue();
+    await EnhanceRobot(tester).selectFilter(EnhanceKeys.filterAuto);
+    await EnhanceRobot(tester).done();
+    await pageTable.waitUntilLoaded();
 
     expect(
       pageTable.pageCount,
@@ -112,4 +121,69 @@ void main() {
     // page was staged and then discarded rather than never taken.
     expect(app.platform.scanner.captures, hasLength(1));
   });
+
+  testWidgets('recoverable native failure saves through CPU fallback', (
+    tester,
+  ) async {
+    late _RecoverableNativeBackend native;
+    final app = await bootDocScanly(
+      tester,
+      imageProcessingBackendBuilder: (dependencies) {
+        native = _RecoverableNativeBackend();
+        return NativeFirstImageRenderer(
+          native: native,
+          cpu: CpuImageProcessingBackend(dependencies.worker),
+          telemetry: dependencies.telemetry,
+        );
+      },
+    );
+
+    await DashboardRobot(tester).waitUntilLoaded();
+    await TabShellRobot(tester).startCreation();
+    final pageTable = PageTableRobot(tester);
+    await pageTable.waitUntilLoaded();
+    await pageTable.beginAddingPageFromCamera();
+    await CropRobot(tester).acceptAndContinue();
+    await EnhanceRobot(tester).selectFilter(EnhanceKeys.filterAuto);
+    // Let the debounced preview reach the injected native backend before Done
+    // closes its render scope; the saved full render exercises the same fallback.
+    await tester.pump(const Duration(milliseconds: 250));
+    await EnhanceRobot(tester).done();
+    await pageTable.waitUntilLoaded();
+    await pageTable.save('Fallback document');
+    await ViewerRobot(tester).waitUntilOpen();
+
+    expect(native.renderCount, greaterThan(0));
+    final listed = await app.publicStore.list(const []);
+    expect(listed.valueOrNull, isNotEmpty);
+  });
+}
+
+class _RecoverableNativeBackend implements ImageProcessingBackend {
+  int renderCount = 0;
+
+  @override
+  Future<ImageProcessingCapability> capability() async =>
+      const ImageProcessingCapability(
+        backend: ImageProcessingBackendKind.androidOpenGl,
+        isSupported: true,
+        maximumTextureSize: 8192,
+        supportsTiling: false,
+      );
+
+  @override
+  Future<ImageProcessingBackendResponse> render(
+    ImageRenderRequest request,
+  ) async {
+    renderCount++;
+    return const ImageProcessingBackendResponse.failure(
+      kind: ImageProcessingFailureKind.contextLost,
+    );
+  }
+
+  @override
+  Future<void> cancel(String requestId) async {}
+
+  @override
+  Future<void> dispose() async {}
 }

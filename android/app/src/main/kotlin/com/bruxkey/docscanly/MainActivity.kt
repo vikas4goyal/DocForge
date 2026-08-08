@@ -6,6 +6,7 @@ import io.flutter.embedding.engine.FlutterEngine
 class MainActivity : FlutterActivity() {
 
     private var mediaStore: MediaStorePlugin? = null
+    private var imageProcessing: ImageProcessingPlugin? = null
 
     /**
      * Registers the MediaStore bridge alongside the generated plugins.
@@ -20,11 +21,21 @@ class MainActivity : FlutterActivity() {
         mediaStore = MediaStorePlugin(applicationContext).also {
             it.attach(flutterEngine.dartExecutor.binaryMessenger)
         }
+        imageProcessing = ImageProcessingPlugin(applicationContext).also {
+            it.attach(flutterEngine.dartExecutor.binaryMessenger)
+        }
     }
 
     override fun onDestroy() {
         mediaStore?.detach()
         mediaStore = null
+        imageProcessing?.detach()
+        imageProcessing = null
         super.onDestroy()
+    }
+
+    override fun onTrimMemory(level: Int) {
+        imageProcessing?.releaseResources()
+        super.onTrimMemory(level)
     }
 }

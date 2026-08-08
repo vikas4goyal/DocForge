@@ -59,33 +59,15 @@ abstract final class LibraryKeys {
   /// Root of the document detail screen.
   static const documentDetailScreen = Key('document_detail_screen');
 
-  /// Control that starts renaming a document.
-  static const documentRenameButton = Key('document_rename_button');
-
   /// Text field in the rename dialog.
   static const documentRenameField = Key('document_rename_field');
 
   /// Confirmation control in the rename dialog.
   static const documentRenameConfirm = Key('document_rename_confirm');
 
-  /// Control that starts moving a document to a folder.
-  static const documentMoveButton = Key('document_move_button');
-
-  /// Control that archives a document.
-  static const documentArchiveButton = Key('document_archive_button');
-
-  /// Control that restores an archived document.
-  static const documentRestoreButton = Key('document_restore_button');
-
   /// Restores one archived document directly from its Archive row.
   static Key documentListRestore(String documentId) =>
       Key('document_list_restore_$documentId');
-
-  /// Control that duplicates a document.
-  static const documentDuplicateButton = Key('document_duplicate_button');
-
-  /// Control that starts permanent removal of a document.
-  static const documentDeleteButton = Key('document_move_to_trash_button');
 
   /// Confirmation dialog shown before a document is permanently removed.
   static const documentDeleteConfirmDialog = Key(
@@ -213,9 +195,6 @@ abstract final class LibraryKeys {
 
   /// Cancels duplicate review without mutation.
   static const documentDuplicateCancel = Key('document_duplicate_cancel');
-
-  /// The overflow menu on the document detail screen.
-  static const documentDetailMenu = Key('document_detail_menu');
 
   /// The control that retries a failed document list load.
   static const documentListRetryButton = Key('document_list_retry_button');

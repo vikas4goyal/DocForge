@@ -2,6 +2,7 @@
 /// and the share sheet.
 library;
 
+import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
 import 'package:doc_scanly/features/document_sharing/presentation/share_keys.dart';
 import 'package:doc_scanly/features/document_viewer/presentation/viewer_keys.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/pdf_edit_keys.dart';
@@ -69,6 +70,75 @@ class ViewerRobot extends Robot {
     await tester.pump(const Duration(milliseconds: 200));
   });
 
+  /// Renames the open document through Viewer's reviewed lifecycle action.
+  Future<void> rename(String name) => step('renaming to "$name"', () async {
+    await _openAction(ViewerKeys.renameButton);
+    await type(LibraryKeys.documentRenameField, name);
+    await tap(LibraryKeys.documentRenameConfirm);
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
+  /// Moves the open document to the first folder offered by the picker.
+  Future<({String id, String name})> moveToFirstFolder() =>
+      step('moving to the first available folder', () async {
+        await _openAction(ViewerKeys.moveButton);
+        await waitFor(LibraryKeys.documentMovePicker);
+        final keys = find
+            .byWidgetPredicate(
+              (widget) =>
+                  widget.key is ValueKey<String> &&
+                  (widget.key! as ValueKey<String>).value.startsWith(
+                    'document_move_folder_',
+                  ) &&
+                  (widget.key! as ValueKey<String>).value !=
+                      'document_move_folder_root',
+            )
+            .evaluate()
+            .map((element) => (element.widget.key! as ValueKey<String>).value)
+            .toSet()
+            .toList();
+        expect(keys, hasLength(1));
+        final folderId = keys.single.substring('document_move_folder_'.length);
+        final folderName = tester
+            .widgetList<Text>(
+              find.descendant(
+                of: find.byKey(LibraryKeys.documentMoveFolder(folderId)),
+                matching: find.byType(Text),
+              ),
+            )
+            .map((text) => text.data)
+            .whereType<String>()
+            .first;
+        await tap(LibraryKeys.documentMoveFolder(folderId));
+        await tap(LibraryKeys.documentMoveConfirm);
+        await waitUntilGone(LibraryKeys.documentMovePicker);
+        return (id: folderId, name: folderName);
+      });
+
+  /// Duplicates the open document using the reviewed destination dialog.
+  Future<void> duplicate({required String name}) =>
+      step('duplicating as "$name"', () async {
+        await _openAction(ViewerKeys.duplicateButton);
+        await waitFor(LibraryKeys.documentDuplicateDialog);
+        await type(LibraryKeys.documentDuplicateName, name);
+        await tap(LibraryKeys.documentDuplicateConfirm);
+        await waitUntilGone(LibraryKeys.documentDuplicateDialog);
+      });
+
+  /// Archives the open document.
+  Future<void> archive() => step('archiving the document', () async {
+    await _openAction(ViewerKeys.archiveButton);
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
+  /// Moves the open document to recoverable Trash and confirms the dialog.
+  Future<void> moveToTrash() => step('moving the document to Trash', () async {
+    await _openAction(ViewerKeys.moveToTrashButton);
+    await waitFor(LibraryKeys.documentDeleteConfirmDialog);
+    await tap(LibraryKeys.documentDeleteConfirmButton);
+    await waitUntilGone(LibraryKeys.documentDeleteConfirmDialog);
+  });
+
   /// Opens metadata and lifecycle actions over the current PDF.
   Future<void> openDetails() => step('opening document details', () async {
     await waitUntilOpen();
@@ -118,6 +188,12 @@ class ViewerRobot extends Robot {
         await waitFor(PdfEditKeys.screen);
       });
 
+  Future<void> _openAction(Key key) async {
+    await waitUntilOpen();
+    await tap(ViewerKeys.actionsMenu);
+    await tap(key);
+  }
+
   /// Returns to whichever screen opened the viewer.
   Future<void> goBack() => step('leaving the viewer', () async {
     await waitUntilVisible();
@@ -144,7 +220,7 @@ class PdfEditRobot extends Robot {
       PdfEditKeys.progress,
       timeout: const Duration(seconds: 60),
     );
-    await waitFor(PdfEditKeys.pageGrid);
+    await pumpUntilAnyOf(tester, [PdfEditKeys.pageGrid, PdfEditKeys.pageList]);
   });
 
   /// Waits for a focused whole-document operation reached from Viewer.
@@ -157,6 +233,8 @@ class PdfEditRobot extends Robot {
         );
         await pumpUntilAnyOf(tester, [
           PdfEditKeys.operationSheet,
+          PdfEditKeys.compressCopyButton,
+          PdfEditKeys.compressButton,
           PdfEditKeys.watermarkTextField,
           PdfEditKeys.protectPasswordField,
           PdfEditKeys.removePasswordButton,
@@ -243,24 +321,16 @@ class PdfEditRobot extends Robot {
   /// Extracts the selected pages and waits for the derived document result.
   Future<void> extractSelected() =>
       step('extracting the selected pages once', () async {
-        if (has(PdfEditKeys.actionsMenu)) await tap(PdfEditKeys.actionsMenu);
-        await tap(PdfEditKeys.extractButton);
+        if (has(PdfEditKeys.pageExtract(0))) {
+          await tap(PdfEditKeys.pageExtract(0));
+        } else {
+          if (has(PdfEditKeys.actionsMenu)) await tap(PdfEditKeys.actionsMenu);
+          await tap(PdfEditKeys.extractButton);
+        }
         await waitFor(PdfEditKeys.review);
         await tap(PdfEditKeys.confirm);
         await waitFor(PdfEditKeys.result, timeout: const Duration(seconds: 60));
       });
-
-  /// Merges the current PDF with every initially selected candidate.
-  Future<void> merge() => step('merging the selected documents once', () async {
-    await tester.ensureVisible(find.byKey(PdfEditKeys.mergeConfirmButton));
-    await tester.pump();
-    await tap(PdfEditKeys.mergeConfirmButton);
-    await waitFor(PdfEditKeys.operationSheet);
-    await tap(PdfEditKeys.inputContinue);
-    await waitFor(PdfEditKeys.review);
-    await tap(PdfEditKeys.confirm);
-    await waitFor(PdfEditKeys.result, timeout: const Duration(seconds: 60));
-  });
 
   /// Finishes a visible derived-document result.
   Future<void> finishResult() => step('finishing the edit result', () async {

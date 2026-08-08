@@ -30,6 +30,8 @@ void main() {
   late List<PageRenderPlan> renders;
   late Failure? renderFailure;
   late RenderPage renderPage;
+  late List<String?> renderScopes;
+  late List<String> cancelledScopes;
 
   PageDraft draft({EnhancementSettings? withEnhancement}) => PageDraft(
     id: const PageId('page-1'),
@@ -41,6 +43,8 @@ void main() {
     cache = await Directory.systemTemp.createTemp('docscanly_crop_');
     renders = [];
     renderFailure = null;
+    renderScopes = [];
+    cancelledScopes = [];
 
     renderPage = RenderPage(
       cacheDirectory: cache,
@@ -48,13 +52,15 @@ void main() {
         width: 1000,
         height: 800,
       )),
-      render: (plan, {required destinationPath, transform}) async {
+      render: (plan, {required destinationPath, transform, scope}) async {
         renders.add(plan);
+        renderScopes.add(scope);
         final configured = renderFailure;
         if (configured != null) return Result<void>.failure(configured);
         File(destinationPath).writeAsStringSync('rendered');
         return const Result<void>.success(null);
       },
+      cancelRender: (scope) async => cancelledScopes.add(scope),
     );
   });
 
@@ -115,6 +121,22 @@ void main() {
   });
 
   group('apply', () {
+    blocTest<CropCubit, CropState>(
+      'uses one cancellable scope and cancels it on close',
+      build: build,
+      act: (cubit) async {
+        cubit.adjust(box(0.2, 0.2, 0.8, 0.8));
+        await cubit.apply();
+      },
+      verify: (cubit) async {
+        expect(renderScopes, isNotEmpty);
+        expect(renderScopes.toSet(), {'crop:page-1'});
+        await cubit.close();
+        expect(cancelledScopes, isNotEmpty);
+        expect(cancelledScopes, everyElement('crop:page-1'));
+      },
+    );
+
     blocTest<CropCubit, CropState>(
       'appends to the geometry rather than replacing the original',
       build: build,

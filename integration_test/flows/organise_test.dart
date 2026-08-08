@@ -17,7 +17,6 @@ import 'package:integration_test/integration_test.dart';
 import '../support/app_boot.dart';
 import '../support/fixtures.dart';
 import '../support/robots/app_robots.dart';
-import '../support/robots/library_robots.dart';
 import '../support/robots/viewer_robots.dart';
 import '../support/seed.dart';
 
@@ -159,20 +158,11 @@ void main() {
     final viewer = ViewerRobot(tester);
     await viewer.waitUntilOpen();
     await viewer.toggleFavourite();
-    await viewer.openDetails();
-
-    final detail = DocumentDetailRobot(tester);
-    await detail.waitUntilVisible();
-    await detail.rename('Organised receipt');
-    await detail.moveToFirstFolder();
-    await detail.archive();
-    await tester.pageBack();
-
-    await viewer.waitUntilOpen();
+    await viewer.rename('Organised receipt');
+    await viewer.moveToFirstFolder();
+    await viewer.archive();
     expect(find.text('Organised receipt'), findsWidgets);
-    await viewer.openDetails();
-    await detail.waitUntilVisible();
-    await detail.deletePermanently();
+    await viewer.moveToTrash();
 
     // Detail closes first; the metadata refresh then closes the now-unavailable
     // Viewer exactly once and exposes the original Dashboard.
@@ -192,17 +182,15 @@ void main() {
       await dashboard.openDocument(movingId);
       final viewer = ViewerRobot(tester);
       await viewer.waitUntilOpen();
-      await viewer.openDetails();
-      final detail = DocumentDetailRobot(tester);
-      await detail.waitUntilVisible();
-      final folder = await detail.moveToFirstFolder();
-      await detail.duplicate(name: 'Reviewed copy', folderName: folder.name);
+      await viewer.moveToFirstFolder();
+      // A duplicate defaults beside its source, including its current folder.
+      await viewer.duplicate(name: 'Reviewed copy');
 
-      // Duplicate replaces Detail with exactly one Viewer for the copy.
+      // Duplicate replaces the current Viewer with exactly one Viewer for the
+      // copy, so one back action returns to the dashboard.
       await viewer.waitUntilOpen();
       expect(find.text('Reviewed copy'), findsWidgets);
 
-      await viewer.goBack();
       await viewer.goBack();
       await dashboard.waitUntilLoaded();
       await dashboard.openFolder('Projects');

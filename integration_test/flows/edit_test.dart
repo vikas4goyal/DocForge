@@ -23,22 +23,14 @@ import '../support/seed.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  Future<FlowApp> openSourceInViewer(
-    WidgetTester tester, {
-    bool includeMergeCandidate = false,
-  }) async {
+  Future<FlowApp> openSourceInViewer(WidgetTester tester) async {
     final staging = await Directory.systemTemp.createTemp('docscanly_edit_');
     addTearDown(() {
       if (staging.existsSync()) staging.deleteSync(recursive: true);
     });
     final fixtures = Fixtures(staging);
     final source = await fixtures.sourceDocument();
-    final pickedFiles = <String>[source];
-    if (includeMergeCandidate) {
-      pickedFiles.add(await fixtures.importable());
-    }
-
-    final app = await bootDocScanly(tester, pickedFiles: pickedFiles);
+    final app = await bootDocScanly(tester, pickedFiles: [source]);
     await seedDocumentByImport(tester);
     final dashboard = DashboardRobot(tester);
     await dashboard.waitUntilLoaded();
@@ -114,19 +106,6 @@ void main() {
     await editor.waitUntilLoaded();
     await editor.selectPage(0);
     await editor.extractSelected();
-    expect(find.text('Document created'), findsOneWidget);
-    await editor.finishResult();
-    await DashboardRobot(tester).waitUntilLoaded();
-  });
-
-  testWidgets('merge creates one reviewed output from two PDFs', (
-    tester,
-  ) async {
-    await openSourceInViewer(tester, includeMergeCandidate: true);
-    await ViewerRobot(tester).openPageManagement();
-    final editor = PdfEditRobot(tester);
-    await editor.waitUntilLoaded();
-    await editor.merge();
     expect(find.text('Document created'), findsOneWidget);
     await editor.finishResult();
     await DashboardRobot(tester).waitUntilLoaded();

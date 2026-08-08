@@ -56,6 +56,9 @@ abstract final class EnhanceKeys {
   /// The horizontally scrolling row of filter controls.
   static const filterList = Key('enhance_filter_list');
 
+  /// The vertically scrolling list containing all adjustment controls.
+  static const controlsList = Key('enhance_controls_list');
+
   /// The control that confirms the enhancement and leaves the screen.
   static const doneButton = Key('enhance_done_button');
 

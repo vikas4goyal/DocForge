@@ -15,6 +15,9 @@ class FakePageRenderer implements PageRenderer {
   const FakePageRenderer();
 
   @override
-  Future<Result<String>> call(PageRenderPlan plan) async =>
+  Future<Result<String>> call(PageRenderPlan plan, {String? scope}) async =>
       Result<String>.success(plan.originalImagePath);
+
+  @override
+  Future<void> cancel(String scope) async {}
 }

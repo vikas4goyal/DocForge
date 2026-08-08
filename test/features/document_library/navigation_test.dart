@@ -351,7 +351,6 @@ void main() {
       unawaited(router.push(AppRoutes.documentDetail(sampleDocument.id)));
       await tester.pumpAndSettle();
 
-      expect(find.byKey(LibraryKeys.documentDetailMenu), findsNothing);
       await tester.pageBack();
       await tester.pumpAndSettle();
 

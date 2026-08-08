@@ -17,5 +17,12 @@ abstract interface class PageRenderer {
   ///
   /// A plan with neither layer applied returns the original itself: there is
   /// nothing to render, and copying it would duplicate a file that exists.
-  Future<Result<String>> call(PageRenderPlan plan);
+  Future<Result<String>> call(PageRenderPlan plan, {String? scope});
+
+  /// Cancels the render currently owned by [scope], if any.
+  ///
+  /// Cancellation is best-effort at codec boundaries, but a cancelled render
+  /// must never publish over a newer result. Renderers without interruptible
+  /// work implement this as a no-op.
+  Future<void> cancel(String scope);
 }

@@ -128,6 +128,48 @@ class EnhanceRobot extends Robot {
         await tester.pump();
       });
 
+  /// Drives every persisted enhancement control, including rapid adjustments.
+  Future<void> exerciseEveryControl() => step(
+    'exercising every enhancement control',
+    () async {
+      await waitUntilVisible();
+      for (final key in [
+        EnhanceKeys.filterOriginal,
+        EnhanceKeys.filterAuto,
+        EnhanceKeys.filterMagicColour,
+        EnhanceKeys.filterBlackWhite,
+        EnhanceKeys.filterGrayscale,
+      ]) {
+        await scrollToAndTap(
+          tester,
+          key,
+          scrollable: find.descendant(
+            of: find.byKey(EnhanceKeys.filterList),
+            matching: find.byType(Scrollable),
+          ),
+        );
+      }
+
+      for (final adjustment in [
+        (EnhanceKeys.brightnessSlider, 36.0),
+        (EnhanceKeys.brightnessSlider, -18.0),
+        (EnhanceKeys.contrastSlider, 32.0),
+        (EnhanceKeys.sharpenControl, 28.0),
+      ]) {
+        await tester.ensureVisible(find.byKey(adjustment.$1));
+        await tester.drag(find.byKey(adjustment.$1), Offset(adjustment.$2, 0));
+        await tester.pump();
+      }
+
+      await tester.ensureVisible(find.byKey(EnhanceKeys.shadowRemovalToggle));
+      await tap(EnhanceKeys.shadowRemovalToggle);
+      await tester.ensureVisible(find.byKey(EnhanceKeys.undoButton));
+      await tap(EnhanceKeys.undoButton);
+      await tester.ensureVisible(find.byKey(EnhanceKeys.resetButton));
+      await tap(EnhanceKeys.resetButton);
+    },
+  );
+
   /// Confirms the enhancement and leaves.
   Future<void> done() => step('finishing enhancement', () async {
     await tap(EnhanceKeys.doneButton);

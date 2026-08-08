@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'package:doc_scanly/core/contracts/models/page_draft.dart';
 import 'package:doc_scanly/core/contracts/page_renderer.dart';
-import 'package:doc_scanly/core/isolates/background_worker.dart';
 import 'package:doc_scanly/core/permissions/permission_service.dart';
 import 'package:doc_scanly/core/telemetry/app_telemetry.dart';
 import 'package:doc_scanly/core/time/clock.dart';
@@ -13,12 +12,9 @@ import 'package:doc_scanly/features/document_scanning/application/usecases/scann
 import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/opencv_edge_detector.dart';
-import 'package:doc_scanly/features/document_scanning/infrastructure/page_correction_job.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/screens/crop_screen.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/screens/scan_capture_screen.dart';
-import 'package:doc_scanly/features/image_enhancement/application/usecases/enhancement_usecases.dart';
-import 'package:doc_scanly/features/image_enhancement/infrastructure/enhancement_job.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/screens/enhancement_screen.dart';
 import 'package:flutter/material.dart';
@@ -31,9 +27,7 @@ class ScanningModule {
     required this.scanner,
     required this.staging,
     required this.capturePage,
-    required this.applyCorrection,
     required this.discardSession,
-    required this.applyEnhancement,
     required this.renderPage,
     required this.buildPreview,
     required this.openSettings,
@@ -49,14 +43,8 @@ class ScanningModule {
   /// Captures one page.
   final CapturePage capturePage;
 
-  /// Straightens cropped pages off the UI thread.
-  final ApplyPerspectiveCorrection applyCorrection;
-
   /// Releases the camera and clears an abandoned session.
   final DiscardScanSession discardSession;
-
-  /// Applies enhancement settings, off the UI thread.
-  final ApplyEnhancement applyEnhancement;
 
   /// Renders a page from its original and its layers, caching by plan.
   final PageRenderer renderPage;
@@ -102,7 +90,6 @@ ScanningModule buildScanningModule({
   required Directory directory,
   required PermissionService permissions,
   required IdGenerator ids,
-  required BackgroundWorker worker,
   required PageRenderer renderPage,
   EdgeDetector detector = const OpenCvEdgeDetector(),
   ScannerRepository? scanner,
@@ -120,13 +107,7 @@ ScanningModule buildScanningModule({
     // behaviour for a capture whose edges cannot be found, and the detector
     // falls back to exactly that rather than failing.
     capturePage: CapturePage(resolvedScanner, detector),
-    applyCorrection: ApplyPerspectiveCorrection(worker, correctPageJob),
     discardSession: DiscardScanSession(staging, resolvedScanner),
-    applyEnhancement: ApplyEnhancement(
-      worker,
-      enhancePageJob,
-      telemetry: telemetry,
-    ),
     renderPage: renderPage,
     buildPreview:
         buildPreview ??

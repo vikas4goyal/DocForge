@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "colourPipelineVersion": 1,
+  "fixture": "integration_test/fixtures/image_processing_benchmark_12mp.jpg",
+  "fixtureSha256": "93b5ec026718b9bcbbd5f71574c7e301f56ef36beb66d5698c46d00967d0014f",
+  "source": {
+    "width": 4000,
+    "height": 3000,
+    "pixelCount": 12000000,
+    "colourSpace": "sRGB",
+    "jpegQuality": 95,
+    "contains": [
+      "fine text",
+      "neutral paper",
+      "saturated red green and blue patches",
+      "smooth illumination gradient",
+      "uneven corner shadow",
+      "non-axis-aligned border"
+    ]
+  },
+  "geometry": {
+    "dimensionsMustMatch": true,
+    "orientationMustMatch": true,
+    "maximumCornerErrorPixels": 1.0,
+    "maximumSeamDelta": 3.0
+  },
+  "pixelParity": {
+    "maximumMeanAbsoluteChannelError": 4.0,
+    "maximumP99AbsoluteChannelError": 18.0,
+    "minimumStructuralSimilarity": 0.97,
+    "maximumGrayscaleChannelDelta": 2,
+    "blackAndWhiteLowMaximum": 40,
+    "blackAndWhiteHighMinimum": 215
+  },
+  "performance": {
+    "previewLongestEdgePixels": 1400,
+    "warmupCount": 5,
+    "sampleCount": 30,
+    "previewP95MaximumMilliseconds": 200,
+    "fullResolutionP95MaximumMilliseconds": 1500,
+    "minimumMedianSpeedupOverCpu": 3.0
+  },
+  "changePolicy": "Tolerance changes require explicit review with CPU and both physical-device GPU reports."
+}

@@ -39,7 +39,7 @@ void main() {
       width: 800,
       height: 600,
     )),
-    render: (plan, {required destinationPath, transform}) async {
+    render: (plan, {required destinationPath, transform, scope}) async {
       renderedPlans.add(plan);
       File(destinationPath)
         ..parent.createSync(recursive: true)

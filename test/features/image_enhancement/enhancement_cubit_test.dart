@@ -29,6 +29,8 @@ void main() {
   late List<PageRenderPlan> renders;
   late Failure? renderFailure;
   late RenderPage renderPage;
+  late List<String?> renderScopes;
+  late List<String> cancelledScopes;
 
   PageDraft draft({List<CropOp> geometry = const []}) => PageDraft(
     id: const PageId('page-1'),
@@ -40,6 +42,8 @@ void main() {
     cache = await Directory.systemTemp.createTemp('docscanly_enhance_');
     renders = [];
     renderFailure = null;
+    renderScopes = [];
+    cancelledScopes = [];
 
     renderPage = RenderPage(
       cacheDirectory: cache,
@@ -47,13 +51,15 @@ void main() {
         width: 1000,
         height: 800,
       )),
-      render: (plan, {required destinationPath, transform}) async {
+      render: (plan, {required destinationPath, transform, scope}) async {
         renders.add(plan);
+        renderScopes.add(scope);
         final configured = renderFailure;
         if (configured != null) return Result<void>.failure(configured);
         File(destinationPath).writeAsStringSync('rendered');
         return const Result<void>.success(null);
       },
+      cancelRender: (scope) async => cancelledScopes.add(scope),
     );
   });
 
@@ -226,6 +232,22 @@ void main() {
   });
 
   group('rendering', () {
+    blocTest<EnhancementCubit, EnhancementState>(
+      'uses one cancellable scope for every preview and cancels it on close',
+      build: build,
+      act: (cubit) async {
+        await cubit.selectFilter(EnhancementFilter.grayscale);
+      },
+      wait: afterDebounce,
+      verify: (cubit) async {
+        expect(renderScopes, isNotEmpty);
+        expect(renderScopes.toSet(), {'enhancement:page-1'});
+        await cubit.close();
+        expect(cancelledScopes, isNotEmpty);
+        expect(cancelledScopes, everyElement('enhancement:page-1'));
+      },
+    );
+
     blocTest<EnhancementCubit, EnhancementState>(
       'renders from the original, never from a previous render',
       build: build,

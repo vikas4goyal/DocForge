@@ -20,10 +20,12 @@ import 'package:doc_scanly/app/app_dependencies.dart';
 import 'package:doc_scanly/app/cloud_library_reconciler.dart';
 import 'package:doc_scanly/app/cloud_storage_module.dart';
 import 'package:doc_scanly/app/composition_root.dart';
+import 'package:doc_scanly/app/cpu_image_processing_backend.dart';
 import 'package:doc_scanly/app/creation_module.dart';
 import 'package:doc_scanly/app/document_creation_module.dart';
 import 'package:doc_scanly/app/import_module.dart';
 import 'package:doc_scanly/app/library_module.dart';
+import 'package:doc_scanly/app/native_page_pixel_writer.dart';
 import 'package:doc_scanly/app/page_render_job.dart';
 import 'package:doc_scanly/app/pdf_editing_module.dart';
 import 'package:doc_scanly/app/router/app_router.dart';
@@ -34,6 +36,7 @@ import 'package:doc_scanly/app/screens/app_screens_builder.dart';
 import 'package:doc_scanly/app/screens/home_refresh.dart';
 import 'package:doc_scanly/app/settings_module.dart';
 import 'package:doc_scanly/app/sharing_module.dart';
+import 'package:doc_scanly/core/contracts/image_processing/image_processing.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/capture_staging.dart';
@@ -69,6 +72,8 @@ import 'package:doc_scanly/features/document_sharing/domain/repositories/share_r
 import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/platform_share_repositories.dart';
 import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
 import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
+import 'package:doc_scanly/features/image_enhancement/infrastructure/datasource/native_image_processing_data_source.dart';
+import 'package:doc_scanly/features/image_enhancement/infrastructure/repositories/native_first_image_renderer.dart';
 import 'package:doc_scanly/features/onboarding/application/usecases/onboarding_usecases.dart';
 import 'package:doc_scanly/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
@@ -156,6 +161,7 @@ Future<Widget> buildDocScanly({
   bool? isIOS,
   DirectoryPicker? pickSaveLocation,
   String initialLocation = AppRoutes.home,
+  ImageProcessingBackend? imageProcessingBackend,
 }) async {
   // Awaited together rather than one after another: none needs the other, and
   // everything here happens before the first frame, so each avoidable round
@@ -212,6 +218,7 @@ Future<Widget> buildDocScanly({
           isIOS: true,
           pickSaveLocation: pickSaveLocation,
           initialLocation: initialLocation,
+          imageProcessingBackend: imageProcessingBackend,
         ),
       );
     }
@@ -249,6 +256,7 @@ Future<Widget> buildDocScanly({
           isIOS: true,
           pickSaveLocation: pickSaveLocation,
           initialLocation: initialLocation,
+          imageProcessingBackend: imageProcessingBackend,
         ),
       );
     }
@@ -282,15 +290,26 @@ Future<Widget> buildDocScanly({
   // One renderer for the whole application: everything that shows a page goes
   // through it, so the row thumbnail, the crop screen and the generated PDF
   // cannot disagree about what the user's edits amount to.
+  final renderer =
+      imageProcessingBackend ??
+      NativeFirstImageRenderer(
+        native: NativeImageProcessingDataSource(
+          backend: supportsICloud
+              ? ImageProcessingBackendKind.iosCoreImage
+              : ImageProcessingBackendKind.androidOpenGl,
+        ),
+        cpu: CpuImageProcessingBackend(resolvedDependencies.worker),
+        telemetry: resolvedDependencies.telemetry,
+      );
+  final pixelWriter = NativePagePixelWriter(
+    renderer,
+    resolvedDependencies.idGenerator,
+  );
   final renderPage = RenderPage(
     cacheDirectory: resolvedCache,
     sizeOf: readImageSize,
-    render: (plan, {required destinationPath, transform}) => renderPageJob(
-      resolvedDependencies.worker,
-      plan,
-      destinationPath: destinationPath,
-      transform: transform,
-    ),
+    render: pixelWriter.call,
+    cancelRender: pixelWriter.cancel,
   );
 
   final scanning = buildScanningModule(
@@ -298,7 +317,6 @@ Future<Widget> buildDocScanly({
     renderPage: renderPage,
     permissions: resolvedDependencies.permissions,
     ids: resolvedDependencies.idGenerator,
-    worker: resolvedDependencies.worker,
     detector: detector,
     scanner: scanner,
     telemetry: resolvedDependencies.telemetry,
@@ -397,9 +415,9 @@ Future<Widget> buildDocScanly({
     documentReader: library.documentReader,
     documentWriter: library.documentWriter,
     namingPattern: () => currentSettings.value.namingPattern,
-    // Shared with the scanning module so a page enhanced on screen and a page
-    // enhanced while saving go through exactly the same code.
-    applyEnhancement: scanning.applyEnhancement,
+    // Shared with crop/enhance previews so saving uses the same native-first
+    // GPU pipeline and CPU fallback rather than a second pixel implementation.
+    renderPage: renderPage,
     telemetry: resolvedDependencies.telemetry,
   );
 

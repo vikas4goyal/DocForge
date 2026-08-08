@@ -18,6 +18,7 @@ import 'dart:io';
 import 'package:doc_scanly/app/app_dependencies.dart';
 import 'package:doc_scanly/app/doc_scanly.dart';
 import 'package:doc_scanly/app/fake_dependencies.dart';
+import 'package:doc_scanly/core/contracts/image_processing/image_processing.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
@@ -120,6 +121,8 @@ Future<FlowApp> bootDocScanly(
   StorageLocation? storageLocation,
   Directory? cloudRootDirectory,
   String? saveLocationDirectory,
+  ImageProcessingBackend Function(AppDependencies dependencies)?
+  imageProcessingBackendBuilder,
 }) async {
   if (!_isarReady) {
     await Isar.initializeIsarCore(download: true);
@@ -239,6 +242,7 @@ Future<FlowApp> bootDocScanly(
     iCloudPlatform: iCloudPlatform,
     isIOS: isIOS,
     pickSaveLocation: () async => saveLocationDirectory,
+    imageProcessingBackend: imageProcessingBackendBuilder?.call(dependencies),
   );
 
   addTearDown(() async {

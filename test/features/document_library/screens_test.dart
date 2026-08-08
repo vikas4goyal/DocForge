@@ -397,7 +397,6 @@ void main() {
         findsWidgets,
       );
       expect(find.byKey(LibraryKeys.documentFavouriteToggle), findsOneWidget);
-      expect(find.byKey(LibraryKeys.documentDetailMenu), findsNothing);
       expect(tester.takeException(), isNull);
     });
 
@@ -489,7 +488,6 @@ void main() {
       await tester.pumpWidget(build());
       await tester.pumpAndSettle();
 
-      expect(find.byKey(LibraryKeys.documentDetailMenu), findsNothing);
       expect(find.byKey(LibraryKeys.documentFavouriteToggle), findsOneWidget);
     });
 

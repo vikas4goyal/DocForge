@@ -31,6 +31,8 @@ class EnhancementCubit extends Cubit<EnhancementState> {
 
   final PageRenderer _render;
 
+  String get _renderScope => 'enhancement:${state.page.id.value}';
+
   /// Counts preview requests so a slow one cannot overwrite a newer result.
   ///
   /// Dragging a slider starts a preview per frame, and they do not necessarily
@@ -182,6 +184,7 @@ class EnhancementCubit extends Cubit<EnhancementState> {
 
     final rendered = await _render(
       PageRenderPlan.of(state.page.withEnhancement(settings)),
+      scope: _renderScope,
     );
     if (isClosed || generation != _previewGeneration) return;
 
@@ -216,8 +219,10 @@ class EnhancementCubit extends Cubit<EnhancementState> {
   }
 
   @override
-  Future<void> close() {
+  Future<void> close() async {
     _previewDebounce?.cancel();
-    return super.close();
+    ++_previewGeneration;
+    await _render.cancel(_renderScope);
+    await super.close();
   }
 }

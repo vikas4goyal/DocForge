@@ -209,6 +209,8 @@ class CropCubit extends Cubit<CropState> {
   final PageRenderer _render;
   final AppTelemetry _telemetry;
 
+  String get _renderScope => 'crop:${state.page.id.value}';
+
   /// Moves the selection to [quad] as the user drags a handle.
   ///
   /// Emits on every drag frame, which is cheap: the state holds four points
@@ -236,7 +238,7 @@ class CropCubit extends Cubit<CropState> {
 
     late final Result<String> rendered;
     try {
-      rendered = await _render(PageRenderPlan.of(cropped));
+      rendered = await _render(PageRenderPlan.of(cropped), scope: _renderScope);
       trace.putAttribute(
         'outcome',
         rendered is Success<String> ? 'success' : 'failure',
@@ -313,12 +315,21 @@ class CropCubit extends Cubit<CropState> {
   /// A failed render leaves the previous image on screen rather than blanking
   /// it: the user is mid-edit, and an empty canvas would look like data loss.
   Future<void> _refresh() async {
-    final rendered = await _render(PageRenderPlan.of(state.page));
+    final rendered = await _render(
+      PageRenderPlan.of(state.page),
+      scope: _renderScope,
+    );
     if (isClosed) return;
 
     if (rendered case Success(:final value)) {
       emit(state.copyWith(renderPath: value));
     }
+  }
+
+  @override
+  Future<void> close() async {
+    await _render.cancel(_renderScope);
+    await super.close();
   }
 }
 

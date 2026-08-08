@@ -28,6 +28,7 @@ void main() {
   late Failure? renderFailure;
   late Completer<void>? gate;
   late RenderPage renderPage;
+  late List<String> cancellations;
 
   PageDraft draft() => const PageDraft(
     id: PageId('page-1'),
@@ -40,6 +41,7 @@ void main() {
     transforms = [];
     renderFailure = null;
     gate = null;
+    cancellations = [];
 
     renderPage = RenderPage(
       cacheDirectory: cache,
@@ -47,7 +49,7 @@ void main() {
         width: 1000,
         height: 800,
       )),
-      render: (plan, {required destinationPath, transform}) async {
+      render: (plan, {required destinationPath, transform, scope}) async {
         rendered.add(plan);
         transforms.add(transform);
         if (gate != null) await gate!.future;
@@ -58,6 +60,7 @@ void main() {
         File(destinationPath).writeAsStringSync('rendered');
         return const Result<void>.success(null);
       },
+      cancelRender: (scope) async => cancellations.add(scope),
     );
   });
 
@@ -77,6 +80,18 @@ void main() {
   });
 
   group('rendering', () {
+    test(
+      'forwards editor scopes and cancellation to the pixel writer',
+      () async {
+        final plan = PageRenderPlan.of(draft().withCrop(crop()));
+
+        await renderPage(plan, scope: 'editor:page-1');
+        await renderPage.cancel('editor:page-1');
+
+        expect(cancellations, ['editor:page-1']);
+      },
+    );
+
     test('renders a page that has a crop', () async {
       final result = await renderPage(
         PageRenderPlan.of(draft().withCrop(crop())),
@@ -203,7 +218,7 @@ void main() {
         sizeOf: (path) async => const Result<({int width, int height})>.failure(
           Failure.corruptFile(),
         ),
-        render: (plan, {required destinationPath, transform}) async =>
+        render: (plan, {required destinationPath, transform, scope}) async =>
             const Result<void>.success(null),
       );
 

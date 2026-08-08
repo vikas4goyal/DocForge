@@ -5,6 +5,7 @@ import UniformTypeIdentifiers
 @main
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
   private var iCloudBridge: DocScanlyICloudBridge?
+  private var imageProcessingBridge: DocScanlyImageProcessingBridge?
 
   override func application(
     _ application: UIApplication,
@@ -18,6 +19,9 @@ import UniformTypeIdentifiers
     // Kept by the application delegate so method/event handlers and scoped
     // document-picker URLs live for exactly as long as the Flutter engine.
     iCloudBridge = DocScanlyICloudBridge(
+      messenger: engineBridge.applicationRegistrar.messenger()
+    )
+    imageProcessingBridge = DocScanlyImageProcessingBridge(
       messenger: engineBridge.applicationRegistrar.messenger()
     )
   }

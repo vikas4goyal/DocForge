@@ -160,6 +160,7 @@ class _Controls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
+      key: EnhanceKeys.controlsList,
       padding: const EdgeInsets.all(16),
       children: [
         SizedBox(

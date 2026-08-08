@@ -55,12 +55,13 @@ void main() {
     renderPage = RenderPage(
       cacheDirectory: cache,
       sizeOf: readImageSize,
-      render: (plan, {required destinationPath, transform}) => renderPageJob(
-        const InlineBackgroundWorker(),
-        plan,
-        destinationPath: destinationPath,
-        transform: transform,
-      ),
+      render: (plan, {required destinationPath, transform, scope}) =>
+          renderPageJob(
+            const InlineBackgroundWorker(),
+            plan,
+            destinationPath: destinationPath,
+            transform: transform,
+          ),
     );
   });
 

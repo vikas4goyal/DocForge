@@ -5,6 +5,8 @@ import 'dart:io';
 
 import 'package:doc_scanly/core/contracts/contracts.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
+import 'package:doc_scanly/core/contracts/page_renderer.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_scanly/core/telemetry/app_telemetry.dart';
 import 'package:doc_scanly/core/time/clock.dart';
@@ -44,10 +46,14 @@ DocumentCreationModule buildDocumentCreationModule({
   required DocumentReader documentReader,
   required DocumentWriter documentWriter,
   required NamingPattern Function() namingPattern,
-  required ApplyEnhancement applyEnhancement,
+  ApplyEnhancement? applyEnhancement,
+  PageRenderer? renderPage,
   PdfComposer? composer,
   AppTelemetry telemetry = const NoopAppTelemetry(),
 }) {
+  if (applyEnhancement == null && renderPage == null) {
+    throw ArgumentError('applyEnhancement or renderPage must be supplied');
+  }
   Future<String> resolvePageImage(
     PageRef page, {
     required int maxDimension,
@@ -56,7 +62,19 @@ DocumentCreationModule buildDocumentCreationModule({
       return page.imagePath;
     }
 
-    final result = await applyEnhancement.single(
+    if (renderPage case final renderer?) {
+      final rendered = await renderer(
+        PageRenderPlan(
+          originalImagePath: page.imagePath,
+          geometry: const [],
+          enhancement: page.enhancement,
+          scale: RenderScale.full,
+        ),
+      );
+      return rendered.valueOrNull ?? page.imagePath;
+    }
+
+    final result = await applyEnhancement!.single(
       sourcePath: page.imagePath,
       destinationPath: '${page.imagePath}.composed.jpg',
       settings: page.enhancement,

@@ -67,9 +67,6 @@ abstract final class PdfEditKeys {
   /// The list of documents being merged, in the order chosen.
   static const mergeOrderList = Key('pdf_merge_order_list');
 
-  /// The control that performs the merge.
-  static const mergeConfirmButton = Key('pdf_merge_confirm_button');
-
   /// The control that performs the split.
   static const splitConfirmButton = Key('pdf_split_confirm_button');
 

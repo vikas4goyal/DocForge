@@ -10,6 +10,7 @@ import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
+import 'package:doc_scanly/features/pdf_generation/domain/repositories/pdf_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 PageRef page(String id, {PageRotation rotation = PageRotation.none}) =>
@@ -28,6 +29,74 @@ const _validBlock = TextBlock(
 );
 
 void main() {
+  group('composed PDF result', () {
+    test('compares every published property and has useful diagnostics', () {
+      const result = ComposedPdf(
+        filePath: '/result.pdf',
+        sizeInBytes: 2048,
+        pageCount: 2,
+        hasTextLayer: true,
+      );
+      final same = ComposedPdf(
+        filePath: result.filePath,
+        sizeInBytes: result.sizeInBytes,
+        pageCount: result.pageCount,
+        hasTextLayer: result.hasTextLayer,
+      );
+
+      expect(result, same);
+      expect(result, same);
+      expect(result.hashCode, same.hashCode);
+      expect(
+        result.toString(),
+        'ComposedPdf(/result.pdf, 2048 bytes, 2 pages)',
+      );
+      expect(
+        result,
+        isNot(
+          const ComposedPdf(
+            filePath: '/other.pdf',
+            sizeInBytes: 2048,
+            pageCount: 2,
+            hasTextLayer: true,
+          ),
+        ),
+      );
+      expect(
+        result,
+        isNot(
+          const ComposedPdf(
+            filePath: '/result.pdf',
+            sizeInBytes: 1024,
+            pageCount: 2,
+            hasTextLayer: true,
+          ),
+        ),
+      );
+      expect(
+        result,
+        isNot(
+          const ComposedPdf(
+            filePath: '/result.pdf',
+            sizeInBytes: 2048,
+            pageCount: 1,
+            hasTextLayer: true,
+          ),
+        ),
+      );
+      expect(
+        result,
+        isNot(
+          const ComposedPdf(
+            filePath: '/result.pdf',
+            sizeInBytes: 2048,
+            pageCount: 2,
+          ),
+        ),
+      );
+    });
+  });
+
   group('quality', () {
     test('lower quality means fewer pixels and harsher compression', () {
       // The property the spec asserts: the lowest setting must produce a

@@ -31,7 +31,11 @@ typedef PagePixelWriter =
       PageRenderPlan plan, {
       required String destinationPath,
       ComposedGeometry? transform,
+      String? scope,
     });
+
+/// Cancels native or host pixel work associated with an editor scope.
+typedef PageRenderCanceller = Future<void> Function(String scope);
 
 /// Reads an image's pixel dimensions, so the geometry can be composed.
 typedef ImageSizeReader =
@@ -44,7 +48,8 @@ class RenderPage implements PageRenderer {
     required this.cacheDirectory,
     required this.render,
     required this.sizeOf,
-    this.directoryName = 'renders',
+    this.cancelRender,
+    this.directoryName = 'renders-v2-gpu',
   });
 
   /// Where renders are cached.
@@ -58,6 +63,9 @@ class RenderPage implements PageRenderer {
 
   /// Produces pixels for a plan.
   final PagePixelWriter render;
+
+  /// Cancels an in-flight pixel operation, when the writer supports it.
+  final PageRenderCanceller? cancelRender;
 
   /// Reads the original's dimensions.
   final ImageSizeReader sizeOf;
@@ -78,7 +86,7 @@ class RenderPage implements PageRenderer {
   /// and copying it would be a byte-for-byte duplicate of a file that already
   /// exists.
   @override
-  Future<Result<String>> call(PageRenderPlan plan) {
+  Future<Result<String>> call(PageRenderPlan plan, {String? scope}) {
     if (plan.isPassThrough) {
       return Future.value(Result<String>.success(plan.originalImagePath));
     }
@@ -93,9 +101,14 @@ class RenderPage implements PageRenderer {
     final existing = _inFlight[plan.cacheKey];
     if (existing != null) return existing;
 
-    final pending = _render(plan, destination);
+    final pending = _render(plan, destination, scope: scope);
     _inFlight[plan.cacheKey] = pending;
     return pending.whenComplete(() => _inFlight.remove(plan.cacheKey));
+  }
+
+  @override
+  Future<void> cancel(String scope) async {
+    await cancelRender?.call(scope);
   }
 
   /// Removes every cached render, whatever plan produced it.
@@ -113,8 +126,9 @@ class RenderPage implements PageRenderer {
 
   Future<Result<String>> _render(
     PageRenderPlan plan,
-    String destination,
-  ) async {
+    String destination, {
+    String? scope,
+  }) async {
     ComposedGeometry? transform;
 
     if (plan.geometry.isNotEmpty) {
@@ -142,6 +156,7 @@ class RenderPage implements PageRenderer {
       plan,
       destinationPath: destination,
       transform: transform,
+      scope: scope,
     );
 
     if (produced case Failed(:final failure)) {

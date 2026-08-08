@@ -33,6 +33,7 @@ android {
         versionName "1.0.0"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
@@ -51,6 +52,11 @@ android {
             signingConfig = signingConfigs.release
         }
     }
+}
+
+dependencies {
+    androidTestImplementation "androidx.test.ext:junit:1.1.2"
+    androidTestImplementation "androidx.test:runner:1.3.0"
 }
 
 kotlin {

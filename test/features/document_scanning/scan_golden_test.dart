@@ -74,7 +74,7 @@ RenderPage _goldenRenderer() => RenderPage(
     width: 800,
     height: 600,
   )),
-  render: (plan, {required destinationPath, transform}) async =>
+  render: (plan, {required destinationPath, transform, scope}) async =>
       const Result<void>.success(null),
 );
 
