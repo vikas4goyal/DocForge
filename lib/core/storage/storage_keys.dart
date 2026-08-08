@@ -34,11 +34,17 @@ abstract final class PreferenceKeys {
   /// Theme mode: light, dark or follow the system.
   static const themeMode = 'settings.themeMode';
 
-  /// Quality preset applied when generating a PDF.
+  /// Legacy PDF quality preset retained only for backward-compatible reads.
   static const pdfQuality = 'settings.pdfQuality';
+
+  /// Integer PDF quality percentage used by newly opened Save workflows.
+  static const pdfQualityPercent = 'settings.pdfQuality.v2';
 
   /// Quality preset applied to page images.
   static const imageQuality = 'settings.imageQuality';
+
+  /// Desired camera tier, or `full` for active-camera maximum.
+  static const cameraResolution = 'settings.cameraResolution.v1';
 
   /// Pattern used to generate a default document title.
   static const fileNamingPattern = 'settings.fileNamingPattern';
@@ -72,7 +78,9 @@ abstract final class PreferenceKeys {
     documentLayoutVersion,
     themeMode,
     pdfQuality,
+    pdfQualityPercent,
     imageQuality,
+    cameraResolution,
     fileNamingPattern,
     defaultSaveLocation,
     libraryDisplayDensity,

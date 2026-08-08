@@ -2,19 +2,86 @@
 library;
 
 import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/isolates/background_worker.dart';
 import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/camera_capability_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
+
+/// Loads exact resolution choices supported by the active camera.
+class LoadCameraResolutions {
+  /// Creates the use case with its scanning-owned capability boundary.
+  const LoadCameraResolutions(this._repository);
+
+  final CameraCapabilityRepository _repository;
+
+  /// Returns supported choices, an empty list when enumeration is unavailable,
+  /// or a typed failure that presentation can expose with Retry.
+  Future<Result<List<SupportedCameraResolution>>> call() =>
+      _repository.loadActiveResolutions();
+}
+
+/// Resolves a stable desired tier for the active camera.
+class ResolveCaptureResolution {
+  /// Creates the use case from the capability loader it invokes each time.
+  const ResolveCaptureResolution(this._load);
+
+  final LoadCameraResolutions _load;
+
+  /// Returns the exact supported choice to request.
+  ///
+  /// A successful null means capability enumeration is unavailable. The
+  /// camera adapter must then request its maximum preset and verify the actual
+  /// captured dimensions rather than claiming a fixed tier.
+  Future<Result<SupportedCameraResolution?>> call(
+    DesiredCameraResolution desired,
+  ) async {
+    final loaded = await _load();
+    return switch (loaded) {
+      Success(:final value) => Result<SupportedCameraResolution?>.success(
+        desired.resolve(value),
+      ),
+      Failed(:final failure) => Result<SupportedCameraResolution?>.failure(
+        failure,
+      ),
+    };
+  }
+}
 
 /// Captures one page and adds it to the session.
 class CapturePage {
   /// Creates the use case.
-  const CapturePage(this._scanner, this._edges);
+  const CapturePage(
+    this._scanner,
+    this._edges, {
+    this.resolveCaptureResolution,
+  });
 
   final ScannerRepository _scanner;
   final EdgeDetector _edges;
+
+  /// Resolves the current desired tier before camera preparation.
+  final ResolveCaptureResolution? resolveCaptureResolution;
+
+  /// Resolves and prepares the camera for [desired].
+  Future<Result<SupportedCameraResolution?>> initialise(
+    DesiredCameraResolution desired,
+  ) async {
+    final resolver = resolveCaptureResolution;
+    if (resolver == null) {
+      final opened = await _scanner.initialise();
+      return opened.map((_) => null);
+    }
+    final resolved = await resolver(desired);
+    if (resolved case Failed(:final failure)) {
+      return Result<SupportedCameraResolution?>.failure(failure);
+    }
+    final resolution = resolved.valueOrNull;
+    final opened = await _scanner.initialise(resolution: resolution);
+    return opened.map((_) => resolution);
+  }
 
   /// Captures a page, detects its edges, and returns it.
   ///
@@ -32,9 +99,12 @@ class CapturePage {
   /// without ever showing that screen — so leaving it to the caller meant "Add
   /// page → Camera" failed with "capture before initialise" every time, staged
   /// nothing, and added no page without saying why.
-  Future<Result<CapturedPage>> call() async {
-    if (!_scanner.isReady) {
-      final opened = await _scanner.initialise();
+  Future<Result<CapturedPage>> call({
+    DesiredCameraResolution desired =
+        const DesiredCameraResolution.fullResolution(),
+  }) async {
+    if (resolveCaptureResolution != null || !_scanner.isReady) {
+      final opened = await initialise(desired);
       // A permission refusal or an unopenable camera is reported as itself:
       // the two lead to different recovery actions and must not be collapsed
       // into a generic capture failure.

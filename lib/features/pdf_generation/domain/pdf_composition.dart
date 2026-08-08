@@ -7,8 +7,10 @@
 library;
 
 import 'package:doc_scanly/core/contracts/models/page.dart';
+import 'package:doc_scanly/core/contracts/models/pdf_quality.dart';
 import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/contracts/models/settings_values.dart';
+import 'package:doc_scanly/core/jobs/pdf_jobs.dart';
 
 // Re-exported so every existing consumer of composition keeps one import. The
 // types themselves moved to core/contracts because settings configures them and
@@ -99,6 +101,79 @@ class PdfBuildRequest {
 
   @override
   int get hashCode => Object.hash(destinationPath, quality, pages.length);
+}
+
+/// One generated-candidate page and its effective quality percentage.
+class GeneratedPdfCandidatePage {
+  /// Creates a candidate page specification.
+  const GeneratedPdfCandidatePage({
+    required this.stableId,
+    required this.page,
+    required this.quality,
+  });
+
+  /// Stable page identity used by quality overrides and fingerprints.
+  final String stableId;
+
+  /// Prepared page image, orientation, and optional searchable text.
+  final PdfPageSpec page;
+
+  /// Effective document-or-page quality for this page.
+  final PdfQualityPercent quality;
+}
+
+/// Every input needed to build one exact generated-PDF candidate.
+class GeneratedPdfCandidateRequest {
+  /// Creates a validated candidate request.
+  ///
+  /// [password] is deliberately transient and is never serialized or included
+  /// in value equality. The fingerprint records only whether protection is
+  /// enabled, while the route-scoped secret boundary owns the actual text.
+  GeneratedPdfCandidateRequest({
+    required List<GeneratedPdfCandidatePage> pages,
+    required this.fingerprint,
+    this.password,
+  }) : pages = List<GeneratedPdfCandidatePage>.unmodifiable(pages) {
+    if (pages.isEmpty) {
+      throw ArgumentError.value(pages, 'pages', 'must not be empty');
+    }
+    final qualities = <int>[for (final page in pages) page.quality.value];
+    if (!_sameQualities(qualities, fingerprint.orderedPageQualities)) {
+      throw ArgumentError.value(
+        fingerprint,
+        'fingerprint',
+        'ordered qualities must describe every candidate page',
+      );
+    }
+    if (fingerprint.isProtected != (password != null)) {
+      throw ArgumentError.value(
+        fingerprint,
+        'fingerprint',
+        'protection flag must match password presence',
+      );
+    }
+  }
+
+  /// Pages in final PDF order.
+  final List<GeneratedPdfCandidatePage> pages;
+
+  /// Stable identity of all non-secret output-affecting inputs.
+  final PdfCandidateFingerprint fingerprint;
+
+  /// Transient protection secret, or `null` for an unprotected PDF.
+  final String? password;
+
+  static bool _sameQualities(List<int> left, List<int> right) {
+    if (left.length != right.length) {
+      return false;
+    }
+    for (var index = 0; index < left.length; index++) {
+      if (left[index] != right[index]) {
+        return false;
+      }
+    }
+    return true;
+  }
 }
 
 /// Rules for assembling a build request from a session.

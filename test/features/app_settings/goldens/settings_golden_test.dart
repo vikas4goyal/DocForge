@@ -17,6 +17,7 @@ import 'package:doc_scanly/features/app_settings/application/usecases/settings_u
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
 import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/camera_resolution_screen.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -99,7 +100,39 @@ void main() {
     await tester.pump();
   }
 
-  final ready = const SettingsState.initial().copyWith(
+  Future<void> pumpCameraAt(
+    WidgetTester tester,
+    Size size,
+    SettingsState state, {
+    Brightness brightness = Brightness.light,
+    double textScale = 1,
+  }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final cubit = _SeededCubit(state);
+    addTearDown(cubit.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
+        home: BlocProvider<SettingsCubit>.value(
+          value: cubit,
+          child: CameraResolutionScreen(onBack: () {}),
+        ),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+  }
+
+  final ready = SettingsState.initial().copyWith(
     status: SettingsStatus.ready,
     settings: AppSettings.defaults,
     storage: const StorageSummary(totalBytes: 2_097_152, documentCount: 8),
@@ -156,6 +189,74 @@ void main() {
       await expectLater(
         find.byType(SettingsScreen),
         matchesGoldenFile('settings_error_light.png'),
+      );
+    });
+  });
+
+  group('camera resolution goldens', () {
+    final hd = SupportedCameraResolution(
+      tier: CameraResolutionTier.hd720,
+      width: 1280,
+      height: 720,
+    );
+    final fullHd = SupportedCameraResolution(
+      tier: CameraResolutionTier.fullHd1080,
+      width: 1920,
+      height: 1080,
+    );
+
+    testWidgets('supported phone, light', (tester) async {
+      await pumpCameraAt(
+        tester,
+        _phone,
+        ready.copyWith(
+          cameraResolutionStatus: CameraResolutionStatus.supported,
+          supportedCameraResolutions: [hd, fullHd],
+        ),
+      );
+
+      await expectLater(
+        find.byType(CameraResolutionScreen),
+        matchesGoldenFile('camera_resolution_phone_light.png'),
+      );
+    });
+
+    testWidgets('fallback tablet, dark', (tester) async {
+      await pumpCameraAt(
+        tester,
+        _tablet,
+        ready.copyWith(
+          settings: AppSettings(
+            cameraResolution: DesiredCameraResolution.tier(
+              CameraResolutionTier.ultraHd4k,
+            ),
+          ),
+          cameraResolutionStatus: CameraResolutionStatus.supported,
+          supportedCameraResolutions: [hd],
+        ),
+        brightness: Brightness.dark,
+      );
+
+      await expectLater(
+        find.byType(CameraResolutionScreen),
+        matchesGoldenFile('camera_resolution_fallback_tablet_dark.png'),
+      );
+    });
+
+    testWidgets('error at maximum text scale', (tester) async {
+      await pumpCameraAt(
+        tester,
+        _phone,
+        ready.copyWith(
+          cameraResolutionStatus: CameraResolutionStatus.failure,
+          cameraResolutionFailure: const Failure.camera(),
+        ),
+        textScale: 3,
+      );
+
+      await expectLater(
+        find.byType(CameraResolutionScreen),
+        matchesGoldenFile('camera_resolution_error_large_text.png'),
       );
     });
   });

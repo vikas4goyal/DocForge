@@ -33,10 +33,13 @@ import 'package:doc_scanly/app/router/app_routes.dart';
 import 'package:doc_scanly/app/router/route_gates.dart';
 import 'package:doc_scanly/app/scanning_module.dart';
 import 'package:doc_scanly/app/screens/app_screens_builder.dart';
+import 'package:doc_scanly/app/screens/compress_pdf_route_screen.dart';
 import 'package:doc_scanly/app/screens/home_refresh.dart';
+import 'package:doc_scanly/app/screens/save_pdf_route_screen.dart';
 import 'package:doc_scanly/app/settings_module.dart';
 import 'package:doc_scanly/app/sharing_module.dart';
 import 'package:doc_scanly/core/contracts/image_processing/image_processing.dart';
+import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/capture_staging.dart';
@@ -66,6 +69,7 @@ import 'package:doc_scanly/features/document_import/domain/repositories/import_r
 import 'package:doc_scanly/features/document_import/infrastructure/repositories/platform_import_sources.dart';
 import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
 import 'package:doc_scanly/features/document_library/presentation/widgets/library_reconciler.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/camera_capability_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/opencv_edge_detector.dart';
 import 'package:doc_scanly/features/document_sharing/domain/repositories/share_repository.dart';
@@ -78,9 +82,12 @@ import 'package:doc_scanly/features/onboarding/application/usecases/onboarding_u
 import 'package:doc_scanly/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
 import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/pdf_manipulator_editor.dart';
+import 'package:doc_scanly/features/pdf_generation/presentation/screens/save_pdf_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:isar_community/isar.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pdfrx/pdfrx.dart';
 
 /// An already-open library database and the directory its derived files live in.
 ///
@@ -146,6 +153,7 @@ Future<Widget> buildDocScanly({
   PublicFileStore? publicStore,
   LibraryOverride? libraryOverride,
   ScannerRepository? scanner,
+  CameraCapabilityRepository? cameraCapabilities,
   EdgeDetector detector = const OpenCvEdgeDetector(),
   DeviceAuthenticator authenticator = const LocalAuthAuthenticator(),
   PdfRenderer pdfRenderer = const PdfrxRenderer(),
@@ -204,6 +212,7 @@ Future<Widget> buildDocScanly({
           publicStore: publicStore,
           libraryOverride: libraryOverride,
           scanner: scanner,
+          cameraCapabilities: cameraCapabilities,
           detector: detector,
           authenticator: authenticator,
           pdfRenderer: pdfRenderer,
@@ -242,6 +251,7 @@ Future<Widget> buildDocScanly({
           documentsDirectory: resolvedDocuments,
           libraryOverride: libraryOverride,
           scanner: scanner,
+          cameraCapabilities: cameraCapabilities,
           detector: detector,
           authenticator: authenticator,
           pdfRenderer: pdfRenderer,
@@ -319,6 +329,7 @@ Future<Widget> buildDocScanly({
     ids: resolvedDependencies.idGenerator,
     detector: detector,
     scanner: scanner,
+    cameraCapabilities: cameraCapabilities,
     telemetry: resolvedDependencies.telemetry,
   );
 
@@ -408,6 +419,7 @@ Future<Widget> buildDocScanly({
       );
       return result.map((_) => destination);
     },
+    candidatePageCountOf: editor.pageCountOf,
     workingDirectory: workingDirectory,
     publicStore: store,
     clock: resolvedDependencies.clock,
@@ -420,6 +432,10 @@ Future<Widget> buildDocScanly({
     renderPage: renderPage,
     telemetry: resolvedDependencies.telemetry,
   );
+
+  // Route extras carry only this opaque handle. Full-resolution page paths and
+  // any later password remain inside this composition-owned process memory.
+  final savePdfSessions = SavePdfSessionRegistry();
 
   final importing = buildImportModule(
     renderer: pdfRenderer,
@@ -456,6 +472,12 @@ Future<Widget> buildDocScanly({
     suggestName: () =>
         creation.generateName(currentSettings.value.namingPattern),
     store: store,
+    desiredCameraResolution: () => currentSettings.value.cameraResolution,
+    openSavePdf: (context, session) {
+      final handle = savePdfSessions.register(session);
+      final route = SavePdfRoute(sessionHandle: handle);
+      return context.push<Document>(route.location, extra: route);
+    },
   );
 
   final editing = buildPdfEditingModule(
@@ -537,6 +559,58 @@ Future<Widget> buildDocScanly({
       authenticator: authenticator,
       pdfRenderer: pdfRenderer,
       routeObserver: routeObserver,
+      loadCameraResolutions: scanning.loadCameraResolutions.call,
+      savePdf: (_, handle) => SavePdfRouteScreen(
+        sessionHandle: handle,
+        sessions: savePdfSessions,
+        renderPage: renderPage,
+        initialQuality: currentSettings.value.pdfQuality,
+        candidateRepository: creation.candidateRepository,
+        documents: library.documentWriter,
+        rollbackDocument: (documentId) async {
+          final pagesRemoved = await library.pages.deleteForDocument(
+            documentId,
+          );
+          if (pagesRemoved case Failed(:final failure)) {
+            return Result<void>.failure(failure);
+          }
+          return library.documents.delete(documentId);
+        },
+        store: store,
+        secrets: resolvedDependencies.secureStorage,
+        clock: resolvedDependencies.clock,
+        ids: resolvedDependencies.idGenerator,
+        workingDirectory: workingDirectory,
+        discardSession: creationFlow.discardSession,
+      ),
+      compressPdf: (_, id) => CompressPdfRouteScreen(
+        documentId: id,
+        documents: library.documentReader,
+        writer: library.documentWriter,
+        rollbackCopy: (copyId) async {
+          final pagesRemoved = await library.pages.deleteForDocument(copyId);
+          if (pagesRemoved case Failed(:final failure)) {
+            return Result<void>.failure(failure);
+          }
+          return library.documents.delete(copyId);
+        },
+        restoreMetadata: (original) async {
+          final restored = await library.documents.save(original);
+          return restored.map<void>((_) {});
+        },
+        store: store,
+        files: documentFiles,
+        secrets: resolvedDependencies.secureStorage,
+        candidateRepository: editing.candidateRepository,
+        workingDirectory: workingDirectory,
+        clock: resolvedDependencies.clock,
+        ids: resolvedDependencies.idGenerator,
+      ),
+      pdfTemporaryPreview: (context, handle) => PdfTemporaryPreviewScreen(
+        candidateHandle: handle,
+        surfaceBuilder: (_, candidateHandle) => PdfViewer.file(candidateHandle),
+        onClose: context.pop,
+      ),
       storageLocation: cloudStorage?.screen(
         onImportFolder: () async {
           await ImportExistingCloudFolder(

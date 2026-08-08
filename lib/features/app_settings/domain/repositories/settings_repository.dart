@@ -22,11 +22,11 @@ abstract interface class SettingsRepository {
   /// Stores the theme choice.
   Future<Result<void>> saveTheme(AppThemeChoice theme);
 
-  /// Stores the PDF quality preset.
-  Future<Result<void>> savePdfQuality(PdfQuality quality);
+  /// Stores the default PDF quality percentage.
+  Future<Result<void>> savePdfQuality(PdfQualityPercent quality);
 
-  /// Stores the image quality preset.
-  Future<Result<void>> saveImageQuality(ImageQuality quality);
+  /// Stores the desired camera capture resolution.
+  Future<Result<void>> saveCameraResolution(DesiredCameraResolution desired);
 
   /// Stores the default naming pattern.
   Future<Result<void>> saveNamingPattern(NamingPattern pattern);

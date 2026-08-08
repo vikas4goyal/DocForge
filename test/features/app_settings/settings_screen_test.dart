@@ -125,7 +125,7 @@ void main() {
         SettingsKeys.screen,
         SettingsKeys.theme,
         SettingsKeys.pdfQuality,
-        SettingsKeys.imageQuality,
+        SettingsKeys.cameraResolution,
         SettingsKeys.fileNaming,
         SettingsKeys.saveLocation,
         SettingsKeys.biometricLock,
@@ -259,7 +259,9 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(
-        find.text(SettingsCopy.pdfQualityDescription(PdfQuality.high)),
+        find.text(
+          SettingsCopy.pdfQualityDescription(PdfQualityPercent(value: 30)),
+        ),
         findsOneWidget,
       );
     });
@@ -274,8 +276,7 @@ void main() {
           180,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.drag(find.byType(ListView).first, const Offset(0, -180));
-        await tester.pumpAndSettle();
+        await tester.ensureVisible(find.byKey(SettingsKeys.pdfQuality));
         await tester.tap(find.byKey(SettingsKeys.pdfQuality));
         await tester.pumpAndSettle();
 
@@ -290,10 +291,10 @@ void main() {
 
       await tester.tap(find.byKey(SettingsKeys.pdfQuality));
       await tester.pumpAndSettle();
-      await tester.tap(find.text(PdfQuality.high.label));
+      await tester.tap(find.text('30%'));
       await tester.pumpAndSettle();
 
-      expect(cubit.state.settings.pdfQuality, PdfQuality.high);
+      expect(cubit.state.settings.pdfQuality, PdfQualityPercent(value: 30));
     });
 
     testWidgets('changing the theme re-renders immediately', (tester) async {
@@ -412,10 +413,7 @@ void main() {
         find.bySemanticsLabel('Theme, ${AppThemeChoice.system.label}'),
         findsOneWidget,
       );
-      expect(
-        find.bySemanticsLabel('PDF quality, ${PdfQuality.balanced.label}'),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsLabel('PDF quality, 70%'), findsOneWidget);
       expect(find.bySemanticsLabel('App lock, off'), findsOneWidget);
 
       handle.dispose();

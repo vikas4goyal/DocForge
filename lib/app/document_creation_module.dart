@@ -7,6 +7,8 @@ import 'package:doc_scanly/core/contracts/contracts.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
 import 'package:doc_scanly/core/contracts/page_renderer.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_scanly/core/telemetry/app_telemetry.dart';
 import 'package:doc_scanly/core/time/clock.dart';
@@ -15,6 +17,7 @@ import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.d
 import 'package:doc_scanly/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/repositories/pdf_repository.dart';
+import 'package:doc_scanly/features/pdf_generation/infrastructure/generated_pdf_candidate_repository.dart';
 import 'package:doc_scanly/features/pdf_generation/infrastructure/pdf_composer.dart';
 
 /// Everything PDF generation needs, built once.
@@ -24,6 +27,7 @@ class DocumentCreationModule {
     required this.saveDocument,
     required this.generateName,
     required this.pageBundleSink,
+    required this.candidateRepository,
   });
 
   /// Composes a PDF and creates the document record.
@@ -34,6 +38,12 @@ class DocumentCreationModule {
 
   /// Turns captured or imported pages into a stored document.
   final PageBundleSink pageBundleSink;
+
+  /// Creates one candidate repository per Save route.
+  ///
+  /// Route scope bounds ownership to one retained candidate and prevents two
+  /// screens from cancelling or discarding one another's temporary output.
+  final GeneratedPdfCandidateRepository Function() candidateRepository;
 }
 
 /// Builds the graph over [publicStore].
@@ -41,6 +51,7 @@ DocumentCreationModule buildDocumentCreationModule({
   required Directory workingDirectory,
   required PublicFileStore publicStore,
   required PdfProtector protectPdf,
+  GeneratedPdfPageCounter? candidatePageCountOf,
   required Clock clock,
   required IdGenerator ids,
   required DocumentReader documentReader,
@@ -112,5 +123,15 @@ DocumentCreationModule buildDocumentCreationModule({
     saveDocument: save,
     generateName: generateName,
     pageBundleSink: PageBundleSinkImpl(save, generateName, namingPattern),
+    candidateRepository: () => IsolateGeneratedPdfCandidateRepository(
+      workingDirectory: workingDirectory,
+      ids: ids,
+      pageCountOf:
+          candidatePageCountOf ??
+          (path, {password}) async => const Result<int>.failure(
+            Failure.pdf(debugDetail: 'candidate verification unavailable'),
+          ),
+      protect: protectPdf,
+    ),
   );
 }

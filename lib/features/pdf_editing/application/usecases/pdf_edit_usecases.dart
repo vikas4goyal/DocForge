@@ -20,12 +20,15 @@ import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/jobs/pdf_jobs.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/pdf_editing/application/atomic_pdf_write.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/compression_candidate.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
 
@@ -36,6 +39,66 @@ import 'package:doc_scanly/features/pdf_editing/domain/repositories/pdf_editor_r
 /// Android that is a cache copy whose location the use case cannot predict.
 typedef PdfEditProducer =
     Future<Result<void>> Function(String sourcePath, String destinationPath);
+
+/// Builds one verified temporary candidate for the current compression plan.
+class BuildCompressionCandidate {
+  /// Creates the use case.
+  const BuildCompressionCandidate(this._repository);
+
+  final CompressionCandidateRepository _repository;
+
+  /// Builds [request], forwarding cancellation and page progress.
+  Future<Result<PdfCandidate>> call(
+    CompressionCandidateRequest request, {
+    required CancellationToken token,
+    required CompressionCandidateProgress onProgress,
+  }) =>
+      _repository.buildCandidate(request, token: token, onProgress: onProgress);
+}
+
+/// Re-verifies a compression candidate before reuse or promotion.
+class VerifyCompressionCandidate {
+  /// Creates the use case.
+  const VerifyCompressionCandidate(this._repository);
+
+  final CompressionCandidateRepository _repository;
+
+  /// Verifies [candidate] and its optional source [password].
+  Future<Result<PdfCandidate>> call(
+    PdfCandidate candidate, {
+    String? password,
+  }) => _repository.verifyCandidate(candidate, password: password);
+}
+
+/// Promotes a verified compression candidate to an authoritative path.
+class PromoteCompressionCandidate {
+  /// Creates the use case.
+  const PromoteCompressionCandidate(this._repository);
+
+  final CompressionCandidateRepository _repository;
+
+  /// Atomically transfers [candidate] to [destinationPath].
+  Future<Result<EditedPdf>> call(
+    PdfCandidate candidate, {
+    required String destinationPath,
+    required CancellationToken token,
+  }) => _repository.promote(
+    candidate,
+    destinationPath: destinationPath,
+    token: token,
+  );
+}
+
+/// Releases a compression candidate no longer owned by its route.
+class DiscardCompressionCandidate {
+  /// Creates the use case.
+  const DiscardCompressionCandidate(this._repository);
+
+  final CompressionCandidateRepository _repository;
+
+  /// Deletes [candidate] idempotently.
+  Future<void> call(PdfCandidate candidate) => _repository.discard(candidate);
+}
 
 /// The collaborators every editing use case needs.
 ///

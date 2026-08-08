@@ -164,7 +164,7 @@ void main() {
         // A password the user decided against must not be applied because they
         // toggled the switch twice.
         expect(requests.single.password, isNull);
-        expect(cubit.state.password, isEmpty);
+        expect(cubit.state.passwordReady, isFalse);
       },
     );
   });

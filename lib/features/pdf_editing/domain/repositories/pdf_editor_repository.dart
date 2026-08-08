@@ -7,6 +7,9 @@
 library;
 
 import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/jobs/pdf_jobs.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/compression_candidate.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
 
 /// Manipulates PDF files.
@@ -85,4 +88,33 @@ abstract interface class PdfEditorRepository {
   /// The verification step of every operation: a file that cannot be opened, or
   /// that has the wrong number of pages, never replaces a real document.
   Future<Result<int>> pageCountOf(String filePath, {String? password});
+}
+
+/// Reports bounded page-by-page compression progress.
+typedef CompressionCandidateProgress = void Function(JobProgress progress);
+
+/// Builds and manages exact temporary candidates for PDF compression.
+abstract interface class CompressionCandidateRepository {
+  /// Builds and verifies a candidate for [request].
+  Future<Result<PdfCandidate>> buildCandidate(
+    CompressionCandidateRequest request, {
+    required CancellationToken token,
+    required CompressionCandidateProgress onProgress,
+  });
+
+  /// Re-verifies candidate bytes, page count, and protection.
+  Future<Result<PdfCandidate>> verifyCandidate(
+    PdfCandidate candidate, {
+    String? password,
+  });
+
+  /// Atomically transfers [candidate] to [destinationPath].
+  Future<Result<EditedPdf>> promote(
+    PdfCandidate candidate, {
+    required String destinationPath,
+    required CancellationToken token,
+  });
+
+  /// Deletes [candidate] idempotently.
+  Future<void> discard(PdfCandidate candidate);
 }

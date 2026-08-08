@@ -3,13 +3,17 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
 import 'package:doc_scanly/core/contracts/models/page_draft.dart';
 import 'package:doc_scanly/core/contracts/page_renderer.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/permissions/permission_service.dart';
 import 'package:doc_scanly/core/telemetry/app_telemetry.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/camera_capability_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
+import 'package:doc_scanly/features/document_scanning/infrastructure/camera_plugin_capability_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/opencv_edge_detector.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
@@ -25,6 +29,9 @@ class ScanningModule {
   /// Creates the module.
   const ScanningModule({
     required this.scanner,
+    required this.cameraCapabilities,
+    required this.loadCameraResolutions,
+    required this.resolveCaptureResolution,
     required this.staging,
     required this.capturePage,
     required this.discardSession,
@@ -36,6 +43,15 @@ class ScanningModule {
 
   /// Drives the camera.
   final ScannerRepository scanner;
+
+  /// Reports supported resolutions for the active camera.
+  final CameraCapabilityRepository cameraCapabilities;
+
+  /// Loads active-camera resolution choices for Settings and capture.
+  final LoadCameraResolutions loadCameraResolutions;
+
+  /// Resolves the persisted desired tier before each camera capture.
+  final ResolveCaptureResolution resolveCaptureResolution;
 
   /// Where captures are written before the document exists.
   final ScanStagingArea staging;
@@ -93,20 +109,34 @@ ScanningModule buildScanningModule({
   required PageRenderer renderPage,
   EdgeDetector detector = const OpenCvEdgeDetector(),
   ScannerRepository? scanner,
+  CameraCapabilityRepository? cameraCapabilities,
   CameraPreviewBuilder? buildPreview,
   AppTelemetry telemetry = const NoopAppTelemetry(),
 }) {
   final staging = LocalScanStagingArea(directory);
   final resolvedScanner =
       scanner ?? CameraScannerRepository(permissions, staging, ids);
+  final resolvedCapabilities =
+      cameraCapabilities ??
+      (scanner == null
+          ? const CameraPluginCapabilityRepository(FlutterCameraPresetProbe())
+          : const _UnavailableCameraCapabilities());
+  final loadCameraResolutions = LoadCameraResolutions(resolvedCapabilities);
 
   return ScanningModule(
     scanner: resolvedScanner,
+    cameraCapabilities: resolvedCapabilities,
+    loadCameraResolutions: loadCameraResolutions,
+    resolveCaptureResolution: ResolveCaptureResolution(loadCameraResolutions),
     staging: staging,
     // OpenCV finds the outline; `FullPageEdgeDetector` remains the specified
     // behaviour for a capture whose edges cannot be found, and the detector
     // falls back to exactly that rather than failing.
-    capturePage: CapturePage(resolvedScanner, detector),
+    capturePage: CapturePage(
+      resolvedScanner,
+      detector,
+      resolveCaptureResolution: ResolveCaptureResolution(loadCameraResolutions),
+    ),
     discardSession: DiscardScanSession(staging, resolvedScanner),
     renderPage: renderPage,
     buildPreview:
@@ -117,6 +147,16 @@ ScanningModule buildScanningModule({
     openSettings: permissions.openSettings,
     telemetry: telemetry,
   );
+}
+
+/// Host-test fallback when a fake scanner has no capability probe attached.
+class _UnavailableCameraCapabilities implements CameraCapabilityRepository {
+  const _UnavailableCameraCapabilities();
+
+  @override
+  Future<Result<List<SupportedCameraResolution>>>
+  loadActiveResolutions() async =>
+      const Result<List<SupportedCameraResolution>>.success([]);
 }
 
 /// The preview surface for a scanner that has no camera behind it.

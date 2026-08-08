@@ -16,6 +16,7 @@ import 'package:doc_scanly/features/app_settings/application/usecases/settings_u
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
 import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/camera_resolution_screen.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_screen.dart';
 import 'package:doc_scanly/features/app_settings/presentation/widgets/settings_widgets.dart';
@@ -63,10 +64,10 @@ class _PreviewSettingsCubit extends SettingsCubit {
   Future<void> setTheme(AppThemeChoice theme) async {}
 
   @override
-  Future<void> setPdfQuality(PdfQuality quality) async {}
+  Future<void> setPdfQuality(PdfQualityPercent quality) async {}
 
   @override
-  Future<void> setImageQuality(ImageQuality quality) async {}
+  Future<void> setCameraResolution(DesiredCameraResolution desired) async {}
 
   @override
   Future<void> setNamingPattern(NamingPattern pattern) async {}
@@ -94,9 +95,14 @@ Widget _screen(
   ),
 );
 
+Widget _cameraResolution(SettingsState state) => BlocProvider<SettingsCubit>(
+  create: (_) => _PreviewSettingsCubit(state),
+  child: CameraResolutionScreen(onBack: () {}),
+);
+
 const _storage = StorageSummary(totalBytes: 2_097_152, documentCount: 8);
 
-final _ready = const SettingsState.initial().copyWith(
+final _ready = SettingsState.initial().copyWith(
   status: SettingsStatus.ready,
   settings: AppSettings.defaults,
   storage: _storage,
@@ -121,12 +127,12 @@ Widget settingsTabDestination() => _screen(_ready, isTab: true);
 
 /// Settings still being read.
 @Preview(name: 'Settings — loading', group: 'Settings', theme: appPreviewTheme)
-Widget settingsLoading() => _screen(const SettingsState.initial());
+Widget settingsLoading() => _screen(SettingsState.initial());
 
 /// Nothing stored yet — no storage figure to report.
 @Preview(name: 'Settings — empty', group: 'Settings', theme: appPreviewTheme)
 Widget settingsEmpty() => _screen(
-  const SettingsState.initial().copyWith(
+  SettingsState.initial().copyWith(
     status: SettingsStatus.ready,
     namingPreview: 'Scan 2026-03-14 09.05',
   ),
@@ -149,10 +155,12 @@ Widget settingsError() => _screen(
 )
 Widget settingsLongContent() => _screen(
   _ready.copyWith(
-    settings: const AppSettings(
+    settings: AppSettings(
       theme: AppThemeChoice.dark,
-      pdfQuality: PdfQuality.high,
-      imageQuality: ImageQuality.high,
+      pdfQuality: PdfQualityPercent(value: 100),
+      cameraResolution: DesiredCameraResolution.tier(
+        CameraResolutionTier.ultraHd4k,
+      ),
       namingPattern: NamingPattern.sequential,
       saveLocation:
           '/storage/emulated/0/Android/data/com.example.docscanly/files/'
@@ -219,6 +227,85 @@ Widget settingsICloudStorage() => _screen(_ready, supportsCloudStorage: true);
 // ---------------------------------------------------------------------------
 // Pushed Settings details
 // ---------------------------------------------------------------------------
+
+final _previewHd = SupportedCameraResolution(
+  tier: CameraResolutionTier.hd720,
+  width: 1280,
+  height: 720,
+);
+
+final _previewFullHd = SupportedCameraResolution(
+  tier: CameraResolutionTier.fullHd1080,
+  width: 1920,
+  height: 1080,
+);
+
+/// Camera resolutions while capabilities load.
+@Preview(
+  name: 'Camera resolution — loading',
+  group: 'Settings details',
+  theme: appPreviewTheme,
+)
+Widget cameraResolutionLoading() => _cameraResolution(
+  _ready.copyWith(cameraResolutionStatus: CameraResolutionStatus.loading),
+);
+
+/// Supported active-camera resolutions with exact dimensions.
+@Preview(
+  name: 'Camera resolution — supported',
+  group: 'Settings details',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget cameraResolutionSupported() => _cameraResolution(
+  _ready.copyWith(
+    cameraResolutionStatus: CameraResolutionStatus.supported,
+    supportedCameraResolutions: [_previewHd, _previewFullHd],
+  ),
+);
+
+/// A selected tier falling back on a different camera.
+@Preview(
+  name: 'Camera resolution — fallback, dark tablet',
+  group: 'Settings details',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget cameraResolutionFallback() => _cameraResolution(
+  _ready.copyWith(
+    settings: AppSettings(
+      cameraResolution: DesiredCameraResolution.tier(
+        CameraResolutionTier.ultraHd4k,
+      ),
+    ),
+    cameraResolutionStatus: CameraResolutionStatus.supported,
+    supportedCameraResolutions: [_previewHd],
+  ),
+);
+
+/// Capability query failure with Retry.
+@Preview(
+  name: 'Camera resolution — error',
+  group: 'Settings details',
+  theme: appPreviewTheme,
+)
+Widget cameraResolutionError() => _cameraResolution(
+  _ready.copyWith(
+    cameraResolutionStatus: CameraResolutionStatus.failure,
+    cameraResolutionFailure: const Failure.camera(),
+  ),
+);
+
+/// Plugin maximum when exact capabilities cannot be enumerated.
+@Preview(
+  name: 'Camera resolution — maximum unavailable',
+  group: 'Settings details',
+  theme: appPreviewTheme,
+)
+Widget cameraResolutionMaximum() => _cameraResolution(
+  _ready.copyWith(cameraResolutionStatus: CameraResolutionStatus.unavailable),
+);
 
 /// Default save location while exports ask every time.
 @Preview(
@@ -335,12 +422,16 @@ Widget privacyPhoneDark() => PrivacyPolicyScreen(onBack: () {});
   theme: appPreviewTheme,
   wrapper: previewSurface,
 )
-Widget choiceTileDefault() => SettingsChoiceTile<PdfQuality>(
+Widget choiceTileDefault() => SettingsChoiceTile<PdfQualityPercent>(
   title: 'PDF quality',
-  value: PdfQuality.balanced,
-  valueLabel: PdfQuality.balanced.label,
-  options: PdfQuality.values,
-  labelFor: (quality) => quality.label,
+  value: PdfQualityPercent(value: 70),
+  valueLabel: '70%',
+  options: [
+    PdfQualityPercent(value: 30),
+    PdfQualityPercent(value: 70),
+    PdfQualityPercent(value: 100),
+  ],
+  labelFor: (quality) => '${quality.value}%',
   descriptionFor: SettingsCopy.pdfQualityDescription,
   onSelected: (_) {},
 );

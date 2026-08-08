@@ -35,6 +35,15 @@ abstract final class AppRoutes {
   /// into one would land on a session that does not exist.
   static const scan = '/scan';
 
+  /// Dedicated PDF configuration and commit surface for a creation session.
+  static const savePdf = '/scan/save';
+
+  /// Read-only preview of one app-private temporary PDF candidate.
+  static const pdfTemporaryPreview = '/scan/save/preview';
+
+  /// Dedicated compression configuration and commit surface.
+  static const compressPdfTemplate = '/documents/:id/compress';
+
   /// All documents.
   static const documents = '/documents';
 
@@ -126,4 +135,78 @@ class StorageLocationRoute {
 
   /// Stable route location.
   String get location => AppRoutes.storageLocation;
+}
+
+/// Typed Save PDF destination carrying an app-private creation session handle.
+class SavePdfRoute {
+  /// Creates the destination value.
+  SavePdfRoute({required this.sessionHandle}) {
+    if (sessionHandle.isEmpty) {
+      throw ArgumentError.value(
+        sessionHandle,
+        'sessionHandle',
+        'must not be empty',
+      );
+    }
+  }
+
+  /// Opaque handle resolved only by the composition root.
+  final String sessionHandle;
+
+  /// Stable route location.
+  String get location => AppRoutes.savePdf;
+}
+
+/// Typed read-only preview destination carrying a private candidate handle.
+class PdfTemporaryPreviewRoute {
+  /// Creates the destination value.
+  PdfTemporaryPreviewRoute({required this.candidateHandle}) {
+    if (candidateHandle.isEmpty) {
+      throw ArgumentError.value(
+        candidateHandle,
+        'candidateHandle',
+        'must not be empty',
+      );
+    }
+  }
+
+  /// Opaque candidate handle resolved only by the PDF-generation factory.
+  final String candidateHandle;
+
+  /// Stable route location.
+  String get location => AppRoutes.pdfTemporaryPreview;
+}
+
+/// Typed Compress PDF destination for one stored document.
+class CompressPdfRoute {
+  /// Creates the destination value.
+  const CompressPdfRoute({required this.documentId});
+
+  /// Source document opened directly from Viewer or the editor.
+  final DocumentId documentId;
+
+  /// Concrete stable location for [documentId].
+  String get location => '/documents/${documentId.value}/compress';
+}
+
+/// Navigation action after a compression commit succeeds.
+enum CompressPdfCompletionKind {
+  /// Open the new sibling document produced by Save as copy.
+  openCopy,
+
+  /// Refresh the Viewer that already displays the overwritten source.
+  refreshOriginal,
+}
+
+/// Typed result popped exactly once by the Compress PDF route.
+class CompressPdfCompletion {
+  /// Creates the result for [documentId].
+  const CompressPdfCompletion({required this.kind, required this.documentId});
+
+  /// Whether navigation opens a copy or refreshes the source.
+  final CompressPdfCompletionKind kind;
+
+  /// New copy identity for [CompressPdfCompletionKind.openCopy], otherwise the
+  /// original source identity to refresh.
+  final DocumentId documentId;
 }

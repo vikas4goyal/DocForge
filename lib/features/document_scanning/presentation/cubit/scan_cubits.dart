@@ -10,6 +10,7 @@ library;
 import 'dart:async';
 
 import 'package:doc_scanly/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/contracts/models/page_draft.dart';
 import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
@@ -26,12 +27,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// Drives the camera capture screen.
 class ScanCaptureCubit extends Cubit<ScanCaptureState> {
   /// Creates the Cubit over its collaborators.
-  ScanCaptureCubit(this._scanner, this._capturePage, this._discard)
-    : super(const ScanCaptureState.initial());
+  ScanCaptureCubit(
+    this._scanner,
+    this._capturePage,
+    this._discard, {
+    DesiredCameraResolution Function()? desiredResolution,
+  }) : _desiredResolution = desiredResolution ?? _fullResolution,
+       super(const ScanCaptureState.initial());
 
   final ScannerRepository _scanner;
   final CapturePage _capturePage;
   final DiscardScanSession _discard;
+  final DesiredCameraResolution Function() _desiredResolution;
 
   /// Pages captured in this session, in capture order.
   ///
@@ -47,10 +54,16 @@ class ScanCaptureCubit extends Cubit<ScanCaptureState> {
   Future<void> start() async {
     emit(state.copyWith(status: ScanCaptureStatus.preparing));
 
-    final result = await _scanner.initialise();
+    final desired = _desiredResolution();
+    final result = await _capturePage.initialise(desired);
 
     emit(switch (result) {
-      Success() => state.copyWith(status: ScanCaptureStatus.ready),
+      Success(:final value) => state.copyWith(
+        status: ScanCaptureStatus.ready,
+        desiredResolution: desired,
+        activeResolution: value,
+        clearActiveResolution: value == null,
+      ),
       Failed(:final failure) => state.copyWith(
         status: ScanCaptureStatus.failure,
         failure: failure,
@@ -67,7 +80,7 @@ class ScanCaptureCubit extends Cubit<ScanCaptureState> {
 
     emit(state.copyWith(status: ScanCaptureStatus.capturing));
 
-    final result = await _capturePage();
+    final result = await _capturePage(desired: _desiredResolution());
 
     switch (result) {
       case Success(:final value):
@@ -128,6 +141,9 @@ class ScanCaptureCubit extends Cubit<ScanCaptureState> {
     await _scanner.dispose();
     return super.close();
   }
+
+  static DesiredCameraResolution _fullResolution() =>
+      const DesiredCameraResolution.fullResolution();
 }
 
 /// Drives the page review screen.

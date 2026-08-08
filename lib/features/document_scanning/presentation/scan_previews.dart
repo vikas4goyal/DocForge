@@ -10,6 +10,7 @@ import 'dart:io';
 
 import 'package:doc_scanly/core/contracts/geometry/page_geometry.dart';
 import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/contracts/models/page_draft.dart';
@@ -141,6 +142,56 @@ String previewCorrectionJob(PageCorrectionRequest request) =>
 Widget captureReady() => _capture(
   const ScanCaptureState.initial().copyWith(status: ScanCaptureStatus.ready),
 );
+
+/// Full-resolution capture with exact active-camera dimensions.
+@Preview(
+  name: 'Capture — Full resolution status',
+  group: 'Scanning',
+  theme: appPreviewTheme,
+)
+Widget captureFullResolution() => _capture(
+  const ScanCaptureState.initial().copyWith(
+    status: ScanCaptureStatus.ready,
+    activeResolution: SupportedCameraResolutionPreview.full,
+  ),
+);
+
+/// Lower tier capture in dark mode.
+@Preview(
+  name: 'Capture — lower resolution, dark',
+  group: 'Scanning',
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget captureLowerResolution() => _capture(
+  const ScanCaptureState.initial().copyWith(
+    status: ScanCaptureStatus.ready,
+    desiredResolution: SupportedCameraResolutionPreview.hdDesired,
+    activeResolution: SupportedCameraResolutionPreview.hd,
+  ),
+);
+
+/// Deterministic values used by capture previews without a capability query.
+abstract final class SupportedCameraResolutionPreview {
+  /// Full-resolution exact active-camera result.
+  static final full = SupportedCameraResolution(
+    tier: CameraResolutionTier.ultraHd4k,
+    width: 4032,
+    height: 3024,
+  );
+
+  /// Desired lower tier.
+  static final hdDesired = DesiredCameraResolution.tier(
+    CameraResolutionTier.hd720,
+  );
+
+  /// Exact lower-tier result.
+  static final hd = SupportedCameraResolution(
+    tier: CameraResolutionTier.hd720,
+    width: 1280,
+    height: 720,
+  );
+}
 
 /// The camera part-way through a batch.
 @Preview(name: 'Capture — batch', group: 'Scanning', theme: appPreviewTheme)

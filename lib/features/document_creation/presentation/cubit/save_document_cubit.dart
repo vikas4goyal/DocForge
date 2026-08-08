@@ -8,7 +8,9 @@ library;
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/security/pdf_password_draft.dart';
 import 'package:doc_scanly/features/document_creation/domain/creation_rules.dart';
 import 'package:doc_scanly/features/document_creation/presentation/cubit/save_document_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -54,7 +56,9 @@ class SaveDocumentCubit extends Cubit<SaveDocumentState> {
     this.folderId,
     this.isNameTaken,
     this.confirmReplace,
+    PdfPasswordDraft? passwordDraft,
   }) : _pages = pages,
+       _passwordDraft = passwordDraft ?? PdfPasswordDraft(),
        super(
          SaveDocumentState.initial(
            name: suggestedName,
@@ -63,6 +67,7 @@ class SaveDocumentCubit extends Cubit<SaveDocumentState> {
        );
 
   final List<PageDraft> _pages;
+  final PdfPasswordDraft _passwordDraft;
 
   /// Writes the document.
   final SaveDocumentRequest save;
@@ -87,26 +92,47 @@ class SaveDocumentCubit extends Cubit<SaveDocumentState> {
 
   /// Records the password as the user types it.
   void passwordChanged(String password) =>
-      emit(state.copyWith(password: password));
+      _updatePassword(_passwordDraft.replace(password: password));
 
   /// Records the confirmation as the user types it.
   void confirmationChanged(String confirmation) =>
-      emit(state.copyWith(confirmation: confirmation));
+      _updatePassword(_passwordDraft.replace(confirmation: confirmation));
 
   /// Turns password protection on or off.
   ///
   /// Turning it off clears both fields rather than keeping them hidden: a
   /// password the user has decided against must not be applied because they
   /// toggled the switch twice.
-  void passwordEnabledChanged({required bool enabled}) => emit(
-    enabled
-        ? state.copyWith(passwordEnabled: true)
-        : state.copyWith(
-            passwordEnabled: false,
-            password: '',
-            confirmation: '',
-          ),
-  );
+  void passwordEnabledChanged({required bool enabled}) {
+    if (!enabled) {
+      _passwordDraft.clear();
+      emit(
+        state.copyWith(
+          passwordEnabled: false,
+          passwordReady: false,
+          clearPasswordProblem: true,
+        ),
+      );
+      return;
+    }
+    emit(
+      state.copyWith(
+        passwordEnabled: true,
+        passwordReady: false,
+        passwordProblem: ValidationIssue.emptyName,
+      ),
+    );
+  }
+
+  void _updatePassword(ValidationIssue? problem) {
+    emit(
+      state.copyWith(
+        passwordReady: _passwordDraft.hasConfirmedValue,
+        passwordProblem: problem,
+        clearPasswordProblem: problem == null,
+      ),
+    );
+  }
 
   /// Writes the document.
   ///
@@ -131,13 +157,16 @@ class SaveDocumentCubit extends Cubit<SaveDocumentState> {
       _pages,
       title: state.name.trim(),
       folders: folders,
-      password: state.effectivePassword,
+      password: state.passwordEnabled
+          ? _passwordDraft.readForOperation()
+          : null,
       folderId: folderId,
     );
     if (isClosed) return null;
 
     switch (result) {
       case Success(:final value):
+        _passwordDraft.clear();
         emit(state.copyWith(status: SaveStatus.editing));
         return value;
       case Failed(:final failure):
@@ -146,5 +175,11 @@ class SaveDocumentCubit extends Cubit<SaveDocumentState> {
         emit(state.copyWith(status: SaveStatus.failure, failure: failure));
         return null;
     }
+  }
+
+  @override
+  Future<void> close() {
+    _passwordDraft.dispose();
+    return super.close();
   }
 }

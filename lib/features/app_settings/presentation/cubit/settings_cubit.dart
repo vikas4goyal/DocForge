@@ -26,6 +26,28 @@ enum SettingsStatus {
   failure,
 }
 
+/// Where active-camera capability loading is in its lifecycle.
+enum CameraResolutionStatus {
+  /// The dedicated resolution screen has not requested capabilities yet.
+  idle,
+
+  /// Active-camera capabilities are being queried.
+  loading,
+
+  /// Concrete supported options are available.
+  supported,
+
+  /// Enumeration is unavailable, so capture will request plugin maximum.
+  unavailable,
+
+  /// Capability loading failed and can be retried.
+  failure,
+}
+
+/// Loads active-camera resolutions without importing the scanning feature.
+typedef CameraResolutionLoader =
+    Future<Result<List<SupportedCameraResolution>>> Function();
+
 /// Immutable state of the settings screen.
 class SettingsState extends Equatable {
   const SettingsState._({
@@ -36,10 +58,13 @@ class SettingsState extends Equatable {
     this.failure,
     this.isRefreshingStorage = false,
     this.storageFailure,
+    this.cameraResolutionStatus = CameraResolutionStatus.idle,
+    this.supportedCameraResolutions = const [],
+    this.cameraResolutionFailure,
   });
 
   /// Before settings have been read.
-  const SettingsState.initial()
+  SettingsState.initial()
     : this._(status: SettingsStatus.loading, settings: AppSettings.defaults);
 
   /// Where the screen has got to.
@@ -66,6 +91,15 @@ class SettingsState extends Equatable {
   /// A failure limited to reading storage usage.
   final Failure? storageFailure;
 
+  /// Lifecycle of the active-camera capability query.
+  final CameraResolutionStatus cameraResolutionStatus;
+
+  /// Exact active-camera choices, ordered from lower to higher tier.
+  final List<SupportedCameraResolution> supportedCameraResolutions;
+
+  /// Why capability loading failed, when Retry is available.
+  final Failure? cameraResolutionFailure;
+
   /// The user-facing message for [failure].
   ///
   /// The domain's own wording is used rather than the generic failure message:
@@ -89,6 +123,9 @@ class SettingsState extends Equatable {
     failure,
     isRefreshingStorage,
     storageFailure,
+    cameraResolutionStatus,
+    supportedCameraResolutions,
+    cameraResolutionFailure,
   ];
 
   /// Returns a copy with the given fields replaced.
@@ -104,6 +141,10 @@ class SettingsState extends Equatable {
     bool? isRefreshingStorage,
     Failure? storageFailure,
     bool clearStorageFailure = false,
+    CameraResolutionStatus? cameraResolutionStatus,
+    List<SupportedCameraResolution>? supportedCameraResolutions,
+    Failure? cameraResolutionFailure,
+    bool clearCameraResolutionFailure = false,
   }) => SettingsState._(
     status: status ?? this.status,
     settings: settings ?? this.settings,
@@ -114,6 +155,13 @@ class SettingsState extends Equatable {
     storageFailure: clearStorageFailure
         ? null
         : (storageFailure ?? this.storageFailure),
+    cameraResolutionStatus:
+        cameraResolutionStatus ?? this.cameraResolutionStatus,
+    supportedCameraResolutions:
+        supportedCameraResolutions ?? this.supportedCameraResolutions,
+    cameraResolutionFailure: clearCameraResolutionFailure
+        ? null
+        : (cameraResolutionFailure ?? this.cameraResolutionFailure),
   );
 }
 
@@ -131,12 +179,16 @@ class SettingsCubit extends Cubit<SettingsState> {
     this._previewName,
     this._storage, {
     required this.onThemeChanged,
-  }) : super(const SettingsState.initial());
+    this.loadCameraResolutions,
+  }) : super(SettingsState.initial());
 
   final LoadSettings _load;
   final UpdateSetting _update;
   final PreviewDocumentName _previewName;
   final LoadStorageSummary _storage;
+
+  /// Loads active-camera capabilities for the dedicated resolution screen.
+  final CameraResolutionLoader? loadCameraResolutions;
 
   /// Called with a theme that has been persisted successfully.
   final void Function(AppThemeChoice theme) onThemeChanged;
@@ -186,6 +238,43 @@ class SettingsCubit extends Cubit<SettingsState> {
     }
   }
 
+  /// Loads the exact options supported by the active camera.
+  Future<void> loadCameraResolutionOptions() async {
+    if (isClosed) return;
+    emit(
+      state.copyWith(
+        cameraResolutionStatus: CameraResolutionStatus.loading,
+        clearCameraResolutionFailure: true,
+      ),
+    );
+    final loader = loadCameraResolutions;
+    final result = loader == null
+        ? const Result<List<SupportedCameraResolution>>.success([])
+        : await loader();
+    if (isClosed) return;
+
+    switch (result) {
+      case Success(:final value):
+        emit(
+          state.copyWith(
+            cameraResolutionStatus: value.isEmpty
+                ? CameraResolutionStatus.unavailable
+                : CameraResolutionStatus.supported,
+            supportedCameraResolutions: value,
+            clearCameraResolutionFailure: true,
+          ),
+        );
+      case Failed(:final failure):
+        emit(
+          state.copyWith(
+            cameraResolutionStatus: CameraResolutionStatus.failure,
+            supportedCameraResolutions: const [],
+            cameraResolutionFailure: failure,
+          ),
+        );
+    }
+  }
+
   /// Applies a theme choice.
   Future<void> setTheme(AppThemeChoice theme) async {
     final result = await _update.theme(state.settings, theme);
@@ -198,13 +287,13 @@ class SettingsCubit extends Cubit<SettingsState> {
     if (result case Success(:final value)) onThemeChanged(value.theme);
   }
 
-  /// Applies a PDF quality preset.
-  Future<void> setPdfQuality(PdfQuality quality) async =>
+  /// Applies the default PDF quality percentage.
+  Future<void> setPdfQuality(PdfQualityPercent quality) async =>
       _settle(await _update.pdfQuality(state.settings, quality));
 
-  /// Applies an image quality preset.
-  Future<void> setImageQuality(ImageQuality quality) async =>
-      _settle(await _update.imageQuality(state.settings, quality));
+  /// Applies the desired camera capture resolution.
+  Future<void> setCameraResolution(DesiredCameraResolution desired) async =>
+      _settle(await _update.cameraResolution(state.settings, desired));
 
   /// Applies a naming pattern and refreshes its preview.
   Future<void> setNamingPattern(NamingPattern pattern) async {

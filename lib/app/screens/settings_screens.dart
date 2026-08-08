@@ -68,6 +68,7 @@ SettingsScreens buildSettingsScreens({
   required String appVersion,
   required AppLockConfiguration lockConfiguration,
   required DeviceAuthenticator authenticator,
+  CameraResolutionLoader? loadCameraResolutions,
   bool supportsCloudStorage = false,
   DirectoryPicker? pickSaveLocation,
 }) {
@@ -86,6 +87,7 @@ SettingsScreens buildSettingsScreens({
           // Published to the root so an explicit theme takes effect without a
           // restart, which the spec requires.
           onThemeChanged: (choice) => themeMode.select(themeModeFor(choice)),
+          loadCameraResolutions: loadCameraResolutions,
         )..load(),
         child: Builder(
           builder: (screenContext) {

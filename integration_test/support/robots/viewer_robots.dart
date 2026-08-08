@@ -6,6 +6,7 @@ import 'package:doc_scanly/features/document_library/presentation/library_keys.d
 import 'package:doc_scanly/features/document_sharing/presentation/share_keys.dart';
 import 'package:doc_scanly/features/document_viewer/presentation/viewer_keys.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/pdf_edit_keys.dart';
+import 'package:doc_scanly/features/pdf_generation/presentation/pdf_keys.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -157,8 +158,12 @@ class ViewerRobot extends Robot {
   });
 
   /// Opens the focused compression workflow.
-  Future<void> openCompress() =>
-      _openOperation(ViewerKeys.compressButton, 'opening PDF compression');
+  Future<void> openCompress() => step('opening PDF compression', () async {
+    await waitUntilVisible();
+    await tap(ViewerKeys.actionsMenu);
+    await tap(ViewerKeys.compressButton);
+    await waitFor(PdfEditKeys.compressScreen);
+  });
 
   /// Opens the focused split and output-naming workflow.
   Future<void> openSplit() => step('opening PDF split', () async {
@@ -203,6 +208,130 @@ class ViewerRobot extends Robot {
 
   /// Whether the viewer is showing a failure.
   bool get hasFailed => has(ViewerKeys.errorView);
+}
+
+/// Drives the dedicated full-page Compress PDF route.
+class CompressPdfRobot extends Robot {
+  /// Creates the robot.
+  const CompressPdfRobot(super.tester);
+
+  @override
+  Key get screenKey => PdfEditKeys.compressScreen;
+
+  /// Waits for initial exact-size calculation to settle.
+  Future<void> waitUntilCalculated() =>
+      step('calculating compressed size', () async {
+        await waitUntilVisible();
+        await waitUntilGone(
+          PdfEditKeys.compressProgressDialog,
+          timeout: const Duration(seconds: 60),
+        );
+        await waitFor(PdfEditKeys.compressSizeStatus);
+      });
+
+  /// Applies a page override and then resets all overrides.
+  Future<void> overrideAndResetFirstPage() =>
+      step('overriding and resetting page quality', () async {
+        await tap(PdfEditKeys.compressPageQuality(0));
+        await tester.drag(
+          find.byKey(PdfEditKeys.compressPageSlider),
+          const Offset(-100, 0),
+        );
+        await tester.tap(find.text('Apply'));
+        await tester.pump();
+        await tap(PdfEditKeys.compressResetAll);
+      });
+
+  /// Opens and closes a verified read-only candidate preview.
+  Future<void> previewAndClose() => step('previewing compressed PDF', () async {
+    await tap(PdfEditKeys.compressPreview);
+    await waitFor(
+      PdfKeys.temporaryPreviewScreen,
+      timeout: const Duration(seconds: 60),
+    );
+    await tap(PdfKeys.temporaryPreviewClose);
+    await waitUntilVisible();
+  });
+
+  /// Cancels candidate preparation while keeping the compression choices.
+  Future<void> cancelPreview() =>
+      step('cancelling compression preview', () async {
+        await tap(PdfEditKeys.compressPreview);
+        await waitFor(PdfEditKeys.compressProgressDialog);
+        await tap(PdfEditKeys.compressCancelJob);
+        await waitUntilGone(PdfEditKeys.compressProgressDialog);
+        await waitUntilVisible();
+      });
+
+  /// Exercises the all-pages-100 warning and returns to quality controls.
+  Future<void> reviewAll100AndAdjust() =>
+      step('reviewing all-pages-100 warning', () async {
+        await tester.drag(
+          find.byKey(PdfEditKeys.compressQualitySlider),
+          const Offset(1000, 0),
+        );
+        await tester.pump();
+        await tap(PdfEditKeys.compressSave);
+        await waitFor(PdfEditKeys.compressPassThroughDialog);
+        await tap(PdfEditKeys.compressAdjustQuality);
+        await waitUntilVisible();
+        await tester.drag(
+          find.byKey(PdfEditKeys.compressQualitySlider),
+          const Offset(-120, 0),
+        );
+        await tester.pump();
+      });
+
+  /// Commits a collision-safe copy and waits for its Viewer.
+  Future<void> saveAsCopy() => step('saving compressed copy', () async {
+    await tap(PdfEditKeys.compressSave);
+    await waitFor(PdfEditKeys.compressDestinationDialog);
+    await tap(PdfEditKeys.compressDestinationCopy);
+    await _continueNoBenefitIfNeeded();
+    await ViewerRobot(tester).waitUntilOpen();
+  });
+
+  /// Starts Save during recalculation, cancels it, then retries as a copy.
+  Future<void> cancelAndRetryAsCopy() =>
+      step('cancelling and retrying compressed copy', () async {
+        await tester.drag(
+          find.byKey(PdfEditKeys.compressQualitySlider),
+          const Offset(-120, 0),
+        );
+        await tester.pump();
+        await tap(PdfEditKeys.compressSave);
+        await waitFor(PdfEditKeys.compressDestinationDialog);
+        await tap(PdfEditKeys.compressDestinationCopy);
+        await waitFor(PdfEditKeys.compressProgressDialog);
+        await tap(PdfEditKeys.compressCancelJob);
+        await waitUntilGone(PdfEditKeys.compressProgressDialog);
+        await waitUntilVisible();
+        await tap(PdfEditKeys.compressSave);
+        await waitFor(PdfEditKeys.compressDestinationDialog);
+        await tap(PdfEditKeys.compressDestinationCopy);
+        await _continueNoBenefitIfNeeded();
+        await ViewerRobot(tester).waitUntilOpen();
+      });
+
+  /// Safely overwrites the source and waits for its refreshed Viewer.
+  Future<void> overwriteOriginal() =>
+      step('overwriting with compressed PDF', () async {
+        await tap(PdfEditKeys.compressSave);
+        await waitFor(PdfEditKeys.compressDestinationDialog);
+        await tap(PdfEditKeys.compressDestinationOverwrite);
+        await _continueNoBenefitIfNeeded();
+        await ViewerRobot(tester).waitUntilOpen();
+      });
+
+  Future<void> _continueNoBenefitIfNeeded() async {
+    await pumpUntilAnyOf(tester, <Key>[
+      PdfEditKeys.compressNoBenefitDialog,
+      ViewerKeys.screen,
+    ], timeout: const Duration(seconds: 60));
+    if (has(PdfEditKeys.compressNoBenefitDialog)) {
+      await tap(PdfEditKeys.compressContinueNoBenefit);
+    }
+  }
 }
 
 /// Drives the PDF editor.

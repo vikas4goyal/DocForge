@@ -158,8 +158,11 @@ void main() {
       String confirmation = '',
     }) => const SaveDocumentState.initial(name: 'Invoice').copyWith(
       passwordEnabled: true,
-      password: password,
-      confirmation: confirmation,
+      passwordReady: password.isNotEmpty && password == confirmation,
+      passwordProblem: password.isNotEmpty && password != confirmation
+          ? ValidationIssue.passwordMismatch
+          : ValidationIssue.emptyName,
+      clearPasswordProblem: password.isNotEmpty && password == confirmation,
     );
 
     testWidgets('turning it on reveals two obscured fields', (tester) async {

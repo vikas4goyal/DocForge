@@ -23,9 +23,9 @@ class SaveDocumentState extends Equatable {
   const SaveDocumentState._({
     required this.status,
     required this.name,
-    required this.password,
-    required this.confirmation,
     required this.passwordEnabled,
+    required this.passwordReady,
+    this.passwordProblem,
     required this.hasPages,
     this.failure,
   });
@@ -35,9 +35,8 @@ class SaveDocumentState extends Equatable {
     : this._(
         status: SaveStatus.editing,
         name: name,
-        password: '',
-        confirmation: '',
         passwordEnabled: false,
+        passwordReady: false,
         hasPages: hasPages,
       );
 
@@ -47,17 +46,14 @@ class SaveDocumentState extends Equatable {
   /// The document's name, as the user has it.
   final String name;
 
-  /// The password, when protection is on.
-  ///
-  /// Held only while the dialog is open. It reaches secure storage when the
-  /// document is written and is never put on a record or in a log.
-  final String password;
-
-  /// The password entered a second time.
-  final String confirmation;
-
   /// Whether the user asked for password protection.
   final bool passwordEnabled;
+
+  /// Whether the route-only secret draft contains matching non-empty inputs.
+  final bool passwordReady;
+
+  /// What is wrong with the secret draft, without carrying its text.
+  final ValidationIssue? passwordProblem;
 
   /// Whether the session has any pages to save.
   final bool hasPages;
@@ -74,25 +70,12 @@ class SaveDocumentState extends Equatable {
   /// What is wrong with the name, or null when nothing is.
   ValidationIssue? get nameProblem => CreationRules.validateName(name);
 
-  /// What is wrong with the password, or null when nothing is.
-  ValidationIssue? get passwordProblem => CreationRules.validatePassword(
-    password,
-    confirmation,
-    enabled: passwordEnabled,
-  );
-
   /// Whether the save control does anything.
-  bool get canSave => CreationRules.canSave(
-    name: name,
-    password: password,
-    confirmation: confirmation,
-    passwordEnabled: passwordEnabled,
-    hasPages: hasPages,
-    isSaving: isSaving,
-  );
-
-  /// The password to protect with, or null when protection is off.
-  String? get effectivePassword => passwordEnabled ? password : null;
+  bool get canSave =>
+      hasPages &&
+      !isSaving &&
+      CreationRules.isNameUsable(name) &&
+      (!passwordEnabled || passwordReady);
 
   /// Returns a copy with the given fields replaced.
   ///
@@ -101,17 +84,20 @@ class SaveDocumentState extends Equatable {
   SaveDocumentState copyWith({
     SaveStatus? status,
     String? name,
-    String? password,
-    String? confirmation,
     bool? passwordEnabled,
+    bool? passwordReady,
+    ValidationIssue? passwordProblem,
+    bool clearPasswordProblem = false,
     bool? hasPages,
     Failure? failure,
   }) => SaveDocumentState._(
     status: status ?? this.status,
     name: name ?? this.name,
-    password: password ?? this.password,
-    confirmation: confirmation ?? this.confirmation,
     passwordEnabled: passwordEnabled ?? this.passwordEnabled,
+    passwordReady: passwordReady ?? this.passwordReady,
+    passwordProblem: clearPasswordProblem
+        ? null
+        : passwordProblem ?? this.passwordProblem,
     hasPages: hasPages ?? this.hasPages,
     failure: failure,
   );
@@ -120,9 +106,9 @@ class SaveDocumentState extends Equatable {
   List<Object?> get props => [
     status,
     name,
-    password,
-    confirmation,
     passwordEnabled,
+    passwordReady,
+    passwordProblem,
     hasPages,
     failure,
   ];

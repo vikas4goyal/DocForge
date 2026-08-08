@@ -9,6 +9,7 @@ import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/app_settings/application/usecases/settings_usecases.dart';
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
@@ -62,6 +63,7 @@ void main() {
     PreferenceStore? store,
     _Storage? storage,
     AppLockStatusReader? lock,
+    CameraResolutionLoader? loadCameraResolutions,
   }) {
     final repository = PreferenceSettingsRepository(
       store ?? InMemoryPreferenceStore(),
@@ -74,6 +76,7 @@ void main() {
       PreviewDocumentName(FixedClock(DateTime.utc(2026, 3, 14, 9, 5))),
       LoadStorageSummary(storage ?? _Storage()),
       onThemeChanged: published.add,
+      loadCameraResolutions: loadCameraResolutions,
     );
   }
 
@@ -123,10 +126,12 @@ void main() {
       build: build,
       act: (cubit) async {
         await cubit.load();
-        await cubit.setPdfQuality(PdfQuality.high);
+        await cubit.setPdfQuality(PdfQualityPercent(value: 100));
       },
-      verify: (cubit) =>
-          expect(cubit.state.settings.pdfQuality, PdfQuality.high),
+      verify: (cubit) => expect(
+        cubit.state.settings.pdfQuality,
+        PdfQualityPercent(value: 100),
+      ),
     );
 
     blocTest<SettingsCubit, SettingsState>(
@@ -162,11 +167,16 @@ void main() {
       build: () => build(store: _FailingStore()),
       act: (cubit) async {
         await cubit.load();
-        await cubit.setImageQuality(ImageQuality.high);
+        await cubit.setCameraResolution(
+          DesiredCameraResolution.tier(CameraResolutionTier.ultraHd4k),
+        );
       },
       verify: (cubit) {
         expect(cubit.state.status, SettingsStatus.failure);
-        expect(cubit.state.settings.imageQuality, ImageQuality.balanced);
+        expect(
+          cubit.state.settings.cameraResolution,
+          const DesiredCameraResolution.fullResolution(),
+        );
         expect(cubit.state.message, contains('previous value'));
       },
     );
@@ -192,6 +202,91 @@ void main() {
       verify: (cubit) {
         expect(cubit.state.settings.saveLocation, isNull);
         expect(cubit.state.saveLocationLabel, SettingsCopy.systemSaveLocation);
+      },
+    );
+  });
+
+  group('camera resolution', () {
+    final hd = SupportedCameraResolution(
+      tier: CameraResolutionTier.hd720,
+      width: 1280,
+      height: 720,
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'publishes loading and supported capability states',
+      build: () => build(
+        loadCameraResolutions: () async =>
+            Result<List<SupportedCameraResolution>>.success([hd]),
+      ),
+      act: (cubit) => cubit.loadCameraResolutionOptions(),
+      expect: () => [
+        isA<SettingsState>().having(
+          (state) => state.cameraResolutionStatus,
+          'cameraResolutionStatus',
+          CameraResolutionStatus.loading,
+        ),
+        isA<SettingsState>()
+            .having(
+              (state) => state.cameraResolutionStatus,
+              'cameraResolutionStatus',
+              CameraResolutionStatus.supported,
+            )
+            .having(
+              (state) => state.supportedCameraResolutions,
+              'supportedCameraResolutions',
+              [hd],
+            ),
+      ],
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'Retry replaces a capability failure with supported choices',
+      build: () {
+        var calls = 0;
+        return build(
+          loadCameraResolutions: () async => calls++ == 0
+              ? const Result<List<SupportedCameraResolution>>.failure(
+                  Failure.camera(),
+                )
+              : Result<List<SupportedCameraResolution>>.success([hd]),
+        );
+      },
+      act: (cubit) async {
+        await cubit.loadCameraResolutionOptions();
+        await cubit.loadCameraResolutionOptions();
+      },
+      verify: (cubit) {
+        expect(
+          cubit.state.cameraResolutionStatus,
+          CameraResolutionStatus.supported,
+        );
+        expect(cubit.state.cameraResolutionFailure, isNull);
+      },
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'camera fallback is deterministic while PDF default is preserved',
+      build: () => build(
+        store: InMemoryPreferenceStore({
+          PreferenceKeys.cameraResolution: '4k',
+          PreferenceKeys.pdfQualityPercent: 60,
+        }),
+        loadCameraResolutions: () async =>
+            Result<List<SupportedCameraResolution>>.success([hd]),
+      ),
+      act: (cubit) async {
+        await cubit.load();
+        await cubit.loadCameraResolutionOptions();
+      },
+      verify: (cubit) {
+        expect(
+          cubit.state.settings.cameraResolution.resolve(
+            cubit.state.supportedCameraResolutions,
+          ),
+          hd,
+        );
+        expect(cubit.state.settings.pdfQuality, PdfQualityPercent(value: 60));
       },
     );
   });
@@ -268,7 +363,7 @@ void main() {
       build: () => build(store: _FailingStore()),
       act: (cubit) async {
         await cubit.load();
-        await cubit.setPdfQuality(PdfQuality.high);
+        await cubit.setPdfQuality(PdfQualityPercent(value: 100));
         cubit.dismissError();
       },
       verify: (cubit) {

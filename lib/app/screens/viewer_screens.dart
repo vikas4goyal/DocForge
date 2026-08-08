@@ -6,6 +6,8 @@
 /// renderer and file resolver.
 library;
 
+import 'dart:async';
+
 import 'package:doc_scanly/app/library_module.dart';
 import 'package:doc_scanly/app/pdf_editing_module.dart';
 import 'package:doc_scanly/app/router/app_router.dart';
@@ -74,6 +76,7 @@ ViewerScreens buildViewerScreens({
   required DocumentFileResolver documentFiles,
   required SecureStore secureStorage,
   required PdfRenderer renderer,
+  bool useDedicatedCompressRoute = false,
 }) {
   return ViewerScreens(
     viewer: (context, id) {
@@ -206,14 +209,18 @@ ViewerScreens buildViewerScreens({
               case ViewerDocumentAction.print:
                 printDocument(context, sharing, id);
               case ViewerDocumentAction.compress:
-                openEditor(
-                  context,
-                  editing,
-                  documentFiles,
-                  id,
-                  documentReader: library.documentReader,
-                  initialOperation: PdfEditOperation.compress,
-                );
+                if (useDedicatedCompressRoute) {
+                  unawaited(_openCompressionRoute(context, id, viewerCubit));
+                } else {
+                  openEditor(
+                    context,
+                    editing,
+                    documentFiles,
+                    id,
+                    documentReader: library.documentReader,
+                    initialOperation: PdfEditOperation.compress,
+                  );
+                }
               case ViewerDocumentAction.split:
                 openEditor(
                   context,
@@ -258,6 +265,26 @@ ViewerScreens buildViewerScreens({
     },
     documentEdit: (_, id) => PlaceholderScreen('Edit ${id.value}'),
   );
+}
+
+/// Opens the dedicated compression route and applies its typed completion.
+Future<void> _openCompressionRoute(
+  BuildContext context,
+  DocumentId sourceId,
+  ViewerCubit viewerCubit,
+) async {
+  final route = CompressPdfRoute(documentId: sourceId);
+  final completion = await context.push<CompressPdfCompletion>(route.location);
+  if (!context.mounted || completion == null) return;
+
+  switch (completion.kind) {
+    case CompressPdfCompletionKind.openCopy:
+      await context.push<void>(AppRoutes.documentView(completion.documentId));
+      break;
+    case CompressPdfCompletionKind.refreshOriginal:
+      await viewerCubit.refreshMetadata();
+      break;
+  }
 }
 
 /// Opens the PDF editor for [id].

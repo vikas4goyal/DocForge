@@ -2,6 +2,7 @@
 library;
 
 import 'package:doc_scanly/core/contracts/geometry/page_geometry.dart';
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/contracts/models/page_draft.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
@@ -35,6 +36,8 @@ class ScanCaptureState extends Equatable {
     this.batchMode = false,
     this.torchOn = false,
     this.failure,
+    this.desiredResolution = const DesiredCameraResolution.fullResolution(),
+    this.activeResolution,
   });
 
   /// Before the camera is opened.
@@ -54,6 +57,32 @@ class ScanCaptureState extends Equatable {
 
   /// What went wrong, when something did.
   final Failure? failure;
+
+  /// Stable preference used to initialise the active camera.
+  final DesiredCameraResolution desiredResolution;
+
+  /// Exact active-camera dimensions selected, or null for plugin maximum.
+  final SupportedCameraResolution? activeResolution;
+
+  /// Accessible text describing the current source capture resolution.
+  String get resolutionLabel => desiredResolution.when(
+    fullResolution: () => activeResolution == null
+        ? 'Full resolution, camera maximum'
+        : 'Full resolution, ${activeResolution!.width} by '
+              '${activeResolution!.height}',
+    tier: (_) => activeResolution == null
+        ? 'Camera maximum'
+        : activeResolution!.tier ==
+              desiredResolution.when(
+                fullResolution: () => activeResolution!.tier,
+                tier: (tier) => tier,
+              )
+        ? '${activeResolution!.tier.label}, ${activeResolution!.width} by '
+              '${activeResolution!.height}'
+        : '${desiredResolution.when(fullResolution: () => 'Full resolution', tier: (tier) => tier.label)} unavailable, using '
+              '${activeResolution!.tier.label}, ${activeResolution!.width} by '
+              '${activeResolution!.height}',
+  );
 
   /// The user-facing message for [failure].
   String? get message => failure?.presentation.message;
@@ -85,16 +114,31 @@ class ScanCaptureState extends Equatable {
     bool? batchMode,
     bool? torchOn,
     Failure? failure,
+    DesiredCameraResolution? desiredResolution,
+    SupportedCameraResolution? activeResolution,
+    bool clearActiveResolution = false,
   }) => ScanCaptureState._(
     status: status ?? this.status,
     pageCount: pageCount ?? this.pageCount,
     batchMode: batchMode ?? this.batchMode,
     torchOn: torchOn ?? this.torchOn,
     failure: failure,
+    desiredResolution: desiredResolution ?? this.desiredResolution,
+    activeResolution: clearActiveResolution
+        ? null
+        : (activeResolution ?? this.activeResolution),
   );
 
   @override
-  List<Object?> get props => [status, pageCount, batchMode, torchOn, failure];
+  List<Object?> get props => [
+    status,
+    pageCount,
+    batchMode,
+    torchOn,
+    failure,
+    desiredResolution,
+    activeResolution,
+  ];
 }
 
 /// A page removed from the session, retained so the removal can be undone.

@@ -413,6 +413,28 @@ class SettingsRobot extends Robot {
         await waitUntilGone(SettingsKeys.choiceSheet);
       });
 
+  /// Opens active-camera capabilities and verifies [tierIds] are offered.
+  Future<void> expectCameraResolutions(Iterable<String> tierIds) =>
+      step('checking supported camera resolutions', () async {
+        await waitUntilVisible();
+        await tap(SettingsKeys.cameraResolution);
+        await waitFor(SettingsKeys.cameraResolutionScreen);
+        await waitFor(SettingsKeys.cameraResolutionOption('full'));
+        for (final tierId in tierIds) {
+          await waitFor(SettingsKeys.cameraResolutionOption(tierId));
+        }
+      });
+
+  /// Chooses one supported camera tier and returns to the Settings list.
+  Future<void> chooseCameraResolution(String tierId) =>
+      step('choosing camera resolution $tierId', () async {
+        await tap(SettingsKeys.cameraResolutionOption(tierId));
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pageBack();
+        await tester.pumpAndSettle();
+        await waitUntilVisible();
+      });
+
   /// Scrolls to the final Privacy Policy row and leaves the list at its end.
   Future<void> revealPrivacyPolicy() =>
       step('revealing the privacy policy with bottom spacing', () async {

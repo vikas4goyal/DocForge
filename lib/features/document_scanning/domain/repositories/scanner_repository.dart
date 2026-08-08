@@ -3,6 +3,7 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/failures/result.dart';
@@ -33,6 +34,8 @@ class CaptureResult {
     required this.id,
     required this.imagePath,
     this.thumbnailPath,
+    this.actualWidth,
+    this.actualHeight,
   });
 
   /// Identifier assigned to this capture.
@@ -43,6 +46,12 @@ class CaptureResult {
 
   /// Path to a generated thumbnail, when one was produced.
   final String? thumbnailPath;
+
+  /// Actual captured width decoded from the staged image, when available.
+  final int? actualWidth;
+
+  /// Actual captured height decoded from the staged image, when available.
+  final int? actualHeight;
 }
 
 /// Drives the device camera and writes captures to disk.
@@ -56,7 +65,7 @@ abstract interface class ScannerRepository {
   /// Fails with a permission failure when access was refused and a camera
   /// failure when the device could not be opened — the two lead to different
   /// recovery actions, so they are never collapsed into one.
-  Future<Result<void>> initialise();
+  Future<Result<void>> initialise({SupportedCameraResolution? resolution});
 
   /// Captures one page, writing it to disk before returning.
   ///

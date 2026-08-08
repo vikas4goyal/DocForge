@@ -7,6 +7,84 @@ import 'package:flutter/widgets.dart';
 
 /// Keys used by the PDF editor and its dialogues.
 abstract final class PdfEditKeys {
+  /// Root of the dedicated Compress PDF workflow.
+  static const compressScreen = Key('pdf_compress_screen');
+
+  /// Document-level compression percentage slider.
+  static const compressQualitySlider = Key('pdf_compress_quality_slider');
+
+  /// Original/result exact byte comparison and calculation status.
+  static const compressSizeStatus = Key('pdf_compress_size_status');
+
+  /// Retries exact compressed-size calculation.
+  static const compressSizeRetry = Key('pdf_compress_size_retry');
+
+  /// Resets every compression page exception.
+  static const compressResetAll = Key('pdf_compress_reset_all');
+
+  /// Opens candidate preview.
+  static const compressPreview = Key('pdf_compress_preview');
+
+  /// Starts warning and destination review.
+  static const compressSave = Key('pdf_compress_save');
+
+  /// All-pages-100 review dialog.
+  static const compressPassThroughDialog = Key(
+    'pdf_compress_pass_through_dialog',
+  );
+
+  /// Returns from the 100% warning to quality controls.
+  static const compressAdjustQuality = Key('pdf_compress_adjust_quality');
+
+  /// Continues from the 100% warning.
+  static const compressContinuePassThrough = Key(
+    'pdf_compress_continue_pass_through',
+  );
+
+  /// Explicit copy-or-overwrite destination dialog.
+  static const compressDestinationDialog = Key(
+    'pdf_compress_destination_dialog',
+  );
+
+  /// Collision-safe sibling-copy destination.
+  static const compressDestinationCopy = Key('pdf_compress_destination_copy');
+
+  /// Verified source-overwrite destination.
+  static const compressDestinationOverwrite = Key(
+    'pdf_compress_destination_overwrite',
+  );
+
+  /// Review shown when exact bytes did not decrease.
+  static const compressNoBenefitDialog = Key('pdf_compress_no_benefit_dialog');
+
+  /// Continues a no-benefit commit.
+  static const compressContinueNoBenefit = Key(
+    'pdf_compress_continue_no_benefit',
+  );
+
+  /// Modal compression progress dialog.
+  static const compressProgressDialog = Key('pdf_compress_progress_dialog');
+
+  /// Determinate compression progress.
+  static const compressProgressIndicator = Key(
+    'pdf_compress_progress_indicator',
+  );
+
+  /// Cancels preview preparation or commit.
+  static const compressCancelJob = Key('pdf_compress_cancel_job');
+
+  /// Page-specific compression quality row.
+  static Key compressPageQuality(int index) =>
+      Key('pdf_compress_page_quality_$index');
+
+  /// Slider inside a compression page-quality dialog.
+  static const compressPageSlider = Key('pdf_compress_page_slider');
+
+  /// Makes a page follow document compression quality.
+  static const compressUseDocumentQuality = Key(
+    'pdf_compress_use_document_quality',
+  );
+
   /// Root of the editor screen.
   static const screen = Key('pdf_edit_screen');
 
@@ -145,6 +223,17 @@ abstract final class PdfEditKeys {
 
 /// Semantics labels for the PDF editor.
 abstract final class PdfEditSemantics {
+  /// Announces document compression quality.
+  static String compressQuality(int percent) =>
+      'Compression quality, $percent percent';
+
+  /// Announces one page's effective compression quality.
+  static String compressPage(
+    int page,
+    int percent, {
+    required bool overridden,
+  }) => 'Page $page, $percent percent${overridden ? ', custom quality' : ''}';
+
   /// Announces a metadata row as its name and its value together, for the same
   /// reason the settings tiles do: two separately announced items leave the
   /// listener to pair them.

@@ -26,6 +26,18 @@ typedef DocumentScreenBuilder =
 typedef FolderScreenBuilder =
     Widget Function(BuildContext context, FolderId id);
 
+/// Builds a route-scoped Save PDF screen from an opaque session handle.
+typedef SavePdfScreenBuilder =
+    Widget Function(BuildContext context, String sessionHandle);
+
+/// Builds a read-only PDF preview from an app-private candidate handle.
+typedef PdfTemporaryPreviewScreenBuilder =
+    Widget Function(BuildContext context, String candidateHandle);
+
+/// Builds the route-scoped Compress PDF screen for one source document.
+typedef CompressPdfScreenBuilder =
+    Widget Function(BuildContext context, DocumentId id);
+
 /// The screens each route renders.
 ///
 /// Injected rather than imported so the router depends on no feature. A
@@ -53,6 +65,9 @@ class AppScreens {
     required this.about,
     required this.privacy,
     this.storageLocation,
+    this.savePdf,
+    this.pdfTemporaryPreview,
+    this.compressPdf,
   });
 
   /// First-launch onboarding.
@@ -108,6 +123,15 @@ class AppScreens {
 
   /// iOS-only storage-location screen; null removes the route on Android.
   final ScreenBuilder? storageLocation;
+
+  /// Dedicated Save PDF workflow, when the creation factory is available.
+  final SavePdfScreenBuilder? savePdf;
+
+  /// Read-only temporary candidate preview, when its factory is available.
+  final PdfTemporaryPreviewScreenBuilder? pdfTemporaryPreview;
+
+  /// Dedicated compression workflow, when its factory is available.
+  final CompressPdfScreenBuilder? compressPdf;
 }
 
 /// Creates the application router.
@@ -149,6 +173,34 @@ GoRouter createAppRouter({
         path: AppRoutes.scan,
         builder: (context, state) => screens.scan(context),
       ),
+      if (screens.savePdf != null)
+        GoRoute(
+          path: AppRoutes.savePdf,
+          builder: (context, state) {
+            final route = state.extra;
+            return route is SavePdfRoute
+                ? screens.savePdf!(context, route.sessionHandle)
+                : const _InvalidRouteHandle();
+          },
+        ),
+      if (screens.pdfTemporaryPreview != null)
+        GoRoute(
+          path: AppRoutes.pdfTemporaryPreview,
+          builder: (context, state) {
+            final route = state.extra;
+            return route is PdfTemporaryPreviewRoute
+                ? screens.pdfTemporaryPreview!(context, route.candidateHandle)
+                : const _InvalidRouteHandle();
+          },
+        ),
+      if (screens.compressPdf != null)
+        GoRoute(
+          path: AppRoutes.compressPdfTemplate,
+          builder: (context, state) => screens.compressPdf!(
+            context,
+            DocumentId(state.pathParameters[AppRoutes.idParameter]!),
+          ),
+        ),
       GoRoute(
         path: AppRoutes.documents,
         builder: (context, state) => screens.documents(context),
@@ -248,4 +300,23 @@ class _RouteNotFound extends StatelessWidget {
       ),
     );
   }
+}
+
+class _InvalidRouteHandle extends StatelessWidget {
+  const _InvalidRouteHandle();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    key: CoreKeys.routeNotFoundScreen,
+    appBar: AppBar(title: const Text('Not found')),
+    body: AppEmptyState(
+      key: CoreKeys.routeNotFoundState,
+      title: 'That PDF is no longer available',
+      message: 'Return to the previous screen and prepare it again.',
+      icon: Icons.picture_as_pdf_outlined,
+      actionLabel: 'Go back',
+      onAction: () =>
+          context.canPop() ? context.pop() : context.go(AppRoutes.home),
+    ),
+  );
 }

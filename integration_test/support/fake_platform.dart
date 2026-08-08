@@ -23,10 +23,13 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
 import 'package:doc_scanly/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
 import 'package:doc_scanly/features/document_import/infrastructure/repositories/fake_import_sources.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/camera_capability_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
@@ -42,6 +45,7 @@ class FakePlatform {
   /// Creates the bundle.
   const FakePlatform({
     required this.scanner,
+    required this.cameraCapabilities,
     required this.detector,
     required this.authenticator,
     required this.share,
@@ -54,6 +58,9 @@ class FakePlatform {
 
   /// Stands in for the camera, writing a fixture image per capture.
   final FakeScannerRepository scanner;
+
+  /// Deterministic supported still-image sizes for Settings and capture.
+  final FakeCameraCapabilityRepository cameraCapabilities;
 
   /// Stands in for OpenCV, which has no host-VM binding.
   ///
@@ -122,6 +129,7 @@ FakePlatform buildFakePlatform({
       directory: captureDirectory,
       imageBytes: captureImageBytes,
     ),
+    cameraCapabilities: FakeCameraCapabilityRepository(),
     detector: const FullPageEdgeDetector(),
     authenticator: FakeDeviceAuthenticator(
       // `rejected` rather than a failure: a refused fingerprint is the lock
@@ -140,4 +148,50 @@ FakePlatform buildFakePlatform({
     files: FakeFileBrowser(paths: pickedFiles),
     sharedContent: FakeSharedContentSource(pendingPaths: pendingSharedContent),
   );
+}
+
+/// Mutable active-camera capability boundary for resolution flows.
+class FakeCameraCapabilityRepository implements CameraCapabilityRepository {
+  /// Creates the common three-tier active camera used by ordinary flows.
+  FakeCameraCapabilityRepository({List<SupportedCameraResolution>? supported})
+    : supported =
+          supported ??
+          <SupportedCameraResolution>[
+            SupportedCameraResolution(
+              tier: CameraResolutionTier.hd720,
+              width: 1280,
+              height: 720,
+            ),
+            SupportedCameraResolution(
+              tier: CameraResolutionTier.fullHd1080,
+              width: 1920,
+              height: 1080,
+            ),
+            SupportedCameraResolution(
+              tier: CameraResolutionTier.ultraHd4k,
+              width: 4032,
+              height: 3024,
+            ),
+          ];
+
+  /// Current active-camera choices; flows may replace these to model a switch.
+  List<SupportedCameraResolution> supported;
+
+  /// Query failure used to exercise Retry and offline states.
+  Failure? failure;
+
+  /// Number of active-camera capability queries.
+  int loads = 0;
+
+  @override
+  Future<Result<List<SupportedCameraResolution>>>
+  loadActiveResolutions() async {
+    loads++;
+    final configured = failure;
+    return configured == null
+        ? Result<List<SupportedCameraResolution>>.success(
+            List<SupportedCameraResolution>.unmodifiable(supported),
+          )
+        : Result<List<SupportedCameraResolution>>.failure(configured);
+  }
 }

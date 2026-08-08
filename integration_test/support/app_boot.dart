@@ -111,6 +111,7 @@ Future<FlowApp> bootDocScanly(
   bool appLockEnabled = false,
   bool unlocksSuccessfully = true,
   List<String> galleryImages = const [],
+  bool useBundledGalleryFixture = false,
   List<String> pickedFiles = const [],
   List<String> pendingSharedContent = const [],
   String? exportDestination,
@@ -195,11 +196,14 @@ Future<FlowApp> bootDocScanly(
   // writes these bytes on every capture and the composer downstream has to be
   // able to decode them.
   final captureImage = await File(await fixtures.pageOne()).readAsBytes();
+  final resolvedGalleryImages = useBundledGalleryFixture
+      ? <String>[await fixtures.pageTwo()]
+      : galleryImages;
 
   final platform = buildFakePlatform(
     captureDirectory: cacheDirectory,
     captureImageBytes: captureImage,
-    galleryImages: galleryImages,
+    galleryImages: resolvedGalleryImages,
     pickedFiles: pickedFiles,
     pendingSharedContent: pendingSharedContent,
     exportDestination: exportDestination,
@@ -231,6 +235,7 @@ Future<FlowApp> bootDocScanly(
       documentsDirectory: derivedDirectory,
     ),
     scanner: platform.scanner,
+    cameraCapabilities: platform.cameraCapabilities,
     detector: platform.detector,
     authenticator: platform.authenticator,
     share: platform.share,

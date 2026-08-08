@@ -11,6 +11,7 @@ import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/jobs/pdf_jobs.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
@@ -171,6 +172,66 @@ class BuildSearchablePdf {
       ),
     );
   }
+}
+
+/// Builds one verified temporary candidate for the current Save configuration.
+class BuildGeneratedPdfCandidate {
+  /// Creates the use case.
+  const BuildGeneratedPdfCandidate(this._repository);
+
+  final GeneratedPdfCandidateRepository _repository;
+
+  /// Builds [request], forwarding cooperative cancellation and page progress.
+  Future<Result<PdfCandidate>> call(
+    GeneratedPdfCandidateRequest request, {
+    required CancellationToken token,
+    required PdfCandidateProgress onProgress,
+  }) =>
+      _repository.buildCandidate(request, token: token, onProgress: onProgress);
+}
+
+/// Re-verifies an existing generated-PDF candidate before reuse or promotion.
+class VerifyGeneratedPdfCandidate {
+  /// Creates the use case.
+  const VerifyGeneratedPdfCandidate(this._repository);
+
+  final GeneratedPdfCandidateRepository _repository;
+
+  /// Verifies [candidate] against its recorded metadata and protection state.
+  Future<Result<PdfCandidate>> call(
+    PdfCandidate candidate, {
+    String? password,
+  }) => _repository.verifyCandidate(candidate, password: password);
+}
+
+/// Promotes a verified temporary candidate into its authoritative location.
+class PromoteGeneratedPdfCandidate {
+  /// Creates the use case.
+  const PromoteGeneratedPdfCandidate(this._repository);
+
+  final GeneratedPdfCandidateRepository _repository;
+
+  /// Atomically transfers [candidate] to [destinationPath].
+  Future<Result<ComposedPdf>> call(
+    PdfCandidate candidate, {
+    required String destinationPath,
+    required CancellationToken token,
+  }) => _repository.promote(
+    candidate,
+    destinationPath: destinationPath,
+    token: token,
+  );
+}
+
+/// Releases a generated-PDF candidate that is no longer owned by a route.
+class DiscardGeneratedPdfCandidate {
+  /// Creates the use case.
+  const DiscardGeneratedPdfCandidate(this._repository);
+
+  final GeneratedPdfCandidateRepository _repository;
+
+  /// Deletes [candidate] idempotently.
+  Future<void> call(PdfCandidate candidate) => _repository.discard(candidate);
 }
 
 /// Creates a stored document from a bundle of captured or imported pages.

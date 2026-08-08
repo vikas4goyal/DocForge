@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:camera/camera.dart';
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
@@ -12,6 +13,7 @@ import 'package:doc_scanly/core/permissions/permission_service.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 
 /// A staging area under the application's cache directory.
 class LocalScanStagingArea implements ScanStagingArea {
@@ -74,6 +76,7 @@ class CameraScannerRepository implements ScannerRepository {
   final IdGenerator _ids;
 
   CameraController? _controller;
+  SupportedCameraResolution? _requestedResolution;
   bool _torchOn = false;
 
   @override
@@ -102,7 +105,12 @@ class CameraScannerRepository implements ScannerRepository {
   }
 
   @override
-  Future<Result<void>> initialise() async {
+  Future<Result<void>> initialise({
+    SupportedCameraResolution? resolution,
+  }) async {
+    if (isReady && _requestedResolution == resolution) {
+      return const Result<void>.success(null);
+    }
     final permission = await _permissions.request(PermissionKind.camera);
 
     if (permission != PermissionState.granted) {
@@ -137,15 +145,14 @@ class CameraScannerRepository implements ScannerRepository {
 
       final controller = CameraController(
         camera,
-        // Highest available: a scan is only as legible as its capture, and the
-        // page is downscaled later for the PDF rather than up.
-        ResolutionPreset.max,
+        resolutionPresetFor(resolution),
         // Audio would require the microphone permission for no benefit.
         enableAudio: false,
       );
 
       await controller.initialize();
       _controller = controller;
+      _requestedResolution = resolution;
       _torchOn = false;
 
       return const Result<void>.success(null);
@@ -179,8 +186,24 @@ class CameraScannerRepository implements ScannerRepository {
       // in the review list must not be able to vanish from under them.
       await File(file.path).rename(destination);
 
+      // A requested preset is only a preference: camera plugins may silently
+      // fall back. Decode the authoritative staged image so downstream status
+      // and metadata use what was actually captured, never an advertised tier.
+      final capturedImage = await img.decodeImageFile(destination);
+      if (capturedImage == null) {
+        await File(destination).delete();
+        return const Result<CaptureResult>.failure(
+          Failure.camera(debugDetail: 'captured image dimensions unavailable'),
+        );
+      }
+
       return Result<CaptureResult>.success(
-        CaptureResult(id: id, imagePath: destination),
+        CaptureResult(
+          id: id,
+          imagePath: destination,
+          actualWidth: capturedImage.width,
+          actualHeight: capturedImage.height,
+        ),
       );
     } on CameraException catch (error) {
       return Result<CaptureResult>.failure(_cameraFailureFor(error));
@@ -224,6 +247,7 @@ class CameraScannerRepository implements ScannerRepository {
   Future<void> _disposeController() async {
     final controller = _controller;
     _controller = null;
+    _requestedResolution = null;
     _torchOn = false;
 
     if (controller == null) return;
@@ -233,6 +257,22 @@ class CameraScannerRepository implements ScannerRepository {
       // Nothing useful to do: the camera is being given up either way.
     }
   }
+}
+
+/// Maps a resolved, honestly supported tier to the camera plugin request.
+///
+/// Null means enumeration was unavailable or Full resolution was selected, so
+/// maximum is requested. Actual capture dimensions are still decoded after the
+/// shutter because plugins may silently choose another size.
+/// Returns the plugin preset used to request [resolution].
+ResolutionPreset resolutionPresetFor(SupportedCameraResolution? resolution) {
+  final tier = resolution?.tier;
+  if (tier == null) return ResolutionPreset.max;
+  if (tier == CameraResolutionTier.hd720) return ResolutionPreset.high;
+  if (tier == CameraResolutionTier.fullHd1080) {
+    return ResolutionPreset.veryHigh;
+  }
+  return ResolutionPreset.ultraHigh;
 }
 
 /// Maps a camera plugin error to a failure.
@@ -290,6 +330,9 @@ class FakeScannerRepository implements ScannerRepository {
   /// Every capture this fake produced, in order.
   final List<CaptureResult> captures = [];
 
+  /// Resolutions requested at each initialisation, including null for maximum.
+  final List<SupportedCameraResolution?> requestedResolutions = [];
+
   /// How many times [dispose] was called.
   ///
   /// The spec requires the camera to be released on every exit path, and a
@@ -306,7 +349,10 @@ class FakeScannerRepository implements ScannerRepository {
   bool get isTorchOn => _torchOn;
 
   @override
-  Future<Result<void>> initialise() async {
+  Future<Result<void>> initialise({
+    SupportedCameraResolution? resolution,
+  }) async {
+    requestedResolutions.add(resolution);
     if (initialiseFailure != null) {
       return Result<void>.failure(initialiseFailure!);
     }

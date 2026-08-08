@@ -5,6 +5,7 @@ import 'package:doc_scanly/core/formatting/display_formatting.dart';
 import 'package:doc_scanly/core/widgets/app_state_views.dart';
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/app_settings/presentation/screens/camera_resolution_screen.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
 import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
 import 'package:doc_scanly/features/app_settings/presentation/widgets/settings_widgets.dart';
@@ -107,27 +108,39 @@ class SettingsScreen extends StatelessWidget {
           labelFor: (choice) => choice.label,
           onSelected: cubit.setTheme,
         ),
-        SettingsChoiceTile<PdfQuality>(
+        SettingsChoiceTile<PdfQualityPercent>(
           key: SettingsKeys.pdfQuality,
           title: 'PDF quality',
           value: settings.pdfQuality,
-          valueLabel: settings.pdfQuality.label,
-          options: PdfQuality.values,
-          labelFor: (quality) => quality.label,
+          valueLabel: '${settings.pdfQuality.value}%',
+          options: [
+            for (
+              var value = PdfQualityPercent.minimum;
+              value <= PdfQualityPercent.maximum;
+              value++
+            )
+              PdfQualityPercent(value: value),
+          ],
+          labelFor: (quality) => '${quality.value}%',
           // The spec requires the effect on size and fidelity to be described;
           // a preset name alone does not say what is being traded.
           descriptionFor: SettingsCopy.pdfQualityDescription,
           onSelected: cubit.setPdfQuality,
         ),
-        SettingsChoiceTile<ImageQuality>(
-          key: SettingsKeys.imageQuality,
-          title: 'Image quality',
-          value: settings.imageQuality,
-          valueLabel: settings.imageQuality.label,
-          options: ImageQuality.values,
-          labelFor: (quality) => quality.label,
-          descriptionFor: SettingsCopy.imageQualityDescription,
-          onSelected: cubit.setImageQuality,
+        SettingsValueTile(
+          key: SettingsKeys.cameraResolution,
+          title: 'Camera resolution',
+          value: SettingsCopy.cameraResolutionLabel(settings.cameraResolution),
+          onTap: () => Navigator.of(context).push<void>(
+            MaterialPageRoute(
+              builder: (routeContext) => BlocProvider.value(
+                value: cubit,
+                child: CameraResolutionScreen(
+                  onBack: () => Navigator.of(routeContext).pop(),
+                ),
+              ),
+            ),
+          ),
         ),
         SettingsChoiceTile<NamingPattern>(
           key: SettingsKeys.fileNaming,

@@ -29,6 +29,7 @@ import 'package:doc_scanly/core/theme/theme_mode_controller.dart';
 import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
 import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_repository.dart';
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
 import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
 import 'package:doc_scanly/features/onboarding/infrastructure/repositories/onboarding_repository_impl.dart';
@@ -87,7 +88,11 @@ AppScreens buildAppScreens({
   required DeviceAuthenticator authenticator,
   required PdfRenderer pdfRenderer,
   required HomeRefreshObserver routeObserver,
+  CameraResolutionLoader? loadCameraResolutions,
   ScreenBuilder? storageLocation,
+  SavePdfScreenBuilder? savePdf,
+  PdfTemporaryPreviewScreenBuilder? pdfTemporaryPreview,
+  CompressPdfScreenBuilder? compressPdf,
   Future<void> Function()? onLibraryRefresh,
   Key? libraryRefreshKey,
   DirectoryPicker? pickSaveLocation,
@@ -110,6 +115,7 @@ AppScreens buildAppScreens({
     appVersion: appVersion,
     lockConfiguration: lockConfiguration,
     authenticator: authenticator,
+    loadCameraResolutions: loadCameraResolutions,
     supportsCloudStorage: storageLocation != null,
     pickSaveLocation: pickSaveLocation,
   );
@@ -121,6 +127,7 @@ AppScreens buildAppScreens({
     documentFiles: documentFiles,
     secureStorage: secureStorage,
     renderer: pdfRenderer,
+    useDedicatedCompressRoute: compressPdf != null,
   );
 
   return AppScreens(
@@ -153,5 +160,8 @@ AppScreens buildAppScreens({
     about: settingsScreens.about,
     privacy: settingsScreens.privacy,
     storageLocation: storageLocation,
+    savePdf: savePdf,
+    pdfTemporaryPreview: pdfTemporaryPreview,
+    compressPdf: compressPdf,
   );
 }

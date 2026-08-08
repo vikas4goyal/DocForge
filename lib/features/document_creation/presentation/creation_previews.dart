@@ -261,11 +261,9 @@ Widget saveEmptyName() => _saveDialog(const SaveDocumentState.initial());
 /// Password protection turned on.
 @Preview(name: 'Save — password on', group: 'Creation', theme: appPreviewTheme)
 Widget savePasswordOn() => _saveDialog(
-  const SaveDocumentState.initial(name: 'Invoice').copyWith(
-    passwordEnabled: true,
-    password: 'hunter2',
-    confirmation: 'hunter2',
-  ),
+  const SaveDocumentState.initial(
+    name: 'Invoice',
+  ).copyWith(passwordEnabled: true, passwordReady: true),
 );
 
 /// A password that does not match its confirmation.
@@ -277,8 +275,7 @@ Widget savePasswordOn() => _saveDialog(
 Widget savePasswordMismatch() => _saveDialog(
   const SaveDocumentState.initial(name: 'Invoice').copyWith(
     passwordEnabled: true,
-    password: 'hunter2',
-    confirmation: 'hunter3',
+    passwordProblem: ValidationIssue.passwordMismatch,
   ),
 );
 

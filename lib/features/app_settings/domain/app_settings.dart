@@ -5,11 +5,15 @@
 /// a property of one file rather than a claim spread across ten call sites.
 library;
 
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
+import 'package:doc_scanly/core/contracts/models/pdf_quality.dart';
 import 'package:doc_scanly/core/contracts/models/settings_values.dart';
 
 // Re-exported so the rest of this feature has one import for "a setting's
 // value". The types live in core/contracts because the features that *act* on
 // them may not import settings, and settings may not import them.
+export 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
+export 'package:doc_scanly/core/contracts/models/pdf_quality.dart';
 export 'package:doc_scanly/core/contracts/models/settings_values.dart';
 
 /// How the application decides between the light and dark themes.
@@ -38,67 +42,26 @@ enum AppThemeChoice {
   );
 }
 
-/// The quality preset applied to page images.
-///
-/// Separate from [PdfQuality] because the two are genuinely different
-/// decisions: image quality governs what is *stored* per page, and PDF quality
-/// governs what is put in the document that is shared. Someone who scans at
-/// high fidelity may still want small PDFs to email.
-enum ImageQuality {
-  /// Smallest files, adequate for text.
-  low(quality: 60, maxDimension: 1600, label: 'Space saving'),
-
-  /// The default: legible photographs of documents at a reasonable size.
-  balanced(quality: 85, maxDimension: 2400, label: 'Balanced'),
-
-  /// Closest to the original capture.
-  high(quality: 95, maxDimension: 4000, label: 'Best quality');
-
-  const ImageQuality({
-    required this.quality,
-    required this.maxDimension,
-    required this.label,
-  });
-
-  /// JPEG quality, 0–100.
-  final int quality;
-
-  /// The longest edge, in pixels, a stored page is scaled to.
-  final int maxDimension;
-
-  /// How this preset is named to the user.
-  final String label;
-
-  /// The default before the user has chosen.
-  static const defaultQuality = ImageQuality.balanced;
-
-  /// The preset stored under [id], or the default when it is unrecognised.
-  static ImageQuality fromName(String? id) => ImageQuality.values.firstWhere(
-    (quality) => quality.name == id,
-    orElse: () => defaultQuality,
-  );
-}
-
 /// Every user-configurable setting, as one immutable value.
 class AppSettings {
   /// Creates a settings snapshot.
-  const AppSettings({
+  AppSettings({
     this.theme = AppThemeChoice.system,
-    this.pdfQuality = PdfQuality.defaultQuality,
-    this.imageQuality = ImageQuality.defaultQuality,
+    PdfQualityPercent? pdfQuality,
+    this.cameraResolution = const DesiredCameraResolution.fullResolution(),
     this.namingPattern = NamingPattern.defaultPattern,
     this.saveLocation,
     this.isAppLockEnabled = false,
-  });
+  }) : pdfQuality = pdfQuality ?? PdfQualityPercent.defaultValue;
 
   /// How the theme is chosen. Defaults to following the system.
   final AppThemeChoice theme;
 
-  /// The quality preset used when generating a PDF. Defaults to balanced.
-  final PdfQuality pdfQuality;
+  /// The default percentage for a newly opened Save PDF workflow.
+  final PdfQualityPercent pdfQuality;
 
-  /// The quality preset applied to page images. Defaults to balanced.
-  final ImageQuality imageQuality;
+  /// Desired camera tier. Full resolution means the active-camera maximum.
+  final DesiredCameraResolution cameraResolution;
 
   /// How a document with no entered title is named. Defaults to date and time.
   final NamingPattern namingPattern;
@@ -115,7 +78,7 @@ class AppSettings {
   final bool isAppLockEnabled;
 
   /// The defaults, before the user has changed anything.
-  static const defaults = AppSettings();
+  static final defaults = AppSettings();
 
   /// Returns a copy with the given fields replaced.
   ///
@@ -123,8 +86,8 @@ class AppSettings {
   /// a null [saveLocation] cannot express.
   AppSettings copyWith({
     AppThemeChoice? theme,
-    PdfQuality? pdfQuality,
-    ImageQuality? imageQuality,
+    PdfQualityPercent? pdfQuality,
+    DesiredCameraResolution? cameraResolution,
     NamingPattern? namingPattern,
     String? saveLocation,
     bool clearSaveLocation = false,
@@ -132,7 +95,7 @@ class AppSettings {
   }) => AppSettings(
     theme: theme ?? this.theme,
     pdfQuality: pdfQuality ?? this.pdfQuality,
-    imageQuality: imageQuality ?? this.imageQuality,
+    cameraResolution: cameraResolution ?? this.cameraResolution,
     namingPattern: namingPattern ?? this.namingPattern,
     saveLocation: clearSaveLocation
         ? null
@@ -146,7 +109,7 @@ class AppSettings {
       other is AppSettings &&
           other.theme == theme &&
           other.pdfQuality == pdfQuality &&
-          other.imageQuality == imageQuality &&
+          other.cameraResolution == cameraResolution &&
           other.namingPattern == namingPattern &&
           other.saveLocation == saveLocation &&
           other.isAppLockEnabled == isAppLockEnabled;
@@ -155,7 +118,7 @@ class AppSettings {
   int get hashCode => Object.hash(
     theme,
     pdfQuality,
-    imageQuality,
+    cameraResolution,
     namingPattern,
     saveLocation,
     isAppLockEnabled,
@@ -164,31 +127,27 @@ class AppSettings {
 
 /// How each setting is described to the user.
 abstract final class SettingsCopy {
-  /// The trade-off a PDF quality preset makes.
+  /// Explains what a PDF quality percentage controls.
   ///
   /// The spec requires the effect on file size and fidelity to be described:
   /// "Balanced" on its own tells the user nothing about what they are choosing.
-  static String pdfQualityDescription(PdfQuality quality) => switch (quality) {
-    PdfQuality.low =>
-      'Smallest files. Text stays readable; photographs lose '
-          'detail.',
-    PdfQuality.balanced =>
-      'A good compromise for most scans — readable text and '
-          'recognisable photographs at a moderate file size.',
-    PdfQuality.high =>
-      'Closest to the original scan. Files can be several times larger.',
-  };
+  static String pdfQualityDescription(PdfQualityPercent quality) =>
+      '${quality.value}% scales each page’s width and height. '
+      'The Save screen calculates the actual file size and can override this '
+      'default for one document.';
 
-  /// The trade-off an image quality preset makes.
-  static String imageQualityDescription(ImageQuality quality) =>
-      switch (quality) {
-        ImageQuality.low =>
-          'Uses the least space. Best for text-only documents.',
-        ImageQuality.balanced =>
-          'Keeps photographs legible while using moderate space.',
-        ImageQuality.high =>
-          'Retains the most detail. Uses noticeably more space per page.',
-      };
+  /// Explains that capture resolution precedes later PDF scaling.
+  static String cameraResolutionDescription(DesiredCameraResolution desired) =>
+      '${cameraResolutionLabel(desired)} controls source capture dimensions '
+      'before cropping and PDF scaling. Only resolutions supported by the '
+      'active camera are offered.';
+
+  /// Friendly label for a desired camera resolution.
+  static String cameraResolutionLabel(DesiredCameraResolution desired) =>
+      desired.when(
+        fullResolution: () => 'Full resolution',
+        tier: (tier) => tier.label,
+      );
 
   /// The statement the Privacy Policy screen makes.
   ///

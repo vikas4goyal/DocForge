@@ -120,8 +120,40 @@ class _ScanCaptureScreenState extends State<ScanCaptureScreen> {
           ScanCaptureStatus.idle || ScanCaptureStatus.preparing => const Center(
             child: CircularProgressIndicator.adaptive(),
           ),
-          ScanCaptureStatus.ready ||
-          ScanCaptureStatus.capturing => widget.previewBuilder(context),
+          ScanCaptureStatus.ready || ScanCaptureStatus.capturing => Stack(
+            fit: StackFit.expand,
+            children: [
+              widget.previewBuilder(context),
+              Positioned(
+                top: 12,
+                left: 12,
+                right: 12,
+                child: Center(
+                  child: Semantics(
+                    label: state.resolutionLabel,
+                    liveRegion: true,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        key: ScanKeys.cameraResolutionStatus,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        child: Text(
+                          state.resolutionLabel.replaceAll(', ', ' • '),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         },
         bottomNavigationBar: state.status == ScanCaptureStatus.failure
             ? null

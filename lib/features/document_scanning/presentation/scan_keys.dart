@@ -10,6 +10,9 @@ abstract final class ScanKeys {
   /// Root of the camera capture screen.
   static const cameraScreen = Key('scan_camera_screen');
 
+  /// Accessible status showing the resolved capture tier and dimensions.
+  static const cameraResolutionStatus = Key('scan_camera_resolution_status');
+
   /// The shutter control.
   static const shutterButton = Key('scan_shutter_button');
 

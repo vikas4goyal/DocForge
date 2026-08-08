@@ -1,6 +1,7 @@
 /// A [SettingsRepository] backed by SharedPreferences.
 ///
-/// Every value is stored as a *string identifier* rather than an enum index.
+/// Enumerated values are stored as stable string identifiers rather than enum
+/// indices. PDF quality uses a versioned integer percentage.
 /// An index is a promise that the enum's declaration order never changes, and
 /// reordering an enum is the kind of edit nobody thinks of as a migration —
 /// it would silently turn "high quality" into "small file" on every device
@@ -49,8 +50,12 @@ class PreferenceSettingsRepository implements SettingsRepository {
     // Read individually rather than as one blob: each has its own documented
     // default, and one unreadable key must not take the others down with it.
     final theme = await _preferences.readString(PreferenceKeys.themeMode);
-    final pdf = await _preferences.readString(PreferenceKeys.pdfQuality);
+    final pdf = await _preferences.readInt(PreferenceKeys.pdfQualityPercent);
+    final legacyPdf = await _preferences.readString(PreferenceKeys.pdfQuality);
     final image = await _preferences.readString(PreferenceKeys.imageQuality);
+    final cameraResolution = await _preferences.readString(
+      PreferenceKeys.cameraResolution,
+    );
     final naming = await _preferences.readString(
       PreferenceKeys.fileNamingPattern,
     );
@@ -64,8 +69,11 @@ class PreferenceSettingsRepository implements SettingsRepository {
       // Every `from…` falls back to the default for an unrecognised value, so a
       // preference written by a newer release degrades rather than crashing.
       theme: AppThemeChoice.fromId(theme.valueOrNull),
-      pdfQuality: PdfQuality.fromName(pdf.valueOrNull),
-      imageQuality: ImageQuality.fromName(image.valueOrNull),
+      pdfQuality: _readPdfQuality(pdf.valueOrNull, legacyPdf.valueOrNull),
+      cameraResolution: _readCameraResolution(
+        cameraResolution.valueOrNull,
+        image.valueOrNull,
+      ),
       namingPattern: NamingPattern.fromId(naming.valueOrNull),
       saveLocation: location.valueOrNull,
       isAppLockEnabled: lockEnabled,
@@ -77,12 +85,15 @@ class PreferenceSettingsRepository implements SettingsRepository {
       _preferences.writeString(PreferenceKeys.themeMode, theme.name);
 
   @override
-  Future<Result<void>> savePdfQuality(PdfQuality quality) =>
-      _preferences.writeString(PreferenceKeys.pdfQuality, quality.name);
+  Future<Result<void>> savePdfQuality(PdfQualityPercent quality) =>
+      _preferences.writeInt(PreferenceKeys.pdfQualityPercent, quality.value);
 
   @override
-  Future<Result<void>> saveImageQuality(ImageQuality quality) =>
-      _preferences.writeString(PreferenceKeys.imageQuality, quality.name);
+  Future<Result<void>> saveCameraResolution(DesiredCameraResolution desired) =>
+      _preferences.writeString(
+        PreferenceKeys.cameraResolution,
+        desired.when(fullResolution: () => 'full', tier: (tier) => tier.id),
+      );
 
   @override
   Future<Result<void>> saveNamingPattern(NamingPattern pattern) =>
@@ -92,4 +103,39 @@ class PreferenceSettingsRepository implements SettingsRepository {
   Future<Result<void>> saveSaveLocation(String? path) => path == null
       ? _preferences.remove(PreferenceKeys.defaultSaveLocation)
       : _preferences.writeString(PreferenceKeys.defaultSaveLocation, path);
+
+  static PdfQualityPercent _readPdfQuality(
+    int? percentage,
+    String? legacyPreset,
+  ) {
+    if (percentage != null) {
+      if (percentage >= PdfQualityPercent.minimum &&
+          percentage <= PdfQualityPercent.maximum) {
+        return PdfQualityPercent(value: percentage);
+      }
+      return PdfQualityPercent.defaultValue;
+    }
+
+    final migrated = switch (legacyPreset) {
+      'low' => 40,
+      'balanced' => 70,
+      'high' => 100,
+      _ => 70,
+    };
+    // Legacy names are intentionally mapped rather than parsed as the old
+    // enum: these percentages are the stable migration contract.
+    return PdfQualityPercent(value: migrated);
+  }
+
+  static DesiredCameraResolution _readCameraResolution(
+    String? persisted,
+    String? legacyImageQuality,
+  ) {
+    if (persisted == 'full') {
+      return const DesiredCameraResolution.fullResolution();
+    }
+    final tier = CameraResolutionTier.fromId(persisted);
+    if (tier != null) return DesiredCameraResolution.tier(tier);
+    return DesiredCameraResolution.fromLegacyImageQuality(legacyImageQuality);
+  }
 }

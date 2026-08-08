@@ -2,6 +2,8 @@
 library;
 
 import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/jobs/pdf_jobs.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
 
 /// What composing a PDF produced.
@@ -66,4 +68,46 @@ abstract interface class PdfComposer {
   /// document has been written, so a failure or a cancellation leaves no
   /// half-written PDF where a real one is expected.
   Future<Result<ComposedPdf>> compose(PdfBuildRequest request);
+}
+
+/// Reports bounded progress while a candidate is built or verified.
+typedef PdfCandidateProgress = void Function(JobProgress progress);
+
+/// Applies password protection and returns the protected temporary path.
+typedef GeneratedPdfProtector =
+    Future<Result<String>> Function(String sourcePath, String password);
+
+/// Opens a PDF and returns its verified page count.
+typedef GeneratedPdfPageCounter =
+    Future<Result<int>> Function(String filePath, {String? password});
+
+/// Builds and manages exact temporary candidates for generated PDFs.
+///
+/// Candidate handles refer only to private temporary files. A caller must
+/// either transfer one with [promote] or release it with [discard].
+abstract interface class GeneratedPdfCandidateRepository {
+  /// Builds, protects, and verifies an exact candidate.
+  Future<Result<PdfCandidate>> buildCandidate(
+    GeneratedPdfCandidateRequest request, {
+    required CancellationToken token,
+    required PdfCandidateProgress onProgress,
+  });
+
+  /// Re-verifies candidate existence, byte size, page count, and protection.
+  Future<Result<PdfCandidate>> verifyCandidate(
+    PdfCandidate candidate, {
+    String? password,
+  });
+
+  /// Atomically transfers [candidate] to [destinationPath].
+  ///
+  /// On success the candidate handle is consumed and must not be discarded.
+  Future<Result<ComposedPdf>> promote(
+    PdfCandidate candidate, {
+    required String destinationPath,
+    required CancellationToken token,
+  });
+
+  /// Deletes a temporary candidate when it still exists.
+  Future<void> discard(PdfCandidate candidate);
 }

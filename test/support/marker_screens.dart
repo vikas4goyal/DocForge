@@ -82,7 +82,13 @@ abstract final class RouteMarkers {
 /// The parameterised routes render the identifier they were given as well, so a
 /// test can prove not only that the right route resolved but that it resolved
 /// with the right argument — which is the half a bare route assertion misses.
-AppScreens markerScreens({bool includeStorageLocation = false}) => AppScreens(
+AppScreens markerScreens({
+  bool includeStorageLocation = false,
+  DocumentScreenBuilder? viewer,
+  SavePdfScreenBuilder? savePdf,
+  PdfTemporaryPreviewScreenBuilder? pdfTemporaryPreview,
+  CompressPdfScreenBuilder? compressPdf,
+}) => AppScreens(
   onboarding: (_) => markerScreen(RouteMarkers.onboarding),
   unlock: (_) => markerScreen(RouteMarkers.unlock),
   home: (_) => markerScreen(RouteMarkers.home),
@@ -90,7 +96,7 @@ AppScreens markerScreens({bool includeStorageLocation = false}) => AppScreens(
   documents: (_) => markerScreen(RouteMarkers.documents),
   documentDetail: (_, id) =>
       markerScreen(RouteMarkers.documentDetail(id.value)),
-  viewer: (_, id) => markerScreen(RouteMarkers.viewer(id.value)),
+  viewer: viewer ?? (_, id) => markerScreen(RouteMarkers.viewer(id.value)),
   documentEdit: (_, id) => markerScreen(RouteMarkers.documentEdit(id.value)),
   folders: (_) => markerScreen(RouteMarkers.folders),
   folderDetail: (_, id) => markerScreen(RouteMarkers.folderDetail(id.value)),
@@ -104,6 +110,9 @@ AppScreens markerScreens({bool includeStorageLocation = false}) => AppScreens(
   storageLocation: includeStorageLocation
       ? (_) => markerScreen('storageLocation')
       : null,
+  savePdf: savePdf,
+  pdfTemporaryPreview: pdfTemporaryPreview,
+  compressPdf: compressPdf,
 );
 
 /// Asserts that the route rendering [name] is the one on screen.

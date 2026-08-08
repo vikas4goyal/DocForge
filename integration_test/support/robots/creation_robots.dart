@@ -13,8 +13,8 @@ import 'package:doc_scanly/features/document_creation/presentation/creation_keys
 import 'package:doc_scanly/features/document_scanning/presentation/scan_keys.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/enhance_keys.dart';
 import 'package:doc_scanly/features/pdf_generation/presentation/pdf_keys.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../pump.dart';
@@ -316,6 +316,13 @@ class PageTableRobot extends Robot {
       .toSet()
       .length;
 
+  /// Opens the dedicated Save PDF route without changing its defaults.
+  Future<void> openSavePdf() => step('opening Save PDF', () async {
+    await waitUntilVisible();
+    await tap(CreationKeys.saveButton);
+    await SavePdfRobot(tester).waitUntilVisible();
+  });
+
   /// Saves the document as [name], with no password.
   ///
   /// Returns once the save dialog has closed, which is what "it saved" looks
@@ -324,15 +331,10 @@ class PageTableRobot extends Robot {
   Future<void> save(String name) => step('saving as "$name"', () async {
     await waitUntilVisible();
     await tap(CreationKeys.saveButton);
-    await waitFor(CreationKeys.saveDialog);
-    await type(CreationKeys.saveNameField, name);
-    await tap(CreationKeys.saveConfirmButton);
-    // Generation runs the real composer over real images, so this is the
-    // slowest wait in the suite by a wide margin.
-    await waitUntilGone(
-      CreationKeys.saveDialog,
-      timeout: const Duration(seconds: 120),
-    );
+    final save = SavePdfRobot(tester);
+    await save.waitUntilVisible();
+    await save.name(name);
+    await save.commit();
   });
 
   /// Saves the document as [name], protected by [password].
@@ -340,16 +342,11 @@ class PageTableRobot extends Robot {
       step('saving "$name" with a password', () async {
         await waitUntilVisible();
         await tap(CreationKeys.saveButton);
-        await waitFor(CreationKeys.saveDialog);
-        await type(CreationKeys.saveNameField, name);
-        await tap(CreationKeys.savePasswordToggle);
-        await type(CreationKeys.savePasswordField, password);
-        await type(CreationKeys.savePasswordConfirmField, password);
-        await tap(CreationKeys.saveConfirmButton);
-        await waitUntilGone(
-          CreationKeys.saveDialog,
-          timeout: const Duration(seconds: 120),
-        );
+        final save = SavePdfRobot(tester);
+        await save.waitUntilVisible();
+        await save.name(name);
+        await save.setPassword(password);
+        await save.commit();
       });
 
   /// Taps [action] inside the row for [id].
@@ -362,6 +359,129 @@ class PageTableRobot extends Robot {
     await tester.tap(target);
     await tester.pump();
   }
+}
+
+/// Drives the dedicated, typed Save PDF route.
+class SavePdfRobot extends Robot {
+  /// Creates the robot.
+  const SavePdfRobot(super.tester);
+
+  @override
+  Key get screenKey => PdfKeys.saveScreen;
+
+  /// Replaces the suggested name.
+  Future<void> name(String value) => step('naming the PDF "$value"', () async {
+    await waitUntilVisible();
+    await type(PdfKeys.saveNameField, value);
+  });
+
+  /// Current document-quality percentage from the keyed slider.
+  int get documentQuality => tester
+      .widget<Slider>(find.byKey(PdfKeys.saveQualitySlider))
+      .value
+      .round();
+
+  /// Sets a deterministic document percentage through the keyed control.
+  Future<void> setDocumentQuality(int percent) =>
+      step('setting document quality to $percent percent', () async {
+        final slider = tester.widget<Slider>(
+          find.byKey(PdfKeys.saveQualitySlider),
+        );
+        slider.onChanged!(percent.toDouble());
+        await tester.pump();
+      });
+
+  /// Stable page identifiers currently shown by the route.
+  List<String> get pageIds => find
+      .byWidgetPredicate(
+        (widget) =>
+            widget.key is ValueKey<String> &&
+            (widget.key! as ValueKey<String>).value.startsWith(
+              'pdf_save_page_quality_',
+            ),
+      )
+      .evaluate()
+      .map(
+        (element) => (element.widget.key! as ValueKey<String>).value.substring(
+          'pdf_save_page_quality_'.length,
+        ),
+      )
+      .toSet()
+      .toList();
+
+  /// Adds and then removes a per-page override, proving both precedence paths.
+  Future<void> overrideAndResetFirstPage({int percent = 30}) =>
+      step('overriding and resetting the first page quality', () async {
+        final pageId = pageIds.first;
+        await tap(PdfKeys.savePageQuality(pageId));
+        final slider = tester.widget<Slider>(
+          find.byKey(PdfKeys.pageQualitySlider),
+        );
+        slider.onChanged!(percent.toDouble());
+        await tester.pump();
+        await tester.tap(find.text('Apply'));
+        await tester.pump();
+        await waitFor(PdfKeys.pageQualityResetAll);
+        await tap(PdfKeys.pageQualityResetAll);
+      });
+
+  /// Sets a route-scoped password through the secret-only dialog.
+  Future<void> setPassword(String password) =>
+      step('setting a PDF password', () async {
+        await tap(PdfKeys.saveSetPassword);
+        await type(PdfKeys.savePasswordField, password);
+        await type(PdfKeys.savePasswordConfirmField, password);
+        await tap(PdfKeys.savePasswordDialogConfirm);
+        await waitFor(PdfKeys.savePasswordEnabled);
+      });
+
+  /// Removes the route-scoped password immediately.
+  Future<void> removePassword() => step('removing the PDF password', () async {
+    await tap(PdfKeys.saveRemovePassword);
+    await waitFor(PdfKeys.saveSetPassword);
+  });
+
+  /// Builds a verified preview and closes it back to unchanged configuration.
+  Future<void> previewAndClose() => step('previewing the PDF', () async {
+    await tap(PdfKeys.savePreviewButton);
+    await waitFor(
+      PdfKeys.temporaryPreviewScreen,
+      timeout: const Duration(seconds: 120),
+    );
+    await tap(PdfKeys.temporaryPreviewClose);
+    await waitUntilVisible();
+  });
+
+  /// Waits until the exact-size region has left its calculating state.
+  Future<void> waitForExactSize() =>
+      step('waiting for exact PDF size', () async {
+        await waitFor(PdfKeys.outputSizeStatus);
+        await tester.pump(const Duration(milliseconds: 500));
+      });
+
+  /// Cancels candidate preparation while retaining the Save route.
+  Future<void> cancelPreview() => step('cancelling PDF preview', () async {
+    await tap(PdfKeys.savePreviewButton);
+    await waitFor(PdfKeys.jobProgressDialog);
+    await tap(PdfKeys.jobCancelButton);
+    await waitUntilGone(PdfKeys.jobProgressDialog);
+    await waitUntilVisible();
+  });
+
+  /// Commits immediately, including while background size work is active.
+  Future<void> commit() => step('committing the PDF', () async {
+    await tap(PdfKeys.saveConfirmButton);
+    await waitUntilGone(screenKey, timeout: const Duration(seconds: 120));
+  });
+
+  /// Cancels an authoritative commit and waits for the same route to recover.
+  Future<void> cancelCommit() => step('cancelling PDF save', () async {
+    await tap(PdfKeys.saveConfirmButton);
+    await waitFor(PdfKeys.jobProgressDialog);
+    await tap(PdfKeys.jobCancelButton);
+    await waitUntilGone(PdfKeys.jobProgressDialog);
+    await waitUntilVisible();
+  });
 }
 
 /// Drives the generation preview.

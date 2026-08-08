@@ -18,6 +18,10 @@ class _FailingStore extends InMemoryPreferenceStore {
       const Result<void>.failure(Failure.storage());
 
   @override
+  Future<Result<void>> writeInt(String key, int value) async =>
+      const Result<void>.failure(Failure.storage());
+
+  @override
   Future<Result<void>> remove(String key) async =>
       const Result<void>.failure(Failure.storage());
 }
@@ -25,11 +29,14 @@ class _FailingStore extends InMemoryPreferenceStore {
 void main() {
   group('defaults', () {
     test('every setting has a documented default', () {
-      const defaults = AppSettings.defaults;
+      final defaults = AppSettings.defaults;
 
       expect(defaults.theme, AppThemeChoice.system);
-      expect(defaults.pdfQuality, PdfQuality.balanced);
-      expect(defaults.imageQuality, ImageQuality.balanced);
+      expect(defaults.pdfQuality, PdfQualityPercent(value: 70));
+      expect(
+        defaults.cameraResolution,
+        const DesiredCameraResolution.fullResolution(),
+      );
       expect(defaults.namingPattern, NamingPattern.dateAndTime);
       expect(defaults.saveLocation, isNull);
       expect(defaults.isAppLockEnabled, isFalse);
@@ -44,7 +51,7 @@ void main() {
 
   group('AppSettings', () {
     test('copyWith replaces only what it is given', () {
-      const original = AppSettings(saveLocation: '/Downloads');
+      final original = AppSettings(saveLocation: '/Downloads');
 
       final updated = original.copyWith(theme: AppThemeChoice.dark);
 
@@ -55,20 +62,17 @@ void main() {
     test('clearSaveLocation resets to the system default', () {
       // A null `saveLocation` cannot express "clear it", because null also
       // means "leave it alone".
-      const original = AppSettings(saveLocation: '/Downloads');
+      final original = AppSettings(saveLocation: '/Downloads');
 
       expect(original.copyWith(clearSaveLocation: true).saveLocation, isNull);
     });
 
     test('compares by value', () {
       expect(
-        const AppSettings(theme: AppThemeChoice.dark),
-        const AppSettings(theme: AppThemeChoice.dark),
+        AppSettings(theme: AppThemeChoice.dark),
+        AppSettings(theme: AppThemeChoice.dark),
       );
-      expect(
-        const AppSettings(theme: AppThemeChoice.dark),
-        isNot(const AppSettings()),
-      );
+      expect(AppSettings(theme: AppThemeChoice.dark), isNot(AppSettings()));
     });
   });
 
@@ -79,9 +83,9 @@ void main() {
       expect(AppThemeChoice.fromId(null), AppThemeChoice.system);
     });
 
-    test('an unrecognised image quality falls back to the default', () {
-      expect(ImageQuality.fromName('lossless'), ImageQuality.balanced);
-      expect(ImageQuality.fromName(null), ImageQuality.balanced);
+    test('an unrecognised camera tier is not claimed as supported', () {
+      expect(CameraResolutionTier.fromId('8k'), isNull);
+      expect(CameraResolutionTier.fromId(null), isNull);
     });
 
     test('a known value round-trips', () {
@@ -89,25 +93,30 @@ void main() {
         AppThemeChoice.fromId(AppThemeChoice.dark.name),
         AppThemeChoice.dark,
       );
-      expect(ImageQuality.fromName(ImageQuality.high.name), ImageQuality.high);
+      expect(
+        CameraResolutionTier.fromId(CameraResolutionTier.ultraHd4k.id),
+        CameraResolutionTier.ultraHd4k,
+      );
     });
 
-    test('image quality presets are ordered by fidelity', () {
-      expect(ImageQuality.low.quality, lessThan(ImageQuality.balanced.quality));
+    test('camera resolution tiers are ordered by dimensions', () {
       expect(
-        ImageQuality.balanced.quality,
-        lessThan(ImageQuality.high.quality),
+        CameraResolutionTier.hd720.compareTo(CameraResolutionTier.fullHd1080),
+        isNegative,
       );
       expect(
-        ImageQuality.low.maxDimension,
-        lessThan(ImageQuality.high.maxDimension),
+        CameraResolutionTier.fullHd1080.compareTo(
+          CameraResolutionTier.ultraHd4k,
+        ),
+        isNegative,
       );
     });
   });
 
   group('SettingsCopy', () {
     test('every PDF quality names its trade-off', () {
-      for (final quality in PdfQuality.values) {
+      for (final value in [30, 70, 100]) {
+        final quality = PdfQualityPercent(value: value);
         final description = SettingsCopy.pdfQualityDescription(quality);
         expect(description, isNotEmpty);
         // The spec requires the effect on size *and* fidelity.
@@ -118,10 +127,12 @@ void main() {
       }
     });
 
-    test('every image quality names its trade-off', () {
-      for (final quality in ImageQuality.values) {
-        expect(SettingsCopy.imageQualityDescription(quality), isNotEmpty);
-      }
+    test('camera resolution explains capture before PDF scaling', () {
+      final description = SettingsCopy.cameraResolutionDescription(
+        DesiredCameraResolution.tier(CameraResolutionTier.hd720),
+      );
+      expect(description, contains('source capture dimensions'));
+      expect(description, contains('PDF scaling'));
     });
 
     test('the privacy statement distinguishes Android and optional iCloud', () {
@@ -162,19 +173,92 @@ void main() {
       final repository = PreferenceSettingsRepository(store);
 
       await repository.saveTheme(AppThemeChoice.dark);
-      await repository.savePdfQuality(PdfQuality.high);
-      await repository.saveImageQuality(ImageQuality.low);
+      await repository.savePdfQuality(PdfQualityPercent(value: 100));
+      await repository.saveCameraResolution(
+        DesiredCameraResolution.tier(CameraResolutionTier.hd720),
+      );
       await repository.saveNamingPattern(NamingPattern.sequential);
       await repository.saveSaveLocation('/Downloads');
 
       final settings = await repository.load();
 
       expect(settings.theme, AppThemeChoice.dark);
-      expect(settings.pdfQuality, PdfQuality.high);
-      expect(settings.imageQuality, ImageQuality.low);
+      expect(settings.pdfQuality, PdfQualityPercent(value: 100));
+      expect(
+        settings.cameraResolution,
+        DesiredCameraResolution.tier(CameraResolutionTier.hd720),
+      );
       expect(settings.namingPattern, NamingPattern.sequential);
       expect(settings.saveLocation, '/Downloads');
     });
+
+    test('migrates every legacy PDF preset to its percentage', () async {
+      for (final entry in const {
+        'low': 40,
+        'balanced': 70,
+        'high': 100,
+      }.entries) {
+        final repository = PreferenceSettingsRepository(
+          InMemoryPreferenceStore({PreferenceKeys.pdfQuality: entry.key}),
+        );
+
+        final settings = await repository.load();
+
+        expect(
+          settings.pdfQuality,
+          PdfQualityPercent(value: entry.value),
+          reason: 'legacy ${entry.key}',
+        );
+      }
+    });
+
+    test('uses 70 for missing, unknown, and invalid percentages', () async {
+      final cases = <Map<String, Object>>[
+        const {},
+        {PreferenceKeys.pdfQuality: 'unknown'},
+        {PreferenceKeys.pdfQualityPercent: 29},
+        {PreferenceKeys.pdfQualityPercent: 101},
+      ];
+
+      for (final initial in cases) {
+        final settings = await PreferenceSettingsRepository(
+          InMemoryPreferenceStore(initial),
+        ).load();
+        expect(settings.pdfQuality, PdfQualityPercent(value: 70));
+      }
+    });
+
+    test('persists an integer percentage across repository restarts', () async {
+      final store = InMemoryPreferenceStore();
+      await PreferenceSettingsRepository(
+        store,
+      ).savePdfQuality(PdfQualityPercent(value: 63));
+
+      expect(store.values[PreferenceKeys.pdfQualityPercent], 63);
+      expect(store.values[PreferenceKeys.pdfQuality], isNull);
+
+      final restarted = PreferenceSettingsRepository(store);
+      expect((await restarted.load()).pdfQuality, PdfQualityPercent(value: 63));
+    });
+
+    test(
+      'session and page overrides never update the persisted default',
+      () async {
+        final store = InMemoryPreferenceStore({
+          PreferenceKeys.pdfQualityPercent: 70,
+        });
+        final plan = PageQualityPlan(
+          documentQuality: PdfQualityPercent(value: 55),
+        ).withOverride('page-2', PdfQualityPercent(value: 30));
+
+        expect(plan.effectiveFor('page-2'), PdfQualityPercent(value: 30));
+        expect(
+          (await PreferenceSettingsRepository(store).load()).pdfQuality,
+          PdfQualityPercent(value: 70),
+        );
+        expect(store.values[PreferenceKeys.pdfQualityPercent], 70);
+      },
+    );
 
     test('stores identifiers rather than enum indices', () async {
       // An index is a promise that declaration order never changes, and
@@ -250,14 +334,14 @@ void main() {
 
       final result = await update.pdfQuality(
         AppSettings.defaults,
-        PdfQuality.high,
+        PdfQualityPercent(value: 100),
       );
 
       expect(result, isA<Failed<AppSettings>>());
     });
 
     test('clearing the save location is expressible', () async {
-      const current = AppSettings(saveLocation: '/Downloads');
+      final current = AppSettings(saveLocation: '/Downloads');
       final update = UpdateSetting(
         PreferenceSettingsRepository(InMemoryPreferenceStore()),
       );

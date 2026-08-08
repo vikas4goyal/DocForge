@@ -10,6 +10,7 @@
 /// user had switched on.
 library;
 
+import 'package:doc_scanly/core/contracts/models/pdf_quality.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
@@ -35,7 +36,16 @@ void main() {
     final settings = SettingsRobot(tester);
     await settings.waitUntilVisible();
     await settings.choose(SettingsKeys.theme, 'dark');
-    await settings.choose(SettingsKeys.pdfQuality, PdfQuality.high.name);
+    await settings.choose(
+      SettingsKeys.pdfQuality,
+      SettingsKeys.optionNameOf(PdfQualityPercent(value: 100)),
+    );
+    await settings.expectCameraResolutions(const <String>[
+      '720p',
+      '1080p',
+      '4k',
+    ]);
+    await settings.chooseCameraResolution('1080p');
     await settings.chooseDefaultSaveFolder();
     expect(
       (await app.dependencies.preferences.readString(

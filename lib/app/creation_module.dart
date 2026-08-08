@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 
 import 'package:doc_scanly/app/scanning_module.dart';
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page_draft.dart';
@@ -30,6 +31,41 @@ import 'package:doc_scanly/features/document_scanning/presentation/screens/scan_
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+/// Route-stable inputs handed from the page table to the Save PDF flow.
+class CreationSaveSession {
+  /// Creates an immutable snapshot of the pages and destination being saved.
+  CreationSaveSession({
+    required this.sessionId,
+    required List<PageDraft> pages,
+    required this.suggestedName,
+    required List<String> folders,
+    this.folderId,
+  }) : pages = List<PageDraft>.unmodifiable(pages),
+       folders = List<String>.unmodifiable(folders);
+
+  /// Private capture-staging session identifier.
+  final String sessionId;
+
+  /// Pages in their final table order.
+  final List<PageDraft> pages;
+
+  /// Naming-pattern suggestion shown on first load.
+  final String suggestedName;
+
+  /// Public-library destination folders.
+  final List<String> folders;
+
+  /// Managed folder identity, when present.
+  final FolderId? folderId;
+}
+
+/// Opens the typed Save PDF route for one creation-session snapshot.
+typedef OpenCreationSavePdf =
+    Future<Document?> Function(
+      BuildContext context,
+      CreationSaveSession session,
+    );
+
 /// Everything the creation flow needs, built once.
 class CreationModule {
   /// Creates the module.
@@ -43,6 +79,8 @@ class CreationModule {
     required this.save,
     required this.suggestName,
     required this.store,
+    required this.desiredCameraResolution,
+    this.openSavePdf,
   });
 
   /// Where a session's working files live.
@@ -71,6 +109,15 @@ class CreationModule {
 
   /// The library folder, so a duplicate name can be spotted before writing.
   final PublicFileStore store;
+
+  /// Reads the current camera preference before each capture.
+  final DesiredCameraResolution Function() desiredCameraResolution;
+
+  /// Typed Save PDF route launcher supplied by the composition root.
+  ///
+  /// Null retains the legacy dialog only for isolated component tests whose
+  /// router intentionally does not install the new route.
+  final OpenCreationSavePdf? openSavePdf;
 }
 
 /// Hosts the whole creation flow behind one route.
@@ -217,6 +264,7 @@ class _CreationFlowState extends State<CreationFlow> {
             widget.module.scanning.scanner,
             widget.module.scanning.capturePage,
             widget.module.scanning.discardSession,
+            desiredResolution: widget.module.desiredCameraResolution,
           ),
           child: ScanCaptureScreen(
             previewBuilder: widget.module.scanning.buildPreview,
@@ -296,6 +344,22 @@ class _CreationFlowState extends State<CreationFlow> {
   Future<void> _save() async {
     final suggested = await widget.module.suggestName();
     if (!mounted) return;
+
+    final openSavePdf = widget.module.openSavePdf;
+    if (openSavePdf != null) {
+      final saved = await openSavePdf(
+        context,
+        CreationSaveSession(
+          sessionId: _sessionId,
+          pages: _table.state.pages,
+          suggestedName: suggested,
+          folders: widget.folders,
+          folderId: widget.folderId,
+        ),
+      );
+      if (saved != null && mounted) widget.onSaved(saved);
+      return;
+    }
 
     final cubit = SaveDocumentCubit(
       pages: _table.state.pages,

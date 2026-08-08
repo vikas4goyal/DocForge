@@ -14,13 +14,18 @@ import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/pdf_editing/application/atomic_pdf_write.dart';
 import 'package:doc_scanly/features/pdf_editing/application/usecases/pdf_edit_usecases.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/bounded_compression_candidate_repository.dart';
 import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/pdf_manipulator_editor.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubit.dart';
 
 /// Everything PDF editing exposes to the rest of the application.
 class PdfEditingModule {
   /// Creates the module over an already-built object graph.
-  const PdfEditingModule({required this.useCases, required this.editor});
+  const PdfEditingModule({
+    required this.useCases,
+    required this.editor,
+    required this.candidateRepository,
+  });
 
   /// The use cases the editor's Cubit drives.
   final PdfEditUseCases useCases;
@@ -30,6 +35,9 @@ class PdfEditingModule {
   /// The engine keeps a worker alive per handle; leaving it running after the
   /// application is finished with it would keep a process around for nothing.
   final PdfEditorRepository editor;
+
+  /// Creates one bounded candidate owner for each Compress route.
+  final CompressionCandidateRepository Function() candidateRepository;
 }
 
 /// Builds the PDF-editing module.
@@ -63,6 +71,11 @@ PdfEditingModule buildPdfEditingModule({
 
   return PdfEditingModule(
     editor: active,
+    candidateRepository: () => BoundedCompressionCandidateRepository(
+      workingDirectory: workingDirectory,
+      ids: ids,
+      editor: active,
+    ),
     useCases: PdfEditUseCases(
       rotate: RotatePage(context),
       delete: DeletePages(context),

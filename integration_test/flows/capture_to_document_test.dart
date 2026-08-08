@@ -16,10 +16,13 @@ library;
 
 import 'package:doc_scanly/app/cpu_image_processing_backend.dart';
 import 'package:doc_scanly/core/contracts/image_processing/image_processing.dart';
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:doc_scanly/features/image_enhancement/infrastructure/repositories/native_first_image_renderer.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/enhance_keys.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:isar_community/isar.dart';
 
 import '../support/app_boot.dart';
 import '../support/robots/app_robots.dart';
@@ -41,6 +44,11 @@ void main() {
     await pageTable.waitUntilLoaded();
 
     await pageTable.beginAddingPageFromCamera();
+    expect(
+      app.platform.scanner.requestedResolutions.single?.tier,
+      CameraResolutionTier.ultraHd4k,
+      reason: 'Missing preference must resolve to the active camera maximum.',
+    );
     expect(
       app.platform.scanner.captures,
       hasLength(1),
@@ -71,7 +79,25 @@ void main() {
     // would let a bug that never writes the image pass everything above.
     expect(app.platform.scanner.captures, hasLength(2));
 
-    await pageTable.save('Captured document');
+    await pageTable.openSavePdf();
+    final save = SavePdfRobot(tester);
+    expect(
+      save.documentQuality,
+      70,
+      reason: 'Camera resolution must not alter the PDF quality default.',
+    );
+    await save.name('Captured document');
+    await save.overrideAndResetFirstPage();
+    await save.setPassword('temporary secret');
+    await save.removePassword();
+    await save.waitForExactSize();
+    await save.previewAndClose();
+    await save.cancelPreview();
+    await save.cancelCommit();
+    // Changing quality starts a debounced calculation; Save must supersede it
+    // immediately rather than waiting for an unrelated size job.
+    await save.setDocumentQuality(80);
+    await save.commit();
 
     // Saving opens the new PDF directly; Back reveals the refreshed library.
     final viewer = ViewerRobot(tester);
@@ -94,7 +120,79 @@ void main() {
       isNotEmpty,
       reason: 'A saved document must leave a file behind, not only a row.',
     );
+    final records = await app.isar.documentEntitys.where().findAll();
+    expect(records, hasLength(1));
+    expect(records.single.title, 'Captured document');
+    expect(records.single.pageCount, 2);
+    expect(records.single.sizeInBytes, greaterThan(0));
+    expect(records.single.isProtected, isFalse);
   });
+
+  testWidgets(
+    'camera preference re-resolves while gallery pages stay independent',
+    (tester) async {
+      final app = await bootDocScanly(tester, useBundledGalleryFixture: true);
+
+      await DashboardRobot(tester).waitUntilLoaded();
+      final shell = TabShellRobot(tester);
+      await shell.openSettings();
+      final settings = SettingsRobot(tester);
+      await settings.waitUntilVisible();
+      await settings.expectCameraResolutions(const <String>[
+        '720p',
+        '1080p',
+        '4k',
+      ]);
+      await settings.chooseCameraResolution('1080p');
+      await shell.openDashboard();
+      await shell.startCreation();
+
+      final pageTable = PageTableRobot(tester);
+      await pageTable.waitUntilLoaded();
+      await pageTable.beginAddingPageFromCamera();
+      expect(
+        app.platform.scanner.requestedResolutions.last?.tier,
+        CameraResolutionTier.fullHd1080,
+      );
+      await CropRobot(tester).acceptAndContinue();
+      await EnhanceRobot(tester).done();
+      await pageTable.waitUntilLoaded();
+
+      // Simulate switching to a camera that cannot satisfy the stored tier.
+      // The next add-page action must query again and choose the nearest lower
+      // supported tier, rather than reusing the first camera's dimensions.
+      app.platform.cameraCapabilities.supported = <SupportedCameraResolution>[
+        SupportedCameraResolution(
+          tier: CameraResolutionTier.hd720,
+          width: 1280,
+          height: 720,
+        ),
+      ];
+      await pageTable.beginAddingPageFromCamera();
+      expect(
+        app.platform.scanner.requestedResolutions.last?.tier,
+        CameraResolutionTier.hd720,
+      );
+      await CropRobot(tester).acceptAndContinue();
+      await EnhanceRobot(tester).done();
+      await pageTable.waitUntilLoaded();
+
+      final cameraInitialisations =
+          app.platform.scanner.requestedResolutions.length;
+      await pageTable.addFromGallery();
+      await CropRobot(tester).acceptAndContinue();
+      await EnhanceRobot(tester).done();
+      await pageTable.waitUntilLoaded();
+
+      expect(app.platform.cameraCapabilities.loads, greaterThanOrEqualTo(2));
+      expect(
+        app.platform.scanner.requestedResolutions,
+        hasLength(cameraInitialisations),
+        reason: 'Photo-library dimensions must not initialise the camera.',
+      );
+      expect(pageTable.pageCount, 3);
+    },
+  );
 
   testWidgets('a page abandoned at crop is not added', (tester) async {
     final app = await bootDocScanly(tester);

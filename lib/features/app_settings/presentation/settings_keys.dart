@@ -16,8 +16,20 @@ abstract final class SettingsKeys {
   /// The PDF-quality entry.
   static const pdfQuality = Key('settings_pdf_quality');
 
-  /// The image-quality entry.
-  static const imageQuality = Key('settings_image_quality');
+  /// The active-camera resolution entry.
+  static const cameraResolution = Key('settings_camera_resolution');
+
+  /// Root of the active-camera resolution screen.
+  static const cameraResolutionScreen = Key(
+    'settings_camera_resolution_screen',
+  );
+
+  /// Retries a failed active-camera capability query.
+  static const cameraResolutionRetry = Key('settings_camera_resolution_retry');
+
+  /// One supported camera-resolution choice.
+  static Key cameraResolutionOption(String tier) =>
+      Key('settings_camera_resolution_option_$tier');
 
   /// The default-file-naming entry.
   static const fileNaming = Key('settings_file_naming');

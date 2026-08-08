@@ -4,9 +4,8 @@
 /// same widget on two platforms produces font-antialiasing diffs that are noise
 /// rather than regressions.
 ///
-/// The capture screen has no golden. Its body is a live camera preview, so a
-/// golden of it would be a golden of the placeholder standing in for one — a
-/// picture of the test harness rather than of the app.
+/// Capture goldens target the deterministic resolution-status chrome over a
+/// flat preview surface; no live plugin or camera frame enters the fixture.
 @Tags(['golden'])
 library;
 
@@ -14,16 +13,22 @@ import 'dart:io';
 
 import 'package:doc_scanly/core/contracts/geometry/page_geometry.dart';
 import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/contracts/models/page_draft.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/theme/app_theme.dart';
 import 'package:doc_scanly/features/document_creation/application/usecases/render_page.dart';
+import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
+import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_states.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/screens/crop_screen.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/screens/page_review_screen.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/screens/scan_capture_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -78,6 +83,24 @@ RenderPage _goldenRenderer() => RenderPage(
       const Result<void>.success(null),
 );
 
+class _SeededCaptureCubit extends ScanCaptureCubit {
+  _SeededCaptureCubit(this._seeded)
+    : super(
+        _scanner,
+        CapturePage(_scanner, const FullPageEdgeDetector()),
+        DiscardScanSession(FakeScanStagingArea(Directory('/golden')), _scanner),
+      );
+
+  static final _scanner = FakeScannerRepository();
+  final ScanCaptureState _seeded;
+
+  @override
+  ScanCaptureState get state => _seeded;
+
+  @override
+  Future<void> start() async {}
+}
+
 void main() {
   Widget host(Widget child, Brightness brightness) => MaterialApp(
     theme: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
@@ -97,6 +120,83 @@ void main() {
     ),
     brightness,
   );
+
+  Future<void> pumpCapture(
+    WidgetTester tester,
+    ScanCaptureState state,
+    Size size, {
+    Brightness brightness = Brightness.light,
+  }) async {
+    tester.view.physicalSize = size;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final cubit = _SeededCaptureCubit(state);
+    addTearDown(cubit.close);
+    await tester.pumpWidget(
+      host(
+        BlocProvider<ScanCaptureCubit>.value(
+          value: cubit,
+          child: ScanCaptureScreen(
+            previewBuilder: (_) => const ColoredBox(color: Color(0xFF202124)),
+            onFinished: () {},
+            onPageCaptured: (_, _) async {},
+            onCancelled: () {},
+            onOpenSettings: () {},
+            onImportInstead: () {},
+          ),
+        ),
+        brightness,
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+  }
+
+  group('capture resolution goldens', () {
+    testWidgets('Full resolution phone, light', (tester) async {
+      await pumpCapture(
+        tester,
+        const ScanCaptureState.initial().copyWith(
+          status: ScanCaptureStatus.ready,
+          activeResolution: SupportedCameraResolution(
+            tier: CameraResolutionTier.ultraHd4k,
+            width: 4032,
+            height: 3024,
+          ),
+        ),
+        _phone,
+      );
+
+      await expectLater(
+        find.byType(ScanCaptureScreen),
+        matchesGoldenFile('goldens/capture_resolution_phone_light.png'),
+      );
+    });
+
+    testWidgets('fallback tablet, dark', (tester) async {
+      await pumpCapture(
+        tester,
+        const ScanCaptureState.initial().copyWith(
+          status: ScanCaptureStatus.ready,
+          desiredResolution: DesiredCameraResolution.tier(
+            CameraResolutionTier.qhd2k,
+          ),
+          activeResolution: SupportedCameraResolution(
+            tier: CameraResolutionTier.fullHd1080,
+            width: 1920,
+            height: 1080,
+          ),
+        ),
+        _tablet,
+        brightness: Brightness.dark,
+      );
+
+      await expectLater(
+        find.byType(ScanCaptureScreen),
+        matchesGoldenFile('goldens/capture_resolution_tablet_dark.png'),
+      );
+    });
+  });
 
   Widget crop(PageDraft page, Brightness brightness) => host(
     BlocProvider(

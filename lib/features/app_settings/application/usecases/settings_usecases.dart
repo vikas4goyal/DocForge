@@ -48,21 +48,21 @@ class UpdateSetting {
   /// Applies the PDF [quality].
   Future<Result<AppSettings>> pdfQuality(
     AppSettings current,
-    PdfQuality quality,
+    PdfQualityPercent quality,
   ) => _apply(
     current,
     current.copyWith(pdfQuality: quality),
     () => _repository.savePdfQuality(quality),
   );
 
-  /// Applies the image [quality].
-  Future<Result<AppSettings>> imageQuality(
+  /// Applies the desired camera [resolution].
+  Future<Result<AppSettings>> cameraResolution(
     AppSettings current,
-    ImageQuality quality,
+    DesiredCameraResolution resolution,
   ) => _apply(
     current,
-    current.copyWith(imageQuality: quality),
-    () => _repository.saveImageQuality(quality),
+    current.copyWith(cameraResolution: resolution),
+    () => _repository.saveCameraResolution(resolution),
   );
 
   /// Applies the naming [pattern].

@@ -40,7 +40,7 @@ void main() {
     return app;
   }
 
-  testWidgets('compression submits once and returns a visible result', (
+  testWidgets('compression preview and copy preserve the source', (
     tester,
   ) async {
     final app = await openSourceInViewer(tester);
@@ -54,12 +54,38 @@ void main() {
       isTrue,
       reason: 'The imported document must be in the library before editing.',
     );
+    final sourceEntry = before.valueOrNull!.single;
+    final sourcePath = await app.publicStore.materialise(sourceEntry.path!);
+    final sourceBytes = await File(sourcePath.valueOrNull!).readAsBytes();
     await ViewerRobot(tester).openCompress();
-    final editor = PdfEditRobot(tester);
-    await editor.waitUntilFocused();
-    await editor.compress();
-    await editor.finishResult();
-    await DashboardRobot(tester).waitUntilLoaded();
+    final compress = CompressPdfRobot(tester);
+    await compress.waitUntilCalculated();
+    expect(find.textContaining('80%'), findsWidgets);
+    await compress.overrideAndResetFirstPage();
+    await compress.previewAndClose();
+    await compress.cancelPreview();
+    await compress.reviewAll100AndAdjust();
+    await compress.cancelAndRetryAsCopy();
+
+    final after = await app.publicStore.list(const []);
+    expect(after.valueOrNull, hasLength(2));
+    final sourceAfter = await app.publicStore.materialise(sourceEntry.path!);
+    expect(await File(sourceAfter.valueOrNull!).readAsBytes(), sourceBytes);
+  });
+
+  testWidgets('compression overwrite keeps one verified source document', (
+    tester,
+  ) async {
+    final app = await openSourceInViewer(tester);
+    final before = await app.publicStore.list(const []);
+
+    await ViewerRobot(tester).openCompress();
+    final compress = CompressPdfRobot(tester);
+    await compress.waitUntilCalculated();
+    await compress.overwriteOriginal();
+
+    final after = await app.publicStore.list(const []);
+    expect(after.valueOrNull, hasLength(before.valueOrNull!.length));
   });
 
   testWidgets('split creates one reviewed two-output result', (tester) async {
