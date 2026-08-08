@@ -28,7 +28,6 @@ import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/page_correction_job.dart';
@@ -161,7 +160,7 @@ void main() {
 
   /// Captures [count] pages through the real capture use case.
   Future<List<CapturedPage>> capture(int count) async {
-    final capturePage = CapturePage(scanner, const FullPageEdgeDetector());
+    final capturePage = CapturePage(scanner);
     final pages = <CapturedPage>[];
 
     await scanner.initialise();

@@ -1,7 +1,6 @@
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
-import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -228,25 +227,6 @@ void main() {
       // Applying the transform to an already-rectangular image would distort
       // it further rather than fixing anything.
       expect(page.needsCorrection, isFalse);
-    });
-  });
-
-  group('FullPageEdgeDetector', () {
-    test('returns the full page for any capture', () async {
-      const detector = FullPageEdgeDetector();
-
-      final quad = await detector.detect('/pages/anything.jpg');
-
-      expect(quad, PageQuad.full);
-      expect(quad.isFullPage, isTrue);
-    });
-
-    test('never fails, so a capture is never rejected', () async {
-      const detector = FullPageEdgeDetector();
-
-      // The spec requires an undetected capture to be kept with the full page
-      // as its default crop, not discarded.
-      await expectLater(detector.detect(''), completes);
     });
   });
 }

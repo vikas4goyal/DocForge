@@ -122,7 +122,7 @@ class ScanCaptureCubit extends Cubit<ScanCaptureState> {
   /// held while another screen is showing, but the captures are still wanted.
   Future<void> release() async {
     await _scanner.dispose();
-    emit(state.copyWith(status: ScanCaptureStatus.idle));
+    if (!isClosed) emit(state.copyWith(status: ScanCaptureStatus.idle));
   }
 
   /// Releases the camera and deletes everything this session captured.

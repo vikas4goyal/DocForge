@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
-import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 
 /// Where a scanning session writes its captures.
@@ -88,34 +87,4 @@ abstract interface class ScannerRepository {
 
   /// Whether the camera is currently ready to capture.
   bool get isReady;
-}
-
-/// Finds the document edges in a captured image.
-///
-/// Behind an interface because V1 ships the fallback below and automatic
-/// detection lands later (task 6.20); the capture flow is written against this
-/// contract so that change is a substitution rather than a rewrite.
-abstract interface class EdgeDetector {
-  /// Returns the detected document quadrilateral for the image at [imagePath].
-  ///
-  /// Never fails: a page whose edges cannot be found still has a usable crop.
-  /// The spec is explicit that an undetected capture is kept, not rejected.
-  Future<PageQuad> detect(String imagePath);
-}
-
-/// The edge detector used until automatic detection lands.
-///
-/// Returns the full page every time, which the spec names as the required
-/// behaviour when edges cannot be detected: the capture is kept, the full page
-/// becomes the default crop, and the user adjusts the corners by hand.
-///
-/// Shipping this rather than blocking the capture flow on detection means the
-/// flow is complete and testable now, and gaining detection later changes one
-/// injected object.
-class FullPageEdgeDetector implements EdgeDetector {
-  /// Creates the fallback detector.
-  const FullPageEdgeDetector();
-
-  @override
-  Future<PageQuad> detect(String imagePath) async => PageQuad.full;
 }

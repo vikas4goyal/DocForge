@@ -71,7 +71,6 @@ import 'package:doc_scanly/features/document_library/presentation/library_keys.d
 import 'package:doc_scanly/features/document_library/presentation/widgets/library_reconciler.dart';
 import 'package:doc_scanly/features/document_scanning/domain/repositories/camera_capability_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
-import 'package:doc_scanly/features/document_scanning/infrastructure/opencv_edge_detector.dart';
 import 'package:doc_scanly/features/document_sharing/domain/repositories/share_repository.dart';
 import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/platform_share_repositories.dart';
 import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
@@ -133,7 +132,7 @@ const appVersion = '1.0.0';
 ///   [buildPublicFileStore], which is the one place that branches on the
 ///   operating system.
 /// - [libraryOverride] — a temporary database, per [LibraryOverride].
-/// - [scanner] and [detector] — the camera and OpenCV edge detection.
+/// - [scanner] — the device camera.
 /// - [authenticator] — biometrics.
 /// - [pdfRenderer] — pdfrx, which binds a native library.
 /// - [pdfEditor] — one instance shared by generation and editing, so encryption
@@ -154,7 +153,6 @@ Future<Widget> buildDocScanly({
   LibraryOverride? libraryOverride,
   ScannerRepository? scanner,
   CameraCapabilityRepository? cameraCapabilities,
-  EdgeDetector detector = const OpenCvEdgeDetector(),
   DeviceAuthenticator authenticator = const LocalAuthAuthenticator(),
   PdfRenderer pdfRenderer = const PdfrxRenderer(),
   PdfEditorRepository? pdfEditor,
@@ -213,7 +211,6 @@ Future<Widget> buildDocScanly({
           libraryOverride: libraryOverride,
           scanner: scanner,
           cameraCapabilities: cameraCapabilities,
-          detector: detector,
           authenticator: authenticator,
           pdfRenderer: pdfRenderer,
           pdfEditor: pdfEditor,
@@ -252,7 +249,6 @@ Future<Widget> buildDocScanly({
           libraryOverride: libraryOverride,
           scanner: scanner,
           cameraCapabilities: cameraCapabilities,
-          detector: detector,
           authenticator: authenticator,
           pdfRenderer: pdfRenderer,
           pdfEditor: pdfEditor,
@@ -327,7 +323,6 @@ Future<Widget> buildDocScanly({
     renderPage: renderPage,
     permissions: resolvedDependencies.permissions,
     ids: resolvedDependencies.idGenerator,
-    detector: detector,
     scanner: scanner,
     cameraCapabilities: cameraCapabilities,
     telemetry: resolvedDependencies.telemetry,

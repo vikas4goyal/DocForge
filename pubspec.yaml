@@ -75,9 +75,6 @@ dependencies:
     path: third_party/pdf_manipulator
   # Pinned: the Flutter SDK's flutter_test pins meta to exactly 1.18.0.
   meta: ^1.18.0
-  # Pinned <2.1.0+1: dartcv4 2.1.0+1+ needs hooks ^1.0.0, but
-  # pdf_manipulator 4.0.0 needs hooks ^2.0.2.
-  dartcv4: ^1.1.8
   stream_transform: ^2.1.1
 dependency_overrides:
   # Vendored fork: 11.0.3 skips KGP on AGP 9, but Flutter temporarily opts

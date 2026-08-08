@@ -103,7 +103,7 @@ void main() {
 
   ScanCaptureCubit captureCubit() => ScanCaptureCubit(
     scanner,
-    CapturePage(scanner, const FullPageEdgeDetector()),
+    CapturePage(scanner),
     DiscardScanSession(staging, scanner),
   );
 

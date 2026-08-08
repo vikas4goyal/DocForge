@@ -7,7 +7,6 @@ import 'package:doc_scanly/core/isolates/background_worker.dart';
 import 'package:doc_scanly/core/isolates/cancellation.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -26,20 +25,6 @@ final correctionRequests = <PageCorrectionRequest>[];
 /// A correction job that always fails.
 String failingCorrectionJob(PageCorrectionRequest request) =>
     throw const FormatException('unreadable');
-
-/// An edge detector returning a fixed quad, for asserting it was consulted.
-class _FixedEdgeDetector implements EdgeDetector {
-  _FixedEdgeDetector(this.quad);
-
-  final PageQuad quad;
-  final List<String> detected = [];
-
-  @override
-  Future<PageQuad> detect(String imagePath) async {
-    detected.add(imagePath);
-    return quad;
-  }
-}
 
 void main() {
   late Directory workspace;
@@ -203,74 +188,30 @@ void main() {
       'returns a page carrying the path the capture was written to',
       () async {
         await scanner.initialise();
-        const detector = FullPageEdgeDetector();
 
-        final result = await CapturePage(scanner, detector)();
+        final result = await CapturePage(scanner)();
 
         final page = result.valueOrNull!;
         expect(File(page.imagePath).existsSync(), isTrue);
       },
     );
 
-    test('detects edges on the file already written to disk', () async {
-      await scanner.initialise();
-      final detector = _FixedEdgeDetector(PageQuad.full);
-
-      await CapturePage(scanner, detector)();
-
-      // Detection runs after the write, so a detection failure cannot lose a
-      // page the user has already seen the shutter fire for.
-      expect(detector.detected, hasLength(1));
-      expect(File(detector.detected.single).existsSync(), isTrue);
-    });
-
-    test('uses the detected quad as the default crop', () async {
-      await scanner.initialise();
-      const detected = PageQuad(
-        topLeft: NormalisedPoint(x: 0.1, y: 0.1),
-        topRight: NormalisedPoint(x: 0.9, y: 0.12),
-        bottomRight: NormalisedPoint(x: 0.88, y: 0.9),
-        bottomLeft: NormalisedPoint(x: 0.12, y: 0.88),
-      );
-
-      final result = await CapturePage(scanner, _FixedEdgeDetector(detected))();
-
-      expect(result.valueOrNull!.quad, detected);
-    });
-
-    test('keeps the capture when no edges are found', () async {
+    test('starts manual crop with the complete captured image', () async {
       await scanner.initialise();
 
-      final result = await CapturePage(scanner, const FullPageEdgeDetector())();
-
-      // The spec forbids rejecting the capture: the full page becomes the crop.
-      expect(result.isSuccess, isTrue);
-      expect(result.valueOrNull!.quad, PageQuad.full);
-      expect(result.valueOrNull!.needsCorrection, isFalse);
-    });
-
-    test('a stalled edge detector cannot trap capture navigation', () async {
-      await scanner.initialise();
-
-      final result = await CapturePage(
-        scanner,
-        _StalledEdgeDetector(),
-        edgeDetectionTimeout: Duration.zero,
-      )();
+      final result = await CapturePage(scanner)();
 
       expect(result.isSuccess, isTrue);
       expect(result.valueOrNull!.quad, PageQuad.full);
     });
 
-    test('a capture failure never reaches edge detection', () async {
+    test('a capture failure returns without creating a page', () async {
       await scanner.initialise();
       scanner.captureFailure = const Failure.storageFull();
-      final detector = _FixedEdgeDetector(PageQuad.full);
 
-      final result = await CapturePage(scanner, detector)();
+      final result = await CapturePage(scanner)();
 
       expect(result.isFailure, isTrue);
-      expect(detector.detected, isEmpty);
     });
 
     test('a permission failure is passed through unchanged', () async {
@@ -280,7 +221,7 @@ void main() {
       );
       await scanner.initialise();
 
-      final result = await CapturePage(scanner, const FullPageEdgeDetector())();
+      final result = await CapturePage(scanner)();
 
       expect(result.failureOrNull, isA<PermissionFailure>());
     });
@@ -469,10 +410,4 @@ void main() {
       expect(result.isSuccess, isTrue);
     });
   });
-}
-
-class _StalledEdgeDetector implements EdgeDetector {
-  @override
-  Future<PageQuad> detect(String imagePath) =>
-      Future<PageQuad>.delayed(const Duration(days: 1), () => PageQuad.full);
 }

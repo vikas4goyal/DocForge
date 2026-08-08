@@ -84,6 +84,26 @@ void main() {
       );
     });
 
+    test(
+      'an app-owned camera capture can move without a full file copy',
+      () async {
+        final source = await sourceImage('captured.jpg');
+
+        final staged = await stage(
+          source,
+          sessionId: sessionId,
+          moveSource: true,
+        );
+
+        expect(staged.isSuccess, isTrue);
+        expect(File(source).existsSync(), isFalse);
+        expect(
+          File(staged.valueOrNull!.originalImagePath).existsSync(),
+          isTrue,
+        );
+      },
+    );
+
     test('a draft starts with neither layer applied', () async {
       final staged = await stage(
         await sourceImage('picked.jpg'),

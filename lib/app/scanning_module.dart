@@ -15,7 +15,6 @@ import 'package:doc_scanly/features/document_scanning/domain/repositories/camera
 import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_plugin_capability_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
-import 'package:doc_scanly/features/document_scanning/infrastructure/opencv_edge_detector.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/screens/crop_screen.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/screens/scan_capture_screen.dart';
@@ -85,15 +84,9 @@ class ScanningModule {
 /// captures from an abandoned scan can be reclaimed by the operating system
 /// under storage pressure instead of counting as user data.
 ///
-/// [detector] defaults to the OpenCV detector. It is injectable because the
-/// OpenCV binding needs a native library that exists on Android and iOS but not
-/// in the host test VM, so tests and previews substitute
-/// [FullPageEdgeDetector] — which is also the behaviour the spec requires when
-/// no edges can be found.
-///
 /// [scanner] defaults to [CameraScannerRepository] over the staging area built
-/// here. It is injectable for the same reason as [detector]: the camera is a
-/// platform edge with no host-VM implementation, so an end-to-end flow
+/// here. It is injectable because the camera is a platform edge with no
+/// host-VM implementation, so an end-to-end flow
 /// substitutes `FakeScannerRepository` to capture fixture images deterministically.
 /// A caller that supplies its own scanner is responsible for its staging
 /// behaviour; the staging area passed to the module is still the local one, so
@@ -107,7 +100,6 @@ ScanningModule buildScanningModule({
   required PermissionService permissions,
   required IdGenerator ids,
   required PageRenderer renderPage,
-  EdgeDetector detector = const OpenCvEdgeDetector(),
   ScannerRepository? scanner,
   CameraCapabilityRepository? cameraCapabilities,
   CameraPreviewBuilder? buildPreview,
@@ -129,12 +121,8 @@ ScanningModule buildScanningModule({
     loadCameraResolutions: loadCameraResolutions,
     resolveCaptureResolution: ResolveCaptureResolution(loadCameraResolutions),
     staging: staging,
-    // OpenCV finds the outline; `FullPageEdgeDetector` remains the specified
-    // behaviour for a capture whose edges cannot be found, and the detector
-    // falls back to exactly that rather than failing.
     capturePage: CapturePage(
       resolvedScanner,
-      detector,
       resolveCaptureResolution: ResolveCaptureResolution(loadCameraResolutions),
     ),
     discardSession: DiscardScanSession(staging, resolvedScanner),

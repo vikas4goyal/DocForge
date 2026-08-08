@@ -21,7 +21,6 @@ import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/theme/app_theme.dart';
 import 'package:doc_scanly/features/document_creation/application/usecases/render_page.dart';
 import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
@@ -87,7 +86,7 @@ class _SeededCaptureCubit extends ScanCaptureCubit {
   _SeededCaptureCubit(this._seeded)
     : super(
         _scanner,
-        CapturePage(_scanner, const FullPageEdgeDetector()),
+        CapturePage(_scanner),
         DiscardScanSession(FakeScanStagingArea(Directory('/golden')), _scanner),
       );
 

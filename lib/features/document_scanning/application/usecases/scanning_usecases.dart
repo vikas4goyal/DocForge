@@ -54,22 +54,9 @@ class ResolveCaptureResolution {
 /// Captures one page and adds it to the session.
 class CapturePage {
   /// Creates the use case.
-  const CapturePage(
-    this._scanner,
-    this._edges, {
-    this.resolveCaptureResolution,
-    this.edgeDetectionTimeout = const Duration(seconds: 4),
-  });
+  const CapturePage(this._scanner, {this.resolveCaptureResolution});
 
   final ScannerRepository _scanner;
-  final EdgeDetector _edges;
-
-  /// Maximum time capture navigation waits for best-effort edge detection.
-  ///
-  /// The image is already durably staged at this point, so falling back to the
-  /// full page is safer than trapping the user on the camera if a native
-  /// detector stalls on an unusual high-resolution frame.
-  final Duration edgeDetectionTimeout;
 
   /// Resolves the current desired tier before camera preparation.
   final ResolveCaptureResolution? resolveCaptureResolution;
@@ -92,12 +79,12 @@ class CapturePage {
     return opened.map((_) => resolution);
   }
 
-  /// Captures a page, detects its edges, and returns it.
+  /// Captures a page with the whole image selected for manual cropping.
   ///
   /// The order is deliberate: the repository writes the image to disk *before*
-  /// returning, so by the time edge detection runs the capture is already
-  /// durable. A detection failure, an abandoned session or a crash therefore
-  /// cannot lose a page the user has already seen the shutter fire for.
+  /// returning, so an abandoned session or a crash cannot lose a page the user
+  /// has already seen the shutter fire for. No image analysis delays capture;
+  /// the crop preview is the user's explicit place to position the corners.
   ///
   /// Only a path is ever held. The bytes are read by whichever step needs them
   /// and released again, which is what lets a long batch run on a low-end
@@ -112,7 +99,7 @@ class CapturePage {
     DesiredCameraResolution desired =
         const DesiredCameraResolution.fullResolution(),
   }) async {
-    if (resolveCaptureResolution != null || !_scanner.isReady) {
+    if (!_scanner.isReady) {
       final opened = await initialise(desired);
       // A permission refusal or an unopenable camera is reported as itself:
       // the two lead to different recovery actions and must not be collapsed
@@ -124,22 +111,14 @@ class CapturePage {
 
     final captured = await _scanner.capture();
 
-    return captured.flatMapAsync((result) async {
-      // Never fails: an undetected page keeps the full-page crop rather than
-      // being rejected, which the spec requires explicitly.
-      final quad = await _edges
-          .detect(result.imagePath)
-          .timeout(edgeDetectionTimeout, onTimeout: () => PageQuad.full);
-
-      return Result<CapturedPage>.success(
-        CapturedPage(
-          id: result.id,
-          imagePath: result.imagePath,
-          quad: quad,
-          thumbnailPath: result.thumbnailPath,
-        ),
-      );
-    });
+    return captured.map(
+      (result) => CapturedPage(
+        id: result.id,
+        imagePath: result.imagePath,
+        quad: PageQuad.full,
+        thumbnailPath: result.thumbnailPath,
+      ),
+    );
   }
 }
 

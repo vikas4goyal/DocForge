@@ -60,7 +60,7 @@ class _PreviewCaptureCubit extends ScanCaptureCubit
   _PreviewCaptureCubit(ScanCaptureState state, FakeScannerRepository scanner)
     : super(
         scanner,
-        CapturePage(scanner, const FullPageEdgeDetector()),
+        CapturePage(scanner),
         DiscardScanSession(const _InertStaging(), scanner),
       ) {
     seed(state);

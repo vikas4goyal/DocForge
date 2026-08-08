@@ -38,6 +38,7 @@ class StagePageImage {
   Future<Result<PageDraft>> call(
     String sourcePath, {
     required String sessionId,
+    bool moveSource = false,
   }) async {
     final id = PageId(_ids.generate());
 
@@ -49,7 +50,16 @@ class StagePageImage {
 
       final destination =
           '${_staging.directoryFor(sessionId).path}/${id.value}.jpg';
-      await source.copy(destination);
+      if (moveSource) {
+        // Camera captures already live in app-private cache storage. Renaming
+        // into the creation session is atomic on the same filesystem and
+        // avoids copying a multi-megabyte full-resolution JPEG before crop.
+        await source.rename(destination);
+      } else {
+        // Gallery and external picker paths are not owned by this session and
+        // must remain untouched.
+        await source.copy(destination);
+      }
 
       return Result<PageDraft>.success(
         PageDraft(id: id, originalImagePath: destination),

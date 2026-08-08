@@ -1,7 +1,7 @@
 /// The platform edges a Tier-3 flow substitutes, and nothing else.
 ///
 /// The suite fakes exactly the seven things a device does that a test cannot
-/// drive or predict: camera capture, edge detection, biometric authentication,
+/// drive or predict: camera capture, biometric authentication,
 /// the share sheet, the print dialogue, and the
 /// file and gallery pickers. Isar, the filesystem and the public library folder
 /// stay real, because most of what breaks in an offline-first document app
@@ -30,7 +30,6 @@ import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
 import 'package:doc_scanly/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
 import 'package:doc_scanly/features/document_import/infrastructure/repositories/fake_import_sources.dart';
 import 'package:doc_scanly/features/document_scanning/domain/repositories/camera_capability_repository.dart';
-import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
 
@@ -46,7 +45,6 @@ class FakePlatform {
   const FakePlatform({
     required this.scanner,
     required this.cameraCapabilities,
-    required this.detector,
     required this.authenticator,
     required this.share,
     required this.printer,
@@ -61,13 +59,6 @@ class FakePlatform {
 
   /// Deterministic supported still-image sizes for Settings and capture.
   final FakeCameraCapabilityRepository cameraCapabilities;
-
-  /// Stands in for OpenCV, which has no host-VM binding.
-  ///
-  /// The full page every time — which is also the behaviour the spec requires
-  /// of a capture whose edges cannot be found, so a flow driving it is
-  /// exercising a real code path rather than a test-only one.
-  final FullPageEdgeDetector detector;
 
   /// Stands in for the biometric prompt, which nothing in a test could answer.
   final FakeDeviceAuthenticator authenticator;
@@ -130,7 +121,6 @@ FakePlatform buildFakePlatform({
       imageBytes: captureImageBytes,
     ),
     cameraCapabilities: FakeCameraCapabilityRepository(),
-    detector: const FullPageEdgeDetector(),
     authenticator: FakeDeviceAuthenticator(
       // `rejected` rather than a failure: a refused fingerprint is the lock
       // working, which is exactly what the flow proving it locks needs.

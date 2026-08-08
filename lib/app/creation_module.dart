@@ -282,6 +282,7 @@ class _CreationFlowState extends State<CreationFlow> {
     final staged = await widget.module.stagePage(
       captured!.imagePath,
       sessionId: _sessionId,
+      moveSource: true,
     );
     return switch (staged) {
       Success(:final value) => [value],

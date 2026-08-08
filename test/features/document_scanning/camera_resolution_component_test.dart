@@ -51,7 +51,6 @@ void main() {
     final load = LoadCameraResolutions(capabilities);
     final capture = CapturePage(
       scanner,
-      const FullPageEdgeDetector(),
       resolveCaptureResolution: ResolveCaptureResolution(load),
     );
     final cubit = ScanCaptureCubit(

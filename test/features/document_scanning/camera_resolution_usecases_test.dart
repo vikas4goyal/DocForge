@@ -4,7 +4,6 @@ import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
 import 'package:doc_scanly/features/document_scanning/domain/repositories/camera_capability_repository.dart';
-import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_plugin_capability_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -205,7 +204,7 @@ void main() {
 
   group('capture resolution orchestration', () {
     test(
-      'resolves and requests the chosen dimensions before every capture',
+      'resolves once per camera session and re-resolves after release',
       () async {
         final repository = _CapabilityRepository([
           Result<List<SupportedCameraResolution>>.success([hd, fullHd]),
@@ -214,7 +213,6 @@ void main() {
         final scanner = FakeScannerRepository();
         final capture = CapturePage(
           scanner,
-          const FullPageEdgeDetector(),
           resolveCaptureResolution: ResolveCaptureResolution(
             LoadCameraResolutions(repository),
           ),
@@ -223,6 +221,10 @@ void main() {
         await capture(
           desired: DesiredCameraResolution.tier(CameraResolutionTier.hd720),
         );
+        expect(scanner.requestedResolutions, [hd]);
+        expect(repository.calls, 1);
+
+        await scanner.dispose();
         await capture(
           desired: DesiredCameraResolution.tier(CameraResolutionTier.hd720),
         );
@@ -239,7 +241,6 @@ void main() {
       final scanner = FakeScannerRepository();
       final capture = CapturePage(
         scanner,
-        const FullPageEdgeDetector(),
         resolveCaptureResolution: ResolveCaptureResolution(
           LoadCameraResolutions(repository),
         ),
@@ -257,7 +258,6 @@ void main() {
       final scanner = FakeScannerRepository();
       final capture = CapturePage(
         scanner,
-        const FullPageEdgeDetector(),
         resolveCaptureResolution: ResolveCaptureResolution(
           LoadCameraResolutions(repository),
         ),

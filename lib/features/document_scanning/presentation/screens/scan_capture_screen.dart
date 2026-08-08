@@ -1,6 +1,8 @@
 /// The camera capture screen.
 library;
 
+import 'dart:async';
+
 import 'package:doc_scanly/core/theme/app_theme.dart';
 import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
@@ -153,31 +155,11 @@ class _ScanCaptureScreenState extends State<ScanCaptureScreen> {
                 ),
               ),
               if (state.status == ScanCaptureStatus.capturing)
-                const ColoredBox(
-                  color: Color(0x66000000),
-                  child: Center(
-                    child: Card(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 18,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            SizedBox.square(
-                              dimension: 22,
-                              child: CircularProgressIndicator.adaptive(
-                                strokeWidth: 2.5,
-                              ),
-                            ),
-                            SizedBox(width: 14),
-                            Text('Processing capture…'),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+                const Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: LinearProgressIndicator(minHeight: 3),
                 ),
             ],
           ),
@@ -239,7 +221,11 @@ class _CaptureControls extends StatelessWidget {
                   // In batch mode the preview stays put for the next page,
                   // which is exactly what batch mode means.
                   if (!cubit.state.batchMode && cubit.pages.isNotEmpty) {
-                    await cubit.release();
+                    // Navigation does not need to wait for the native camera
+                    // controller to dispose. `release` and Cubit teardown are
+                    // both idempotent, so the crop preview can open while the
+                    // device resource is released in the background.
+                    unawaited(cubit.release());
                     onFinished();
                   }
                 },

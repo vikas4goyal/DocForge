@@ -32,7 +32,6 @@ import 'package:doc_scanly/features/document_library/presentation/library_keys.d
 import 'package:doc_scanly/features/document_library/presentation/screens/dashboard_screen.dart';
 import 'package:doc_scanly/features/document_library/presentation/screens/document_list_screen.dart';
 import 'package:doc_scanly/features/document_library/presentation/widgets/library_reconciler.dart';
-import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
 import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
@@ -108,7 +107,6 @@ void main() {
           documentsDirectory: derivedDirectory,
         ),
         scanner: FakeScannerRepository(directory: cacheDirectory),
-        detector: const FullPageEdgeDetector(),
         authenticator: authenticator ?? FakeDeviceAuthenticator(),
         pdfRenderer: renderer ?? FakePdfRenderer(),
         sharedContent: _SilentSharedContentSource(),

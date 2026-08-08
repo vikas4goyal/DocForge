@@ -7,7 +7,6 @@ import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
-import 'package:doc_scanly/features/document_scanning/domain/repositories/scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
@@ -63,7 +62,7 @@ void main() {
 
   ScanCaptureCubit buildCapture() => ScanCaptureCubit(
     scanner,
-    CapturePage(scanner, const FullPageEdgeDetector()),
+    CapturePage(scanner),
     DiscardScanSession(staging, scanner),
   );
 

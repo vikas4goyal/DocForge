@@ -236,7 +236,6 @@ Future<FlowApp> bootDocScanly(
     ),
     scanner: platform.scanner,
     cameraCapabilities: platform.cameraCapabilities,
-    detector: platform.detector,
     authenticator: platform.authenticator,
     share: platform.share,
     printer: platform.printer,
