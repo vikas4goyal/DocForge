@@ -100,7 +100,7 @@ class _SeededCubit extends PdfEditCubit {
       rotate: RotatePage(context),
       delete: DeletePages(context),
       duplicate: DuplicatePage(context),
-      reorder: ReorderPage(context),
+      reorder: ReorderPages(context),
       extract: ExtractPages(context),
       merge: MergeDocuments(context),
       split: SplitDocument(context),
@@ -223,8 +223,10 @@ void main() {
       );
     });
 
-    testWidgets('with a selection, light', (tester) async {
-      await pumpAt(tester, _phone, ready.copyWith(selection: {0, 2}));
+    testWidgets('edit mode, light', (tester) async {
+      await pumpAt(tester, _phone, ready);
+      await tester.tap(find.byKey(PdfEditKeys.editPagesButton));
+      await tester.pumpAndSettle();
 
       await expectLater(
         find.byType(PdfEditScreen),

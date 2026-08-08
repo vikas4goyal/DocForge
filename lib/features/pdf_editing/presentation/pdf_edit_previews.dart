@@ -93,7 +93,7 @@ class _PreviewPdfEditCubit extends PdfEditCubit {
       rotate: RotatePage(context),
       delete: DeletePages(context),
       duplicate: DuplicatePage(context),
-      reorder: ReorderPage(context),
+      reorder: ReorderPages(context),
       extract: ExtractPages(context),
       merge: MergeDocuments(context),
       split: SplitDocument(context),
@@ -120,7 +120,7 @@ class _PreviewPdfEditCubit extends PdfEditCubit {
   Future<void> duplicate() async {}
 
   @override
-  Future<void> moveSelectedPage(int offset) async {}
+  Future<void> reorderPages(List<int> pageOrder) async {}
 
   @override
   Future<void> extract() async {}

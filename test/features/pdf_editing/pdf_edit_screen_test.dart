@@ -24,7 +24,6 @@ import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_cubi
 import 'package:doc_scanly/features/pdf_editing/presentation/cubit/pdf_edit_state.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/pdf_edit_keys.dart';
 import 'package:doc_scanly/features/pdf_editing/presentation/screens/pdf_edit_screen.dart';
-import 'package:doc_scanly/features/pdf_editing/presentation/widgets/pdf_edit_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -90,7 +89,7 @@ class _StubCubit extends PdfEditCubit {
       rotate: RotatePage(context),
       delete: DeletePages(context),
       duplicate: DuplicatePage(context),
-      reorder: ReorderPage(context),
+      reorder: ReorderPages(context),
       extract: ExtractPages(context),
       merge: MergeDocuments(context),
       split: SplitDocument(context),
@@ -117,8 +116,8 @@ class _StubCubit extends PdfEditCubit {
   Future<void> duplicate() async => calls.add('duplicate');
 
   @override
-  Future<void> moveSelectedPage(int offset) async =>
-      calls.add(offset < 0 ? 'moveEarlier' : 'moveLater');
+  Future<void> reorderPages(List<int> pageOrder) async =>
+      calls.add('reorder:${pageOrder.join(',')}');
 
   @override
   Future<void> extract() async => calls.add('extract');
@@ -250,35 +249,53 @@ void main() {
   );
 
   group('composition', () {
-    testWidgets('shows only page management until a page is selected', (
+    testWidgets('shows a thumbnail list with extract outside edit mode', (
       tester,
     ) async {
       await pump(tester, ready);
 
       expect(find.byKey(PdfEditKeys.screen), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.pageGrid), findsOneWidget);
-      expect(find.byKey(PdfEditKeys.rotateButton), findsNothing);
-      expect(find.byKey(PdfEditKeys.deleteButton), findsNothing);
-      expect(find.byKey(PdfEditKeys.extractButton), findsNothing);
+      expect(find.byKey(PdfEditKeys.pageList), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.page(0)), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.page(3)), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageExtract(0)), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageRotate(0)), findsNothing);
+      expect(find.byKey(PdfEditKeys.pageDelete(0)), findsNothing);
+      expect(find.byKey(PdfEditKeys.pageDragHandle(0)), findsNothing);
       expect(find.byKey(PdfEditKeys.compressButton), findsNothing);
       expect(find.byKey(PdfEditKeys.watermarkTextField), findsNothing);
       expect(find.byKey(PdfEditKeys.protectPasswordField), findsNothing);
       expect(find.byKey(PdfEditKeys.splitConfirmButton), findsNothing);
     });
 
-    testWidgets('shows a tile per page', (tester) async {
+    testWidgets('shows one thumbnail row per page', (tester) async {
       await pump(tester, ready);
 
-      expect(find.byType(PdfPageTile), findsNWidgets(4));
+      expect(
+        find.descendant(
+          of: find.byKey(PdfEditKeys.pageList),
+          matching: find.byType(ColoredBox),
+        ),
+        findsNWidgets(4),
+      );
+      expect(find.text('Page 1'), findsOneWidget);
+      expect(find.text('Page 4'), findsOneWidget);
     });
 
-    testWidgets('tapping a page toggles its selection', (tester) async {
-      final cubit = await pump(tester, ready);
+    testWidgets('edit mode exposes row actions and drag handles', (
+      tester,
+    ) async {
+      await pump(tester, ready);
 
-      await tester.tap(find.byKey(PdfEditKeys.page(1)));
-      await tester.pump();
+      await tester.tap(find.byKey(PdfEditKeys.editPagesButton));
+      await tester.pumpAndSettle();
 
-      expect(cubit.calls, ['toggle:1']);
+      expect(find.byKey(PdfEditKeys.pageExtract(0)), findsNothing);
+      expect(find.byKey(PdfEditKeys.pageRotate(0)), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageDuplicate(0)), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageDelete(0)), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.pageDragHandle(0)), findsOneWidget);
+      expect(find.byKey(PdfEditKeys.savePageOrderButton), findsOneWidget);
     });
   });
 
@@ -354,61 +371,46 @@ void main() {
   });
 
   group('page controls', () {
-    testWidgets('a selected page can move earlier or later', (tester) async {
-      final cubit = await pump(tester, ready.copyWith(selection: {1}));
-
-      await tester.tap(find.byKey(PdfEditKeys.moveEarlierButton));
-      await confirmReview(tester);
-      expect(cubit.calls, ['moveEarlier']);
-
-      cubit.calls.clear();
-      await tester.tap(find.byKey(PdfEditKeys.moveLaterButton));
-      await confirmReview(tester);
-      expect(cubit.calls, ['moveLater']);
-    });
-
-    testWidgets('rotate is disabled with no selection', (tester) async {
+    testWidgets('extract is available outside edit mode', (tester) async {
       final cubit = await pump(tester, ready);
 
-      expect(find.byKey(PdfEditKeys.rotateButton), findsNothing);
-      expect(cubit.calls, isEmpty);
-    });
-
-    testWidgets('rotate runs with exactly one page selected', (tester) async {
-      final cubit = await pump(tester, ready.copyWith(selection: {1}));
-
-      await tester.tap(find.byKey(PdfEditKeys.rotateButton));
-      await confirmReview(tester);
-
-      expect(cubit.calls, ['rotate']);
-    });
-
-    testWidgets('rotate is disabled with several pages selected', (
-      tester,
-    ) async {
-      final cubit = await pump(tester, ready.copyWith(selection: {0, 1}));
-
-      expect(find.byKey(PdfEditKeys.rotateButton), findsNothing);
-      expect(cubit.calls, isEmpty);
-    });
-
-    testWidgets('extract runs with any selection', (tester) async {
-      final cubit = await pump(tester, ready.copyWith(selection: {0, 2}));
-
-      await tester.tap(find.byKey(PdfEditKeys.extractButton));
+      await tester.tap(find.byKey(PdfEditKeys.pageExtract(1)));
       await confirmReview(tester);
 
       expect(cubit.calls, ['extract']);
     });
 
-    testWidgets('deleting asks first, then runs', (tester) async {
-      // Deletion is the one page operation with no undo.
-      final cubit = await pump(tester, ready.copyWith(selection: {0}));
-
-      await tester.tap(find.byKey(PdfEditKeys.deleteButton));
+    testWidgets('rotate runs for its row in edit mode', (tester) async {
+      final cubit = await pump(tester, ready);
+      await tester.tap(find.byKey(PdfEditKeys.editPagesButton));
       await tester.pumpAndSettle();
 
-      expect(find.text('Delete pages?'), findsOneWidget);
+      await tester.tap(find.byKey(PdfEditKeys.pageRotate(1)));
+      await confirmReview(tester);
+
+      expect(cubit.calls, ['rotate']);
+    });
+
+    testWidgets('duplicate runs for its row in edit mode', (tester) async {
+      final cubit = await pump(tester, ready);
+      await tester.tap(find.byKey(PdfEditKeys.editPagesButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(PdfEditKeys.pageDuplicate(2)));
+      await confirmReview(tester);
+
+      expect(cubit.calls, ['duplicate']);
+    });
+
+    testWidgets('deleting asks first, then runs', (tester) async {
+      final cubit = await pump(tester, ready);
+      await tester.tap(find.byKey(PdfEditKeys.editPagesButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(PdfEditKeys.pageDelete(0)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete page 1?'), findsOneWidget);
 
       await tester.tap(find.byKey(PdfEditKeys.deleteConfirmButton));
       await tester.pumpAndSettle();
@@ -417,11 +419,13 @@ void main() {
     });
 
     testWidgets('cancelling the confirmation deletes nothing', (tester) async {
-      final cubit = await pump(tester, ready.copyWith(selection: {0}));
-
-      await tester.tap(find.byKey(PdfEditKeys.deleteButton));
+      final cubit = await pump(tester, ready);
+      await tester.tap(find.byKey(PdfEditKeys.editPagesButton));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('Cancel'));
+
+      await tester.tap(find.byKey(PdfEditKeys.pageDelete(0)));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel').last);
       await tester.pumpAndSettle();
 
       expect(cubit.calls, isEmpty);
@@ -435,12 +439,47 @@ void main() {
         ready.copyWith(
           document: doc(pageCount: 1),
           metadata: metadata(pageCount: 1),
-          selection: {0},
         ),
       );
 
-      expect(find.byKey(PdfEditKeys.deleteButton), findsNothing);
-      expect(find.text('Delete pages?'), findsNothing);
+      await tester.tap(find.byKey(PdfEditKeys.editPagesButton));
+      await tester.pumpAndSettle();
+
+      final button = tester.widget<IconButton>(
+        find.byKey(PdfEditKeys.pageDelete(0)),
+      );
+      expect(button.onPressed, isNull);
+      expect(cubit.calls, isEmpty);
+    });
+
+    testWidgets('saving a dragged order writes the full order once', (
+      tester,
+    ) async {
+      final cubit = await pump(tester, ready);
+      await tester.tap(find.byKey(PdfEditKeys.editPagesButton));
+      await tester.pumpAndSettle();
+
+      final handle = find.byKey(PdfEditKeys.pageDragHandle(0));
+      final gesture = await tester.startGesture(tester.getCenter(handle));
+      await gesture.moveBy(const Offset(0, 180));
+      await tester.pumpAndSettle();
+      await gesture.up();
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(PdfEditKeys.savePageOrderButton));
+      await confirmReview(tester);
+
+      expect(cubit.calls, ['reorder:1,2,0,3']);
+    });
+
+    testWidgets('cancel discards a drafted order', (tester) async {
+      final cubit = await pump(tester, ready);
+      await tester.tap(find.byKey(PdfEditKeys.editPagesButton));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(PdfEditKeys.cancelPageEditingButton));
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(PdfEditKeys.editPagesButton), findsOneWidget);
       expect(cubit.calls, isEmpty);
     });
   });
@@ -658,17 +697,14 @@ void main() {
   });
 
   group('accessibility', () {
-    testWidgets('each page announces its number and selection state', (
+    testWidgets('each page announces its position in the document', (
       tester,
     ) async {
       final handle = tester.ensureSemantics();
-      await pump(tester, ready.copyWith(selection: {1}));
+      await pump(tester, ready);
 
-      expect(
-        find.bySemanticsLabel('Page 1 of 4, not selected'),
-        findsOneWidget,
-      );
-      expect(find.bySemanticsLabel('Page 2 of 4, selected'), findsOneWidget);
+      expect(find.bySemanticsLabel('Page 1 of 4'), findsOneWidget);
+      expect(find.bySemanticsLabel('Page 4 of 4'), findsOneWidget);
 
       handle.dispose();
     });
@@ -677,18 +713,21 @@ void main() {
       tester,
     ) async {
       final handle = tester.ensureSemantics();
-      await pump(tester, ready.copyWith(selection: {0}));
+      await pump(tester, ready);
 
-      for (final operation in [
-        PdfEditOperation.rotate,
-        PdfEditOperation.duplicate,
-        PdfEditOperation.extract,
-        PdfEditOperation.delete,
-      ]) {
+      expect(
+        find.bySemanticsLabel(RegExp('Extract page as new PDF')),
+        findsAtLeastNWidgets(1),
+      );
+
+      await tester.tap(find.byKey(PdfEditKeys.editPagesButton));
+      await tester.pumpAndSettle();
+
+      for (final label in ['Rotate page', 'Duplicate page', 'Delete page']) {
         expect(
-          find.bySemanticsLabel(operation.semanticsLabel),
+          find.bySemanticsLabel(RegExp(label)),
           findsAtLeastNWidgets(1),
-          reason: '${operation.name} has no semantics label',
+          reason: '$label has no semantics label',
         );
       }
 

@@ -306,6 +306,40 @@ void main() {
     });
   });
 
+  group('ReorderPages', () {
+    test('writes the complete reviewed order atomically', () async {
+      final document = given();
+
+      final result = await ReorderPages(contextFor([document]))(id, [
+        2,
+        0,
+        3,
+        1,
+      ]);
+
+      expect(result, isA<Success<Document>>());
+      expect(fakePdfPages(pathOf(document)), [
+        'page:2',
+        'page:0',
+        'page:3',
+        'page:1',
+      ]);
+      expect(library.written, hasLength(1));
+    });
+
+    test('rejects an incomplete or duplicate order before writing', () async {
+      final document = given(pageCount: 3);
+      final before = File(pathOf(document)).readAsStringSync();
+
+      final result = await ReorderPages(contextFor([document]))(id, [0, 0, 2]);
+
+      expect(result, isA<Failed<Document>>());
+      expect(File(pathOf(document)).readAsStringSync(), before);
+      expect(editor.operations, isEmpty);
+      expect(library.written, isEmpty);
+    });
+  });
+
   group('ExtractPages', () {
     test('creates a new document from the selected pages', () async {
       final document = given();

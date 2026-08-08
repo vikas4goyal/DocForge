@@ -67,7 +67,7 @@ PdfEditingModule buildPdfEditingModule({
       rotate: RotatePage(context),
       delete: DeletePages(context),
       duplicate: DuplicatePage(context),
-      reorder: ReorderPage(context),
+      reorder: ReorderPages(context),
       extract: ExtractPages(context),
       merge: MergeDocuments(context),
       split: SplitDocument(context),

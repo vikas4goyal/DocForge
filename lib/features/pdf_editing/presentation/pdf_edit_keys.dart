@@ -13,8 +13,35 @@ abstract final class PdfEditKeys {
   /// The grid of page thumbnails.
   static const pageGrid = Key('pdf_edit_page_grid');
 
+  /// The thumbnail list used by Manage Pages.
+  static const pageList = Key('pdf_edit_page_list');
+
+  /// Enters row editing and drag-to-reorder mode.
+  static const editPagesButton = Key('pdf_edit_pages_edit');
+
+  /// Atomically saves the dragged page order.
+  static const savePageOrderButton = Key('pdf_edit_pages_save_order');
+
+  /// Leaves editing mode and discards an unsaved dragged order.
+  static const cancelPageEditingButton = Key('pdf_edit_pages_cancel');
+
   /// The thumbnail of the page at zero-based [index].
   static Key page(int index) => Key('pdf_edit_page_$index');
+
+  /// Drag handle for the page currently at [index].
+  static Key pageDragHandle(int index) => Key('pdf_edit_page_drag_$index');
+
+  /// Extract action for page [index] in normal mode.
+  static Key pageExtract(int index) => Key('pdf_edit_page_extract_$index');
+
+  /// Rotate action for page [index] in edit mode.
+  static Key pageRotate(int index) => Key('pdf_edit_page_rotate_$index');
+
+  /// Duplicate action for page [index] in edit mode.
+  static Key pageDuplicate(int index) => Key('pdf_edit_page_duplicate_$index');
+
+  /// Delete action for page [index] in edit mode.
+  static Key pageDelete(int index) => Key('pdf_edit_page_delete_$index');
 
   /// The control that rotates the selected page.
   static const rotateButton = Key('pdf_edit_rotate_button');
@@ -30,12 +57,6 @@ abstract final class PdfEditKeys {
 
   /// The control that duplicates the selected page.
   static const duplicateButton = Key('pdf_edit_duplicate_button');
-
-  /// Moves the selected page one place toward the beginning.
-  static const moveEarlierButton = Key('pdf_edit_move_earlier_button');
-
-  /// Moves the selected page one place toward the end.
-  static const moveLaterButton = Key('pdf_edit_move_later_button');
 
   /// The control that compresses the document.
   static const compressButton = Key('pdf_compress_button');

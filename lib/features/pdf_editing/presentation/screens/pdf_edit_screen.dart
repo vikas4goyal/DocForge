@@ -63,6 +63,14 @@ class PdfEditScreen extends StatelessWidget {
           return _FocusedSplit(state: state, onClose: onClose);
         }
 
+        if (initialOperation == null) {
+          return _ManagePagesScreen(
+            state: state,
+            thumbnailBuilder: thumbnailBuilder,
+            onClose: onClose,
+          );
+        }
+
         return Scaffold(
           key: PdfEditKeys.screen,
           appBar: AppBar(
@@ -75,9 +83,7 @@ class PdfEditScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleMedium,
               ),
             ),
-            leading: initialOperation == null
-                ? BackButton(onPressed: onClose)
-                : CloseButton(onPressed: onClose),
+            leading: CloseButton(onPressed: onClose),
             actions: [
               if (initialOperation == null && state.hasSelection)
                 if (MediaQuery.sizeOf(context).width < 600)
@@ -89,10 +95,6 @@ class PdfEditScreen extends StatelessWidget {
                         case PdfEditOperation.rotate:
                           await _runPageOperation(context, cubit, operation);
                         case PdfEditOperation.duplicate:
-                          await _runPageOperation(context, cubit, operation);
-                        case PdfEditOperation.moveEarlier:
-                          await _runPageOperation(context, cubit, operation);
-                        case PdfEditOperation.moveLater:
                           await _runPageOperation(context, cubit, operation);
                         case PdfEditOperation.extract:
                           await _runPageOperation(context, cubit, operation);
@@ -109,20 +111,6 @@ class PdfEditScreen extends StatelessWidget {
                           value: PdfEditOperation.rotate,
                           child: Text('Rotate page'),
                         ),
-                      if (state.selectedPage case final page?)
-                        if (page > 0)
-                          const PopupMenuItem(
-                            key: PdfEditKeys.moveEarlierButton,
-                            value: PdfEditOperation.moveEarlier,
-                            child: Text('Move page earlier'),
-                          ),
-                      if (state.selectedPage case final page?)
-                        if (page < state.pageCount - 1)
-                          const PopupMenuItem(
-                            key: PdfEditKeys.moveLaterButton,
-                            value: PdfEditOperation.moveLater,
-                            child: Text('Move page later'),
-                          ),
                       if (state.hasSinglePageSelected)
                         const PopupMenuItem(
                           key: PdfEditKeys.duplicateButton,
@@ -154,30 +142,6 @@ class PdfEditScreen extends StatelessWidget {
                         PdfEditOperation.rotate,
                       ),
                     ),
-                  if (state.selectedPage case final page?) ...[
-                    if (page > 0)
-                      IconButton(
-                        key: PdfEditKeys.moveEarlierButton,
-                        tooltip: 'Move page earlier',
-                        onPressed: () => _runPageOperation(
-                          context,
-                          cubit,
-                          PdfEditOperation.moveEarlier,
-                        ),
-                        icon: const Icon(Icons.arrow_back),
-                      ),
-                    if (page < state.pageCount - 1)
-                      IconButton(
-                        key: PdfEditKeys.moveLaterButton,
-                        tooltip: 'Move page later',
-                        onPressed: () => _runPageOperation(
-                          context,
-                          cubit,
-                          PdfEditOperation.moveLater,
-                        ),
-                        icon: const Icon(Icons.arrow_forward),
-                      ),
-                  ],
                   if (state.hasSinglePageSelected)
                     PdfEditActionButton(
                       key: PdfEditKeys.duplicateButton,
@@ -320,10 +284,6 @@ class PdfEditScreen extends StatelessWidget {
         'A copy of the selected page will be inserted in the current PDF.',
       PdfEditOperation.extract =>
         '${cubit.state.selection.length} selected pages will become a new PDF. The source stays unchanged.',
-      PdfEditOperation.moveEarlier =>
-        'The selected page will move one position earlier in the current PDF.',
-      PdfEditOperation.moveLater =>
-        'The selected page will move one position later in the current PDF.',
       _ => null,
     };
     if (summary == null) return;
@@ -348,12 +308,308 @@ class PdfEditScreen extends StatelessWidget {
         await cubit.duplicate();
       case PdfEditOperation.extract:
         await cubit.extract();
-      case PdfEditOperation.moveEarlier:
-        await cubit.moveSelectedPage(-1);
-      case PdfEditOperation.moveLater:
-        await cubit.moveSelectedPage(1);
       default:
         return;
+    }
+  }
+}
+
+/// Thumbnail rows with a deliberate normal/edit mode boundary.
+class _ManagePagesScreen extends StatefulWidget {
+  const _ManagePagesScreen({
+    required this.state,
+    required this.thumbnailBuilder,
+    required this.onClose,
+  });
+
+  final PdfEditState state;
+  final PageThumbnailBuilder thumbnailBuilder;
+  final VoidCallback onClose;
+
+  @override
+  State<_ManagePagesScreen> createState() => _ManagePagesScreenState();
+}
+
+class _ManagePagesScreenState extends State<_ManagePagesScreen> {
+  late List<int> _pageOrder;
+  var _editing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _resetOrder();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ManagePagesScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.state.pageCount != widget.state.pageCount) {
+      _resetOrder();
+    }
+  }
+
+  void _resetOrder() {
+    _pageOrder = List<int>.generate(widget.state.pageCount, (index) => index);
+  }
+
+  bool get _orderChanged {
+    if (_pageOrder.length != widget.state.pageCount) return true;
+    for (var index = 0; index < _pageOrder.length; index++) {
+      if (_pageOrder[index] != index) return true;
+    }
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      key: PdfEditKeys.screen,
+      appBar: AppBar(
+        leading: BackButton(onPressed: widget.onClose),
+        title: const Text('Manage pages'),
+        actions: [
+          if (_editing) ...[
+            TextButton(
+              key: PdfEditKeys.cancelPageEditingButton,
+              onPressed: widget.state.isWorking
+                  ? null
+                  : () => setState(() {
+                      _editing = false;
+                      _resetOrder();
+                    }),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              key: PdfEditKeys.savePageOrderButton,
+              onPressed: widget.state.isWorking ? null : _saveOrder,
+              child: const Text('Save'),
+            ),
+          ] else
+            TextButton(
+              key: PdfEditKeys.editPagesButton,
+              onPressed: widget.state.isWorking
+                  ? null
+                  : () => setState(() => _editing = true),
+              child: const Text('Edit'),
+            ),
+        ],
+      ),
+      body: switch (widget.state.status) {
+        PdfEditStatus.loading => const AppLoadingIndicator(),
+        PdfEditStatus.working => _Working(state: widget.state),
+        PdfEditStatus.failure => _Failure(state: widget.state),
+        PdfEditStatus.ready => _pageList(context),
+      },
+    );
+  }
+
+  Widget _pageList(BuildContext context) {
+    if (_editing) {
+      return ReorderableListView.builder(
+        key: PdfEditKeys.pageList,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        itemCount: _pageOrder.length,
+        onReorderItem: (oldIndex, newIndex) => setState(() {
+          final page = _pageOrder.removeAt(oldIndex);
+          _pageOrder.insert(newIndex, page);
+        }),
+        itemBuilder: (context, position) => _pageRow(
+          context,
+          position: position,
+          pageIndex: _pageOrder[position],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      key: PdfEditKeys.pageList,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      itemCount: widget.state.pageCount,
+      itemBuilder: (context, index) =>
+          _pageRow(context, position: index, pageIndex: index),
+    );
+  }
+
+  Widget _pageRow(
+    BuildContext context, {
+    required int position,
+    required int pageIndex,
+  }) {
+    return Semantics(
+      key: ValueKey('managed-page-$pageIndex'),
+      label: 'Page ${position + 1} of ${widget.state.pageCount}',
+      container: true,
+      explicitChildNodes: true,
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          key: PdfEditKeys.page(pageIndex),
+          contentPadding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          leading: SizedBox(
+            width: 56,
+            height: 76,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: widget.thumbnailBuilder(context, pageIndex),
+            ),
+          ),
+          title: Text('Page ${position + 1}'),
+          subtitle: _editing ? const Text('Drag to rearrange') : null,
+          trailing: _editing
+              ? Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Semantics(
+                      label: 'Rotate page',
+                      button: true,
+                      excludeSemantics: true,
+                      child: IconButton(
+                        key: PdfEditKeys.pageRotate(pageIndex),
+                        tooltip: 'Rotate page',
+                        onPressed: () =>
+                            _runPageAction(pageIndex, PdfEditOperation.rotate),
+                        icon: const Icon(Icons.rotate_right),
+                      ),
+                    ),
+                    Semantics(
+                      label: 'Duplicate page',
+                      button: true,
+                      excludeSemantics: true,
+                      child: IconButton(
+                        key: PdfEditKeys.pageDuplicate(pageIndex),
+                        tooltip: 'Duplicate page',
+                        onPressed: () => _runPageAction(
+                          pageIndex,
+                          PdfEditOperation.duplicate,
+                        ),
+                        icon: const Icon(Icons.copy_outlined),
+                      ),
+                    ),
+                    Semantics(
+                      label: 'Delete page',
+                      button: true,
+                      excludeSemantics: true,
+                      child: IconButton(
+                        key: PdfEditKeys.pageDelete(pageIndex),
+                        tooltip: 'Delete page',
+                        onPressed: widget.state.pageCount > 1
+                            ? () => _deletePage(pageIndex)
+                            : null,
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                    ),
+                    ReorderableDragStartListener(
+                      key: PdfEditKeys.pageDragHandle(pageIndex),
+                      index: position,
+                      child: const Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Icon(Icons.drag_handle),
+                      ),
+                    ),
+                  ],
+                )
+              : Semantics(
+                  label: 'Extract page as new PDF',
+                  button: true,
+                  excludeSemantics: true,
+                  child: IconButton(
+                    key: PdfEditKeys.pageExtract(pageIndex),
+                    tooltip: 'Extract page as new PDF',
+                    onPressed: () =>
+                        _runPageAction(pageIndex, PdfEditOperation.extract),
+                    icon: const Icon(Icons.call_split),
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _runPageAction(int pageIndex, PdfEditOperation operation) async {
+    final cubit = context.read<PdfEditCubit>()..selectOnly(pageIndex);
+    final summary = switch (operation) {
+      PdfEditOperation.rotate =>
+        'Page ${pageIndex + 1} will rotate clockwise in the current PDF.',
+      PdfEditOperation.duplicate =>
+        'A copy of page ${pageIndex + 1} will be inserted after it.',
+      PdfEditOperation.extract =>
+        'Page ${pageIndex + 1} will become a new PDF. The source stays unchanged.',
+      _ => null,
+    };
+    if (summary == null) return;
+    final confirmed = await _reviewOperation(
+      context,
+      draft: PdfOperationDraft.pages(
+        operation: operation,
+        pageIndices: [pageIndex],
+        sourceEffect: operation.producesNewDocument
+            ? PdfSourceEffect.preserve
+            : PdfSourceEffect.replace,
+      ),
+      title: '${operation.label} page?',
+      summary: summary,
+      confirmLabel: operation.label,
+    );
+    if (!confirmed || !mounted) return;
+    switch (operation) {
+      case PdfEditOperation.rotate:
+        await cubit.rotate();
+      case PdfEditOperation.duplicate:
+        await cubit.duplicate();
+      case PdfEditOperation.extract:
+        await cubit.extract();
+      default:
+        return;
+    }
+  }
+
+  Future<void> _deletePage(int pageIndex) async {
+    final cubit = context.read<PdfEditCubit>()..selectOnly(pageIndex);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text('Delete page ${pageIndex + 1}?'),
+        content: const Text('This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            key: PdfEditKeys.deleteConfirmButton,
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if ((confirmed ?? false) && mounted) await cubit.delete();
+  }
+
+  Future<void> _saveOrder() async {
+    if (!_orderChanged) {
+      setState(() => _editing = false);
+      return;
+    }
+    final confirmed = await _reviewOperation(
+      context,
+      draft: PdfOperationDraft.pages(
+        operation: PdfEditOperation.reorder,
+        pageIndices: [..._pageOrder],
+        sourceEffect: PdfSourceEffect.replace,
+      ),
+      title: 'Save page order?',
+      summary: 'The PDF pages will be replaced with this reviewed order.',
+      confirmLabel: 'Save order',
+    );
+    if (!confirmed || !mounted) return;
+    await context.read<PdfEditCubit>().reorderPages([..._pageOrder]);
+    if (mounted) {
+      setState(() {
+        _editing = false;
+        // The saved PDF now uses the reviewed order as its natural 0..n order.
+        _resetOrder();
+      });
     }
   }
 }

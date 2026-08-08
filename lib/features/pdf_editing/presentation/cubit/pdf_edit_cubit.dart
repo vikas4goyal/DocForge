@@ -48,7 +48,7 @@ class PdfEditUseCases {
   final DuplicatePage duplicate;
 
   /// Moves one page within the current PDF.
-  final ReorderPage reorder;
+  final ReorderPages reorder;
 
   /// Extracts selected pages into a new document.
   final ExtractPages extract;
@@ -127,6 +127,12 @@ class PdfEditCubit extends Cubit<PdfEditState> {
     emit(state.copyWith(selection: next));
   }
 
+  /// Selects exactly one page for a row-level action.
+  void selectOnly(int page) {
+    if (state.isWorking || page < 0 || page >= state.pageCount) return;
+    emit(state.copyWith(selection: {page}));
+  }
+
   /// Clears the selection.
   void clearSelection() => emit(state.copyWith(selection: const {}));
 
@@ -165,15 +171,11 @@ class PdfEditCubit extends Cubit<PdfEditState> {
     );
   }
 
-  /// Moves the selected page by one position when that destination exists.
-  Future<void> moveSelectedPage(int offset) async {
-    final page = state.selectedPage;
-    if (page == null) return;
-    final destination = page + offset;
-    if (destination < 0 || destination >= state.pageCount) return;
+  /// Saves a complete reviewed page order in one atomic replacement.
+  Future<void> reorderPages(List<int> pageOrder) async {
     await _inPlace(
-      offset < 0 ? PdfEditOperation.moveEarlier : PdfEditOperation.moveLater,
-      () => _useCases.reorder(_documentId, page, destination),
+      PdfEditOperation.reorder,
+      () => _useCases.reorder(_documentId, pageOrder),
       clearSelectionAfter: true,
     );
   }

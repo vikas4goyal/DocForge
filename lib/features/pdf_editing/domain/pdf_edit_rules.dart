@@ -30,6 +30,9 @@ enum PdfEditOperation {
   /// Move the selected page one position toward the end.
   moveLater('Move later', 'Move the selected page later'),
 
+  /// Replace the document pages with a reviewed drag-and-drop order.
+  reorder('Reorder', 'Save the new page order'),
+
   /// Join several documents into one.
   merge('Merge', 'Combine the selected documents into one'),
 

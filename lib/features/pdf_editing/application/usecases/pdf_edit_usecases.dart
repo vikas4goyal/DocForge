@@ -407,36 +407,36 @@ class DeletePages extends PdfEditUseCase {
 }
 
 /// Moves one page to another position in the same document.
-class ReorderPage extends PdfEditUseCase {
+class ReorderPages extends PdfEditUseCase {
   /// Creates the use case.
-  const ReorderPage(super.context);
+  const ReorderPages(super.context);
 
-  /// Moves zero-based [from] to [to], preserving every page exactly once.
-  Future<Result<Document>> call(DocumentId id, int from, int to) async {
+  /// Writes zero-based [pageOrder], preserving every page exactly once.
+  Future<Result<Document>> call(DocumentId id, List<int> pageOrder) async {
     final found = await loadDocument(id);
     if (found case Failed(:final failure)) {
       return Result<Document>.failure(failure);
     }
     final document = found.valueOrNull!;
-    if (from < 0 ||
-        from >= document.pageCount ||
-        to < 0 ||
-        to >= document.pageCount ||
-        from == to) {
+    final sorted = [...pageOrder]..sort();
+    final valid =
+        pageOrder.length == document.pageCount &&
+        List.generate(
+          document.pageCount,
+          (index) => sorted[index] == index,
+        ).every((matches) => matches);
+    if (!valid) {
       return const Result<Document>.failure(
-        Failure.notFound(debugDetail: 'invalid page move'),
+        Failure.notFound(debugDetail: 'invalid page order'),
       );
     }
-    final order = List<int>.generate(document.pageCount, (index) => index);
-    final page = order.removeAt(from);
-    order.insert(to, page);
     final password = await passwordFor(document);
     return replaceInPlace(
       document,
       (source, destination) => context.editor.writePages(
         source,
         destination,
-        order,
+        pageOrder,
         password: password,
       ),
       expectedPageCount: document.pageCount,
