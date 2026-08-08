@@ -88,6 +88,10 @@ class BoundedCompressionCandidateRepository
               extracted,
               compressed,
               imageQuality: quality,
+              // The shared percentage contract describes pixel dimensions,
+              // not only an encoder hint. The concrete device adapter renders
+              // this single-page intermediate at the requested scale.
+              dimensionScalePercent: quality,
               password: request.password,
             );
             if (compression case Failed(:final failure)) {

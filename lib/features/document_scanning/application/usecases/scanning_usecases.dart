@@ -3,6 +3,7 @@ library;
 
 import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
 import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
+import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/isolates/background_worker.dart';
 import 'package:doc_scanly/core/isolates/cancellation.dart';
@@ -57,10 +58,18 @@ class CapturePage {
     this._scanner,
     this._edges, {
     this.resolveCaptureResolution,
+    this.edgeDetectionTimeout = const Duration(seconds: 4),
   });
 
   final ScannerRepository _scanner;
   final EdgeDetector _edges;
+
+  /// Maximum time capture navigation waits for best-effort edge detection.
+  ///
+  /// The image is already durably staged at this point, so falling back to the
+  /// full page is safer than trapping the user on the camera if a native
+  /// detector stalls on an unusual high-resolution frame.
+  final Duration edgeDetectionTimeout;
 
   /// Resolves the current desired tier before camera preparation.
   final ResolveCaptureResolution? resolveCaptureResolution;
@@ -118,7 +127,9 @@ class CapturePage {
     return captured.flatMapAsync((result) async {
       // Never fails: an undetected page keeps the full-page crop rather than
       // being rejected, which the spec requires explicitly.
-      final quad = await _edges.detect(result.imagePath);
+      final quad = await _edges
+          .detect(result.imagePath)
+          .timeout(edgeDetectionTimeout, onTimeout: () => PageQuad.full);
 
       return Result<CapturedPage>.success(
         CapturedPage(

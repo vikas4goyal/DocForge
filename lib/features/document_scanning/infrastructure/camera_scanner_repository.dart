@@ -187,10 +187,11 @@ class CameraScannerRepository implements ScannerRepository {
       await File(file.path).rename(destination);
 
       // A requested preset is only a preference: camera plugins may silently
-      // fall back. Decode the authoritative staged image so downstream status
-      // and metadata use what was actually captured, never an advertised tier.
-      final capturedImage = await img.decodeImageFile(destination);
-      if (capturedImage == null) {
+      // fall back. Read only the JPEG header for authoritative dimensions.
+      // Decoding every pixel of a 4K capture here blocked the UI isolate and
+      // made Add page appear permanently stuck on the camera preview.
+      final capturedDimensions = await _jpegDimensions(destination);
+      if (capturedDimensions == null) {
         await File(destination).delete();
         return const Result<CaptureResult>.failure(
           Failure.camera(debugDetail: 'captured image dimensions unavailable'),
@@ -201,8 +202,8 @@ class CameraScannerRepository implements ScannerRepository {
         CaptureResult(
           id: id,
           imagePath: destination,
-          actualWidth: capturedImage.width,
-          actualHeight: capturedImage.height,
+          actualWidth: capturedDimensions.width,
+          actualHeight: capturedDimensions.height,
         ),
       );
     } on CameraException catch (error) {
@@ -257,6 +258,12 @@ class CameraScannerRepository implements ScannerRepository {
       // Nothing useful to do: the camera is being given up either way.
     }
   }
+}
+
+Future<({int width, int height})?> _jpegDimensions(String path) async {
+  final bytes = await File(path).readAsBytes();
+  final info = img.JpegDecoder().startDecode(bytes);
+  return info == null ? null : (width: info.width, height: info.height);
 }
 
 /// Maps a resolved, honestly supported tier to the camera plugin request.

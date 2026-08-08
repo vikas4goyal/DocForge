@@ -163,9 +163,14 @@ class FakePdfEditor implements PdfEditorRepository {
     String sourcePath,
     String destinationPath, {
     int imageQuality = PdfEditRules.compressionImageQuality,
+    int? dimensionScalePercent,
     String? password,
   }) async {
-    operations.add('compress($imageQuality)');
+    operations.add(
+      dimensionScalePercent == null
+          ? 'compress($imageQuality)'
+          : 'compress($imageQuality, scale: $dimensionScalePercent)',
+    );
 
     return _guard(sourcePath, password, () {
       // Compression drops the padding and keeps every page. A file with no

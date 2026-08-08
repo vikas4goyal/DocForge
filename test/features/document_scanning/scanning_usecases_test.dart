@@ -249,6 +249,19 @@ void main() {
       expect(result.valueOrNull!.needsCorrection, isFalse);
     });
 
+    test('a stalled edge detector cannot trap capture navigation', () async {
+      await scanner.initialise();
+
+      final result = await CapturePage(
+        scanner,
+        _StalledEdgeDetector(),
+        edgeDetectionTimeout: Duration.zero,
+      )();
+
+      expect(result.isSuccess, isTrue);
+      expect(result.valueOrNull!.quad, PageQuad.full);
+    });
+
     test('a capture failure never reaches edge detection', () async {
       await scanner.initialise();
       scanner.captureFailure = const Failure.storageFull();
@@ -456,4 +469,10 @@ void main() {
       expect(result.isSuccess, isTrue);
     });
   });
+}
+
+class _StalledEdgeDetector implements EdgeDetector {
+  @override
+  Future<PageQuad> detect(String imagePath) =>
+      Future<PageQuad>.delayed(const Duration(days: 1), () => PageQuad.full);
 }

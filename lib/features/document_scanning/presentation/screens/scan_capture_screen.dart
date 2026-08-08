@@ -152,6 +152,33 @@ class _ScanCaptureScreenState extends State<ScanCaptureScreen> {
                   ),
                 ),
               ),
+              if (state.status == ScanCaptureStatus.capturing)
+                const ColoredBox(
+                  color: Color(0x66000000),
+                  child: Center(
+                    child: Card(
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 18,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: <Widget>[
+                            SizedBox.square(
+                              dimension: 22,
+                              child: CircularProgressIndicator.adaptive(
+                                strokeWidth: 2.5,
+                              ),
+                            ),
+                            SizedBox(width: 14),
+                            Text('Processing capture…'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         },

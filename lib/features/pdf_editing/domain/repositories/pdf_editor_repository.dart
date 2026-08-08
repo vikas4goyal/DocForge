@@ -48,12 +48,17 @@ abstract interface class PdfEditorRepository {
 
   /// Writes a re-encoded, smaller copy of [sourcePath].
   ///
+  /// When [dimensionScalePercent] is supplied, raster pages are also rendered
+  /// at that percentage of their source width and height. A null value keeps
+  /// the legacy encoder-only behavior used by unrelated editing commands.
+  ///
   /// May legitimately produce a *larger* file; deciding what to do about that
   /// is the caller's job, not this one's.
   Future<Result<void>> compress(
     String sourcePath,
     String destinationPath, {
     int imageQuality = PdfEditRules.compressionImageQuality,
+    int? dimensionScalePercent,
     String? password,
   });
 

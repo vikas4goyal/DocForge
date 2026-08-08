@@ -13,10 +13,14 @@ library;
 
 import 'dart:io';
 
+import 'package:doc_scanly/core/contracts/models/pdf_quality.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/pdf_edit_rules.dart';
 import 'package:doc_scanly/features/pdf_editing/domain/repositories/pdf_editor_repository.dart';
+import 'package:image/image.dart' as img;
+import 'package:pdf/pdf.dart' as pdf;
+import 'package:pdf/widgets.dart' as pw;
 import 'package:pdf_manipulator/io.dart';
 import 'package:pdf_manipulator/pdf_manipulator.dart';
 
@@ -88,14 +92,97 @@ class PdfManipulatorEditor implements PdfEditorRepository {
     String sourcePath,
     String destinationPath, {
     int imageQuality = PdfEditRules.compressionImageQuality,
+    int? dimensionScalePercent,
     String? password,
-  }) => _run(destinationPath, (sink) async {
-    await _pdf.compress(
-      FileSource(File(sourcePath)),
-      sink,
-      imageQuality: imageQuality,
-    );
-  });
+  }) => _run(
+    destinationPath,
+    (sink) => dimensionScalePercent == null
+        ? _pdf.compress(
+            FileSource(File(sourcePath)),
+            sink,
+            imageQuality: imageQuality,
+          )
+        : _compressAtScale(
+            sourcePath,
+            sink,
+            scalePercent: dimensionScalePercent,
+            imageQuality: imageQuality,
+            password: password,
+          ),
+  );
+
+  /// Rasterizes a bounded single-page intermediate at the slider's scale.
+  ///
+  /// `optimizeImages(quality:)` only changes JPEG quantization and may legally
+  /// leave an already-compressed scan byte-for-byte unchanged. Compress PDF's
+  /// shared quality contract instead represents width and height percentages,
+  /// so candidates below 100% must also reduce raster dimensions. The caller
+  /// extracts one page before invoking this method, keeping peak memory bounded.
+  Future<void> _compressAtScale(
+    String sourcePath,
+    DataSink sink, {
+    required int scalePercent,
+    required int imageQuality,
+    String? password,
+  }) async {
+    final quality = PdfQualityPercent(value: scalePercent);
+    final source = FileSource(File(sourcePath));
+    final document = await _pdf.open(source, password: password);
+    try {
+      var sourceWidth = 0;
+      var sourceHeight = 0;
+      await for (final image in document.extractImages(
+        pages: const PdfPages.all(),
+      )) {
+        if (image.width * image.height > sourceWidth * sourceHeight) {
+          sourceWidth = image.width;
+          sourceHeight = image.height;
+        }
+      }
+
+      // Vector-only PDFs have no meaningful raster dimension to scale. Keep
+      // their text/vector content and use the native structural optimizer.
+      if (sourceWidth == 0 || sourceHeight == 0) {
+        await _pdf.compress(source, sink, imageQuality: imageQuality);
+        return;
+      }
+
+      final targetWidth = quality.scaleDimension(sourceWidth);
+      final targetHeight = quality.scaleDimension(sourceHeight);
+      final output = pw.Document();
+      await for (final page in document.render(
+        pages: const PdfPages.all(),
+        size: PdfRenderSize(maxWidth: targetWidth, maxHeight: targetHeight),
+      )) {
+        final decoded = img.decodeImage(page.data);
+        if (decoded == null) {
+          throw const FormatException('compressed page render was invalid');
+        }
+        final encoded = img.encodeJpg(
+          decoded,
+          quality: imageQuality.clamp(30, 95),
+        );
+        final pageWidth = pdf.PdfPageFormat.a4.width;
+        final pageHeight = pageWidth * page.height / page.width;
+        final memoryImage = pw.MemoryImage(encoded);
+        output.addPage(
+          pw.Page(
+            pageFormat: pdf.PdfPageFormat(pageWidth, pageHeight),
+            build: (_) => pw.Stack(
+              children: <pw.Widget>[
+                pw.Positioned.fill(
+                  child: pw.Image(memoryImage, fit: pw.BoxFit.fill),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      await sink.write(await output.save());
+    } finally {
+      await document.dispose();
+    }
+  }
 
   @override
   Future<Result<void>> watermark(

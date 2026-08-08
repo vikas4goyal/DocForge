@@ -163,6 +163,7 @@ class _CompressionConfiguration extends StatelessWidget {
                   cubit,
                   pageIndex: index,
                   initial: quality,
+                  documentQuality: state.qualityPlan.documentQuality.value,
                   overridden: overridden,
                 ),
               ),
@@ -265,45 +266,81 @@ Future<void> _showPageQualityDialog(
   CompressPdfCubit cubit, {
   required int pageIndex,
   required int initial,
+  required int documentQuality,
   required bool overridden,
 }) async {
   var selected = initial;
   await showDialog<void>(
     context: context,
     builder: (dialogContext) => StatefulBuilder(
-      builder: (context, setState) => AlertDialog(
-        title: Text('Page ${pageIndex + 1} quality'),
-        content: Slider(
-          key: PdfEditKeys.compressPageSlider,
-          min: 30,
-          max: 100,
-          divisions: 70,
-          value: selected.toDouble(),
-          label: '$selected%',
-          onChanged: (value) => setState(() => selected = value.round()),
-        ),
-        actions: <Widget>[
-          if (overridden)
-            TextButton(
-              key: PdfEditKeys.compressUseDocumentQuality,
-              onPressed: () {
-                cubit.useDocumentQuality(pageIndex);
-                Navigator.pop(dialogContext);
-              },
-              child: const Text('Use document quality'),
+      builder: (context, setState) => Dialog(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 22, 24, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                Text(
+                  'Page ${pageIndex + 1} quality',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Lower quality reduces this page’s pixel dimensions and file size. The document default is $documentQuality%.',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(height: 18),
+                Center(
+                  child: Text(
+                    '$selected%',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
+                ),
+                Slider(
+                  key: PdfEditKeys.compressPageSlider,
+                  min: 30,
+                  max: 100,
+                  divisions: 70,
+                  value: selected.toDouble(),
+                  label: '$selected%',
+                  onChanged: (value) =>
+                      setState(() => selected = value.round()),
+                ),
+                if (overridden) ...<Widget>[
+                  const SizedBox(height: 4),
+                  OutlinedButton(
+                    key: PdfEditKeys.compressUseDocumentQuality,
+                    onPressed: () {
+                      cubit.useDocumentQuality(pageIndex);
+                      Navigator.pop(dialogContext);
+                    },
+                    child: Text('Use document quality ($documentQuality%)'),
+                  ),
+                ],
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: <Widget>[
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Cancel'),
+                    ),
+                    const SizedBox(width: 8),
+                    FilledButton(
+                      onPressed: () {
+                        cubit.pageQualityChanged(pageIndex, selected);
+                        Navigator.pop(dialogContext);
+                      },
+                      child: const Text('Apply'),
+                    ),
+                  ],
+                ),
+              ],
             ),
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
           ),
-          FilledButton(
-            onPressed: () {
-              cubit.pageQualityChanged(pageIndex, selected);
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Apply'),
-          ),
-        ],
+        ),
       ),
     ),
   );

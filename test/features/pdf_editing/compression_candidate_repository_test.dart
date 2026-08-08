@@ -61,7 +61,7 @@ void main() {
         ]);
         expect(
           editor.operations.where(
-            (operation) => operation == 'compress($quality)',
+            (operation) => operation == 'compress($quality, scale: $quality)',
           ),
           hasLength(4),
         );
@@ -112,10 +112,10 @@ void main() {
         editor.operations,
         containsAllInOrder(<String>[
           'writePages([0])',
-          'compress(30)',
+          'compress(30, scale: 30)',
           'writePages([1])',
           'writePages([2])',
-          'compress(50)',
+          'compress(50, scale: 50)',
           'writePages([3])',
           'merge(4)',
         ]),
