@@ -35,17 +35,22 @@ class PageRenderPlan {
     required this.geometry,
     required this.enhancement,
     this.scale = RenderScale.preview,
+    this.maximumPreviewDimension,
   });
 
   /// Builds the plan describing [draft] at [scale].
   factory PageRenderPlan.of(
     PageDraft draft, {
     RenderScale scale = RenderScale.preview,
+    int? maximumPreviewDimension,
   }) => PageRenderPlan(
     originalImagePath: draft.originalImagePath,
     geometry: draft.geometry,
     enhancement: draft.enhancement,
     scale: scale,
+    maximumPreviewDimension: scale == RenderScale.preview
+        ? maximumPreviewDimension
+        : null,
   );
 
   /// The untouched image every render starts from.
@@ -59,6 +64,11 @@ class PageRenderPlan {
 
   /// How large the result should be.
   final RenderScale scale;
+
+  /// Longest physical edge requested by the measured preview view.
+  ///
+  /// Null lets non-interactive callers use the renderer's default bound.
+  final int? maximumPreviewDimension;
 
   /// Whether this plan leaves the original untouched.
   ///
@@ -76,6 +86,8 @@ class PageRenderPlan {
       ..write('-')
       ..write(scale.name)
       ..write('-')
+      ..write(maximumPreviewDimension ?? 0)
+      ..write('-')
       ..write(Object.hashAll(geometry).toUnsigned(32).toRadixString(16))
       ..write('-')
       ..write(enhancement.hashCode.toUnsigned(32).toRadixString(16));
@@ -88,6 +100,9 @@ class PageRenderPlan {
     geometry: geometry,
     enhancement: enhancement,
     scale: scale,
+    maximumPreviewDimension: scale == RenderScale.preview
+        ? maximumPreviewDimension
+        : null,
   );
 
   @override
@@ -97,6 +112,7 @@ class PageRenderPlan {
           other.originalImagePath == originalImagePath &&
           other.enhancement == enhancement &&
           other.scale == scale &&
+          other.maximumPreviewDimension == maximumPreviewDimension &&
           _sameGeometry(other.geometry, geometry);
 
   @override
@@ -105,6 +121,7 @@ class PageRenderPlan {
     Object.hashAll(geometry),
     enhancement,
     scale,
+    maximumPreviewDimension,
   );
 
   @override

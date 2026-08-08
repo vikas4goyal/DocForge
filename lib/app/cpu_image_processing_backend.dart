@@ -253,6 +253,7 @@ CpuImageProcessingJobOutput cpuImageProcessingJob(
         transform: request.transform,
         outputWidth: request.outputWidth,
         outputHeight: request.outputHeight,
+        maximumPreviewDimension: request.maximumPreviewDimension,
       ),
     );
 

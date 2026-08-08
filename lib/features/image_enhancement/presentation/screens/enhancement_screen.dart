@@ -109,6 +109,7 @@ class _Stacked extends StatelessWidget {
           child: EnhancementPreview(
             imagePath: state.displayedImagePath,
             isRendering: state.isPreviewing,
+            onPhysicalLongestEdgeChanged: cubit.updatePreviewDimension,
           ),
         ),
         Expanded(
@@ -139,6 +140,7 @@ class _SideBySide extends StatelessWidget {
           child: EnhancementPreview(
             imagePath: state.displayedImagePath,
             isRendering: state.isPreviewing,
+            onPhysicalLongestEdgeChanged: cubit.updatePreviewDimension,
           ),
         ),
         SizedBox(

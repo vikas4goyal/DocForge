@@ -25,11 +25,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class EnhancementCubit extends Cubit<EnhancementState> {
   /// Creates the Cubit for [page], rendering through [_render].
   EnhancementCubit(PageDraft page, this._render)
-    : super(EnhancementState.initial(page)) {
-    unawaited(_renderPreview(state.settings));
-  }
+    : super(EnhancementState.initial(page));
 
   final PageRenderer _render;
+
+  int? _previewMaximumDimension;
 
   String get _renderScope => 'enhancement:${state.page.id.value}';
 
@@ -54,7 +54,7 @@ class EnhancementCubit extends Cubit<EnhancementState> {
   ///
   /// Long enough to swallow a drag, short enough that a deliberate single
   /// adjustment still feels immediate.
-  static const _previewDebounceDelay = Duration(milliseconds: 120);
+  static const _previewDebounceDelay = Duration(seconds: 1);
 
   /// Which control produced the most recent adjustment.
   ///
@@ -76,18 +76,21 @@ class EnhancementCubit extends Cubit<EnhancementState> {
   Future<void> setBrightness(double value) => _updateSettings(
     state.settings.copyWith(brightness: value),
     adjustment: #brightness,
+    debouncePreview: true,
   );
 
   /// Sets the contrast offset and re-renders the preview.
   Future<void> setContrast(double value) => _updateSettings(
     state.settings.copyWith(contrast: value),
     adjustment: #contrast,
+    debouncePreview: true,
   );
 
   /// Sets the sharpening amount and re-renders the preview.
   Future<void> setSharpen(double value) => _updateSettings(
     state.settings.copyWith(sharpen: value),
     adjustment: #sharpen,
+    debouncePreview: true,
   );
 
   /// Turns shadow removal on or off and re-renders the preview.
@@ -95,6 +98,18 @@ class EnhancementCubit extends Cubit<EnhancementState> {
     state.settings.copyWith(shadowRemoval: enabled),
     adjustment: (#shadowRemoval, enabled),
   );
+
+  /// Uses the exact rounded physical-pixel size measured by the preview view.
+  ///
+  /// Orientation and layout changes report a new value. Because the dimension
+  /// is part of the render plan, differently sized previews cannot share a
+  /// stale cached file.
+  Future<void> updatePreviewDimension(int dimension) async {
+    if (dimension <= 0 || _previewMaximumDimension == dimension) return;
+    _previewMaximumDimension = dimension;
+    _previewDebounce?.cancel();
+    await _renderPreview(state.settings);
+  }
 
   /// Steps back through one adjustment.
   ///
@@ -151,6 +166,7 @@ class EnhancementCubit extends Cubit<EnhancementState> {
   Future<void> _updateSettings(
     EnhancementSettings settings, {
     required Object adjustment,
+    bool debouncePreview = false,
   }) async {
     // A new step records where it started; continuing an open one does not, so
     // a drag leaves a single entry rather than one per frame.
@@ -167,12 +183,15 @@ class EnhancementCubit extends Cubit<EnhancementState> {
     );
 
     _previewDebounce?.cancel();
-    final completer = Completer<void>();
-    _previewDebounce = Timer(_previewDebounceDelay, () async {
+    if (!debouncePreview) {
       await _renderPreview(settings);
-      if (!completer.isCompleted) completer.complete();
-    });
-    return completer.future;
+      return;
+    }
+
+    _previewDebounce = Timer(
+      _previewDebounceDelay,
+      () => unawaited(_renderPreview(settings)),
+    );
   }
 
   /// Renders the page at [settings] and shows the result.
@@ -183,7 +202,10 @@ class EnhancementCubit extends Cubit<EnhancementState> {
     emit(state.copyWith(status: EnhancementStatus.previewing));
 
     final rendered = await _render(
-      PageRenderPlan.of(state.page.withEnhancement(settings)),
+      PageRenderPlan.of(
+        state.page.withEnhancement(settings),
+        maximumPreviewDimension: _previewMaximumDimension,
+      ),
       scope: _renderScope,
     );
     if (isClosed || generation != _previewGeneration) return;

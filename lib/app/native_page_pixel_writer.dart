@@ -53,7 +53,7 @@ class NativePagePixelWriter {
           outputWidth: transform?.outputSize.width,
           outputHeight: transform?.outputSize.height,
           maximumPreviewDimension: plan.scale == RenderScale.preview
-              ? previewMaxDimension
+              ? plan.maximumPreviewDimension ?? previewMaxDimension
               : null,
         ),
       );

@@ -111,6 +111,26 @@ void main() {
     backend.succeed(request.requestId);
     expect((await pending).isSuccess, isTrue);
   });
+
+  test('forwards the exact physical preview-view dimension', () async {
+    final pending = writer(
+      original
+          .copyWithEnhancement(
+            const EnhancementSettings(filter: EnhancementFilter.grayscale),
+          )
+          .atPreviewDimension(914),
+      destinationPath: '/app/preview.jpg',
+    );
+    await _nextEvent();
+
+    final request = backend.requests.single;
+    expect(request.scale, ImageRenderScale.preview);
+    expect(request.maximumPreviewDimension, 914);
+    expect(request.jpegQuality, 82);
+
+    backend.succeed(request.requestId);
+    expect((await pending).isSuccess, isTrue);
+  });
 }
 
 extension on PageRenderPlan {
@@ -120,7 +140,15 @@ extension on PageRenderPlan {
         geometry: geometry,
         enhancement: value,
         scale: scale,
+        maximumPreviewDimension: maximumPreviewDimension,
       );
+
+  PageRenderPlan atPreviewDimension(int dimension) => PageRenderPlan(
+    originalImagePath: originalImagePath,
+    geometry: geometry,
+    enhancement: enhancement,
+    maximumPreviewDimension: dimension,
+  );
 }
 
 Future<void> _nextEvent() => Future<void>.delayed(Duration.zero);

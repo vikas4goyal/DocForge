@@ -109,6 +109,35 @@ void main() {
   }
 
   group('composition', () {
+    testWidgets('preview reports its exact rounded physical longest edge', (
+      tester,
+    ) async {
+      tester.view.devicePixelRatio = 2;
+      tester.view.physicalSize = const Size(828, 914);
+      addTearDown(tester.view.reset);
+      final dimensions = <int>[];
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: EnhancementPreview(
+            imagePath: null,
+            onPhysicalLongestEdgeChanged: dimensions.add,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(dimensions, [914]);
+
+      tester.view
+        ..devicePixelRatio = 3
+        ..physicalSize = const Size(1170, 1272);
+      await tester.pump();
+      await tester.pump();
+
+      expect(dimensions, [914, 1272]);
+    });
+
     testWidgets('shows a control for every filter the spec names', (
       tester,
     ) async {
@@ -196,6 +225,7 @@ void main() {
         ),
         const Offset(60, 0),
       );
+      await tester.pump(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
       expect(cubit.state.settings.brightness, greaterThan(0));

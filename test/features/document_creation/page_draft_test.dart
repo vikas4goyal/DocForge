@@ -227,6 +227,15 @@ void main() {
       );
     });
 
+    test('a changed measured preview size invalidates the key', () {
+      final edited = draft().withEnhancement(enhancement);
+
+      expect(
+        PageRenderPlan.of(edited, maximumPreviewDimension: 914).cacheKey,
+        isNot(PageRenderPlan.of(edited, maximumPreviewDimension: 915).cacheKey),
+      );
+    });
+
     test('the key is safe as a file name', () {
       final key = PageRenderPlan.of(draft().withCrop(crop())).cacheKey;
 

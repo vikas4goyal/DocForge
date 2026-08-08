@@ -24,6 +24,7 @@ import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/isolates/background_worker.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:doc_scanly/features/image_enhancement/infrastructure/enhancement_job.dart';
 import 'package:image/image.dart' as img;
 import 'package:meta/meta.dart';
@@ -32,7 +33,7 @@ import 'package:meta/meta.dart';
 ///
 /// A page drawn a few hundred pixels wide gains nothing from being rendered at
 /// twelve megapixels, and the difference is most of the cost of a scroll.
-const previewMaxDimension = 1400;
+const previewMaxDimension = EnhancementRules.previewMaxDimension;
 
 /// JPEG quality for a full-resolution render.
 ///
@@ -58,6 +59,7 @@ class PageRenderRequest {
     this.transform,
     this.outputWidth,
     this.outputHeight,
+    this.maximumPreviewDimension,
   });
 
   /// The untouched original.
@@ -80,6 +82,9 @@ class PageRenderRequest {
 
   /// The composed output height, when there is a transform.
   final int? outputHeight;
+
+  /// Longest edge for a preview, or null to use the shared default.
+  final int? maximumPreviewDimension;
 }
 
 /// Renders one page and returns the path it was written to.
@@ -109,7 +114,10 @@ String pageRenderJob(PageRenderRequest request) {
   }
 
   if (request.isPreview) {
-    working = _downscaledTo(working, previewMaxDimension);
+    working = _downscaledTo(
+      working,
+      request.maximumPreviewDimension ?? previewMaxDimension,
+    );
   }
 
   if (!request.enhancement.isIdentity) {
@@ -178,6 +186,7 @@ Future<Result<void>> renderPageJob(
         transform: transform?.transform,
         outputWidth: transform?.outputSize.width,
         outputHeight: transform?.outputSize.height,
+        maximumPreviewDimension: plan.maximumPreviewDimension,
       ),
     );
     return const Result<void>.success(null);

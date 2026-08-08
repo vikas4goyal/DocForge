@@ -22,7 +22,7 @@ PageQuad box(double left, double top, double right, double bottom) => PageQuad(
 );
 
 /// Long enough for the Cubit's preview debounce to elapse.
-const afterDebounce = Duration(milliseconds: 200);
+const afterDebounce = Duration(milliseconds: 1100);
 
 void main() {
   late Directory cache;
@@ -232,6 +232,43 @@ void main() {
   });
 
   group('rendering', () {
+    test('slider preview waits for one full second of inactivity', () async {
+      final cubit = build();
+      addTearDown(cubit.close);
+      await cubit.updatePreviewDimension(914);
+      renders.clear();
+
+      await cubit.setBrightness(0.3);
+      await Future<void>.delayed(const Duration(milliseconds: 900));
+      expect(renders, isEmpty);
+
+      await Future<void>.delayed(const Duration(milliseconds: 200));
+      expect(renders, hasLength(1));
+      expect(renders.single.enhancement.brightness, 0.3);
+    });
+
+    test('a filter selection still renders immediately', () async {
+      final cubit = build();
+      addTearDown(cubit.close);
+      await cubit.updatePreviewDimension(914);
+      renders.clear();
+
+      await cubit.selectFilter(EnhancementFilter.grayscale);
+
+      expect(renders, hasLength(1));
+    });
+
+    blocTest<EnhancementCubit, EnhancementState>(
+      'puts the measured physical preview dimension into the render plan',
+      build: build,
+      act: (cubit) async {
+        await cubit.updatePreviewDimension(914);
+        await cubit.selectFilter(EnhancementFilter.grayscale);
+      },
+      wait: afterDebounce,
+      verify: (cubit) => expect(renders.last.maximumPreviewDimension, 914),
+    );
+
     blocTest<EnhancementCubit, EnhancementState>(
       'uses one cancellable scope for every preview and cancels it on close',
       build: build,

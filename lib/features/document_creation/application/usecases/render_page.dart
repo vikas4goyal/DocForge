@@ -49,7 +49,7 @@ class RenderPage implements PageRenderer {
     required this.render,
     required this.sizeOf,
     this.cancelRender,
-    this.directoryName = 'renders-v2-gpu',
+    this.directoryName = 'renders-v4-view-sized',
   });
 
   /// Where renders are cached.

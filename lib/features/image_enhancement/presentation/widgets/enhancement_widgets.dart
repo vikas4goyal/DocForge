@@ -136,12 +136,13 @@ class AdjustmentSlider extends StatelessWidget {
 /// judging an enhancement against a dark surround makes every result look
 /// brighter than it is, and the spec requires the preview to be accurate in
 /// dark mode specifically.
-class EnhancementPreview extends StatelessWidget {
+class EnhancementPreview extends StatefulWidget {
   /// Creates a preview of the image at [imagePath].
   const EnhancementPreview({
     required this.imagePath,
     super.key,
     this.isRendering = false,
+    this.onPhysicalLongestEdgeChanged,
   });
 
   /// The image to display, or null when there is nothing to show.
@@ -150,52 +151,84 @@ class EnhancementPreview extends StatelessWidget {
   /// Whether a newer preview is currently being rendered.
   final bool isRendering;
 
+  /// Reports the rounded physical-pixel longest edge of this preview view.
+  final ValueChanged<int>? onPhysicalLongestEdgeChanged;
+
+  @override
+  State<EnhancementPreview> createState() => _EnhancementPreviewState();
+}
+
+class _EnhancementPreviewState extends State<EnhancementPreview> {
+  int? _lastReportedDimension;
+
   @override
   Widget build(BuildContext context) {
-    final path = imagePath;
+    final path = widget.imagePath;
 
-    return Semantics(
-      image: true,
-      label: EnhanceSemantics.pagePreview,
-      child: ExcludeSemantics(
-        child: ColoredBox(
-          // A fixed neutral grey in both themes, so the same enhancement is
-          // judged against the same surround whichever theme is active.
-          color: const Color(0xFF757575),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              if (path != null)
-                Image.file(
-                  File(path),
-                  key: EnhanceKeys.preview,
-                  fit: BoxFit.contain,
-                  // A preview file that cannot be read is not fatal: the
-                  // settings are still valid and the next render may succeed.
-                  errorBuilder: (context, error, stackTrace) =>
-                      const _PreviewPlaceholder(),
-                )
-              else
-                const _PreviewPlaceholder(),
-              // Layered over the previous preview rather than replacing it, so
-              // the image does not blink out on every slider frame.
-              if (isRendering)
-                const Align(
-                  alignment: Alignment.topRight,
-                  child: Padding(
-                    padding: EdgeInsets.all(12),
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        _reportPhysicalDimension(context, constraints);
+        return Semantics(
+          image: true,
+          label: EnhanceSemantics.pagePreview,
+          child: ExcludeSemantics(
+            child: ColoredBox(
+              // A fixed neutral grey in both themes, so the same enhancement
+              // is judged against the same surround whichever theme is active.
+              color: const Color(0xFF757575),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (path != null)
+                    Image.file(
+                      File(path),
+                      key: EnhanceKeys.preview,
+                      fit: BoxFit.contain,
+                      // A preview file that cannot be read is not fatal: the
+                      // settings remain valid and the next render may succeed.
+                      errorBuilder: (context, error, stackTrace) =>
+                          const _PreviewPlaceholder(),
+                    )
+                  else
+                    const _PreviewPlaceholder(),
+                  // Keep the previous preview visible while its replacement
+                  // renders so slider changes never make the image blink.
+                  if (widget.isRendering)
+                    const Align(
+                      alignment: Alignment.topRight,
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-            ],
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
+  }
+
+  void _reportPhysicalDimension(
+    BuildContext context,
+    BoxConstraints constraints,
+  ) {
+    final callback = widget.onPhysicalLongestEdgeChanged;
+    if (callback == null) return;
+    final dimension = EnhancementRules.previewDimensionFor(
+      logicalLongestEdge: constraints.biggest.longestSide,
+      devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+    );
+    if (_lastReportedDimension == dimension) return;
+    _lastReportedDimension = dimension;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _lastReportedDimension == dimension) callback(dimension);
+    });
   }
 }
 

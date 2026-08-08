@@ -24,6 +24,25 @@ abstract final class EnhancementRules {
   /// full resolution so nothing is lost by previewing small.
   static const previewMaxDimension = 1080;
 
+  /// Converts a measured preview view to its physical-pixel longest edge.
+  ///
+  /// [logicalLongestEdge] is the preview panel's longest logical edge and
+  /// [devicePixelRatio] converts it to physical screen pixels. The result is
+  /// rounded upward only; it is deliberately not quantised into fixed buckets.
+  static int previewDimensionFor({
+    required double logicalLongestEdge,
+    required double devicePixelRatio,
+  }) {
+    if (!logicalLongestEdge.isFinite ||
+        !devicePixelRatio.isFinite ||
+        logicalLongestEdge <= 0 ||
+        devicePixelRatio <= 0) {
+      return previewMaxDimension;
+    }
+
+    return (logicalLongestEdge * devicePixelRatio).ceil();
+  }
+
   /// Returns [settings] with every adjustment forced into its valid range.
   ///
   /// Applied on the way in rather than trusted from the caller, so a slider

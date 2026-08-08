@@ -496,4 +496,26 @@ void main() {
       expect(one, isNot(two));
     });
   });
+
+  group('adaptive preview dimensions', () {
+    test('rounds the measured physical longest edge upward exactly', () {
+      expect(
+        EnhancementRules.previewDimensionFor(
+          logicalLongestEdge: 456.2,
+          devicePixelRatio: 2,
+        ),
+        913,
+      );
+    });
+
+    test('does not quantise the result into fixed buckets', () {
+      expect(
+        EnhancementRules.previewDimensionFor(
+          logicalLongestEdge: 390.1,
+          devicePixelRatio: 3,
+        ),
+        1171,
+      );
+    });
+  });
 }
