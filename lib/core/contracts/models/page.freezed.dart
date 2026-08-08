@@ -625,9 +625,9 @@ $NormalisedPointCopyWith<$Res> get bottomLeft {
 /// @nodoc
 mixin _$EnhancementSettings {
 
- EnhancementFilter get filter;/// Brightness offset in the range -1.0 to 1.0, where 0.0 is unchanged.
- double get brightness;/// Contrast offset in the range -1.0 to 1.0, where 0.0 is unchanged.
- double get contrast;/// Sharpening amount in the range 0.0 to 1.0, where 0.0 is unchanged.
+ EnhancementFilter get filter;/// Brightness offset in the range -0.35 to 0.35; 0.0 is unchanged.
+ double get brightness;/// Contrast offset in the range -0.5 to 0.5; 0.0 is unchanged.
+ double get contrast;/// Sharpening amount in the range 0.0 to 0.6; 0.0 is unchanged.
  double get sharpen;/// Whether uneven shadowing is removed.
  bool get shadowRemoval;
 /// Create a copy of EnhancementSettings
@@ -831,11 +831,11 @@ class _EnhancementSettings extends EnhancementSettings {
   factory _EnhancementSettings.fromJson(Map<String, dynamic> json) => _$EnhancementSettingsFromJson(json);
 
 @override@JsonKey() final  EnhancementFilter filter;
-/// Brightness offset in the range -1.0 to 1.0, where 0.0 is unchanged.
+/// Brightness offset in the range -0.35 to 0.35; 0.0 is unchanged.
 @override@JsonKey() final  double brightness;
-/// Contrast offset in the range -1.0 to 1.0, where 0.0 is unchanged.
+/// Contrast offset in the range -0.5 to 0.5; 0.0 is unchanged.
 @override@JsonKey() final  double contrast;
-/// Sharpening amount in the range 0.0 to 1.0, where 0.0 is unchanged.
+/// Sharpening amount in the range 0.0 to 0.6; 0.0 is unchanged.
 @override@JsonKey() final  double sharpen;
 /// Whether uneven shadowing is removed.
 @override@JsonKey() final  bool shadowRemoval;

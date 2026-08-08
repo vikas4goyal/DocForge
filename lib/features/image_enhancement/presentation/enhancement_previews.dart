@@ -272,13 +272,13 @@ Widget adjustmentSliderRange() => Column(
   children: [
     AdjustmentSlider(
       label: 'Lowest',
-      value: EnhancementRules.minAdjustment,
+      value: EnhancementRules.minBrightness,
       onChanged: (_) {},
     ),
     AdjustmentSlider(label: 'Middle', value: 0, onChanged: (_) {}),
     AdjustmentSlider(
       label: 'Highest',
-      value: EnhancementRules.maxAdjustment,
+      value: EnhancementRules.maxBrightness,
       onChanged: (_) {},
     ),
   ],
@@ -291,8 +291,13 @@ Widget adjustmentSliderRange() => Column(
   theme: appPreviewTheme,
   wrapper: previewSurface,
 )
-Widget adjustmentSliderOneSided() =>
-    AdjustmentSlider(label: 'Sharpen', value: 0.4, min: 0, onChanged: (_) {});
+Widget adjustmentSliderOneSided() => AdjustmentSlider(
+  label: 'Sharpen',
+  value: 0.4,
+  min: EnhancementRules.minSharpen,
+  max: EnhancementRules.maxSharpen,
+  onChanged: (_) {},
+);
 
 /// A slider that accepts no input, as during a bulk apply.
 @Preview(
@@ -303,7 +308,9 @@ Widget adjustmentSliderOneSided() =>
 )
 Widget adjustmentSliderDisabled() => AdjustmentSlider(
   label: 'Contrast',
-  value: 0.3,
+  value: 0.25,
+  min: EnhancementRules.minContrast,
+  max: EnhancementRules.maxContrast,
   enabled: false,
   onChanged: (_) {},
 );
@@ -317,7 +324,7 @@ Widget adjustmentSliderDisabled() => AdjustmentSlider(
 )
 Widget adjustmentSliderLongContent() => AdjustmentSlider(
   label: 'Shadow removal strength across the whole page',
-  value: -0.85,
+  value: EnhancementRules.minBrightness,
   onChanged: (_) {},
 );
 

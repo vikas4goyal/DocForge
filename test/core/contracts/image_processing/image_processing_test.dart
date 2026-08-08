@@ -119,19 +119,25 @@ void main() {
     test('rejects enhancement values outside domain ranges', () {
       expect(
         () => request(
-          enhancement: const EnhancementSettings(brightness: 1.1),
+          enhancement: const EnhancementSettings(brightness: 0.36),
         ).validate(),
         throwsArgumentError,
       );
       expect(
         () => request(
-          enhancement: const EnhancementSettings(contrast: -1.1),
+          enhancement: const EnhancementSettings(contrast: -0.51),
         ).validate(),
         throwsArgumentError,
       );
       expect(
         () => request(
-          enhancement: const EnhancementSettings(sharpen: -0.1),
+          enhancement: const EnhancementSettings(sharpen: 0.61),
+        ).validate(),
+        throwsArgumentError,
+      );
+      expect(
+        () => request(
+          enhancement: const EnhancementSettings(sharpen: -0.01),
         ).validate(),
         throwsArgumentError,
       );

@@ -11,6 +11,7 @@ import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/theme/app_theme.dart';
 import 'package:doc_scanly/features/document_creation/application/usecases/render_page.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_state.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/enhance_keys.dart';
@@ -225,7 +226,7 @@ void main() {
         ),
         const Offset(60, 0),
       );
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(milliseconds: 500));
       await tester.pumpAndSettle();
 
       expect(cubit.state.settings.brightness, greaterThan(0));
@@ -240,18 +241,25 @@ void main() {
       expect(cubit.state.settings.shadowRemoval, isTrue);
     });
 
-    testWidgets('sharpening cannot express a negative value', (tester) async {
+    testWidgets('adjustment sliders expose only useful ranges', (tester) async {
       await pumpScreen(tester);
 
-      // Asserted on the control's range rather than by dragging it. Negative
-      // sharpening is blurring, which is not a thing this screen offers, and
-      // the floor is a property of the control — the clamping behind it is
-      // covered in `enhancement_maths_test`.
-      final slider = tester.widget<AdjustmentSlider>(
+      final brightness = tester.widget<AdjustmentSlider>(
+        find.byKey(EnhanceKeys.brightnessSlider),
+      );
+      final contrast = tester.widget<AdjustmentSlider>(
+        find.byKey(EnhanceKeys.contrastSlider),
+      );
+      final sharpen = tester.widget<AdjustmentSlider>(
         find.byKey(EnhanceKeys.sharpenControl),
       );
 
-      expect(slider.min, 0);
+      expect(brightness.min, EnhancementRules.minBrightness);
+      expect(brightness.max, EnhancementRules.maxBrightness);
+      expect(contrast.min, EnhancementRules.minContrast);
+      expect(contrast.max, EnhancementRules.maxContrast);
+      expect(sharpen.min, EnhancementRules.minSharpen);
+      expect(sharpen.max, EnhancementRules.maxSharpen);
     });
   });
 

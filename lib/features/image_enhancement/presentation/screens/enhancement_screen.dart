@@ -4,6 +4,7 @@ library;
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/contracts/models/page_draft.dart';
 import 'package:doc_scanly/core/widgets/app_state_views.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_state.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/enhance_keys.dart';
@@ -193,13 +194,16 @@ class _Controls extends StatelessWidget {
           key: EnhanceKeys.contrastSlider,
           label: EnhanceSemantics.contrast,
           value: state.settings.contrast,
+          min: EnhancementRules.minContrast,
+          max: EnhancementRules.maxContrast,
           onChanged: cubit.setContrast,
         ),
         AdjustmentSlider(
           key: EnhanceKeys.sharpenControl,
           label: EnhanceSemantics.sharpen,
           value: state.settings.sharpen,
-          min: 0,
+          min: EnhancementRules.minSharpen,
+          max: EnhancementRules.maxSharpen,
           onChanged: cubit.setSharpen,
         ),
         SwitchListTile(

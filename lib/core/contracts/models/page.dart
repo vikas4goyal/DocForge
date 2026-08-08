@@ -138,13 +138,13 @@ abstract class EnhancementSettings with _$EnhancementSettings {
   const factory EnhancementSettings({
     @Default(EnhancementFilter.original) EnhancementFilter filter,
 
-    /// Brightness offset in the range -1.0 to 1.0, where 0.0 is unchanged.
+    /// Brightness offset in the range -0.35 to 0.35; 0.0 is unchanged.
     @Default(0.0) double brightness,
 
-    /// Contrast offset in the range -1.0 to 1.0, where 0.0 is unchanged.
+    /// Contrast offset in the range -0.5 to 0.5; 0.0 is unchanged.
     @Default(0.0) double contrast,
 
-    /// Sharpening amount in the range 0.0 to 1.0, where 0.0 is unchanged.
+    /// Sharpening amount in the range 0.0 to 0.6; 0.0 is unchanged.
     @Default(0.0) double sharpen,
 
     /// Whether uneven shadowing is removed.

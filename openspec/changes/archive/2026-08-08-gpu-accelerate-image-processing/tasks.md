@@ -54,6 +54,7 @@
 - [x] 5.6 Add crop Cubit Tier-1 tests for latest-only correction, fallback success, double failure retaining the working image, composed single resample, retry, and cancellation on close.
 - [x] 5.7 Update required dartdoc and intent comments for contracts, models, data sources, repositories, composition parameters, colour handling, shader ordering, oversized rendering, lifecycle, cancellation, and fallback; run the layering and platform-scope checks.
 - [x] 5.8 Add architecture tests proving no feature-to-feature imports, no release-accessible fakes, no global/static mutable backend state, and Android/iOS-only platform additions.
+- [x] 5.9 Use a 500 ms trailing debounce for continuous enhancement sliders, constrain brightness, contrast, and sharpening to practical continuous ranges across Dart and native validation, and cover the timing and bounds with Cubit, widget, contract, and platform compile checks.
 
 ## 6. UI-Level Regression Coverage
 

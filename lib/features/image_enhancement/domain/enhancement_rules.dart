@@ -9,11 +9,23 @@ import 'package:doc_scanly/core/contracts/models/page.dart';
 
 /// Rules for building and combining [EnhancementSettings].
 abstract final class EnhancementRules {
-  /// The lowest value a brightness or contrast adjustment may take.
-  static const minAdjustment = -1.0;
+  /// The lowest useful brightness offset.
+  static const minBrightness = -0.35;
 
-  /// The highest value a brightness or contrast adjustment may take.
-  static const maxAdjustment = 1.0;
+  /// The highest useful brightness offset.
+  static const maxBrightness = 0.35;
+
+  /// The lowest useful contrast offset.
+  static const minContrast = -0.5;
+
+  /// The highest useful contrast offset.
+  static const maxContrast = 0.5;
+
+  /// Sharpening starts at zero because negative sharpening is blur.
+  static const minSharpen = 0.0;
+
+  /// The strongest useful sharpening amount before edges look artificial.
+  static const maxSharpen = 0.6;
 
   /// The longest edge, in pixels, of the image the preview is computed from.
   ///
@@ -50,9 +62,9 @@ abstract final class EnhancementRules {
   /// value the filters were never designed for.
   static EnhancementSettings clamp(EnhancementSettings settings) =>
       settings.copyWith(
-        brightness: settings.brightness.clamp(minAdjustment, maxAdjustment),
-        contrast: settings.contrast.clamp(minAdjustment, maxAdjustment),
-        sharpen: settings.sharpen.clamp(0.0, maxAdjustment),
+        brightness: settings.brightness.clamp(minBrightness, maxBrightness),
+        contrast: settings.contrast.clamp(minContrast, maxContrast),
+        sharpen: settings.sharpen.clamp(minSharpen, maxSharpen),
       );
 
   /// Whether [settings] would change the image at all.

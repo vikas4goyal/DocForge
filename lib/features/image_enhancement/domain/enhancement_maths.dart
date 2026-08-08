@@ -44,7 +44,7 @@ abstract final class EnhancementMaths {
 
   /// Applies [brightness] and [contrast] to [value].
   ///
-  /// Both arrive as offsets in the range -1.0 to 1.0 where 0.0 means unchanged,
+  /// Both arrive as bounded offsets where 0.0 means unchanged,
   /// which is what the sliders expose and what makes "reset" simply the zero
   /// value.
   ///

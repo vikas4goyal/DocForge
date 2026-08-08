@@ -257,25 +257,25 @@ abstract class ImageRenderRequest with _$ImageRenderRequest {
     if (transform case final value? when !value.isValid) {
       throw ArgumentError.value(value, 'transform', 'must be finite');
     }
-    if (enhancement.brightness < -1 || enhancement.brightness > 1) {
+    if (enhancement.brightness < -0.35 || enhancement.brightness > 0.35) {
       throw ArgumentError.value(
         enhancement.brightness,
         'enhancement.brightness',
-        'must be in the range -1..1',
+        'must be in the range -0.35..0.35',
       );
     }
-    if (enhancement.contrast < -1 || enhancement.contrast > 1) {
+    if (enhancement.contrast < -0.5 || enhancement.contrast > 0.5) {
       throw ArgumentError.value(
         enhancement.contrast,
         'enhancement.contrast',
-        'must be in the range -1..1',
+        'must be in the range -0.5..0.5',
       );
     }
-    if (enhancement.sharpen < 0 || enhancement.sharpen > 1) {
+    if (enhancement.sharpen < 0 || enhancement.sharpen > 0.6) {
       throw ArgumentError.value(
         enhancement.sharpen,
         'enhancement.sharpen',
-        'must be in the range 0..1',
+        'must be in the range 0..0.6',
       );
     }
   }

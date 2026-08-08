@@ -73,9 +73,11 @@ Alternatives considered:
 - Always racing CPU and GPU wastes battery and memory.
 - Persisting backend choice adds stale preferences and migration complexity; capability is session-local and cheap to probe once per injected renderer.
 
-### 4. Preview requests are latest-wins and genuinely cancellable
+### 4. Preview requests are debounced, latest-wins, and genuinely cancellable
 
-The existing 120 ms Cubit debounce and generation check remain. Each render gains a monotonically increasing request ID owned by the renderer instance. Before submitting a newer preview for the same page/editor scope, the adapter sends cancellation for the prior ID. Native workers check cancellation between passes and before encode/atomic rename. An obsolete result is discarded even if a platform codec could not be interrupted.
+Slider-driven previews use a 500 ms trailing debounce, while discrete filter and shadow-removal actions remain immediate. The generation check remains. Each render gains a monotonically increasing request ID owned by the renderer instance. Before submitting a newer preview for the same page/editor scope, the adapter sends cancellation for the prior ID. Native workers check cancellation between passes and before encode/atomic rename. An obsolete result is discarded even if a platform codec could not be interrupted.
+
+Brightness is constrained to -0.35...0.35, contrast to -0.5...0.5, and sharpening to 0...0.6 across the UI, domain clamp, cross-platform request contract, and native validation. The sliders stay continuous; narrowing their spans removes destructive extremes and gives more physical travel to useful values.
 
 `EnhancementCubit` keeps the existing immutable `ready`, `previewing`, and `failure` status values and transitions:
 
@@ -101,7 +103,7 @@ Alternatives considered:
 
 The benchmark fixture is a checked-in synthetic 12-megapixel document page containing text, colour, gradients, uneven illumination, and a non-rectangular crop. The Android emulator and iOS Simulator model, OS image, host hardware/OS, graphics backend, and app build mode are recorded before implementation acceptance. These virtual-device configurations are the reproducible project performance gates; they are not evidence of physical-device battery life or thermal behavior.
 
-Warm interaction targets measure from native render submission to an atomically readable output: p95 ≤200 ms for the 1400-pixel preview and p95 ≤1.5 s for the full-resolution fixture, plus ≥3x median improvement over the CPU reference in each virtual-device environment. Cold context creation is reported separately. At least 30 warm samples follow 5 warm-ups, with host load, graphics backend, and build mode recorded.
+Warm interaction targets measure from native render submission to an atomically readable output: p95 ≤200 ms for the benchmark preview and p95 ≤1.5 s for the full-resolution fixture, plus ≥3x median improvement over the CPU reference in each virtual-device environment. Production previews use the exact rounded physical-pixel longest edge reported by their laid-out preview view rather than a fixed size or bucket. Cold context creation is reported separately. At least 30 warm samples follow 5 warm-ups, with host load, graphics backend, and build mode recorded.
 
 Stage telemetry records backend (`ios_core_image`, `android_gles`, `cpu_fallback`), preview/full kind, coarse source megapixel bucket, decode/transform/encode/total milliseconds, outcome, and non-sensitive fallback reason. It records no file path, pixel, document identifier, filter values, or OCR content.
 

@@ -22,7 +22,7 @@ PageQuad box(double left, double top, double right, double bottom) => PageQuad(
 );
 
 /// Long enough for the Cubit's preview debounce to elapse.
-const afterDebounce = Duration(milliseconds: 1100);
+const afterDebounce = Duration(milliseconds: 600);
 
 void main() {
   late Directory cache;
@@ -232,14 +232,14 @@ void main() {
   });
 
   group('rendering', () {
-    test('slider preview waits for one full second of inactivity', () async {
+    test('slider preview waits for 500 milliseconds of inactivity', () async {
       final cubit = build();
       addTearDown(cubit.close);
       await cubit.updatePreviewDimension(914);
       renders.clear();
 
       await cubit.setBrightness(0.3);
-      await Future<void>.delayed(const Duration(milliseconds: 900));
+      await Future<void>.delayed(const Duration(milliseconds: 400));
       expect(renders, isEmpty);
 
       await Future<void>.delayed(const Duration(milliseconds: 200));

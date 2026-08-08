@@ -58,7 +58,7 @@ class EnhancementFilterChip extends StatelessWidget {
 /// A labelled slider for one enhancement adjustment.
 ///
 /// Exposes its current value to screen readers as a percentage rather than as
-/// the raw -1.0 to 1.0 offset: "brightness, 30%" is something a listener can
+/// the raw decimal offset: "brightness, 30%" is something a listener can
 /// act on, where "brightness, 0.3" requires knowing the scale.
 class AdjustmentSlider extends StatelessWidget {
   /// Creates a slider for the adjustment named [label].
@@ -67,8 +67,8 @@ class AdjustmentSlider extends StatelessWidget {
     required this.value,
     required this.onChanged,
     super.key,
-    this.min = EnhancementRules.minAdjustment,
-    this.max = EnhancementRules.maxAdjustment,
+    this.min = EnhancementRules.minBrightness,
+    this.max = EnhancementRules.maxBrightness,
     this.enabled = true,
   });
 
@@ -90,8 +90,10 @@ class AdjustmentSlider extends StatelessWidget {
   /// Whether the control accepts input.
   final bool enabled;
 
-  /// The value as a percentage of its range, for display and for semantics.
-  String get _displayValue => '${(value * 100).round()}%';
+  double get _boundedValue => value.clamp(min, max);
+
+  /// The bounded adjustment value as a percentage, for display and semantics.
+  String get _displayValue => '${(_boundedValue * 100).round()}%';
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +120,7 @@ class AdjustmentSlider extends StatelessWidget {
             // inner Slider would put two widgets under one key and make every
             // finder for it ambiguous.
             Slider(
-              value: value.clamp(min, max),
+              value: _boundedValue,
               min: min,
               max: max,
               onChanged: enabled ? onChanged : null,

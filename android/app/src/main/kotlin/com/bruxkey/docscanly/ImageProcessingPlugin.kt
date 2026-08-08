@@ -71,7 +71,11 @@ internal data class AndroidRenderRequest(
             val brightness = settings.float("brightness")
             val contrast = settings.float("contrast")
             val sharpen = settings.float("sharpen")
-            if (!brightness.isFinite() || brightness !in -1f..1f || !contrast.isFinite() || contrast !in -1f..1f || !sharpen.isFinite() || sharpen !in 0f..1f) invalid("invalid adjustment")
+            if (
+                !brightness.isFinite() || brightness !in -0.35f..0.35f ||
+                !contrast.isFinite() || contrast !in -0.5f..0.5f ||
+                !sharpen.isFinite() || sharpen !in 0f..0.6f
+            ) invalid("invalid adjustment")
             val shadow = settings["shadowRemoval"] as? Boolean ?: invalid("missing shadow removal")
             val width = (map["outputWidth"] as? Number)?.toInt()
             val height = (map["outputHeight"] as? Number)?.toInt()

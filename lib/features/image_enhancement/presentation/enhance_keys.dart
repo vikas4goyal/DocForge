@@ -103,7 +103,7 @@ extension EnhancementFilterLabel on EnhancementFilter {
 /// Semantics labels for the enhancement screen.
 ///
 /// The sliders announce their value as a percentage rather than as the raw
-/// -1.0 to 1.0 offset: "brightness, 30%" is something a listener can act on,
+/// decimal offset: "brightness, 30%" is something a listener can act on,
 /// where "brightness, 0.3" requires knowing the scale.
 abstract final class EnhanceSemantics {
   /// The brightness adjustment.

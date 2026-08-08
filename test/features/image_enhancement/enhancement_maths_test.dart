@@ -343,9 +343,9 @@ void main() {
         const EnhancementSettings(brightness: 5, contrast: -9, sharpen: 3),
       );
 
-      expect(clamped.brightness, EnhancementRules.maxAdjustment);
-      expect(clamped.contrast, EnhancementRules.minAdjustment);
-      expect(clamped.sharpen, EnhancementRules.maxAdjustment);
+      expect(clamped.brightness, EnhancementRules.maxBrightness);
+      expect(clamped.contrast, EnhancementRules.minContrast);
+      expect(clamped.sharpen, EnhancementRules.maxSharpen);
     });
 
     test('clamps sharpen at zero rather than at minus one', () {
@@ -438,7 +438,7 @@ void main() {
         const EnhancementSettings(brightness: 4),
       );
 
-      expect(updated[0].enhancement.brightness, EnhancementRules.maxAdjustment);
+      expect(updated[0].enhancement.brightness, EnhancementRules.maxBrightness);
     });
   });
 

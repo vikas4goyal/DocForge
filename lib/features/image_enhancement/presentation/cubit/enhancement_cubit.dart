@@ -18,6 +18,7 @@ import 'package:doc_scanly/core/contracts/models/page_draft.dart';
 import 'package:doc_scanly/core/contracts/models/page_render_plan.dart';
 import 'package:doc_scanly/core/contracts/page_renderer.dart';
 import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/features/image_enhancement/domain/enhancement_rules.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_state.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -54,7 +55,7 @@ class EnhancementCubit extends Cubit<EnhancementState> {
   ///
   /// Long enough to swallow a drag, short enough that a deliberate single
   /// adjustment still feels immediate.
-  static const _previewDebounceDelay = Duration(seconds: 1);
+  static const _previewDebounceDelay = Duration(milliseconds: 500);
 
   /// Which control produced the most recent adjustment.
   ///
@@ -168,6 +169,8 @@ class EnhancementCubit extends Cubit<EnhancementState> {
     required Object adjustment,
     bool debouncePreview = false,
   }) async {
+    final boundedSettings = EnhancementRules.clamp(settings);
+
     // A new step records where it started; continuing an open one does not, so
     // a drag leaves a single entry rather than one per frame.
     final startsNewStep = adjustment != _openAdjustment;
@@ -175,7 +178,7 @@ class EnhancementCubit extends Cubit<EnhancementState> {
 
     emit(
       state.copyWith(
-        settings: settings,
+        settings: boundedSettings,
         history: startsNewStep
             ? [...state.history, state.settings]
             : state.history,
@@ -184,13 +187,13 @@ class EnhancementCubit extends Cubit<EnhancementState> {
 
     _previewDebounce?.cancel();
     if (!debouncePreview) {
-      await _renderPreview(settings);
+      await _renderPreview(boundedSettings);
       return;
     }
 
     _previewDebounce = Timer(
       _previewDebounceDelay,
-      () => unawaited(_renderPreview(settings)),
+      () => unawaited(_renderPreview(boundedSettings)),
     );
   }
 

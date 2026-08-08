@@ -14,7 +14,8 @@ Enhancement processing SHALL use the native GPU for pixel transforms on compatib
 
 #### Scenario: Preview uses a downscaled image
 - **WHEN** the enhancement preview is rendered
-- **THEN** it is computed with its longest edge bounded to 1400 pixels so interaction stays responsive, while the saved result is computed at its required full resolution
+- **THEN** its longest edge equals the preview view's measured physical-pixel longest edge, rounded up without fixed buckets
+- **AND** the saved result is computed at its required full resolution
 
 #### Scenario: Preview meets the responsiveness target
 - **WHEN** the benchmark preview is rendered after five warm-up renders on either the documented Android emulator or iOS Simulator configuration
@@ -32,8 +33,14 @@ Enhancement processing SHALL use the native GPU for pixel transforms on compatib
 
 #### Scenario: Preview keeps up with adjustments
 - **WHEN** the user moves an adjustment slider continuously
-- **THEN** previews are coalesced so that at most one render is active and at most the newest render is queued
+- **THEN** preview rendering waits until the value has remained unchanged for 500 milliseconds
+- **AND** previews are coalesced so that at most one render is active and at most the newest render is queued
 - **AND** only the most recent settings are shown when processing completes
+
+#### Scenario: Adjustment controls expose useful ranges
+- **WHEN** the user adjusts brightness, contrast, or sharpening
+- **THEN** brightness is limited to -0.35 through 0.35, contrast to -0.5 through 0.5, and sharpening to 0 through 0.6
+- **AND** each slider remains continuous so its full travel provides fine control without unusable extremes
 
 #### Scenario: Superseded preview is cancelled
 - **WHEN** a new preview request supersedes one that is already processing

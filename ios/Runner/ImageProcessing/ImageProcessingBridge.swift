@@ -50,7 +50,8 @@ struct NativeRenderRequest {
       let sharpen = (settings["sharpen"] as? NSNumber)?.doubleValue,
       let shadowRemoval = settings["shadowRemoval"] as? Bool,
       brightness.isFinite, contrast.isFinite, sharpen.isFinite,
-      (-1...1).contains(brightness), (-1...1).contains(contrast), (0...1).contains(sharpen)
+      (-0.35...0.35).contains(brightness), (-0.5...0.5).contains(contrast),
+      (0...0.6).contains(sharpen)
     else { throw NativeImageProcessingError.failure("invalid_request", "invalid schema or field") }
 
     let sourceURL = URL(fileURLWithPath: sourcePath).standardizedFileURL.resolvingSymlinksInPath()
