@@ -13,6 +13,7 @@ import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/document_page_cache.dart';
 
 /// Renders one PDF page into PNG bytes at a bounded width.
 typedef DocumentPagePdfRenderer =
@@ -35,14 +36,19 @@ typedef DocumentPageTextExtractor =
 class LibraryDocumentPageAccessRepository
     implements DocumentPageAccessRepository {
   /// Creates the repository from explicit storage and PDF-engine boundaries.
-  const LibraryDocumentPageAccessRepository(
+  LibraryDocumentPageAccessRepository(
     this._pages,
     this._files,
     this._secrets,
     this._cacheDirectory,
     this._renderPdfPage,
-    this._extractPdfText,
-  );
+    this._extractPdfText, {
+    DocumentPageCacheMaintenance? cache,
+  }) : _cache =
+           cache ??
+           DocumentPageCacheMaintenance(
+             root: Directory('${_cacheDirectory.path}/document-pages'),
+           );
 
   final PageRepository _pages;
   final DocumentFileResolver _files;
@@ -50,6 +56,7 @@ class LibraryDocumentPageAccessRepository
   final Directory _cacheDirectory;
   final DocumentPagePdfRenderer _renderPdfPage;
   final DocumentPageTextExtractor _extractPdfText;
+  final DocumentPageCacheMaintenance _cache;
 
   @override
   Future<Result<List<DocumentPageHandle>>> pagesOf(Document document) async {
@@ -134,8 +141,13 @@ class LibraryDocumentPageAccessRepository
     DocumentPageHandle page,
     DocumentPageRenderPurpose purpose,
   ) async {
-    final target = File(_renderPath(document, page, purpose));
-    if (purpose.retainsCache && target.existsSync()) {
+    final target = File(
+      purpose.retainsCache
+          ? _renderPath(document, page, purpose)
+          : _temporaryRenderPath(document, page, purpose),
+    );
+    if (purpose.retainsCache &&
+        (await _cache.touch(target)).valueOrNull == true) {
       return Result<MaterializedDocumentPage>.success(
         MaterializedDocumentPage.cached(path: target.path),
       );
@@ -156,12 +168,31 @@ class LibraryDocumentPageAccessRepository
         return Result<MaterializedDocumentPage>.failure(failure);
       }
       try {
-        target.parent.createSync(recursive: true);
-        await target.writeAsBytes(rendered.valueOrNull!, flush: true);
+        final bytes = rendered.valueOrNull!;
+        if (purpose.retainsCache) {
+          // Pruning and the write are one serialized operation: the requested
+          // target cannot be selected by a concurrent materialisation.
+          final cached = await _cache.write(target, bytes);
+          if (cached.isSuccess) {
+            return Result<MaterializedDocumentPage>.success(
+              MaterializedDocumentPage.cached(path: target.path),
+            );
+          }
+
+          // Cache cleanup is best-effort derived-data maintenance. A readable
+          // render still serves the explicit consumer as a releasable temp file.
+          final temporary = File(_temporaryRenderPath(document, page, purpose));
+          await temporary.parent.create(recursive: true);
+          await temporary.writeAsBytes(bytes, flush: true);
+          return Result<MaterializedDocumentPage>.success(
+            MaterializedDocumentPage.temporary(path: temporary.path),
+          );
+        }
+
+        await target.parent.create(recursive: true);
+        await target.writeAsBytes(bytes, flush: true);
         return Result<MaterializedDocumentPage>.success(
-          purpose.retainsCache
-              ? MaterializedDocumentPage.cached(path: target.path)
-              : MaterializedDocumentPage.temporary(path: target.path),
+          MaterializedDocumentPage.temporary(path: target.path),
         );
       } on Object catch (error) {
         return Result<MaterializedDocumentPage>.failure(
@@ -228,4 +259,13 @@ class LibraryDocumentPageAccessRepository
     return '${_cacheDirectory.path}/document-pages/${document.id.value}/'
         '$fingerprint/${purpose.name}-${page.pageNumber}.png';
   }
+
+  String _temporaryRenderPath(
+    Document document,
+    DocumentPageHandle page,
+    DocumentPageRenderPurpose purpose,
+  ) =>
+      '${_cacheDirectory.path}/document-page-temporary/'
+      '${document.id.value}-${page.pageNumber}-${purpose.name}-'
+      '${DateTime.now().microsecondsSinceEpoch}.png';
 }

@@ -2,8 +2,6 @@
 library;
 
 import 'package:doc_scanly/core/contracts/models/document.dart';
-import 'package:doc_scanly/core/contracts/models/document_page_handle.dart';
-import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/failure_messages.dart';
 import 'package:doc_scanly/features/document_library/domain/document_duplicate.dart';
@@ -52,8 +50,6 @@ class DocumentDetailState extends Equatable {
   const DocumentDetailState({
     required this.status,
     this.document,
-    this.pages = const [],
-    this.pageHandles = const [],
     this.folderOptionsStatus = FolderOptionsStatus.idle,
     this.folderOptions = const [],
     this.duplicateStatus = DuplicateStatus.idle,
@@ -72,12 +68,6 @@ class DocumentDetailState extends Equatable {
 
   /// The loaded document, or null before it arrives.
   final Document? document;
-
-  /// The document's pages, in page order.
-  final List<DocumentPage> pages;
-
-  /// Unified pages shown by Detail, including virtual imported-PDF pages.
-  final List<DocumentPageHandle> pageHandles;
 
   /// Current phase of loading destinations for Move and Duplicate.
   final FolderOptionsStatus folderOptionsStatus;
@@ -120,8 +110,6 @@ class DocumentDetailState extends Equatable {
   DocumentDetailState copyWith({
     LoadStatus? status,
     Document? document,
-    List<DocumentPage>? pages,
-    List<DocumentPageHandle>? pageHandles,
     FolderOptionsStatus? folderOptionsStatus,
     List<Folder>? folderOptions,
     DuplicateStatus? duplicateStatus,
@@ -134,8 +122,6 @@ class DocumentDetailState extends Equatable {
     return DocumentDetailState(
       status: status ?? this.status,
       document: document ?? this.document,
-      pages: pages ?? this.pages,
-      pageHandles: pageHandles ?? this.pageHandles,
       folderOptionsStatus: folderOptionsStatus ?? this.folderOptionsStatus,
       folderOptions: folderOptions ?? this.folderOptions,
       duplicateStatus: duplicateStatus ?? this.duplicateStatus,
@@ -151,8 +137,6 @@ class DocumentDetailState extends Equatable {
   List<Object?> get props => [
     status,
     document,
-    pages,
-    pageHandles,
     folderOptionsStatus,
     folderOptions,
     duplicateStatus,

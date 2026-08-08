@@ -120,6 +120,15 @@ void main() {
       expect(withDate, isNot(const SearchQuery(term: 'invoice')));
     });
 
+    test('a different modified-date filter is a different query', () {
+      final withDate = SearchQuery(
+        term: 'invoice',
+        modifiedWithin: DateRange(from: DateTime.utc(2026)),
+      );
+
+      expect(withDate, isNot(const SearchQuery(term: 'invoice')));
+    });
+
     test('describes itself with its term and folder', () {
       const query = SearchQuery(term: 'invoice');
 

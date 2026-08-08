@@ -16,12 +16,19 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// Drives the document viewer.
 class ViewerCubit extends Cubit<ViewerState> {
   /// Creates the Cubit for [_documentId] over its collaborators.
-  ViewerCubit(this._documentId, this._open, this._rememberPassword)
-    : super(const ViewerState.initial());
+  ViewerCubit(
+    this._documentId,
+    this._open,
+    this._rememberPassword,
+    this._loadMetadata,
+    this._toggleFavourite,
+  ) : super(const ViewerState.initial());
 
   final DocumentId _documentId;
   final OpenDocumentForViewing _open;
   final RememberDocumentPassword _rememberPassword;
+  final LoadViewerMetadata _loadMetadata;
+  final ToggleViewerFavourite _toggleFavourite;
 
   /// Opens the document.
   Future<void> load() async {
@@ -88,6 +95,59 @@ class ViewerCubit extends Cubit<ViewerState> {
   /// Records that the visible page changed as the user scrolled.
   void pageChanged(int page) => goToPage(page);
 
+  /// Toggles favourite status while keeping the readable PDF in place.
+  ///
+  /// Repeated activation while persistence is in progress is ignored. A typed
+  /// failure is exposed as [ViewerState.actionFailure] rather than replacing
+  /// the open document with a fatal error view.
+  Future<void> toggleFavourite() async {
+    if (!state.isReady || state.isFavouriteWorking) return;
+
+    emit(state.copyWith(isFavouriteWorking: true, clearActionFailure: true));
+    final result = await _toggleFavourite(_documentId);
+    if (isClosed) return;
+
+    switch (result) {
+      case Success(:final value):
+        emit(
+          state.copyWith(
+            document: value,
+            isFavouriteWorking: false,
+            clearActionFailure: true,
+          ),
+        );
+      case Failed(:final failure):
+        emit(state.copyWith(isFavouriteWorking: false, actionFailure: failure));
+    }
+  }
+
+  /// Refreshes document metadata after a secondary screen closes.
+  ///
+  /// The resolved PDF, password, page count and current page remain unchanged.
+  /// A not-found result marks the document unavailable; other failures are
+  /// nonfatal and leave reading available.
+  Future<void> refreshMetadata() async {
+    if (!state.isReady) return;
+
+    final result = await _loadMetadata(_documentId);
+    if (isClosed) return;
+
+    switch (result) {
+      case Success(:final value):
+        emit(
+          state.copyWith(
+            document: value,
+            isUnavailable: false,
+            clearActionFailure: true,
+          ),
+        );
+      case Failed(:final failure) when failure is NotFoundFailure:
+        emit(state.copyWith(isUnavailable: true, clearActionFailure: true));
+      case Failed(:final failure):
+        emit(state.copyWith(actionFailure: failure));
+    }
+  }
+
   /// Retries after a failure.
   Future<void> retry() => load();
 
@@ -101,6 +161,9 @@ class ViewerCubit extends Cubit<ViewerState> {
         pageCount: viewable.pageCount,
         password: viewable.password,
         page: ViewerRules.clampPage(state.page, pageCount: viewable.pageCount),
+        isUnavailable: false,
+        isFavouriteWorking: false,
+        clearActionFailure: true,
       ),
     );
   }

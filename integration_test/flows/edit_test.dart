@@ -17,7 +17,6 @@ import 'package:integration_test/integration_test.dart';
 import '../support/app_boot.dart';
 import '../support/fixtures.dart';
 import '../support/robots/app_robots.dart';
-import '../support/robots/library_robots.dart';
 import '../support/robots/viewer_robots.dart';
 import '../support/seed.dart';
 
@@ -45,9 +44,6 @@ void main() {
     await dashboard.waitUntilLoaded();
     final sourceId = dashboard.visibleDocumentIds.first;
     await dashboard.openDocument(sourceId);
-    final detail = DocumentDetailRobot(tester);
-    await detail.waitUntilVisible();
-    await detail.open();
     await ViewerRobot(tester).waitUntilOpen();
     return app;
   }
@@ -100,9 +96,6 @@ void main() {
     // Re-enter the now-watermarked source and apply password protection.
     final dashboard = DashboardRobot(tester);
     await dashboard.openDocument(dashboard.visibleDocumentIds.single);
-    final detail = DocumentDetailRobot(tester);
-    await detail.waitUntilVisible();
-    await detail.open();
     await viewer.waitUntilOpen();
     await viewer.openPassword();
     editor = PdfEditRobot(tester);

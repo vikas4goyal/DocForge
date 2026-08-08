@@ -506,6 +506,18 @@ void main() {
 
       expect((await RenameFolder(folders)(created.id, ' ')).isFailure, isTrue);
     });
+
+    test('propagates a duplicate-name lookup failure', () async {
+      folders.failure = const Failure.storage();
+
+      expect(
+        (await RenameFolder(folders)(
+          const FolderId('folder'),
+          'Receipts',
+        )).failureOrNull,
+        isA<StorageFailure>(),
+      );
+    });
   });
 
   group('DeleteFolder', () {

@@ -16,6 +16,14 @@ List<PageDraft> pages(int count) => [
 List<String> idsOf(List<PageDraft> list) => [for (final p in list) p.id.value];
 
 void main() {
+  test('collects every staged page id for cleanup', () {
+    expect(CreationSession.idsOf(pages(3)), {
+      const PageId('p0'),
+      const PageId('p1'),
+      const PageId('p2'),
+    });
+  });
+
   group('reorder', () {
     test('moves a page earlier', () {
       expect(idsOf(CreationSession.reorder(pages(3), 2, 0)), [

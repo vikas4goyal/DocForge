@@ -46,7 +46,6 @@ import 'package:doc_scanly/features/document_library/presentation/screens/trash_
 import 'package:doc_scanly/features/document_library/presentation/widgets/document_card.dart';
 import 'package:doc_scanly/features/document_library/presentation/widgets/document_thumbnail.dart';
 import 'package:doc_scanly/features/document_library/presentation/widgets/folder_tile.dart';
-import 'package:doc_scanly/features/document_library/presentation/widgets/page_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -254,7 +253,7 @@ class _PreviewDetailCubit extends DocumentDetailCubit
   _PreviewDetailCubit(DocumentDetailState state)
     : super(
         sampleDocument.id,
-        const LoadDocumentDetail(_documents, _pages),
+        const LoadDocumentDetail(_documents),
         RenameDocument(_documents, _clock, _store),
         MoveDocument(_documents, _clock),
         ToggleFavourite(_documents, _clock),
@@ -303,7 +302,7 @@ Widget _list(DocumentListState state, {String title = 'Documents'}) =>
 
 Widget _detail(DocumentDetailState state) => BlocProvider<DocumentDetailCubit>(
   create: (_) => _PreviewDetailCubit(state),
-  child: DocumentDetailScreen(onClose: () {}, onOpenViewer: () {}),
+  child: DocumentDetailScreen(onClose: () {}),
 );
 
 Widget _folderList(FolderState state) => BlocProvider<FolderCubit>(
@@ -496,65 +495,6 @@ Widget folderTileDark() => previewSurface(
   FolderTile(folder: sampleFolder.copyWith(documentCount: 3), onTap: () {}),
 );
 
-/// A page thumbnail with no cached image yet.
-@Preview(
-  name: 'PageThumbnail — placeholder',
-  group: 'Library',
-  theme: appPreviewTheme,
-)
-Widget pageThumbnailPlaceholder() =>
-    previewSurface(PageThumbnail(page: samplePages(1).first, onTap: () {}));
-
-/// A page thumbnail while its PDF-derived image is being generated.
-@Preview(
-  name: 'PageThumbnail — loading phone',
-  group: 'Library',
-  theme: appPreviewTheme,
-  size: PreviewSize.phone,
-)
-Widget pageThumbnailLoading() => previewSurface(
-  PageThumbnail(
-    page: samplePages(1).first,
-    loadThumbnail: () => Completer<Result<String>>().future,
-  ),
-);
-
-/// A page thumbnail whose PDF could not be rendered, in dark mode.
-@Preview(
-  name: 'PageThumbnail — fallback dark',
-  group: 'Library',
-  theme: appPreviewTheme,
-  brightness: Brightness.dark,
-)
-Widget pageThumbnailFallback() => previewSurface(
-  PageThumbnail(
-    page: samplePages(1).first,
-    loadThumbnail: () async => const Result<String>.failure(Failure.pdf()),
-  ),
-);
-
-/// A row of page thumbnails.
-@Preview(
-  name: 'PageThumbnail — strip',
-  group: 'Library',
-  theme: appPreviewTheme,
-)
-Widget pageThumbnailStrip() => previewSurface(
-  SizedBox(
-    height: 160,
-    child: ListView(
-      scrollDirection: Axis.horizontal,
-      children: [
-        for (final page in samplePages(5))
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: PageThumbnail(page: page),
-          ),
-      ],
-    ),
-  ),
-);
-
 // ---------------------------------------------------------------------------
 // Document list screen
 // ---------------------------------------------------------------------------
@@ -656,18 +596,14 @@ Widget documentListArchive() => BlocProvider<DocumentListCubit>(
 // Document detail screen
 // ---------------------------------------------------------------------------
 
-/// A loaded document with its pages.
+/// A loaded document with metadata and actions.
 @Preview(
   name: 'DocumentDetail — ready',
   group: 'Library screens',
   theme: appPreviewTheme,
 )
 Widget documentDetailReady() => _detail(
-  DocumentDetailState(
-    status: LoadStatus.ready,
-    document: sampleDocument,
-    pages: samplePages(4),
-  ),
+  DocumentDetailState(status: LoadStatus.ready, document: sampleDocument),
 );
 
 /// A document detail screen still loading.
@@ -692,18 +628,6 @@ Widget documentDetailError() => _detail(
   ),
 );
 
-/// A document whose page previews are unavailable.
-@Preview(
-  name: 'DocumentDetail — no thumbnails',
-  group: 'Library screens',
-  theme: appPreviewTheme,
-)
-Widget documentDetailNoThumbnails() => _detail(
-  // A document whose thumbnails have not been generated yet: the metadata is
-  // fully readable and the page strip explains its own absence.
-  DocumentDetailState(status: LoadStatus.ready, document: sampleDocument),
-);
-
 /// A document with a very long title.
 @Preview(
   name: 'DocumentDetail — long title',
@@ -711,11 +635,44 @@ Widget documentDetailNoThumbnails() => _detail(
   theme: appPreviewTheme,
 )
 Widget documentDetailLongTitle() => _detail(
+  DocumentDetailState(status: LoadStatus.ready, document: longTitleDocument),
+);
+
+/// Protected document metadata without exposing a password or page pixels.
+@Preview(
+  name: 'DocumentDetail — protected',
+  group: 'Library screens',
+  theme: appPreviewTheme,
+)
+Widget documentDetailProtected() => _detail(
+  DocumentDetailState(status: LoadStatus.ready, document: protectedDocument),
+);
+
+/// Metadata for content currently stored in iCloud.
+@Preview(
+  name: 'DocumentDetail — cloud',
+  group: 'Library screens',
+  theme: appPreviewTheme,
+)
+Widget documentDetailCloud() => _detail(
   DocumentDetailState(
     status: LoadStatus.ready,
-    document: longTitleDocument,
-    pages: samplePages(2),
+    document: sampleDocument.copyWith(
+      cloudResourceIdentifier: 'preview-cloud-resource',
+      contentAvailability: DocumentContentAvailability.remote,
+    ),
   ),
+);
+
+/// Metadata and actions at the maximum supported text scale.
+@Preview(
+  name: 'DocumentDetail — large text',
+  group: 'Library screens',
+  theme: appPreviewTheme,
+  textScaleFactor: 2,
+)
+Widget documentDetailLargeText() => _detail(
+  DocumentDetailState(status: LoadStatus.ready, document: longTitleDocument),
 );
 
 /// A loaded document in dark mode.
@@ -726,11 +683,7 @@ Widget documentDetailLongTitle() => _detail(
   brightness: Brightness.dark,
 )
 Widget documentDetailDark() => _detail(
-  DocumentDetailState(
-    status: LoadStatus.ready,
-    document: sampleDocument,
-    pages: samplePages(4),
-  ),
+  DocumentDetailState(status: LoadStatus.ready, document: sampleDocument),
 );
 
 /// A loaded document on a tablet.
@@ -741,11 +694,7 @@ Widget documentDetailDark() => _detail(
   size: PreviewSize.tablet,
 )
 Widget documentDetailTablet() => _detail(
-  DocumentDetailState(
-    status: LoadStatus.ready,
-    document: sampleDocument,
-    pages: samplePages(6),
-  ),
+  DocumentDetailState(status: LoadStatus.ready, document: sampleDocument),
 );
 
 // ---------------------------------------------------------------------------

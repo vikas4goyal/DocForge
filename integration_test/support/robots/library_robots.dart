@@ -109,12 +109,6 @@ class DocumentDetailRobot extends Robot {
   @override
   Key get screenKey => LibraryKeys.documentDetailScreen;
 
-  /// Opens the document for reading.
-  Future<void> open() => step('opening the document for reading', () async {
-    await waitUntilVisible();
-    await tap(LibraryKeys.documentOpenButton);
-  });
-
   /// Renames the document to [name].
   Future<void> rename(String name) => step('renaming to "$name"', () async {
     await waitUntilVisible();
@@ -262,23 +256,6 @@ class DocumentDetailRobot extends Robot {
 
   /// Whether the document is marked as password protected.
   bool get isProtected => has(LibraryKeys.documentProtectedBadge);
-
-  /// Number of rendered page previews on Detail.
-  int get pagePreviewCount => find
-      .byWidgetPredicate(
-        (widget) =>
-            widget.key is ValueKey<String> &&
-            (widget.key! as ValueKey<String>).value.startsWith(
-              'page_thumbnail_',
-            ) &&
-            !(widget.key! as ValueKey<String>).value.startsWith(
-              'page_thumbnail_loading_',
-            ),
-      )
-      .evaluate()
-      .map((element) => (element.widget.key! as ValueKey<String>).value)
-      .toSet()
-      .length;
 
   /// Opens the overflow menu when the actions live behind one.
   ///

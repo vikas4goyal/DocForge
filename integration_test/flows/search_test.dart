@@ -17,6 +17,7 @@ import 'package:integration_test/integration_test.dart';
 import '../support/app_boot.dart';
 import '../support/fixtures.dart';
 import '../support/robots/app_robots.dart';
+import '../support/robots/viewer_robots.dart';
 import '../support/seed.dart';
 
 void main() {
@@ -78,5 +79,8 @@ void main() {
       isFalse,
       reason: 'Clearing the query must restore the documents it hid.',
     );
+
+    await dashboard.openDocument(dashboard.visibleDocumentIds.single);
+    await ViewerRobot(tester).waitUntilOpen();
   });
 }

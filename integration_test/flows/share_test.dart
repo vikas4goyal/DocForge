@@ -14,15 +14,12 @@ library;
 import 'dart:io';
 
 import 'package:doc_scanly/core/failures/failure.dart';
-import 'package:doc_scanly/features/document_viewer/presentation/viewer_keys.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import '../support/app_boot.dart';
 import '../support/fixtures.dart';
 import '../support/robots/app_robots.dart';
-import '../support/robots/library_robots.dart';
 import '../support/robots/viewer_robots.dart';
 import '../support/seed.dart';
 
@@ -50,9 +47,6 @@ void main() {
     await seedDocumentByImport(tester);
     final dashboard = DashboardRobot(tester);
     await dashboard.openDocument(dashboard.visibleDocumentIds.single);
-    final detail = DocumentDetailRobot(tester);
-    await detail.waitUntilVisible();
-    await detail.open();
     final viewer = ViewerRobot(tester);
     await viewer.waitUntilOpen();
     await viewer.openShare();
@@ -88,9 +82,6 @@ void main() {
     final dashboard = DashboardRobot(tester);
     final documentId = dashboard.visibleDocumentIds.single;
     await dashboard.openDocument(documentId);
-    final detail = DocumentDetailRobot(tester);
-    await detail.waitUntilVisible();
-    await detail.open();
     final viewer = ViewerRobot(tester);
     await viewer.waitUntilOpen();
     await viewer.openShare();
@@ -106,16 +97,6 @@ void main() {
     expect(app.platform.share.shared, hasLength(1));
     expect(app.platform.share.shared.single.filePaths, hasLength(1));
     expect(app.platform.share.shared.single.text, isEmpty);
-
-    // The imported fixture contains embedded text. On a wide layout Viewer
-    // exposes that locally extracted text beside the same rendered PDF.
-    tester.view.devicePixelRatio = 1;
-    tester.view.physicalSize = const Size(1180, 900);
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-    await tester.pumpAndSettle();
-    expect(find.byKey(ViewerKeys.textPanel), findsOneWidget);
-    expect(find.textContaining('DocScanly importable fixture'), findsOneWidget);
   });
 
   testWidgets('export writes once through the destination provider', (

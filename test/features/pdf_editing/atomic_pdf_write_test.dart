@@ -186,6 +186,20 @@ void main() {
   });
 
   group('storage failures', () {
+    test('maps an out-of-space filesystem error to storage full', () async {
+      final result = await AtomicPdfWrite(verifying(1)).write(
+        original.path,
+        (_) async => throw const FileSystemException(
+          'disk full',
+          'document.pdf',
+          OSError('no space', 28),
+        ),
+      );
+
+      expect((result as Failed<EditedPdf>).failure, isA<StorageFullFailure>());
+      expect(original.readAsStringSync(), originalContents);
+    });
+
     test('an unwritable destination leaves the original alone', () async {
       // The parent is a *file*, so creating a directory there fails.
       final blocked = '${original.path}/nested/new.pdf';

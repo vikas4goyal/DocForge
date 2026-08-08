@@ -159,22 +159,20 @@ GoRouter createAppRouter({
           context,
           DocumentId(state.pathParameters[AppRoutes.idParameter]!),
         ),
-        routes: [
-          GoRoute(
-            path: 'view',
-            builder: (context, state) => screens.viewer(
-              context,
-              DocumentId(state.pathParameters[AppRoutes.idParameter]!),
-            ),
-          ),
-          GoRoute(
-            path: 'edit',
-            builder: (context, state) => screens.documentEdit(
-              context,
-              DocumentId(state.pathParameters[AppRoutes.idParameter]!),
-            ),
-          ),
-        ],
+      ),
+      GoRoute(
+        path: AppRoutes.documentViewTemplate,
+        builder: (context, state) => screens.viewer(
+          context,
+          DocumentId(state.pathParameters[AppRoutes.idParameter]!),
+        ),
+      ),
+      GoRoute(
+        path: AppRoutes.documentEditTemplate,
+        builder: (context, state) => screens.documentEdit(
+          context,
+          DocumentId(state.pathParameters[AppRoutes.idParameter]!),
+        ),
       ),
       GoRoute(
         path: AppRoutes.folders,

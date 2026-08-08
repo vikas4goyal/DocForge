@@ -137,13 +137,6 @@ abstract final class LibraryKeys {
   /// Choice that deletes the documents along with the folder.
   static const folderDeleteWithDocuments = Key('folder_delete_with_documents');
 
-  /// A page thumbnail on the document detail screen.
-  static Key pageThumbnail(String pageId) => Key('page_thumbnail_$pageId');
-
-  /// Loading indicator for a derived page thumbnail.
-  static Key pageThumbnailLoading(String pageId) =>
-      Key('page_thumbnail_loading_$pageId');
-
   /// Root of the folder detail screen.
   ///
   /// Distinct from [documentListScreen] even though the folder view is built
@@ -217,9 +210,6 @@ abstract final class LibraryKeys {
   /// Cancels duplicate review without mutation.
   static const documentDuplicateCancel = Key('document_duplicate_cancel');
 
-  /// The control that opens a document for reading from its detail screen.
-  static const documentOpenButton = Key('document_open_button');
-
   /// The overflow menu on the document detail screen.
   static const documentDetailMenu = Key('document_detail_menu');
 
@@ -264,9 +254,6 @@ abstract final class LibrarySemantics {
   /// this is what tells the user which of their documents another app could
   /// read.
   static const passwordProtected = 'Password protected';
-
-  /// Announces a page thumbnail by its position in the document.
-  static String pageThumbnail(int pageNumber) => 'Page $pageNumber thumbnail';
 
   /// Announces a document's first-page preview.
   static String documentThumbnail(String title) => '$title preview';

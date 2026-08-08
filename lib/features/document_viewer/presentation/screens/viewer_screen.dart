@@ -26,6 +26,9 @@ typedef PageSurfaceBuilder =
 
 /// Document-level operations reached directly from the viewer's overflow menu.
 enum ViewerDocumentAction {
+  /// Opens metadata and lifecycle controls for the document.
+  details,
+
   /// Opens the system print dialog.
   print,
 
@@ -52,6 +55,7 @@ class ViewerScreen extends StatelessWidget {
     required this.surfaceBuilder,
     required this.onBack,
     required this.onShare,
+    required this.onShowDetails,
     required this.onAction,
     super.key,
   });
@@ -65,12 +69,40 @@ class ViewerScreen extends StatelessWidget {
   /// Called when the user shares the document.
   final VoidCallback onShare;
 
+  /// Opens metadata and lifecycle controls, then returns to Viewer.
+  final Future<void> Function() onShowDetails;
+
   /// Called with the focused operation selected from the overflow menu.
   final ValueChanged<ViewerDocumentAction> onAction;
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ViewerCubit, ViewerState>(
+    return BlocConsumer<ViewerCubit, ViewerState>(
+      listenWhen: (previous, current) =>
+          previous.actionFailure != current.actionFailure ||
+          (!previous.isUnavailable && current.isUnavailable),
+      listener: (context, state) {
+        if (state.isUnavailable) {
+          onBack();
+          return;
+        }
+        final message = state.actionMessage;
+        if (message != null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(message)));
+        }
+      },
+      buildWhen: (previous, current) =>
+          previous.status != current.status ||
+          previous.page != current.page ||
+          previous.document?.title != current.document?.title ||
+          previous.filePath != current.filePath ||
+          previous.pageCount != current.pageCount ||
+          previous.password != current.password ||
+          previous.failure != current.failure ||
+          previous.passwordRejected != current.passwordRejected ||
+          previous.isUnavailable != current.isUnavailable,
       builder: (context, state) {
         final cubit = context.read<ViewerCubit>();
 
@@ -92,6 +124,7 @@ class ViewerScreen extends StatelessWidget {
               // could not be read would produce a file the recipient cannot
               // open either.
               if (state.isReady) ...[
+                const _FavouriteAction(),
                 IconButton(
                   key: ViewerKeys.shareButton,
                   onPressed: onShare,
@@ -107,8 +140,28 @@ class ViewerScreen extends StatelessWidget {
                   child: PopupMenuButton<ViewerDocumentAction>(
                     key: ViewerKeys.actionsMenu,
                     tooltip: 'More document actions',
-                    onSelected: onAction,
+                    onSelected: (action) {
+                      if (action == ViewerDocumentAction.details) {
+                        onShowDetails();
+                      } else {
+                        onAction(action);
+                      }
+                    },
                     itemBuilder: (_) => [
+                      PopupMenuItem(
+                        key: ViewerKeys.documentDetailsButton,
+                        value: ViewerDocumentAction.details,
+                        child: Semantics(
+                          label: ViewerSemantics.documentDetails,
+                          button: true,
+                          child: const ExcludeSemantics(
+                            child: ListTile(
+                              leading: Icon(Icons.info_outline),
+                              title: Text('Document details'),
+                            ),
+                          ),
+                        ),
+                      ),
                       const PopupMenuItem(
                         key: ViewerKeys.printButton,
                         value: ViewerDocumentAction.print,
@@ -194,6 +247,47 @@ class ViewerScreen extends StatelessWidget {
           bottomNavigationBar: state.isReady
               ? _PageBar(state: state, cubit: cubit)
               : null,
+        );
+      },
+    );
+  }
+}
+
+/// Toggles favourite state while rebuilding only Viewer chrome.
+class _FavouriteAction extends StatelessWidget {
+  const _FavouriteAction();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<
+      ViewerCubit,
+      ViewerState,
+      ({String title, bool isFavourite, bool isWorking})
+    >(
+      selector: (state) => (
+        title: state.document?.title ?? '',
+        isFavourite: state.document?.isFavourite ?? false,
+        isWorking: state.isFavouriteWorking,
+      ),
+      builder: (context, value) {
+        final label = ViewerSemantics.favourite(
+          value.title,
+          isFavourite: value.isFavourite,
+        );
+        return Semantics(
+          button: true,
+          toggled: value.isFavourite,
+          label: label,
+          child: ExcludeSemantics(
+            child: IconButton(
+              key: ViewerKeys.favouriteButton,
+              onPressed: value.isWorking
+                  ? null
+                  : context.read<ViewerCubit>().toggleFavourite,
+              tooltip: label,
+              icon: Icon(value.isFavourite ? Icons.star : Icons.star_border),
+            ),
+          ),
         );
       },
     );

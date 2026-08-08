@@ -10,6 +10,7 @@ import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/document_page_access_repository.dart';
+import 'package:doc_scanly/features/document_library/infrastructure/document_page_cache.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'fakes.dart';
@@ -192,6 +193,97 @@ void main() {
     expect(first.valueOrNull, isA<CachedDocumentPage>());
     expect(second.valueOrNull, first.valueOrNull);
     expect(engine.renderCount, 1);
+  });
+
+  test('an evicted thumbnail is regenerated from the PDF', () async {
+    access = LibraryDocumentPageAccessRepository(
+      pages,
+      files,
+      secrets,
+      directory,
+      engine.render,
+      engine.extract,
+      cache: DocumentPageCacheMaintenance(
+        root: Directory('${directory.path}/document-pages'),
+        maxFiles: 1,
+      ),
+    );
+    final document = sampleDocument.copyWith(pageCount: 2);
+    final handles = (await access.pagesOf(document)).valueOrNull!;
+
+    await access.materialize(
+      document,
+      handles.first,
+      DocumentPageRenderPurpose.thumbnail,
+    );
+    await access.materialize(
+      document,
+      handles.last,
+      DocumentPageRenderPurpose.thumbnail,
+    );
+    await access.materialize(
+      document,
+      handles.first,
+      DocumentPageRenderPurpose.thumbnail,
+    );
+
+    expect(engine.renderCount, 3);
+  });
+
+  test('a changed PDF invalidates the prior fingerprint cache', () async {
+    final handle = (await access.pagesOf(sampleDocument)).valueOrNull!.first;
+    final first = await access.materialize(
+      sampleDocument,
+      handle,
+      DocumentPageRenderPurpose.thumbnail,
+    );
+    final changed = sampleDocument.copyWith(
+      sizeInBytes: sampleDocument.sizeInBytes + 1,
+      updatedAt: sampleDocument.updatedAt.add(const Duration(seconds: 1)),
+    );
+
+    final second = await access.materialize(
+      changed,
+      handle,
+      DocumentPageRenderPurpose.thumbnail,
+    );
+
+    expect(File(first.valueOrNull!.path).existsSync(), isFalse);
+    expect(File(second.valueOrNull!.path).existsSync(), isTrue);
+    expect(engine.renderCount, 2);
+  });
+
+  test('cleanup failure returns a readable temporary render', () async {
+    access = LibraryDocumentPageAccessRepository(
+      pages,
+      files,
+      secrets,
+      directory,
+      engine.render,
+      engine.extract,
+      cache: DocumentPageCacheMaintenance(
+        root: Directory('${directory.path}/document-pages'),
+        maxFiles: 1,
+        deleteFile: (_) async => throw const FileSystemException('refused'),
+      ),
+    );
+    final document = sampleDocument.copyWith(pageCount: 2);
+    final handles = (await access.pagesOf(document)).valueOrNull!;
+    await access.materialize(
+      document,
+      handles.first,
+      DocumentPageRenderPurpose.thumbnail,
+    );
+
+    final second = await access.materialize(
+      document,
+      handles.last,
+      DocumentPageRenderPurpose.thumbnail,
+    );
+
+    expect(second.valueOrNull, isA<TemporaryDocumentPage>());
+    expect(File(second.valueOrNull!.path).existsSync(), isTrue);
+    expect((await access.release(second.valueOrNull!)).isSuccess, isTrue);
   });
 
   test(

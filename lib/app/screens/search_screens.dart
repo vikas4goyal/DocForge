@@ -18,7 +18,7 @@ ScreenBuilder buildSearchScreen({required LibraryModule library}) =>
     (context) => BlocProvider(
       create: (_) => SearchBloc(library.search),
       child: SearchScreen(
-        onOpenDocument: (id) => context.push(AppRoutes.documentDetail(id)),
+        onOpenDocument: (id) => context.push(AppRoutes.documentView(id)),
         // Folders are loaded lazily by the screen's own filter in a later
         // step; an empty list simply means the filter offers "all folders".
         folders: const [],

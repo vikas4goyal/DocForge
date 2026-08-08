@@ -21,7 +21,6 @@ import 'package:doc_scanly/features/document_library/presentation/screens/docume
 import 'package:doc_scanly/features/document_library/presentation/screens/folder_list_screen.dart';
 import 'package:doc_scanly/features/document_library/presentation/widgets/document_card.dart';
 import 'package:doc_scanly/features/document_library/presentation/widgets/folder_tile.dart';
-import 'package:doc_scanly/features/document_library/presentation/widgets/page_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -65,7 +64,7 @@ void main() {
 
   DocumentDetailCubit detailCubit(DocumentId id) => DocumentDetailCubit(
     id,
-    LoadDocumentDetail(documents, pages),
+    LoadDocumentDetail(documents),
     RenameDocument(documents, clock, store),
     MoveDocument(documents, clock),
     ToggleFavourite(documents, clock),
@@ -287,11 +286,65 @@ void main() {
       );
     });
 
-    testWidgets('shows a thumbnail per page', (tester) async {
+    testWidgets('shows its loading state while metadata is pending', (
+      tester,
+    ) async {
+      documents.gate = Completer<void>();
+      await tester.pumpWidget(build());
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      documents.gate!.complete();
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('does not enumerate or render document pages', (tester) async {
       await tester.pumpWidget(build());
       await tester.pumpAndSettle();
 
-      expect(find.byType(PageThumbnail), findsNWidgets(2));
+      expect(pages.forDocumentCalls, isEmpty);
+      expect(find.text('Page previews are not available.'), findsNothing);
+      expect(find.text('Open'), findsNothing);
+    });
+
+    testWidgets('long metadata remains accessible in dark tablet layout', (
+      tester,
+    ) async {
+      final longTitle = List.filled(12, 'Quarterly statement').join(' ');
+      documents.documents[sampleDocument.id] = sampleDocument.copyWith(
+        title: longTitle,
+      );
+      tester.view
+        ..physicalSize = const Size(1024, 1366)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        host(
+          MediaQuery(
+            data: MediaQueryData.fromView(
+              tester.view,
+            ).copyWith(textScaler: const TextScaler.linear(2)),
+            child: BlocProvider.value(
+              value: detailCubit(sampleDocument.id),
+              child: DocumentDetailScreen(onClose: () {}),
+            ),
+          ),
+          brightness: Brightness.dark,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is Semantics && widget.properties.label == longTitle,
+        ),
+        findsWidgets,
+      );
+      expect(find.byKey(LibraryKeys.documentFavouriteToggle), findsOneWidget);
+      expect(find.byKey(LibraryKeys.documentDetailMenu), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('renaming updates the title', (tester) async {

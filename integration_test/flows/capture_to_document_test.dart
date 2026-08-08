@@ -20,6 +20,7 @@ import 'package:integration_test/integration_test.dart';
 import '../support/app_boot.dart';
 import '../support/robots/app_robots.dart';
 import '../support/robots/creation_robots.dart';
+import '../support/robots/viewer_robots.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -63,8 +64,10 @@ void main() {
 
     await pageTable.save('Captured document');
 
-    // Saving returns the user to Home, and the document they just made is in
-    // the library they can see.
+    // Saving opens the new PDF directly; Back reveals the refreshed library.
+    final viewer = ViewerRobot(tester);
+    await viewer.waitUntilOpen();
+    await viewer.goBack();
     final dashboard = DashboardRobot(tester);
     await dashboard.waitUntilLoaded();
     expect(

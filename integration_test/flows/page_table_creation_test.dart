@@ -15,6 +15,7 @@ import 'package:integration_test/integration_test.dart';
 import '../support/app_boot.dart';
 import '../support/robots/app_robots.dart';
 import '../support/robots/creation_robots.dart';
+import '../support/robots/viewer_robots.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +37,9 @@ void main() {
     // leave the table claiming a page 2 that is not there.
     await pageTable.addPageFromCamera();
     expect(pageTable.pageCount, 3);
+
+    await pageTable.save('Page table document');
+    await ViewerRobot(tester).waitUntilOpen();
   });
 
   testWidgets('reordering renumbers every row', (tester) async {

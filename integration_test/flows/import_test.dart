@@ -18,7 +18,7 @@ import 'package:integration_test/integration_test.dart';
 import '../support/app_boot.dart';
 import '../support/fixtures.dart';
 import '../support/robots/app_robots.dart';
-import '../support/robots/library_robots.dart';
+import '../support/robots/viewer_robots.dart';
 import '../support/seed.dart';
 
 void main() {
@@ -55,13 +55,7 @@ void main() {
     final documentId = dashboard.visibleDocumentIds.single;
     await dashboard.waitForDocumentThumbnail(documentId);
     await dashboard.openDocument(documentId);
-    final detail = DocumentDetailRobot(tester);
-    await detail.waitUntilVisible();
-    expect(
-      detail.pagePreviewCount,
-      greaterThan(0),
-      reason: 'An imported PDF must expose its real page preview on Detail.',
-    );
+    await ViewerRobot(tester).waitUntilOpen();
 
     // And genuinely written where another application could read it, which is
     // what the public library folder is for.

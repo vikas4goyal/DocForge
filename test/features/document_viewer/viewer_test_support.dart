@@ -107,15 +107,24 @@ class InMemoryPreferences implements PreferenceStore {
 /// A document reader returning one fixed document.
 class StubViewerDocuments implements DocumentReader {
   /// Creates a reader that finds the fixture unless [found] is false.
-  StubViewerDocuments({this.found = true});
+  StubViewerDocuments({bool found = true, this.failure})
+    : document = found ? harnessDocument() : null;
 
-  /// Whether the document exists.
-  final bool found;
+  /// The current stored document, or null when it no longer exists.
+  Document? document;
+
+  /// A configured transient lookup failure.
+  Failure? failure;
 
   @override
-  Future<Result<Document>> findById(DocumentId id) async => found
-      ? Result<Document>.success(harnessDocument())
-      : const Result<Document>.failure(Failure.notFound());
+  Future<Result<Document>> findById(DocumentId id) async {
+    final configured = failure;
+    if (configured != null) return Result<Document>.failure(configured);
+    final value = document;
+    return value == null
+        ? const Result<Document>.failure(Failure.notFound())
+        : Result<Document>.success(value);
+  }
 
   @override
   Future<Result<List<Document>>> query({
@@ -124,7 +133,7 @@ class StubViewerDocuments implements DocumentReader {
     FolderId? folderId,
     int? limit,
     int offset = 0,
-  }) async => Result<List<Document>>.success([harnessDocument()]);
+  }) async => Result<List<Document>>.success([?document]);
 
   @override
   Future<Result<List<DocumentPage>>> pagesOf(DocumentId id) async =>
@@ -161,6 +170,7 @@ class ViewerHarness {
     FakePdfRenderer? renderer,
     bool documentFound = true,
     Failure? secretsFailure,
+    this.favouriteFailure,
   }) : renderer = renderer ?? FakePdfRenderer(),
        documents = StubViewerDocuments(found: documentFound),
        secrets = InMemorySecureStore(failure: secretsFailure);
@@ -173,6 +183,9 @@ class ViewerHarness {
 
   /// The secure store passwords go to.
   final InMemorySecureStore secrets;
+
+  /// A configured favourite persistence failure.
+  Failure? favouriteFailure;
 
   /// The preference store nothing should ever reach.
   final preferences = InMemoryPreferences();
@@ -194,5 +207,19 @@ class ViewerHarness {
     const DocumentId('doc-1'),
     openUseCase,
     RememberDocumentPassword(secrets),
+    documents.findById,
+    _toggleFavourite,
   );
+
+  Future<Result<Document>> _toggleFavourite(DocumentId id) async {
+    final failure = favouriteFailure;
+    if (failure != null) return Result<Document>.failure(failure);
+    final current = documents.document;
+    if (current == null) {
+      return const Result<Document>.failure(Failure.notFound());
+    }
+    final updated = current.copyWith(isFavourite: !current.isFavourite);
+    documents.document = updated;
+    return Result<Document>.success(updated);
+  }
 }

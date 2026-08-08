@@ -39,7 +39,7 @@ const forbiddenPackages = <String>[
 
 /// Files and fragments that define the DocScanly platform identity.
 const requiredIdentityFragments = <String, List<String>>{
-  'android/app/build.gradle.kts': [
+  'android/app/build.gradle': [
     'namespace = "com.bruxkey.docscanly"',
     'applicationId = "com.bruxkey.docscanly"',
   ],

@@ -86,7 +86,7 @@ class DocumentDetailCubit extends Cubit<DocumentDetailState> {
     }
   }
 
-  /// Loads the document and its pages.
+  /// Loads the document metadata without reading or materialising its pages.
   Future<void> load() async {
     emit(state.copyWith(status: LoadStatus.loading));
 
@@ -98,8 +98,6 @@ class DocumentDetailCubit extends Cubit<DocumentDetailState> {
           state.copyWith(
             status: LoadStatus.ready,
             document: value.document,
-            pages: value.pages,
-            pageHandles: value.pageHandles,
             isWorking: false,
           ),
         );

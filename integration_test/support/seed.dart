@@ -19,8 +19,9 @@ import 'app_boot.dart';
 import 'pump.dart';
 import 'robots/app_robots.dart';
 import 'robots/library_robots.dart';
+import 'robots/viewer_robots.dart';
 
-/// Imports the fixture document and returns to a loaded dashboard.
+/// Imports the configured fixtures and returns to a loaded dashboard.
 ///
 /// The flow must have been booted with the fixture path already supplied as
 /// [bootDocScanly]'s `pickedFiles`, because the file browser answers with
@@ -33,6 +34,15 @@ Future<void> seedDocumentByImport(WidgetTester tester) =>
       await dashboard.openImportSheet();
 
       await ImportRobot(tester).importFromFiles();
+
+      // A single successful import opens its Viewer directly; a multi-file
+      // import stays on Dashboard so it does not pick an arbitrary document.
+      // Let the route callback finish before distinguishing those outcomes.
+      await tester.pump(const Duration(milliseconds: 500));
+      final viewer = ViewerRobot(tester);
+      if (viewer.isVisible) {
+        await viewer.goBack();
+      }
 
       // The dashboard reloads on navigation, so the imported document appears
       // without anything having to tell it to.

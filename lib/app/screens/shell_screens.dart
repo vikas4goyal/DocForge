@@ -104,7 +104,7 @@ ScreenBuilder buildHomeScreen({
               libraryRefreshKey: libraryRefreshKey,
               actions: DashboardActions(
                 onOpenDocument: (document) =>
-                    context.push(AppRoutes.documentDetail(document.id)),
+                    context.push(AppRoutes.documentView(document.id)),
                 onCreateFolder: (name) => createFolder(
                   dashboardContext,
                   library.createLibraryFolder,
@@ -199,6 +199,10 @@ Future<void> importShared(
       await reviewImportedPages(context, bundle, creationFlow);
     } else if (state.imported.isNotEmpty) {
       report(context, state.outcomeMessage);
+      if (state.imported.length == 1) {
+        await context.push(AppRoutes.documentView(state.imported.single.id));
+        return;
+      }
       // Same reason as the import sheet: the dashboard is kept alive by the
       // tab shell and nothing else would rebuild it, so a document shared in
       // from another application would arrive invisibly.
@@ -241,6 +245,12 @@ Future<void> openImportSheet(
         onImported: (state) {
           Navigator.of(sheetContext).pop();
           report(context, state.outcomeMessage);
+          if (state.imported.length == 1) {
+            unawaited(
+              context.push(AppRoutes.documentView(state.imported.single.id)),
+            );
+            return;
+          }
           // The dashboard is built once and kept alive by the tab shell's
           // IndexedStack, so nothing rebuilds it when the sheet closes over
           // it. Without this the user is told "1 document imported" while
@@ -274,7 +284,10 @@ Future<void> reviewImportedPages(
           PageDraft(id: page.id, originalImagePath: page.imagePath),
       ],
       onExit: () => Navigator.of(routeContext).pop(),
-      onSaved: (_) => Navigator.of(routeContext).pop(),
+      onSaved: (document) {
+        Navigator.of(routeContext).pop();
+        unawaited(context.push(AppRoutes.documentView(document.id)));
+      },
     ),
   ),
 );

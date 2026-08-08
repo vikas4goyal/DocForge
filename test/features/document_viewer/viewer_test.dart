@@ -8,6 +8,7 @@ import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/features/document_viewer/application/usecases/viewer_usecases.dart';
 import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
@@ -131,6 +132,21 @@ void main() {
       expect(
         (result as Failed<ViewableDocument>).failure,
         isA<CorruptFileFailure>(),
+      );
+    });
+
+    test('propagates a readable-file resolution failure', () async {
+      final harness = ViewerHarness();
+      final result = await OpenDocumentForViewing(
+        harness.documents,
+        harness.renderer,
+        harness.secrets,
+        const _FailingDocumentFileResolver(),
+      )(const DocumentId('doc-1'));
+
+      expect(
+        (result as Failed<ViewableDocument>).failure,
+        isA<StorageFailure>(),
       );
     });
 
@@ -384,6 +400,80 @@ void main() {
       },
       verify: (_) => expect(harness.renderer.opened, hasLength(2)),
     );
+
+    test('favourite success updates metadata without moving page', () async {
+      final cubit = harness.cubit();
+      await cubit.load();
+      cubit.goToPage(2);
+
+      await cubit.toggleFavourite();
+
+      expect(cubit.state.document?.isFavourite, isTrue);
+      expect(cubit.state.page, 2);
+      expect(cubit.state.isFavouriteWorking, isFalse);
+      expect(cubit.state.actionFailure, isNull);
+      await cubit.close();
+    });
+
+    test('favourite failure keeps the persisted value and PDF ready', () async {
+      harness.favouriteFailure = const Failure.storage();
+      final cubit = harness.cubit();
+      await cubit.load();
+
+      await cubit.toggleFavourite();
+
+      expect(cubit.state.document?.isFavourite, isFalse);
+      expect(cubit.state.status, ViewerStatus.ready);
+      expect(cubit.state.actionFailure, isA<StorageFailure>());
+      await cubit.close();
+    });
+
+    test('metadata refresh changes title and preserves open state', () async {
+      final cubit = harness.cubit();
+      await cubit.load();
+      cubit.goToPage(3);
+      final filePath = cubit.state.filePath;
+      harness.documents.document = harness.documents.document!.copyWith(
+        title: 'Renamed invoice',
+        isFavourite: true,
+      );
+
+      await cubit.refreshMetadata();
+
+      expect(cubit.state.title, 'Renamed invoice');
+      expect(cubit.state.document?.isFavourite, isTrue);
+      expect(cubit.state.page, 3);
+      expect(cubit.state.filePath, filePath);
+      expect(harness.renderer.opened, hasLength(1));
+      await cubit.close();
+    });
+
+    test('missing metadata marks Viewer unavailable', () async {
+      final cubit = harness.cubit();
+      await cubit.load();
+      harness.documents.document = null;
+
+      await cubit.refreshMetadata();
+
+      expect(cubit.state.isUnavailable, isTrue);
+      expect(cubit.state.status, ViewerStatus.ready);
+      await cubit.close();
+    });
+
+    test('transient metadata failure leaves the PDF readable', () async {
+      final cubit = harness.cubit();
+      await cubit.load();
+      cubit.goToPage(2);
+      harness.documents.failure = const Failure.storage();
+
+      await cubit.refreshMetadata();
+
+      expect(cubit.state.isUnavailable, isFalse);
+      expect(cubit.state.status, ViewerStatus.ready);
+      expect(cubit.state.page, 2);
+      expect(cubit.state.actionFailure, isA<StorageFailure>());
+      await cubit.close();
+    });
   });
 
   group('OpenedDocument', () {
@@ -414,6 +504,18 @@ void main() {
       expect(harness.renderer.opened, hasLength(1));
     });
   });
+}
+
+class _FailingDocumentFileResolver implements DocumentFileResolver {
+  const _FailingDocumentFileResolver();
+
+  @override
+  Future<Result<String>> pathFor(Document document) async =>
+      const Result<String>.failure(Failure.storage());
+
+  @override
+  Future<Result<void>> release(Document document) async =>
+      const Result<void>.success(null);
 }
 
 /// A document fixture, so the harness and the tests agree on what is stored.

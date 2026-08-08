@@ -15,6 +15,7 @@ import 'package:doc_scanly/app/sharing_module.dart';
 import 'package:doc_scanly/core/contracts/contracts.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/failure_messages.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
@@ -73,8 +74,8 @@ ViewerScreens buildViewerScreens({
   required PdfRenderer renderer,
 }) {
   return ViewerScreens(
-    viewer: (context, id) => BlocProvider(
-      create: (_) => ViewerCubit(
+    viewer: (context, id) {
+      final cubit = ViewerCubit(
         id,
         OpenDocumentForViewing(
           library.documentReader,
@@ -83,85 +84,121 @@ ViewerScreens buildViewerScreens({
           documentFiles,
         ),
         RememberDocumentPassword(secureStorage),
-      )..load(),
-      child: ViewerScreen(
-        // The rendering surface comes from here rather than from the screen:
-        // it is a plugin-backed widget, and a screen that built its own could
-        // be neither previewed nor tested.
-        surfaceBuilder:
-            (
-              context, {
-              required filePath,
-              required password,
-              required page,
-              required onPageChanged,
-            }) => KeyedSubtree(
-              key: ViewerKeys.pageView,
-              child: PdfViewer.file(
-                filePath,
-                passwordProvider: () => password,
-                params: PdfViewerParams(
-                  onPageChanged: (page) => onPageChanged(page ?? 1),
+        (documentId) async {
+          final found = await library.documentReader.findById(documentId);
+          // Trash keeps the record for recovery, but it is no longer available
+          // to the reading stack. Report that as not-found so returning from
+          // Details closes this one Viewer route without disturbing its origin.
+          return found.flatMap(
+            (document) => document.trashId == null
+                ? Result<Document>.success(document)
+                : const Result<Document>.failure(Failure.notFound()),
+          );
+        },
+        library.toggleFavourite.call,
+      );
+
+      return BlocProvider(
+        create: (_) => cubit..load(),
+        child: ViewerScreen(
+          // The rendering surface comes from here rather than from the screen:
+          // it is a plugin-backed widget, and a screen that built its own could
+          // be neither previewed nor tested.
+          surfaceBuilder:
+              (
+                context, {
+                required filePath,
+                required password,
+                required page,
+                required onPageChanged,
+              }) => KeyedSubtree(
+                key: ViewerKeys.pageView,
+                child: PdfViewer.file(
+                  filePath,
+                  passwordProvider: () => password,
+                  params: PdfViewerParams(
+                    onPageChanged: (page) => onPageChanged(page ?? 1),
+                  ),
                 ),
               ),
-            ),
-        onBack: () => context.pop(),
-        onShare: () => openShareSheet(context, sharing, id),
-        // Printing goes straight to the system dialogue rather than through the
-        // sheet: the viewer's print control names the action exactly, and an
-        // intermediate sheet asking "print?" would be a step with one option.
-        onAction: (action) {
-          switch (action) {
-            case ViewerDocumentAction.print:
-              printDocument(context, sharing, id);
-            case ViewerDocumentAction.compress:
-              openEditor(
-                context,
-                editing,
-                documentFiles,
-                id,
-                documentReader: library.documentReader,
-                initialOperation: PdfEditOperation.compress,
-              );
-            case ViewerDocumentAction.split:
-              openEditor(
-                context,
-                editing,
-                documentFiles,
-                id,
-                documentReader: library.documentReader,
-                initialOperation: PdfEditOperation.split,
-              );
-            case ViewerDocumentAction.watermark:
-              openEditor(
-                context,
-                editing,
-                documentFiles,
-                id,
-                documentReader: library.documentReader,
-                initialOperation: PdfEditOperation.watermark,
-              );
-            case ViewerDocumentAction.protection:
-              openEditor(
-                context,
-                editing,
-                documentFiles,
-                id,
-                documentReader: library.documentReader,
-                initialOperation: PdfEditOperation.protect,
-              );
-            case ViewerDocumentAction.pageManagement:
-              openEditor(
-                context,
-                editing,
-                documentFiles,
-                id,
-                documentReader: library.documentReader,
-              );
-          }
-        },
-      ),
-    ),
+          onBack: () => context.pop(),
+          onShare: () => openShareSheet(context, sharing, id),
+          onShowDetails: () async {
+            final recordUnavailable = await context.push<bool>(
+              AppRoutes.documentDetail(id),
+            );
+            if (!context.mounted) return;
+
+            // Detail owns the mutation and reports an unavailable record
+            // explicitly. Close this Viewer from that result instead of also
+            // waiting for a metadata emission: combining both signals creates
+            // two competing navigation paths on slower devices.
+            if (recordUnavailable == true) {
+              context.pop();
+              return;
+            }
+
+            await cubit.refreshMetadata();
+          },
+          // Printing goes straight to the system dialogue rather than through the
+          // sheet: the viewer's print control names the action exactly, and an
+          // intermediate sheet asking "print?" would be a step with one option.
+          onAction: (action) {
+            switch (action) {
+              case ViewerDocumentAction.details:
+                // Handled by [onShowDetails] so Viewer can refresh afterwards.
+                break;
+              case ViewerDocumentAction.print:
+                printDocument(context, sharing, id);
+              case ViewerDocumentAction.compress:
+                openEditor(
+                  context,
+                  editing,
+                  documentFiles,
+                  id,
+                  documentReader: library.documentReader,
+                  initialOperation: PdfEditOperation.compress,
+                );
+              case ViewerDocumentAction.split:
+                openEditor(
+                  context,
+                  editing,
+                  documentFiles,
+                  id,
+                  documentReader: library.documentReader,
+                  initialOperation: PdfEditOperation.split,
+                );
+              case ViewerDocumentAction.watermark:
+                openEditor(
+                  context,
+                  editing,
+                  documentFiles,
+                  id,
+                  documentReader: library.documentReader,
+                  initialOperation: PdfEditOperation.watermark,
+                );
+              case ViewerDocumentAction.protection:
+                openEditor(
+                  context,
+                  editing,
+                  documentFiles,
+                  id,
+                  documentReader: library.documentReader,
+                  initialOperation: PdfEditOperation.protect,
+                );
+              case ViewerDocumentAction.pageManagement:
+                openEditor(
+                  context,
+                  editing,
+                  documentFiles,
+                  id,
+                  documentReader: library.documentReader,
+                );
+            }
+          },
+        ),
+      );
+    },
     documentEdit: (_, id) => PlaceholderScreen('Edit ${id.value}'),
   );
 }
@@ -219,7 +256,7 @@ Future<void> openEditor(
               },
               onDerived: (document) {
                 Navigator.of(routeContext).pop();
-                context.go(AppRoutes.documentDetail(document.id));
+                context.pushReplacement(AppRoutes.documentView(document.id));
               },
             );
           },

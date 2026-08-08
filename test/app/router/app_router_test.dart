@@ -75,6 +75,18 @@ void main() {
       expect(find.text('documentDetail:doc-42'), findsOneWidget);
     });
 
+    testWidgets('document viewer resolves directly without building Detail', (
+      tester,
+    ) async {
+      await pumpRouter(
+        tester,
+        location: AppRoutes.documentView(const DocumentId('doc-42')),
+      );
+
+      expect(find.text('viewer:doc-42'), findsOneWidget);
+      expect(find.text('documentDetail:doc-42'), findsNothing);
+    });
+
     testWidgets('document edit receives its typed id', (tester) async {
       await pumpRouter(
         tester,
@@ -98,6 +110,10 @@ void main() {
       expect(
         AppRoutes.documentEdit(const DocumentId('a')),
         '/documents/a/edit',
+      );
+      expect(
+        AppRoutes.documentView(const DocumentId('a')),
+        '/documents/a/view',
       );
       expect(AppRoutes.folderDetail(const FolderId('b')), '/folders/b');
     });

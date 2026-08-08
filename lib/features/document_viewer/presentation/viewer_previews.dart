@@ -109,10 +109,20 @@ class _PreviewViewerCubit extends ViewerCubit with SeededCubit<ViewerState> {
           PublicStoreDocumentFileResolver(InMemoryPublicFileStore()),
         ),
         const RememberDocumentPassword(_InertSecrets()),
+        _loadPreviewMetadata,
+        _togglePreviewFavourite,
       ) {
     seed(state);
   }
 }
+
+Future<Result<Document>> _loadPreviewMetadata(DocumentId id) async =>
+    Result<Document>.success(_document);
+
+Future<Result<Document>> _togglePreviewFavourite(DocumentId id) async =>
+    Result<Document>.success(
+      _document.copyWith(isFavourite: !_document.isFavourite),
+    );
 
 Widget _viewer(ViewerState state) => BlocProvider<ViewerCubit>(
   create: (_) => _PreviewViewerCubit(state),
@@ -120,17 +130,19 @@ Widget _viewer(ViewerState state) => BlocProvider<ViewerCubit>(
     surfaceBuilder: _previewSurface,
     onBack: () {},
     onShare: () {},
+    onShowDetails: () async {},
     onAction: (_) {},
   ),
 );
 
 /// A document open at page one.
-ViewerState _open({int page = 1}) => const ViewerState.initial().copyWith(
-  status: ViewerStatus.ready,
-  document: _document,
-  pageCount: 12,
-  page: page,
-);
+ViewerState _open({int page = 1, Document? document}) =>
+    const ViewerState.initial().copyWith(
+      status: ViewerStatus.ready,
+      document: document ?? _document,
+      pageCount: 12,
+      page: page,
+    );
 
 // ---------------------------------------------------------------------------
 // Viewer screen
@@ -139,6 +151,33 @@ ViewerState _open({int page = 1}) => const ViewerState.initial().copyWith(
 /// The document open at its first page.
 @Preview(name: 'Viewer — default', group: 'Viewer', theme: appPreviewTheme)
 Widget viewerDefault() => _viewer(_open());
+
+/// A document already marked as a favourite.
+@Preview(name: 'Viewer — favourite', group: 'Viewer', theme: appPreviewTheme)
+Widget viewerFavourite() =>
+    _viewer(_open(document: _document.copyWith(isFavourite: true)));
+
+/// Favourite persistence is currently in flight.
+@Preview(
+  name: 'Viewer — favourite working',
+  group: 'Viewer',
+  theme: appPreviewTheme,
+)
+Widget viewerFavouriteWorking() =>
+    _viewer(_open().copyWith(isFavouriteWorking: true));
+
+/// A favourite action failed without replacing the readable PDF.
+@Preview(
+  name: 'Viewer — action failure',
+  group: 'Viewer',
+  theme: appPreviewTheme,
+)
+Widget viewerActionFailure() =>
+    _viewer(_open().copyWith(actionFailure: const Failure.storage()));
+
+/// The record disappeared while Details was open.
+@Preview(name: 'Viewer — unavailable', group: 'Viewer', theme: appPreviewTheme)
+Widget viewerUnavailable() => _viewer(_open().copyWith(isUnavailable: true));
 
 /// The document part-way through.
 @Preview(name: 'Viewer — mid-document', group: 'Viewer', theme: appPreviewTheme)
@@ -196,7 +235,22 @@ Widget viewerSinglePage() => _viewer(
 
 /// A document with a long title.
 @Preview(name: 'Viewer — long content', group: 'Viewer', theme: appPreviewTheme)
-Widget viewerLongContent() => _viewer(_open());
+Widget viewerLongContent() => _viewer(
+  _open(
+    document: _document.copyWith(
+      title: List.filled(10, 'Quarterly statement').join(' '),
+    ),
+  ),
+);
+
+/// Viewer chrome at the maximum supported text scale.
+@Preview(
+  name: 'Viewer — large text',
+  group: 'Viewer',
+  theme: appPreviewTheme,
+  textScaleFactor: 2,
+)
+Widget viewerLargeText() => _viewer(_open());
 
 /// The viewer on a phone, light.
 @Preview(

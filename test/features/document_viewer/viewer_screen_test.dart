@@ -40,12 +40,14 @@ void main() {
   late int backCount;
   late int shareCount;
   late int printCount;
+  late int detailsCount;
   late List<ViewerDocumentAction> actions;
 
   setUp(() {
     backCount = 0;
     shareCount = 0;
     printCount = 0;
+    detailsCount = 0;
     actions = [];
   });
 
@@ -73,6 +75,7 @@ void main() {
             surfaceBuilder: fakeSurface,
             onBack: () => backCount++,
             onShare: () => shareCount++,
+            onShowDetails: () async => detailsCount++,
             onAction: (action) {
               actions.add(action);
               if (action == ViewerDocumentAction.print) printCount++;
@@ -105,11 +108,13 @@ void main() {
       await pump(tester);
 
       expect(find.byKey(ViewerKeys.shareButton), findsOneWidget);
+      expect(find.byKey(ViewerKeys.favouriteButton), findsOneWidget);
       expect(find.byKey(ViewerKeys.actionsMenu), findsOneWidget);
 
       await tester.tap(find.byKey(ViewerKeys.actionsMenu));
       await tester.pumpAndSettle();
       for (final key in [
+        ViewerKeys.documentDetailsButton,
         ViewerKeys.printButton,
         ViewerKeys.compressButton,
         ViewerKeys.splitButton,
@@ -160,6 +165,34 @@ void main() {
         ViewerDocumentAction.compress,
         ViewerDocumentAction.pageManagement,
       ]);
+    });
+
+    testWidgets('Details uses its dedicated callback exactly once', (
+      tester,
+    ) async {
+      await pump(tester);
+
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(ViewerKeys.documentDetailsButton));
+      await tester.pumpAndSettle();
+
+      expect(detailsCount, 1);
+      expect(actions, isEmpty);
+    });
+
+    testWidgets('favourite toggles the star without replacing page surface', (
+      tester,
+    ) async {
+      final cubit = await pump(tester);
+      final surfaceBefore = tester.element(find.byKey(ViewerKeys.pageView));
+
+      await tester.tap(find.byKey(ViewerKeys.favouriteButton));
+      await tester.pump();
+
+      expect(cubit.state.document?.isFavourite, isTrue);
+      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(tester.element(find.byKey(ViewerKeys.pageView)), surfaceBefore);
     });
 
     testWidgets('compact width keeps secondary actions in a reachable menu', (
@@ -352,7 +385,6 @@ void main() {
       );
 
       expect(find.byKey(ViewerKeys.pageView), findsOneWidget);
-      expect(find.byKey(ViewerKeys.textPanel), findsNothing);
     });
 
     testWidgets('a tablet with no recognised text shows only the page', (
@@ -360,7 +392,7 @@ void main() {
     ) async {
       await pump(tester, viewport: const Size(1280, 900));
 
-      expect(find.byKey(ViewerKeys.textPanel), findsNothing);
+      expect(find.byKey(ViewerKeys.pageView), findsOneWidget);
     });
 
     testWidgets('neither viewport overflows', (tester) async {
@@ -398,6 +430,10 @@ void main() {
         find.bySemanticsLabel(RegExp('More document actions')),
         findsAtLeastNWidgets(1),
       );
+      expect(
+        find.bySemanticsLabel('Add Invoice 2026 to favourites'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byKey(ViewerKeys.actionsMenu));
       await tester.pumpAndSettle();
@@ -405,6 +441,10 @@ void main() {
       expect(
         find.bySemanticsLabel(RegExp('Compress')),
         findsAtLeastNWidgets(1),
+      );
+      expect(
+        find.bySemanticsLabel(ViewerSemantics.documentDetails),
+        findsOneWidget,
       );
 
       handle.dispose();
@@ -452,6 +492,7 @@ void main() {
               surfaceBuilder: fakeSurface,
               onBack: () {},
               onShare: () {},
+              onShowDetails: () async {},
               onAction: (_) {},
             ),
           ),

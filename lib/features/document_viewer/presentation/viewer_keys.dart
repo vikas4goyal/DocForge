@@ -34,6 +34,12 @@ abstract final class ViewerKeys {
   /// Responsive overflow containing secondary viewer actions.
   static const actionsMenu = Key('viewer_actions_menu');
 
+  /// Toggles favourite status without leaving the open document.
+  static const favouriteButton = Key('viewer_favourite_button');
+
+  /// Opens the metadata-focused document Detail screen.
+  static const documentDetailsButton = Key('viewer_document_details_button');
+
   /// The control that shares the document.
   static const shareButton = Key('viewer_share_button');
 
@@ -72,13 +78,19 @@ abstract final class ViewerKeys {
 
   /// The scrollable holding the document's pages.
   static const pageView = Key('viewer_page_view');
-
-  /// The panel showing the document's recognised text, on wide layouts.
-  static const textPanel = Key('viewer_text_panel');
 }
 
 /// Semantics labels for the viewer.
 abstract final class ViewerSemantics {
   /// Announces which page of how many the reader is on.
   static String pageIndicator(String pageLabel) => 'Page $pageLabel';
+
+  /// Labels the Viewer favourite toggle with its resulting action.
+  static String favourite(String title, {required bool isFavourite}) =>
+      isFavourite
+      ? 'Remove $title from favourites'
+      : 'Add $title to favourites';
+
+  /// Labels the Viewer action that opens metadata and lifecycle controls.
+  static const documentDetails = 'Show document details';
 }

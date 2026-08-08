@@ -18,6 +18,7 @@ import '../support/app_boot.dart';
 import '../support/fixtures.dart';
 import '../support/robots/app_robots.dart';
 import '../support/robots/library_robots.dart';
+import '../support/robots/viewer_robots.dart';
 import '../support/seed.dart';
 
 void main() {
@@ -133,8 +134,8 @@ void main() {
     expect(dashboard.visibleDocumentIds, hasLength(1));
     final foundId = dashboard.visibleDocumentIds.single;
     await dashboard.openDocument(foundId);
-    await DocumentDetailRobot(tester).waitUntilVisible();
-    await tester.pageBack();
+    await ViewerRobot(tester).waitUntilOpen();
+    await ViewerRobot(tester).goBack();
     await dashboard.waitUntilLoaded();
 
     await dashboard.clearSearch();
@@ -143,6 +144,40 @@ void main() {
     await dashboard.selectAll();
     await dashboard.archiveSelection();
     expect(dashboard.isEmpty, isTrue);
+  });
+
+  testWidgets('Viewer and Details reconcile the complete organise journey', (
+    tester,
+  ) async {
+    await bootWithOneDocument(tester);
+    final dashboard = DashboardRobot(tester);
+    await dashboard.waitUntilLoaded();
+    await dashboard.createFolder('Receipts');
+    final documentId = dashboard.visibleDocumentIds.single;
+    await dashboard.openDocument(documentId);
+
+    final viewer = ViewerRobot(tester);
+    await viewer.waitUntilOpen();
+    await viewer.toggleFavourite();
+    await viewer.openDetails();
+
+    final detail = DocumentDetailRobot(tester);
+    await detail.waitUntilVisible();
+    await detail.rename('Organised receipt');
+    await detail.moveToFirstFolder();
+    await detail.archive();
+    await tester.pageBack();
+
+    await viewer.waitUntilOpen();
+    expect(find.text('Organised receipt'), findsWidgets);
+    await viewer.openDetails();
+    await detail.waitUntilVisible();
+    await detail.deletePermanently();
+
+    // Detail closes first; the metadata refresh then closes the now-unavailable
+    // Viewer exactly once and exposes the original Dashboard.
+    await dashboard.waitUntilLoaded();
+    expect(viewer.isVisible, isFalse);
   });
 
   testWidgets(
@@ -155,16 +190,20 @@ void main() {
 
       final movingId = dashboard.visibleDocumentIds.first;
       await dashboard.openDocument(movingId);
+      final viewer = ViewerRobot(tester);
+      await viewer.waitUntilOpen();
+      await viewer.openDetails();
       final detail = DocumentDetailRobot(tester);
       await detail.waitUntilVisible();
       final folder = await detail.moveToFirstFolder();
       await detail.duplicate(name: 'Reviewed copy', folderName: folder.name);
 
-      // Duplicate navigates once to the newly-created document's Detail.
-      await detail.waitUntilVisible();
+      // Duplicate replaces Detail with exactly one Viewer for the copy.
+      await viewer.waitUntilOpen();
       expect(find.text('Reviewed copy'), findsWidgets);
 
-      await tester.pageBack();
+      await viewer.goBack();
+      await viewer.goBack();
       await dashboard.waitUntilLoaded();
       await dashboard.openFolder('Projects');
       await dashboard.waitUntilLoaded();

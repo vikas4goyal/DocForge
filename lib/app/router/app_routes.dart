@@ -48,9 +48,9 @@ abstract final class AppRoutes {
 
   /// The viewer for one document.
   ///
-  /// A child of the detail route rather than a replacement for it: opening a
-  /// document to read it and inspecting its metadata are different intents, and
-  /// Back from the viewer should return to the detail the user came from.
+  /// Registered as a top-level typed route so direct activation places only
+  /// Viewer over the originating library surface. Detail is pushed explicitly
+  /// from Viewer's overflow when metadata or lifecycle actions are requested.
   static const documentViewTemplate = '/documents/:id/view';
 
   /// All folders.

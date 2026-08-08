@@ -1,11 +1,11 @@
-// ignore_for_file: prefer_initializing_formals
-
 /// The Cubits driving the scanning flow.
 ///
 /// Each method is emit / await a use case / emit. Page ordering, undo
 /// positioning, the "at least one page" rule and the perspective maths all live
 /// in the domain and application layers and are unit-tested there.
 library;
+
+// ignore_for_file: prefer_initializing_formals
 
 import 'dart:async';
 

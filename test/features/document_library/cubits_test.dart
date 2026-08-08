@@ -63,7 +63,7 @@ void main() {
 
   DocumentDetailCubit buildDetail(DocumentId id) => DocumentDetailCubit(
     id,
-    LoadDocumentDetail(documents, pages),
+    LoadDocumentDetail(documents),
     RenameDocument(documents, clock, store),
     MoveDocument(documents, clock),
     ToggleFavourite(documents, clock),
@@ -393,8 +393,15 @@ void main() {
       pages.pages[sampleDocument.id] = samplePages(2);
     });
 
+    test('metadata query never reads the page repository', () async {
+      final result = await LoadDocumentDetail(documents)(sampleDocument.id);
+
+      expect(result.valueOrNull?.document, sampleDocument);
+      expect(pages.forDocumentCalls, isEmpty);
+    });
+
     blocTest<DocumentDetailCubit, DocumentDetailState>(
-      'loads the document with its pages',
+      'loads document metadata without requesting its pages',
       build: () => buildDetail(sampleDocument.id),
       act: (cubit) => cubit.load(),
       expect: () => [
@@ -405,9 +412,9 @@ void main() {
         ),
         isA<DocumentDetailState>()
             .having((s) => s.status, 'status', LoadStatus.ready)
-            .having((s) => s.document, 'document', sampleDocument)
-            .having((s) => s.pages, 'pages', hasLength(2)),
+            .having((s) => s.document, 'document', sampleDocument),
       ],
+      verify: (_) => expect(pages.forDocumentCalls, isEmpty),
     );
 
     blocTest<DocumentDetailCubit, DocumentDetailState>(
@@ -605,7 +612,7 @@ void main() {
       await cubit.close();
     });
 
-    test('a page-read failure still shows the metadata', () async {
+    test('missing page rows do not affect metadata loading', () async {
       pages.pages.remove(sampleDocument.id);
       final cubit = buildDetail(sampleDocument.id);
 
@@ -613,7 +620,7 @@ void main() {
 
       expect(cubit.state.status, LoadStatus.ready);
       expect(cubit.state.document, sampleDocument);
-      expect(cubit.state.pages, isEmpty);
+      expect(pages.forDocumentCalls, isEmpty);
       await cubit.close();
     });
   });

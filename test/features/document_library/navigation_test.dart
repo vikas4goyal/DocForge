@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:doc_scanly/app/router/app_router.dart';
 import 'package:doc_scanly/app/router/app_routes.dart';
 import 'package:doc_scanly/app/router/route_gates.dart';
@@ -75,11 +77,11 @@ void main() {
     child: folderId == null
         ? DocumentListScreen(
             title: title,
-            onOpenDocument: (id) => context.push(AppRoutes.documentDetail(id)),
+            onOpenDocument: (id) => context.push(AppRoutes.documentView(id)),
           )
         : FolderDetailScreen(
             folderName: title,
-            onOpenDocument: (id) => context.push(AppRoutes.documentDetail(id)),
+            onOpenDocument: (id) => context.push(AppRoutes.documentView(id)),
           ),
   );
 
@@ -114,7 +116,7 @@ void main() {
     documentDetail: (context, id) => BlocProvider(
       create: (_) => DocumentDetailCubit(
         id,
-        LoadDocumentDetail(documents, pages),
+        LoadDocumentDetail(documents),
         RenameDocument(documents, clock, InMemoryPublicFileStore()),
         MoveDocument(documents, clock),
         ToggleFavourite(documents, clock),
@@ -135,10 +137,7 @@ void main() {
           secure,
         ),
       ),
-      child: DocumentDetailScreen(
-        onClose: () => context.pop(),
-        onOpenViewer: () => context.push(AppRoutes.documentView(id)),
-      ),
+      child: DocumentDetailScreen(onClose: () => context.pop()),
     ),
     documentEdit: (_, _) => _placeholder('documentEdit'),
     folders: (context) => BlocProvider(
@@ -183,7 +182,7 @@ void main() {
     privacy: (_) => _placeholder('privacy'),
   );
 
-  Future<void> pumpAt(WidgetTester tester, String location) async {
+  Future<GoRouter> pumpAt(WidgetTester tester, String location) async {
     final router = createAppRouter(
       guard: RouteGuard(
         lockGate: FakeAppLockGate(),
@@ -198,6 +197,7 @@ void main() {
       MaterialApp.router(theme: AppTheme.light, routerConfig: router),
     );
     await tester.pumpAndSettle();
+    return router;
   }
 
   group('library routes', () {
@@ -293,7 +293,7 @@ void main() {
   });
 
   group('navigating between library screens', () {
-    testWidgets('opening a document row pushes its detail screen', (
+    testWidgets('opening a document row pushes Viewer directly', (
       tester,
     ) async {
       documents.documents[sampleDocument.id] = sampleDocument;
@@ -301,32 +301,20 @@ void main() {
 
       await pumpAt(tester, AppRoutes.documents);
       await tester.tap(find.byType(DocumentCard));
-      await tester.pumpAndSettle();
-
-      expect(find.byKey(LibraryKeys.documentDetailScreen), findsOneWidget);
-    });
-
-    testWidgets('the detail Open action pushes the same document viewer', (
-      tester,
-    ) async {
-      documents.documents[sampleDocument.id] = sampleDocument;
-      pages.pages[sampleDocument.id] = samplePages(2);
-
-      await pumpAt(tester, AppRoutes.documentDetail(sampleDocument.id));
-      await tester.tap(find.byKey(LibraryKeys.documentOpenButton));
       await tester.pumpAndSettle();
 
       expect(
         find.byKey(Key('placeholder_viewer:${sampleDocument.id.value}')),
         findsOneWidget,
       );
+      expect(find.byKey(LibraryKeys.documentDetailScreen), findsNothing);
     });
 
     testWidgets('deleting a document returns to the list', (tester) async {
       documents.documents[sampleDocument.id] = sampleDocument;
 
-      await pumpAt(tester, AppRoutes.documents);
-      await tester.tap(find.byType(DocumentCard));
+      final router = await pumpAt(tester, AppRoutes.documents);
+      unawaited(router.push(AppRoutes.documentDetail(sampleDocument.id)));
       await tester.pumpAndSettle();
 
       await tester.tap(find.byKey(const Key('document_detail_menu')));

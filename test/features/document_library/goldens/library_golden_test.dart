@@ -10,7 +10,6 @@ import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
-import 'package:doc_scanly/core/previews/fixtures/fixtures.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
 import 'package:doc_scanly/core/theme/app_theme.dart';
@@ -124,7 +123,7 @@ class _SeededDetailCubit extends DocumentDetailCubit {
   _SeededDetailCubit(this._seeded)
     : super(
         _seeded.document!.id,
-        LoadDocumentDetail(_documents, _pages),
+        LoadDocumentDetail(_documents),
         RenameDocument(_documents, _clock, InMemoryPublicFileStore()),
         MoveDocument(_documents, _clock),
         ToggleFavourite(_documents, _clock),
@@ -217,8 +216,9 @@ void main() {
   Future<void> pumpDetail(
     WidgetTester tester,
     Size size,
-    DocumentDetailState state,
-  ) async {
+    DocumentDetailState state, {
+    Brightness brightness = Brightness.light,
+  }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
@@ -227,10 +227,10 @@ void main() {
     addTearDown(cubit.close);
     await tester.pumpWidget(
       MaterialApp(
-        theme: AppTheme.light,
+        theme: brightness == Brightness.dark ? AppTheme.dark : AppTheme.light,
         home: BlocProvider<DocumentDetailCubit>.value(
           value: cubit,
-          child: DocumentDetailScreen(onClose: () {}, onOpenViewer: () {}),
+          child: DocumentDetailScreen(onClose: () {}),
         ),
       ),
     );
@@ -251,7 +251,6 @@ void main() {
   final detail = const DocumentDetailState.initial().copyWith(
     status: LoadStatus.ready,
     document: _document(0),
-    pages: samplePages(4),
   );
 
   group('document detail goldens', () {
@@ -279,6 +278,33 @@ void main() {
       await expectLater(
         find.byType(DocumentDetailScreen),
         matchesGoldenFile('document_detail_icloud_remote.png'),
+      );
+    });
+
+    testWidgets('phone, dark', (tester) async {
+      await pumpDetail(tester, _phone, detail, brightness: Brightness.dark);
+
+      await expectLater(
+        find.byType(DocumentDetailScreen),
+        matchesGoldenFile('document_detail_phone_dark.png'),
+      );
+    });
+
+    testWidgets('tablet, light', (tester) async {
+      await pumpDetail(tester, _tablet, detail);
+
+      await expectLater(
+        find.byType(DocumentDetailScreen),
+        matchesGoldenFile('document_detail_tablet_light.png'),
+      );
+    });
+
+    testWidgets('tablet, dark', (tester) async {
+      await pumpDetail(tester, _tablet, detail, brightness: Brightness.dark);
+
+      await expectLater(
+        find.byType(DocumentDetailScreen),
+        matchesGoldenFile('document_detail_tablet_dark.png'),
       );
     });
   });

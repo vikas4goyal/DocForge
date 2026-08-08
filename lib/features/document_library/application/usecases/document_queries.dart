@@ -5,11 +5,8 @@
 /// accidentally be handed the ability to delete one.
 library;
 
-import 'package:doc_scanly/core/contracts/document_page_access.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
-import 'package:doc_scanly/core/contracts/models/document_page_handle.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
-import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/features/document_library/domain/repositories/library_repositories.dart';
 
@@ -70,71 +67,26 @@ class LoadDocuments {
   }
 }
 
-/// A document together with the pages belonging to it.
+/// Metadata displayed by the document Detail screen.
 class DocumentDetail {
   /// Creates a detail record.
-  const DocumentDetail({
-    required this.document,
-    required this.pages,
-    required this.pageHandles,
-  });
+  const DocumentDetail({required this.document});
 
   /// The document's metadata.
   final Document document;
-
-  /// The document's pages, in page order.
-  final List<DocumentPage> pages;
-
-  /// Unified stored-image or PDF-backed pages used by preview consumers.
-  final List<DocumentPageHandle> pageHandles;
 }
 
-/// Loads a single document and its pages.
+/// Loads only the metadata needed by the document Detail screen.
 class LoadDocumentDetail {
   /// Creates the use case.
-  const LoadDocumentDetail(this._documents, this._pages, [this._pageAccess]);
+  const LoadDocumentDetail(this._documents);
 
   final DocumentRepository _documents;
-  final PageRepository _pages;
-  final DocumentPageAccessRepository? _pageAccess;
 
-  /// Returns [id] with its pages.
-  ///
-  /// A page-read failure is not fatal: the metadata the detail screen shows —
-  /// title, dates, size, page count — comes from the document record, so an
-  /// unreadable page list degrades to an empty thumbnail strip rather than an
-  /// error screen that hides information the user can still act on.
+  /// Returns [id] without enumerating, materialising, or caching its pages.
   Future<Result<DocumentDetail>> call(DocumentId id) async {
     final found = await _documents.findById(id);
-
-    return found.flatMapAsync((document) async {
-      final pages = await _pages.forDocument(document.id);
-      final storedPages = pages.getOrElse(const <DocumentPage>[]);
-      final handles = _pageAccess == null
-          ? Result<List<DocumentPageHandle>>.success(
-              storedPages
-                  .map(
-                    (page) => DocumentPageHandle(
-                      id: page.id,
-                      documentId: page.documentId,
-                      pageNumber: page.pageNumber,
-                      source: DocumentPageSource.storedImage(
-                        imagePath: page.imagePath,
-                        thumbnailPath: page.thumbnailPath,
-                      ),
-                    ),
-                  )
-                  .toList(growable: false),
-            )
-          : await _pageAccess.pagesOf(document);
-      return Result<DocumentDetail>.success(
-        DocumentDetail(
-          document: document,
-          pages: storedPages,
-          pageHandles: handles.getOrElse(const <DocumentPageHandle>[]),
-        ),
-      );
-    });
+    return found.map((document) => DocumentDetail(document: document));
   }
 }
 

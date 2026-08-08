@@ -26,6 +26,11 @@ analyzer:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
     - "**/*.mocks.dart"
+    # Flutter/Xcode may place downloaded package sources under build/, while
+    # third_party/ contains vendored plugin fixtures. Neither is app-owned Dart
+    # source and both carry their own package dependency graphs.
+    - "build/**"
+    - "third_party/**"
 
 linter:
   rules:

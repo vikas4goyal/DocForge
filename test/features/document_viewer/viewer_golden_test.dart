@@ -76,6 +76,7 @@ void main() {
             surfaceBuilder: goldenSurface,
             onBack: () {},
             onShare: () {},
+            onShowDetails: () async {},
             onAction: (_) {},
           ),
         ),
@@ -104,6 +105,32 @@ void main() {
       await expectLater(
         find.byType(ViewerScreen),
         matchesGoldenFile('goldens/viewer_phone_dark.png'),
+      );
+    });
+
+    testWidgets('phone favourite, light', (tester) async {
+      await pumpAt(
+        tester,
+        _phone,
+        seed: (state) => state.copyWith(
+          document: state.document!.copyWith(isFavourite: true),
+        ),
+      );
+
+      await expectLater(
+        find.byType(ViewerScreen),
+        matchesGoldenFile('goldens/viewer_phone_favourite_light.png'),
+      );
+    });
+
+    testWidgets('phone overflow, light', (tester) async {
+      await pumpAt(tester, _phone);
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/viewer_overflow_phone_light.png'),
       );
     });
 

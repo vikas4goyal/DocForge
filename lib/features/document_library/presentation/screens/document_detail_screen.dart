@@ -2,10 +2,8 @@
 library;
 
 import 'package:doc_scanly/core/contracts/models/document.dart';
-import 'package:doc_scanly/core/contracts/models/document_page_handle.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
-import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/formatting/display_formatting.dart';
 import 'package:doc_scanly/core/widgets/app_state_views.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/document_detail_cubit.dart';
@@ -13,12 +11,11 @@ import 'package:doc_scanly/features/document_library/presentation/cubit/document
 import 'package:doc_scanly/features/document_library/presentation/cubit/document_list_state.dart';
 import 'package:doc_scanly/features/document_library/presentation/library_keys.dart';
 import 'package:doc_scanly/features/document_library/presentation/widgets/library_dialogs.dart';
-import 'package:doc_scanly/features/document_library/presentation/widgets/page_thumbnail.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Shows a document's metadata, pages and lifecycle actions.
+/// Shows a document's metadata and lifecycle actions.
 class DocumentDetailScreen extends StatefulWidget {
   /// Creates a detail screen.
   ///
@@ -28,9 +25,7 @@ class DocumentDetailScreen extends StatefulWidget {
     required this.onClose,
     super.key,
     this.folders = const [],
-    this.onOpenViewer,
     this.onOpenDocument,
-    this.loadPageThumbnail,
   });
 
   /// Called when the document is gone and the screen must leave.
@@ -39,18 +34,8 @@ class DocumentDetailScreen extends StatefulWidget {
   /// Folders offered by the move picker.
   final List<Folder> folders;
 
-  /// Called when the user opens the document in the viewer.
-  final VoidCallback? onOpenViewer;
-
   /// Called with a newly created duplicate, so the caller can navigate to it.
   final void Function(Document document)? onOpenDocument;
-
-  /// Lazily derives a private preview for one page of a [Document].
-  final Future<Result<String>> Function(
-    Document document,
-    DocumentPageHandle page,
-  )?
-  loadPageThumbnail;
 
   @override
   State<DocumentDetailScreen> createState() => _DocumentDetailScreenState();
@@ -112,32 +97,18 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           ),
           // A document always has at least one page, so there is no empty state
           // to reach here; a document that lost its record is a failure.
-          LoadStatus.ready || LoadStatus.empty => _Body(
-            state: state,
-            onOpenViewer: widget.onOpenViewer,
-            loadPageThumbnail: widget.loadPageThumbnail,
-          ),
+          LoadStatus.ready || LoadStatus.empty => _Body(state: state),
         },
       ),
     );
   }
 }
 
-/// The metadata block, favourite control and page strip.
+/// The metadata block and favourite control.
 class _Body extends StatelessWidget {
-  const _Body({
-    required this.state,
-    required this.onOpenViewer,
-    required this.loadPageThumbnail,
-  });
+  const _Body({required this.state});
 
   final DocumentDetailState state;
-  final VoidCallback? onOpenViewer;
-  final Future<Result<String>> Function(
-    Document document,
-    DocumentPageHandle page,
-  )?
-  loadPageThumbnail;
 
   @override
   Widget build(BuildContext context) {
@@ -204,46 +175,6 @@ class _Body extends StatelessWidget {
           ),
         const SizedBox(height: 8),
         _FavouriteRow(isFavourite: document.isFavourite),
-        if (onOpenViewer != null) ...[
-          const SizedBox(height: 16),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.icon(
-              key: LibraryKeys.documentOpenButton,
-              onPressed: onOpenViewer,
-              icon: const Icon(Icons.visibility_outlined),
-              label: const Text('Open'),
-            ),
-          ),
-        ],
-        const SizedBox(height: 24),
-        Text('Pages', style: theme.textTheme.titleMedium),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 160,
-          child: state.pageHandles.isEmpty
-              ? Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Page previews are not available.',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                )
-              : ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: state.pageHandles.length,
-                  separatorBuilder: (_, _) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    final page = state.pageHandles[index];
-                    return PageThumbnail(
-                      handle: page,
-                      loadThumbnail: loadPageThumbnail == null
-                          ? null
-                          : () => loadPageThumbnail!(document, page),
-                    );
-                  },
-                ),
-        ),
       ],
     );
   }

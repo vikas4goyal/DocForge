@@ -2,9 +2,8 @@
 ///
 /// Precondition: onboarding is complete and one document has been imported.
 ///
-/// What it proves: a dashboard document opens its detail, the detail's explicit
-/// Open control reaches the real PDF viewer, and Back returns through detail to
-/// the same dashboard. This is the production route chain a user follows.
+/// What it proves: a dashboard document opens Viewer directly, Details is a
+/// metadata-only route over it, and Back returns to the same dashboard.
 library;
 
 import 'dart:io';
@@ -41,7 +40,7 @@ void main() {
     expect(dashboard.isEmpty, isFalse);
 
     // Read the stable row identifier from what the user can see, then drive the
-    // same dashboard → detail → Open route that production composition owns.
+    // same dashboard → Viewer route that production composition owns.
     final visibleIds = dashboard.visibleDocumentIds;
     expect(visibleIds, hasLength(1));
     expect(dashboard.gridColumnCount, 2);
@@ -56,21 +55,18 @@ void main() {
     await dashboard.waitForDocumentThumbnail(visibleIds.single);
     await dashboard.openDocument(visibleIds.single);
 
-    final detail = DocumentDetailRobot(tester);
-    await detail.waitUntilVisible();
-    expect(
-      detail.pagePreviewCount,
-      greaterThan(0),
-      reason: 'Dashboard and Detail must both preview the imported PDF.',
-    );
-    await detail.open();
-
     // The viewer renders through the real pdfrx surface, so reaching a page
     // view means the renderer genuinely parsed the file the import produced —
     // which no host test could establish.
     final viewer = ViewerRobot(tester);
     await viewer.waitUntilOpen();
     expect(viewer.hasFailed, isFalse);
+
+    await viewer.openDetails();
+    final detail = DocumentDetailRobot(tester);
+    await detail.waitUntilVisible();
+    await tester.pageBack();
+    await viewer.waitUntilOpen();
 
     await viewer.openCompress();
     await PdfEditRobot(tester).waitUntilFocused();
@@ -93,8 +89,6 @@ void main() {
     await viewer.waitUntilOpen();
 
     await viewer.goBack();
-    await detail.waitUntilVisible();
-    await tester.pageBack();
     await dashboard.waitUntilLoaded();
     expect(dashboard.isEmpty, isFalse);
     expect(dashboard.gridColumnCount, 3);

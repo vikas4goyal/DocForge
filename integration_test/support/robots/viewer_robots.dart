@@ -62,6 +62,20 @@ class ViewerRobot extends Robot {
     await waitFor(ShareKeys.sheet);
   });
 
+  /// Toggles the document's persisted favourite marker.
+  Future<void> toggleFavourite() => step('toggling favourite', () async {
+    await waitUntilOpen();
+    await tap(ViewerKeys.favouriteButton);
+    await tester.pump(const Duration(milliseconds: 200));
+  });
+
+  /// Opens metadata and lifecycle actions over the current PDF.
+  Future<void> openDetails() => step('opening document details', () async {
+    await waitUntilOpen();
+    await tap(ViewerKeys.actionsMenu);
+    await tap(ViewerKeys.documentDetailsButton);
+  });
+
   /// Prints, which goes straight to the system dialogue rather than the sheet.
   Future<void> print() => step('printing the document', () async {
     await waitUntilVisible();

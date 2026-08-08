@@ -11,6 +11,20 @@ import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.da
 import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
 
+/// Loads current metadata for the document identified by [id].
+///
+/// Returns the stored [Document], or a typed failure when it is unavailable.
+/// The function boundary lets Viewer receive library behavior without importing
+/// another feature.
+typedef LoadViewerMetadata = Future<Result<Document>> Function(DocumentId id);
+
+/// Toggles favourite state for the document identified by [id].
+///
+/// Returns the updated [Document], or a typed persistence failure. The app
+/// composition root adapts the library use case to this viewer-owned contract.
+typedef ToggleViewerFavourite =
+    Future<Result<Document>> Function(DocumentId id);
+
 /// A document ready to be displayed.
 class ViewableDocument {
   /// Creates a viewable document.

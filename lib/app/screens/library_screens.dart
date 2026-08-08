@@ -90,7 +90,7 @@ LibraryScreens buildLibraryScreens({required LibraryModule library}) {
       // The archive and favourites deliberately offer no scan action: "scan
       // your first document" is not what an empty archive should suggest.
       onScan: offerScan ? () => context.push(AppRoutes.scan) : null,
-      onOpenDocument: (id) => context.push(AppRoutes.documentDetail(id)),
+      onOpenDocument: (id) => context.push(AppRoutes.documentView(id)),
       loadThumbnail: library.loadDocumentPageThumbnail.call,
     ),
   );
@@ -112,13 +112,14 @@ LibraryScreens buildLibraryScreens({required LibraryModule library}) {
         loadFolderOptions: library.loadFolderOptions,
       ),
       child: DocumentDetailScreen(
-        onClose: () => context.pop(),
-        onOpenViewer: () => context.push(AppRoutes.documentView(id)),
-        loadPageThumbnail: library.loadDocumentPagePreview.call,
+        // Detail only invokes this callback when its record is unavailable or
+        // has moved to Trash. The typed result lets an underlying Viewer close
+        // exactly once even if a platform store exposes that mutation late.
+        onClose: () => context.pop(true),
         // Replaces rather than pushes: the user asked for a copy, and leaving
         // the original underneath would make Back feel like an undo it is not.
         onOpenDocument: (document) =>
-            context.pushReplacement(AppRoutes.documentDetail(document.id)),
+            context.pushReplacement(AppRoutes.documentView(document.id)),
       ),
     ),
     folders: (context) => BlocProvider(
@@ -145,7 +146,7 @@ LibraryScreens buildLibraryScreens({required LibraryModule library}) {
         folderName: 'Folder',
         loadThumbnail: library.loadDocumentPageThumbnail.call,
         onOpenDocument: (documentId) =>
-            context.push(AppRoutes.documentDetail(documentId)),
+            context.push(AppRoutes.documentView(documentId)),
       ),
     ),
     favourites: (context) => documentList(

@@ -18,6 +18,7 @@ import 'package:doc_scanly/features/app_shell/presentation/shell_previews.dart';
 import 'package:doc_scanly/features/cloud_storage/presentation/cloud_storage_previews.dart';
 import 'package:doc_scanly/features/document_creation/presentation/creation_previews.dart';
 import 'package:doc_scanly/features/document_library/presentation/library_previews.dart';
+import 'package:doc_scanly/features/document_viewer/presentation/viewer_previews.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -47,10 +48,6 @@ void main() {
       'folderTileDefault': folderTileDefault,
       'folderTileEmpty': folderTileEmpty,
       'folderTileDark': folderTileDark,
-      'pageThumbnailPlaceholder': pageThumbnailPlaceholder,
-      'pageThumbnailLoading': pageThumbnailLoading,
-      'pageThumbnailFallback': pageThumbnailFallback,
-      'pageThumbnailStrip': pageThumbnailStrip,
       'documentCardDefault': documentCardDefault,
       'documentCardDark': documentCardDark,
       'documentCardCloudRemote': documentCardCloudRemote,
@@ -66,6 +63,10 @@ void main() {
       'documentListTablet': documentListTablet,
       'documentDetailReady': documentDetailReady,
       'documentDetailError': documentDetailError,
+      'documentDetailLongTitle': documentDetailLongTitle,
+      'documentDetailProtected': documentDetailProtected,
+      'documentDetailCloud': documentDetailCloud,
+      'documentDetailLargeText': documentDetailLargeText,
       'documentDetailDark': documentDetailDark,
       'documentDetailTablet': documentDetailTablet,
       'folderListReady': folderListReady,
@@ -76,6 +77,25 @@ void main() {
       'dashboardError': dashboardError,
       'dashboardPhoneDark': dashboardPhoneDark,
       'dashboardTabletLight': dashboardTabletLight,
+    }.entries) {
+      testWidgets(entry.key, (tester) => rendersCleanly(tester, entry.value));
+    }
+  });
+
+  group('viewer previews still render', () {
+    for (final entry in <String, Widget Function()>{
+      'viewerDefault': viewerDefault,
+      'viewerFavourite': viewerFavourite,
+      'viewerFavouriteWorking': viewerFavouriteWorking,
+      'viewerActionFailure': viewerActionFailure,
+      'viewerUnavailable': viewerUnavailable,
+      'viewerLoading': viewerLoading,
+      'viewerLocked': viewerLocked,
+      'viewerError': viewerError,
+      'viewerLongContent': viewerLongContent,
+      'viewerLargeText': viewerLargeText,
+      'viewerPhoneDark': viewerPhoneDark,
+      'viewerTabletLight': viewerTabletLight,
     }.entries) {
       testWidgets(entry.key, (tester) => rendersCleanly(tester, entry.value));
     }

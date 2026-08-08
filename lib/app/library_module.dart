@@ -93,7 +93,7 @@ class LibraryModule {
   /// Loads a page of documents.
   final LoadDocuments loadDocuments;
 
-  /// Loads one document with its pages.
+  /// Loads metadata for one document.
   final LoadDocumentDetail loadDocumentDetail;
 
   /// Lazily derives one page preview from the authoritative PDF.
@@ -329,7 +329,7 @@ LibraryModule buildLibraryModuleOver({
     isar: isar,
     documentsDirectory: documentsDirectory,
     loadDocuments: LoadDocuments(documents),
-    loadDocumentDetail: LoadDocumentDetail(documents, pages, pageAccess),
+    loadDocumentDetail: LoadDocumentDetail(documents),
     loadDocumentPageThumbnail: loadThumbnail,
     loadDocumentPagePreview: LoadDocumentPagePreview(pageAccess),
     pageAccess: pageAccess,

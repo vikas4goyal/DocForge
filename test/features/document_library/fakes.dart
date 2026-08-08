@@ -28,7 +28,7 @@ class FakeDocumentRepository implements DocumentRepository {
   /// When set, every operation fails with this failure.
   Failure? failure;
 
-  /// When set, every query waits on this before returning.
+  /// When set, every read waits on this before returning.
   ///
   /// Lets a widget test observe the in-flight loading state, which is otherwise
   /// unreachable: an in-memory fake completes within the same frame.
@@ -36,6 +36,7 @@ class FakeDocumentRepository implements DocumentRepository {
 
   @override
   Future<Result<Document>> findById(DocumentId id) async {
+    if (gate != null) await gate!.future;
     if (failure != null) return Result<Document>.failure(failure!);
     final document = documents[id];
     return document == null
@@ -173,9 +174,14 @@ class FakeFolderRepository implements FolderRepository {
 class FakePageRepository implements PageRepository {
   final Map<DocumentId, List<DocumentPage>> pages = {};
 
+  /// Document ids whose pages were requested.
+  final List<DocumentId> forDocumentCalls = [];
+
   @override
-  Future<Result<List<DocumentPage>>> forDocument(DocumentId documentId) async =>
-      Result<List<DocumentPage>>.success(pages[documentId] ?? const []);
+  Future<Result<List<DocumentPage>>> forDocument(DocumentId documentId) async {
+    forDocumentCalls.add(documentId);
+    return Result<List<DocumentPage>>.success(pages[documentId] ?? const []);
+  }
 
   @override
   Future<Result<void>> replaceAll(

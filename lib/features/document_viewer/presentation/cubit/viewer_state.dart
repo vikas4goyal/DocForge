@@ -33,6 +33,9 @@ class ViewerState extends Equatable {
     this.password,
     this.failure,
     this.passwordRejected = false,
+    this.isFavouriteWorking = false,
+    this.actionFailure,
+    this.isUnavailable = false,
   });
 
   /// Before the document has been opened.
@@ -72,8 +75,22 @@ class ViewerState extends Equatable {
   /// the prompt stays up and simply says so.
   final bool passwordRejected;
 
+  /// Whether a favourite mutation is currently being persisted.
+  final bool isFavouriteWorking;
+
+  /// A nonfatal failure from a metadata or favourite action.
+  ///
+  /// Unlike [failure], this never replaces a PDF that is already readable.
+  final Failure? actionFailure;
+
+  /// Whether the document record disappeared while Viewer was open.
+  final bool isUnavailable;
+
   /// The user-facing message for [failure].
   String? get message => failure?.presentation.message;
+
+  /// The user-facing message for a failed nonfatal action.
+  String? get actionMessage => actionFailure?.presentation.message;
 
   /// The document's title, or an empty string before it is open.
   String get title => document?.title ?? '';
@@ -100,6 +117,10 @@ class ViewerState extends Equatable {
     String? password,
     Failure? failure,
     bool passwordRejected = false,
+    bool? isFavouriteWorking,
+    Failure? actionFailure,
+    bool clearActionFailure = false,
+    bool? isUnavailable,
   }) => ViewerState._(
     status: status ?? this.status,
     page: page ?? this.page,
@@ -109,6 +130,11 @@ class ViewerState extends Equatable {
     password: password ?? this.password,
     failure: failure,
     passwordRejected: passwordRejected,
+    isFavouriteWorking: isFavouriteWorking ?? this.isFavouriteWorking,
+    actionFailure: clearActionFailure
+        ? null
+        : actionFailure ?? this.actionFailure,
+    isUnavailable: isUnavailable ?? this.isUnavailable,
   );
 
   @override
@@ -121,5 +147,8 @@ class ViewerState extends Equatable {
     password,
     failure,
     passwordRejected,
+    isFavouriteWorking,
+    actionFailure,
+    isUnavailable,
   ];
 }

@@ -79,11 +79,6 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       return application;
     } on Object catch (error, stackTrace) {
       final elapsed = stopwatch.elapsedMilliseconds;
-      final firstFrame = stackTrace.toString().split('\n').first;
-      final message =
-          'phase=bootstrap outcome=error elapsedMs=$elapsed '
-          'errorType=${error.runtimeType} firstFrame=$firstFrame';
-      debugPrint('[DocScanly.startup] $message');
       if (Firebase.apps.isNotEmpty) {
         try {
           await FirebaseCrashlytics.instance.recordError(

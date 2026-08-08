@@ -1,7 +1,7 @@
-// ignore_for_file: prefer_initializing_formals
-
 /// Use cases for image enhancement.
 library;
+
+// ignore_for_file: prefer_initializing_formals
 
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/failures/result.dart';
