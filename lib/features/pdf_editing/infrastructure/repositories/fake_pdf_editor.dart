@@ -103,8 +103,11 @@ class FakePdfEditor implements PdfEditorRepository {
     String destinationPath,
     List<int> pages, {
     String? password,
+    bool preserveProtection = true,
   }) async {
-    operations.add('writePages($pages)');
+    operations.add(
+      preserveProtection ? 'writePages($pages)' : 'writePages($pages, plain)',
+    );
 
     return _guard(sourcePath, password, () {
       final source = fakePdfPages(sourcePath);
@@ -117,7 +120,11 @@ class FakePdfEditor implements PdfEditorRepository {
 
       // The order of `pages` is the order of the result, which is what makes
       // extraction and splitting produce document order rather than tap order.
-      _write(destinationPath, [for (final page in pages) source[page]]);
+      _write(
+        destinationPath,
+        [for (final page in pages) source[page]],
+        password: preserveProtection ? fakePdfPassword(sourcePath) : null,
+      );
     });
   }
 

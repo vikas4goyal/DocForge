@@ -27,11 +27,17 @@ abstract interface class PdfEditorRepository {
   /// pages chosen) and splitting (each half) — all three are the same operation
   /// with a different list, and modelling them separately would have meant
   /// three chances to get page ordering wrong.
+  ///
+  /// [preserveProtection] defaults to true for user-facing edits. Compression
+  /// sets it to false for private page intermediates so encrypted and
+  /// re-encoded pages can be assembled together before the final candidate is
+  /// protected once.
   Future<Result<void>> writePages(
     String sourcePath,
     String destinationPath,
     List<int> pages, {
     String? password,
+    bool preserveProtection = true,
   });
 
   /// Writes a copy of [sourcePath] with [page] rotated by [degrees] clockwise.

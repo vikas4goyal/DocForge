@@ -73,6 +73,9 @@ class BoundedCompressionCandidateRepository
             extracted,
             <int>[index],
             password: request.password,
+            // All page outputs must use the same protection state before
+            // merge. The completed candidate is encrypted once, below.
+            preserveProtection: false,
           );
           if (extraction case Failed(:final failure)) {
             return Result<PdfCandidate>.failure(failure);
@@ -92,7 +95,6 @@ class BoundedCompressionCandidateRepository
               // not only an encoder hint. The concrete device adapter renders
               // this single-page intermediate at the requested scale.
               dimensionScalePercent: quality,
-              password: request.password,
             );
             if (compression case Failed(:final failure)) {
               return Result<PdfCandidate>.failure(failure);

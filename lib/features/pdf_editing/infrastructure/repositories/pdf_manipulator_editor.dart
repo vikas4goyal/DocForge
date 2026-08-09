@@ -41,6 +41,7 @@ class PdfManipulatorEditor implements PdfEditorRepository {
     String destinationPath,
     List<int> pages, {
     String? password,
+    bool preserveProtection = true,
   }) => _run(destinationPath, (sink) async {
     final editor = await _pdf.edit(
       FileSource(File(sourcePath)),
@@ -51,7 +52,16 @@ class PdfManipulatorEditor implements PdfEditorRepository {
       // deleting, extracting and splitting all come through here rather than
       // each calling a different engine method.
       await editor.selectPages(pages);
-      await editor.save(sink);
+      await editor.save(
+        sink,
+        options: preserveProtection
+            ? const PdfSaveOptions.fullRewrite()
+            : const PdfSaveOptions.fullRewrite(
+                compress: false,
+                garbageCollect: false,
+                encryption: PdfEncryption.remove(),
+              ),
+      );
     } finally {
       await editor.dispose();
     }
@@ -97,10 +107,11 @@ class PdfManipulatorEditor implements PdfEditorRepository {
   }) => _run(
     destinationPath,
     (sink) => dimensionScalePercent == null
-        ? _pdf.compress(
-            FileSource(File(sourcePath)),
+        ? _compressStructurally(
+            sourcePath,
             sink,
             imageQuality: imageQuality,
+            password: password,
           )
         : _compressAtScale(
             sourcePath,
@@ -143,7 +154,12 @@ class PdfManipulatorEditor implements PdfEditorRepository {
       // Vector-only PDFs have no meaningful raster dimension to scale. Keep
       // their text/vector content and use the native structural optimizer.
       if (sourceWidth == 0 || sourceHeight == 0) {
-        await _pdf.compress(source, sink, imageQuality: imageQuality);
+        await _compressStructurally(
+          sourcePath,
+          sink,
+          imageQuality: imageQuality,
+          password: password,
+        );
         return;
       }
 
@@ -184,6 +200,29 @@ class PdfManipulatorEditor implements PdfEditorRepository {
     }
   }
 
+  /// Runs the engine's encoder-only compression with source authentication.
+  ///
+  /// The package's convenience `compress` API cannot accept a password, so it
+  /// always fails for protected vector-only PDFs. Opening the editor directly
+  /// provides the same operation while preserving source protection.
+  Future<void> _compressStructurally(
+    String sourcePath,
+    DataSink sink, {
+    required int imageQuality,
+    String? password,
+  }) async {
+    final editor = await _pdf.edit(
+      FileSource(File(sourcePath)),
+      password: password,
+    );
+    try {
+      await editor.optimizeImages(quality: imageQuality);
+      await editor.save(sink);
+    } finally {
+      await editor.dispose();
+    }
+  }
+
   @override
   Future<Result<void>> watermark(
     String sourcePath,
@@ -221,11 +260,49 @@ class PdfManipulatorEditor implements PdfEditorRepository {
     String destinationPath, {
     required String currentPassword,
   }) => _run(destinationPath, (sink) async {
-    await _pdf.decrypt(
+    final document = await _pdf.open(
       FileSource(File(sourcePath)),
-      sink,
       password: currentPassword,
     );
+    try {
+      // The native encryption-removal rewrite can retain the page tree while
+      // dropping encrypted content dependencies. Such a file passes a page-
+      // count check but renders as white pages. Reconstructing from renders of
+      // the authenticated source makes the operation visual-lossless and
+      // guarantees that every output page has real content. It also flattens
+      // interactive/vector data, which is preferable to publishing a
+      // structurally valid but visually corrupt document.
+      final output = pw.Document();
+      for (final pageInfo in document.pages) {
+        final width = pageInfo.effectiveWidth;
+        final height = pageInfo.effectiveHeight;
+        final rendered = await document
+            .render(
+              pages: PdfPages.single(pageInfo.index),
+              size: PdfRenderSize(
+                maxWidth: (width * 2).round().clamp(1, 4096),
+                maxHeight: (height * 2).round().clamp(1, 4096),
+              ),
+            )
+            .first;
+        final decoded = img.decodeImage(rendered.data);
+        if (decoded == null) {
+          throw const FormatException('decrypted page render was invalid');
+        }
+        final encoded = img.encodeJpg(decoded, quality: 95);
+        final image = pw.MemoryImage(encoded);
+        output.addPage(
+          pw.Page(
+            pageFormat: pdf.PdfPageFormat(width, height),
+            margin: pw.EdgeInsets.zero,
+            build: (_) => pw.Image(image, fit: pw.BoxFit.fill),
+          ),
+        );
+      }
+      await sink.write(await output.save());
+    } finally {
+      await document.dispose();
+    }
   });
 
   @override

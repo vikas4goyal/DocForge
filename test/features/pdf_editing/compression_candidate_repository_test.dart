@@ -111,12 +111,12 @@ void main() {
       expect(
         editor.operations,
         containsAllInOrder(<String>[
-          'writePages([0])',
+          'writePages([0], plain)',
           'compress(30, scale: 30)',
-          'writePages([1])',
-          'writePages([2])',
+          'writePages([1], plain)',
+          'writePages([2], plain)',
           'compress(50, scale: 50)',
-          'writePages([3])',
+          'writePages([3], plain)',
           'merge(4)',
         ]),
       );
@@ -212,6 +212,32 @@ void main() {
     expect(promoted.valueOrNull!.pageCount, 2);
     expect(File(candidate.handle).existsSync(), isFalse);
   });
+
+  test(
+    'compresses plaintext intermediates without reusing the source password',
+    () async {
+      final protectedSource = writeFakePdf(
+        '${directory.path}/protected-regression.pdf',
+        password: 'route secret',
+        padding: 100,
+      ).path;
+
+      final result = await repository.buildCandidate(
+        _request(
+          protectedSource,
+          pageCount: 1,
+          qualities: const <int>[50],
+          password: 'route secret',
+        ),
+        token: CancellationToken(),
+        onProgress: (_) {},
+      );
+
+      expect(result, isA<Success<PdfCandidate>>());
+      expect(fakePdfPassword(result.valueOrNull!.handle), 'route secret');
+      expect(fakePdfPages(result.valueOrNull!.handle), <String>['page:0']);
+    },
+  );
 }
 
 BoundedCompressionCandidateRepository _repository(
