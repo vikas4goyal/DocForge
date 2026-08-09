@@ -68,10 +68,11 @@ void main() {
     });
 
     test('compares by value', () {
-      expect(
-        AppSettings(theme: AppThemeChoice.dark),
-        AppSettings(theme: AppThemeChoice.dark),
-      );
+      final first = AppSettings(theme: AppThemeChoice.dark);
+      final second = AppSettings(theme: AppThemeChoice.dark);
+
+      expect(first, second);
+      expect(first.hashCode, second.hashCode);
       expect(AppSettings(theme: AppThemeChoice.dark), isNot(AppSettings()));
     });
   });

@@ -10,15 +10,13 @@
 @Tags(['golden'])
 library;
 
-import 'dart:io';
-
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/contracts/models/page_draft.dart';
+import 'package:doc_scanly/core/contracts/page_renderer.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
-import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/previews/fakes/fake_page_renderer.dart';
 import 'package:doc_scanly/core/theme/app_theme.dart';
-import 'package:doc_scanly/features/document_creation/application/usecases/render_page.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_cubit.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/cubit/enhancement_state.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/screens/enhancement_screen.dart';
@@ -40,15 +38,7 @@ const _page = PageDraft(
 );
 
 /// A renderer that touches no filesystem, so goldens stay byte-stable.
-RenderPage _goldenRenderer() => RenderPage(
-  cacheDirectory: Directory('/golden'),
-  sizeOf: (path) async => const Result<({int width, int height})>.success((
-    width: 800,
-    height: 600,
-  )),
-  render: (plan, {required destinationPath, transform, scope}) async =>
-      const Result<void>.success(null),
-);
+PageRenderer _goldenRenderer() => const FakePageRenderer();
 
 void main() {
   Widget host(EnhancementState state, Brightness brightness) {
