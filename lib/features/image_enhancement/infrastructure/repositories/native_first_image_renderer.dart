@@ -52,7 +52,7 @@ class NativeFirstImageRenderer implements ImageProcessingBackend {
 
     try {
       if (_isDisposed) {
-        return _recordAndReturn(
+        return await _recordAndReturn(
           request: request,
           response: const ImageProcessingBackendResponse.failure(
             kind: ImageProcessingFailureKind.unsupported,
@@ -66,7 +66,7 @@ class NativeFirstImageRenderer implements ImageProcessingBackend {
       try {
         request.validate();
       } on ArgumentError catch (error) {
-        return _recordAndReturn(
+        return await _recordAndReturn(
           request: request,
           response: ImageProcessingBackendResponse.failure(
             kind: ImageProcessingFailureKind.invalidRequest,
@@ -82,7 +82,7 @@ class NativeFirstImageRenderer implements ImageProcessingBackend {
       final accelerated = await (_nativeCapability ??= native.capability());
 
       if (_cancelled.contains(request.requestId)) {
-        return _recordAndReturn(
+        return await _recordAndReturn(
           request: request,
           response: const ImageProcessingBackendResponse.failure(
             kind: ImageProcessingFailureKind.cancelled,
@@ -116,7 +116,7 @@ class NativeFirstImageRenderer implements ImageProcessingBackend {
         if (!destinationExisted) _deleteIfPresent(request.destinationPath);
       }
 
-      return _recordAndReturn(
+      return await _recordAndReturn(
         request: request,
         response: response,
         trace: trace,

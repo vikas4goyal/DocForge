@@ -31,6 +31,12 @@ analyzer:
     # source and both carry their own package dependency graphs.
     - "build/**"
     - "third_party/**"
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+    - macos/**
+    - linux/**
 
 linter:
   rules:

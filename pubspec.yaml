@@ -35,26 +35,26 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.9
   flutter_bloc: ^9.1.1
-  firebase_core: ^4.12.1
-  firebase_analytics: ^12.4.5
-  firebase_crashlytics: ^5.2.6
-  firebase_performance: ^0.11.4+5
+  firebase_core: ^4.15.0
+  firebase_analytics: ^12.6.0
+  firebase_crashlytics: ^5.4.0
+  firebase_performance:  ^0.11.6
   equatable: ^2.1.0
   bloc_concurrency: ^0.3.0
-  go_router: ^17.3.0
+  go_router: ^18.0.1
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
   isar_community: ^3.3.2
   isar_community_flutter_libs: ^3.3.2
   shared_preferences: ^2.5.5
   flutter_secure_storage: ^10.3.1
-  dio: ^5.11.0
-  camera: ^0.12.0+2
-  image: ^4.9.1
-  pdf: ^3.13.0
-  printing: ^5.15.0
-  pdfrx: ^2.4.7
-  permission_handler: ^12.0.3
+  dio: ^5.11.1
+  camera: ^0.12.1
+  image: ^4.10.1
+  pdf: ^3.13.1
+  printing: ^5.15.1
+  pdfrx: ^2.6.5
+  permission_handler: ^13.0.2
   local_auth: ^3.0.2
   image_picker: ^1.2.3
   file_picker: ^11.0.2
@@ -74,8 +74,8 @@ dependencies:
   pdf_manipulator:
     path: third_party/pdf_manipulator
   # Pinned: the Flutter SDK's flutter_test pins meta to exactly 1.18.0.
-  meta: ^1.18.0
-  stream_transform: ^2.1.1
+  meta: ^1.19.0
+  stream_transform: ^2.1.2
 dependency_overrides:
   # Vendored fork: 11.0.3 skips KGP on AGP 9, but Flutter temporarily opts
   # this project out of built-in Kotlin because other plugins still apply KGP.
@@ -105,7 +105,7 @@ dev_dependencies:
   # that parameter as `BlocProvider<dynamic>` instead is not an option: it makes
   # Dart infer `BlocProvider.value(value: cubit)` as `BlocProvider<dynamic>`,
   # which provides `dynamic` and leaves every screen unable to find its Cubit.
-  provider: ^6.1.5
+  provider: ^6.1.5+1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -117,9 +117,9 @@ dev_dependencies:
   # isar_community_generator 3.3.2 (latest) pins analyzer <11.
   build_runner: ^2.15.1
   freezed: ^3.2.5
-  json_serializable: ^6.14.0
+  json_serializable: ^6.14.1
   isar_community_generator: ^3.3.2
-  go_router_builder: ^4.4.0
+  go_router_builder: ^4.5.0
   bloc_test: ^10.0.0
   mocktail: ^1.0.5
   alchemist: ^0.14.0

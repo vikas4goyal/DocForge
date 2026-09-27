@@ -40,10 +40,21 @@ abstract final class PreviewSize {
 ///
 /// Without this a preview renders in Flutter's default theme, which would make
 /// it a poor guide to how the widget actually looks in the app.
-PreviewThemeData appPreviewTheme() => PreviewThemeData(
-  materialLight: AppTheme.light,
-  materialDark: AppTheme.dark,
-);
+PreviewThemeData appPreviewTheme() => const _AppPreviewTheme();
+
+/// Picks the light or dark app theme from the brightness the `@Preview`
+/// annotation has already applied to the surrounding [MediaQuery].
+final class _AppPreviewTheme extends PreviewThemeData {
+  const _AppPreviewTheme();
+
+  @override
+  Widget apply(BuildContext context, Widget child) => Theme(
+    data: MediaQuery.platformBrightnessOf(context) == Brightness.dark
+        ? AppTheme.dark
+        : AppTheme.light,
+    child: child,
+  );
+}
 
 /// Wraps a reusable widget in a Scaffold with comfortable insets.
 ///
