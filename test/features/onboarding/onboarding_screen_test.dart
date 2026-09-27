@@ -18,6 +18,7 @@ Future<InMemoryPreferenceStore> pumpOnboarding(
   Size? surface,
   double textScale = 1.0,
   VoidCallback? onFinished,
+  bool usesICloudLibrary = false,
 }) async {
   if (surface != null) {
     tester.view.physicalSize = surface;
@@ -41,7 +42,10 @@ Future<InMemoryPreferenceStore> pumpOnboarding(
         data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
         child: BlocProvider.value(
           value: cubit,
-          child: OnboardingScreen(onFinished: onFinished ?? () {}),
+          child: OnboardingScreen(
+            onFinished: onFinished ?? () {},
+            usesICloudLibrary: usesICloudLibrary,
+          ),
         ),
       ),
     ),
@@ -105,6 +109,43 @@ void main() {
         find.bySemanticsLabel(
           'Nothing is uploaded automatically. You choose what to share.',
         ),
+        findsOneWidget,
+      );
+
+      handle.dispose();
+    });
+
+    testWidgets('on iOS states iCloud storage and no DocScanly servers', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpOnboarding(tester, usesICloudLibrary: true);
+      await reachPrivacy(tester);
+
+      expect(
+        find.bySemanticsLabel(OnboardingCopy.storageStatementICloud),
+        findsOneWidget,
+      );
+      expect(
+        find.bySemanticsLabel(OnboardingCopy.noServerStatement),
+        findsOneWidget,
+      );
+      // Neither device-only promise may appear where it would be untrue.
+      expect(
+        find.bySemanticsLabel(OnboardingCopy.storageStatementDevice),
+        findsNothing,
+      );
+      expect(
+        find.bySemanticsLabel(OnboardingCopy.noUploadStatement),
+        findsNothing,
+      );
+      // The keys stay stable, so flows find the same three statements.
+      expect(
+        find.byKey(OnboardingKeys.privacyLocalStorageStatement),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(OnboardingKeys.privacyNoUploadStatement),
         findsOneWidget,
       );
 

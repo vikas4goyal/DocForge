@@ -1,7 +1,6 @@
-/// Accessible iOS-only storage-location settings screen.
+/// Accessible iOS-only storage-location status screen.
 library;
 
-import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_location.dart';
 import 'package:doc_scanly/features/cloud_storage/presentation/cloud_storage_keys.dart';
 import 'package:doc_scanly/features/cloud_storage/presentation/cubit/storage_location_cubit.dart';
 import 'package:doc_scanly/features/cloud_storage/presentation/cubit/storage_location_state.dart';
@@ -11,7 +10,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// An asynchronous storage-screen action.
 typedef CloudStorageAction = Future<void> Function();
 
-/// Lets iOS users choose the one authoritative library location.
+/// Shows where DocScanly keeps documents and, on the device, why.
+///
+/// Reads [StorageLocationCubit]. There is no location chooser: iCloud is used
+/// automatically whenever it is available.
+///
+/// Keys: `cloud_storage_screen`, `cloud_storage_status`,
+/// `cloud_storage_move_now` (“Move documents to iCloud now”),
+/// `cloud_storage_unavailable`, `cloud_storage_retry` and
+/// `cloud_storage_import_folder`.
 class StorageLocationScreen extends StatelessWidget {
   /// Creates the screen.
   const StorageLocationScreen({
@@ -42,46 +49,35 @@ class StorageLocationScreen extends StatelessWidget {
               padding: const EdgeInsets.all(16),
               children: [
                 Text(
-                  'Choose where DocScanly keeps PDFs. Thumbnails, recognised '
-                  'text, settings, and passwords stay only on this device.',
+                  'DocScanly keeps your PDFs in iCloud Drive whenever iCloud '
+                  'is available. Thumbnails, recognised text, settings, and '
+                  'passwords stay only on this device.',
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 16),
-                _LocationOption(
-                  key: CloudStorageKeys.localOption,
-                  title: 'On this device',
-                  subtitle: 'Available offline only on this device',
-                  semanticsLabel: CloudStorageSemantics.useLocal,
-                  selected: state.location == StorageLocation.local,
-                  enabled: !_isBusy(state),
-                  onTap: () => cubit.choose(StorageLocation.local),
-                ),
-                _LocationOption(
-                  key: CloudStorageKeys.iCloudOption,
-                  title: 'iCloud Drive',
-                  subtitle: state.cloudAvailability.isAvailable
-                      ? 'Sync PDFs and folders between your Apple devices'
-                      : 'Not currently available',
-                  semanticsLabel: CloudStorageSemantics.useICloud,
-                  selected: state.location == StorageLocation.iCloud,
-                  enabled: !_isBusy(state),
-                  onTap: () => cubit.choose(StorageLocation.iCloud),
-                ),
-                const SizedBox(height: 16),
-                if (state.status == StorageLocationStatus.loading)
-                  const Center(child: CircularProgressIndicator()),
-                if (state.status == StorageLocationStatus.confirmationRequired)
-                  _Confirmation(state: state, onConfirm: cubit.confirm),
-                if (_isBusy(state) ||
-                    state.status == StorageLocationStatus.completed)
-                  _MigrationProgress(state: state, onCancel: cubit.cancel),
-                if (state.status == StorageLocationStatus.unavailable)
-                  _Unavailable(onRetry: cubit.retry),
-                if (state.status == StorageLocationStatus.failure)
-                  _Failure(
-                    onRetry: cubit.retry,
-                    onCancel: state.canCancel ? cubit.cancel : null,
+                switch (state.status) {
+                  StorageLocationStatus.loading => const Center(
+                    child: CircularProgressIndicator(),
                   ),
+                  StorageLocationStatus.iCloudActive => const _StatusCard(
+                    icon: Icons.cloud_done_outlined,
+                    title: 'iCloud Drive',
+                    body:
+                        'Your PDFs and folders are in iCloud Drive → '
+                        'DocScanly and appear on your other Apple devices.',
+                    semanticsLabel: CloudStorageSemantics.storedInICloudDrive,
+                  ),
+                  StorageLocationStatus.localFallback => _LocalFallback(
+                    state: state,
+                    onMoveNow: cubit.moveNow,
+                  ),
+                  StorageLocationStatus.unavailable => _Unavailable(
+                    onRetry: cubit.retry,
+                  ),
+                  StorageLocationStatus.failure => _Failure(
+                    onRetry: cubit.retry,
+                  ),
+                },
                 if (onImportFolder != null) ...[
                   const Divider(height: 32),
                   Semantics(
@@ -106,128 +102,77 @@ class StorageLocationScreen extends StatelessWidget {
       },
     );
   }
-
-  bool _isBusy(StorageLocationState state) =>
-      state.status == StorageLocationStatus.migrating ||
-      state.status == StorageLocationStatus.verifying;
 }
 
-class _LocationOption extends StatelessWidget {
-  const _LocationOption({
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({
+    required this.icon,
     required this.title,
-    required this.subtitle,
+    required this.body,
     required this.semanticsLabel,
-    required this.selected,
-    required this.enabled,
-    required this.onTap,
-    super.key,
   });
 
+  final IconData icon;
   final String title;
-  final String subtitle;
+  final String body;
   final String semanticsLabel;
-  final bool selected;
-  final bool enabled;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => Semantics(
-    label: '$semanticsLabel, ${selected ? 'selected' : 'not selected'}',
-    selected: selected,
-    button: true,
-    child: Card(
-      child: ListTile(
-        enabled: enabled,
-        leading: Icon(
-          selected ? Icons.radio_button_checked : Icons.radio_button_off,
+    label: semanticsLabel,
+    container: true,
+    child: ExcludeSemantics(
+      child: Card(
+        key: CloudStorageKeys.status,
+        child: ListTile(
+          leading: Icon(icon),
+          title: Text(title),
+          subtitle: Text(body),
         ),
-        title: Text(title),
-        subtitle: Text(subtitle),
-        onTap: enabled ? onTap : null,
       ),
     ),
   );
 }
 
-class _Confirmation extends StatelessWidget {
-  const _Confirmation({required this.state, required this.onConfirm});
+class _LocalFallback extends StatelessWidget {
+  const _LocalFallback({required this.state, required this.onMoveNow});
 
   final StorageLocationState state;
-  final CloudStorageAction onConfirm;
+  final CloudStorageAction onMoveNow;
 
   @override
-  Widget build(BuildContext context) => Card(
-    color: Theme.of(context).colorScheme.errorContainer,
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Move your library?',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'DocScanly will copy active documents and Trash, verify every file, '
-            'then switch storage and remove the old copies. Do not close the app.',
-          ),
-          const SizedBox(height: 12),
-          FilledButton(
-            key: CloudStorageKeys.migrationConfirm,
-            onPressed: onConfirm,
-            child: const Text('Copy and move library'),
-          ),
-        ],
-      ),
-    ),
-  );
-}
-
-class _MigrationProgress extends StatelessWidget {
-  const _MigrationProgress({required this.state, required this.onCancel});
-
-  final StorageLocationState state;
-  final VoidCallback onCancel;
-
-  @override
-  Widget build(BuildContext context) => Semantics(
-    label: 'Library migration ${(state.progress * 100).round()} percent',
-    child: Card(
-      key: CloudStorageKeys.migrationProgress,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              state.status == StorageLocationStatus.verifying
-                  ? 'Verifying documents'
-                  : state.status == StorageLocationStatus.completed
-                  ? 'Migration complete'
-                  : 'Moving documents',
-            ),
-            const SizedBox(height: 12),
-            LinearProgressIndicator(value: state.progress),
-            const SizedBox(height: 8),
-            Text(
-              '${state.completedFiles} of ${state.totalFiles} files verified',
-            ),
-            if (state.canCancel)
-              Semantics(
-                label: CloudStorageSemantics.cancelMigration,
-                button: true,
-                child: TextButton(
-                  key: CloudStorageKeys.cancel,
-                  onPressed: onCancel,
-                  child: const Text('Cancel migration'),
-                ),
-              ),
-          ],
+  Widget build(BuildContext context) {
+    final reason = CloudStorageSemantics.fallbackReason(
+      state.cloudAvailability.status,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _StatusCard(
+          icon: Icons.phone_iphone_outlined,
+          title: 'On this device',
+          body:
+              '$reason. When iCloud is available, DocScanly moves your '
+              'documents there automatically.',
+          semanticsLabel: '${CloudStorageSemantics.storedOnDevice}. $reason',
         ),
-      ),
-    ),
-  );
+        const SizedBox(height: 12),
+        Semantics(
+          label: CloudStorageSemantics.moveNow,
+          button: true,
+          enabled: state.canMoveNow,
+          excludeSemantics: true,
+          onTap: state.canMoveNow ? onMoveNow : null,
+          child: FilledButton.icon(
+            key: CloudStorageKeys.moveNow,
+            onPressed: state.canMoveNow ? onMoveNow : null,
+            icon: const Icon(Icons.cloud_upload_outlined),
+            label: const Text('Move documents to iCloud now'),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _Unavailable extends StatelessWidget {
@@ -247,7 +192,7 @@ class _Unavailable extends StatelessWidget {
             const Icon(Icons.cloud_off_outlined, size: 40),
             const SizedBox(height: 8),
             const Text(
-              'The selected iCloud library is unavailable. DocScanly will not '
+              'Your DocScanly iCloud library is unavailable. DocScanly will not '
               'switch to local storage or create a second library.',
             ),
             Semantics(
@@ -267,10 +212,9 @@ class _Unavailable extends StatelessWidget {
 }
 
 class _Failure extends StatelessWidget {
-  const _Failure({required this.onRetry, this.onCancel});
+  const _Failure({required this.onRetry});
 
   final CloudStorageAction onRetry;
-  final VoidCallback? onCancel;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -279,19 +223,17 @@ class _Failure extends StatelessWidget {
       child: Column(
         children: [
           const Text(
-            'The storage operation could not finish. Your source library is safe.',
+            'DocScanly could not check iCloud. Your documents are safe.',
           ),
-          FilledButton.tonal(
-            key: CloudStorageKeys.retry,
-            onPressed: onRetry,
-            child: const Text('Retry migration'),
-          ),
-          if (onCancel != null)
-            TextButton(
-              key: CloudStorageKeys.cancel,
-              onPressed: onCancel,
-              child: const Text('Cancel migration'),
+          Semantics(
+            label: CloudStorageSemantics.retryConnection,
+            button: true,
+            child: FilledButton.tonal(
+              key: CloudStorageKeys.retry,
+              onPressed: onRetry,
+              child: const Text('Retry'),
             ),
+          ),
         ],
       ),
     ),

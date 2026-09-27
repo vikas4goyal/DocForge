@@ -60,7 +60,8 @@ class SettingsScreens {
 /// is on, and [authenticator] confirms who is asking — in both directions, for
 /// the reason [toggleAppLock] documents. [authenticator] is a parameter because
 /// biometrics are a platform edge; the composition root defaults it to the real
-/// device authenticator.
+/// device authenticator. [storageLocationSummary] names where this session
+/// stores PDFs on iOS.
 SettingsScreens buildSettingsScreens({
   required SettingsModule settings,
   required ValueNotifier<AppSettings> currentSettings,
@@ -70,6 +71,7 @@ SettingsScreens buildSettingsScreens({
   required DeviceAuthenticator authenticator,
   CameraResolutionLoader? loadCameraResolutions,
   bool supportsCloudStorage = false,
+  String? storageLocationSummary,
   DirectoryPicker? pickSaveLocation,
 }) {
   final directoryPicker =
@@ -126,6 +128,7 @@ SettingsScreens buildSettingsScreens({
               onStorageLocation: supportsCloudStorage
                   ? () => context.push(AppRoutes.storageLocation)
                   : null,
+              storageLocationSummary: storageLocationSummary,
             );
           },
         ),

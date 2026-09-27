@@ -155,12 +155,14 @@ abstract final class SettingsCopy {
   /// test can assert on, and so changing it is a deliberate act rather than a
   /// copy edit in a widget tree.
   static const privacyStatement =
-      'DocScanly stores PDFs in the DocScanly folder selected for your library. '
-      'On Android this library is always on the device. On iOS you can keep it '
-      'on the device or explicitly select DocScanly’s app-owned iCloud Drive '
-      'container. Apple then transfers those PDFs between devices signed into '
-      'the same iCloud account. DocScanly never silently switches an iCloud '
-      'library to a separate local copy.\n\n'
+      'DocScanly stores PDFs in its DocScanly library folder. On Android this '
+      'library is always on the device. On iOS DocScanly automatically keeps '
+      'it in its app-owned iCloud Drive container whenever iCloud is '
+      'available, moving any documents already on the device there, and on '
+      'the device while iCloud is off. Apple then transfers those PDFs between '
+      'devices signed into the same iCloud account. To keep documents only on '
+      'the device, turn DocScanly off in iOS Settings under iCloud. DocScanly '
+      'never silently switches an iCloud library to a separate local copy.\n\n'
       'Captured page images, search indexes, preferences '
       'and other database metadata remain local to each device. They are not '
       'synchronised through iCloud, so a new device rebuilds its document list '

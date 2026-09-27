@@ -1,4 +1,4 @@
-/// Golden coverage for the iOS-only storage-location screen.
+/// Golden coverage for the iOS-only storage-location status screen.
 @Tags(['golden'])
 library;
 
@@ -37,18 +37,18 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('local phone light', (tester) async {
-    await pumpAt(tester, storageLocationLocal());
+  testWidgets('iCloud active phone light', (tester) async {
+    await pumpAt(tester, storageLocationICloud());
     await expectLater(
       find.byType(StorageLocationScreen),
       matchesGoldenFile('storage_location_phone_light.png'),
     );
   });
 
-  testWidgets('iCloud phone dark', (tester) async {
+  testWidgets('signed-out device fallback phone dark', (tester) async {
     await pumpAt(
       tester,
-      storageLocationICloudDark(),
+      storageLocationSignedOut(),
       brightness: Brightness.dark,
     );
     await expectLater(
@@ -65,11 +65,11 @@ void main() {
     );
   });
 
-  testWidgets('migration tablet light', (tester) async {
-    await pumpAt(tester, storageLocationMigration(), size: _tablet);
+  testWidgets('move now tablet light', (tester) async {
+    await pumpAt(tester, storageLocationMoveNow(), size: _tablet);
     await expectLater(
       find.byType(StorageLocationScreen),
-      matchesGoldenFile('storage_location_migration_tablet_light.png'),
+      matchesGoldenFile('storage_location_move_now_tablet_light.png'),
     );
   });
 
@@ -90,7 +90,7 @@ void main() {
   });
 
   testWidgets('large text remains scrollable', (tester) async {
-    await pumpAt(tester, storageLocationConfirmation(), textScale: 1.6);
+    await pumpAt(tester, storageLocationDisabled(), textScale: 1.6);
     await expectLater(
       find.byType(StorageLocationScreen),
       matchesGoldenFile('storage_location_large_text.png'),

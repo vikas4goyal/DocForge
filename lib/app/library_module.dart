@@ -241,12 +241,17 @@ Future<LibraryModule> buildLibraryModule({
   // live somewhere the user never sees (`design.md` D4).
   final supportDirectory = await getApplicationSupportDirectory();
 
-  final isar = await Isar.open([
-    DocumentEntitySchema,
-    FolderEntitySchema,
-    PageEntitySchema,
-    TrashEntitySchema,
-  ], directory: supportDirectory.path);
+  // A recomposed application (after moving the library to iCloud) runs this
+  // again while the first composition's database is still open, and Isar
+  // refuses a second open of the same instance.
+  final isar =
+      Isar.getInstance() ??
+      await Isar.open([
+        DocumentEntitySchema,
+        FolderEntitySchema,
+        PageEntitySchema,
+        TrashEntitySchema,
+      ], directory: supportDirectory.path);
 
   // Before anything reads a document: layout-1 records address a private path
   // that no longer exists, so a screen built over an unmigrated library would

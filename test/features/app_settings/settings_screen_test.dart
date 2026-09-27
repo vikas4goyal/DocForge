@@ -40,6 +40,7 @@ void main() {
     VoidCallback? onAbout,
     VoidCallback? onPrivacy,
     VoidCallback? onStorageLocation,
+    String? storageLocationSummary,
     Future<String?> Function()? pickSaveLocation,
     bool isTab = false,
     double textScale = 1,
@@ -88,6 +89,7 @@ void main() {
               onPrivacyPolicy: onPrivacy ?? () {},
               onToggleAppLock: onToggleAppLock,
               onStorageLocation: onStorageLocation,
+              storageLocationSummary: storageLocationSummary,
             ),
           ),
         ),
@@ -161,6 +163,25 @@ void main() {
       await tester.tap(find.byKey(SettingsKeys.storageLocation));
 
       expect(opened, isTrue);
+    });
+
+    testWidgets('the storage entry names where PDFs are stored', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        onStorageLocation: () {},
+        storageLocationSummary: 'On this device',
+      );
+
+      await tester.ensureVisible(find.byKey(SettingsKeys.storageLocation));
+      expect(
+        find.descendant(
+          of: find.byKey(SettingsKeys.storageLocation),
+          matching: find.text('On this device'),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('shows the naming preview', (tester) async {

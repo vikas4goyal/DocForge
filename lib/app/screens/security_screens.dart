@@ -49,6 +49,9 @@ class SecurityScreens {
 /// no host-VM implementation: an end-to-end flow substitutes
 /// `FakeDeviceAuthenticator` so unlocking is a decision the test makes rather
 /// than a system prompt nothing can answer.
+///
+/// [usesICloudLibrary] is true on iOS, where the library is kept in the user's
+/// iCloud Drive whenever iCloud is on; onboarding's privacy promises follow it.
 SecurityScreens buildSecurityScreens({
   required PermissionService permissions,
   required OnboardingRepositoryImpl onboardingRepository,
@@ -56,6 +59,7 @@ SecurityScreens buildSecurityScreens({
   required AppLockConfiguration lockConfiguration,
   required AppLockGateImpl lockGate,
   required DeviceAuthenticator authenticator,
+  bool usesICloudLibrary = false,
 }) {
   return SecurityScreens(
     onboarding: (context) => BlocProvider(
@@ -64,6 +68,7 @@ SecurityScreens buildSecurityScreens({
         RequestOnboardingCameraPermission(permissions),
       ),
       child: OnboardingScreen(
+        usesICloudLibrary: usesICloudLibrary,
         onFinished: () {
           // Update the gate first: the router re-evaluates its redirect on
           // navigation, and a stale gate would bounce the user straight back

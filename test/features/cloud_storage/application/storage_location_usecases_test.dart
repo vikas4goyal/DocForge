@@ -6,11 +6,13 @@ import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
-import 'package:doc_scanly/features/cloud_storage/application/usecases/choose_storage_location.dart';
+import 'package:doc_scanly/features/cloud_storage/application/usecases/adopt_device_library.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/ensure_document_downloaded.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/import_existing_cloud_folder.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/load_storage_location.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/migrate_library_location.dart';
+import 'package:doc_scanly/features/cloud_storage/domain/entities/cloud_availability.dart';
+import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_decision.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_location.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/ios_icloud_channel.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/scripted_icloud_platform.dart';
@@ -21,75 +23,220 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('LoadStorageLocation', () {
-    test('existing local selection remains local when marker exists', () async {
-      final preferences = StorageLocationPreferences(
-        InMemoryPreferenceStore({'settings.storage.location.v1': 'local'}),
-      );
-      final platform = _establishedPlatform();
-      final useCase = LoadStorageLocation(
-        locations: preferences,
-        cloud: PlatformCloudContainerRepository(platform),
-      );
+    late Directory scratch;
+    late FilesystemPublicFileStore localStore;
 
-      final loaded = (await useCase()).valueOrNull!;
-
-      expect(loaded.location, StorageLocation.local);
-      expect(loaded.discoveredEstablishedLibrary, isFalse);
-      await platform.dispose();
+    setUp(() async {
+      scratch = await Directory.systemTemp.createTemp('load_location');
+      localStore = FilesystemPublicFileStore.atRoot(
+        Directory('${scratch.path}/local'),
+      );
     });
 
-    test('new device adopts a valid established marker', () async {
-      final store = InMemoryPreferenceStore();
-      final platform = _establishedPlatform();
-      final useCase = LoadStorageLocation(
-        locations: StorageLocationPreferences(store),
-        cloud: PlatformCloudContainerRepository(platform),
-      );
+    tearDown(() => scratch.delete(recursive: true));
 
-      final loaded = (await useCase()).valueOrNull!;
+    LoadStorageLocation load(
+      PreferenceStore store,
+      ScriptedICloudPlatform platform,
+    ) => LoadStorageLocation(
+      locations: StorageLocationPreferences(store),
+      cloud: PlatformCloudContainerRepository(platform),
+      localStore: localStore,
+    );
 
-      expect(loaded.location, StorageLocation.iCloud);
-      expect(loaded.discoveredEstablishedLibrary, isTrue);
-      expect(store.values['settings.storage.location.v1'], 'icloud');
-      await platform.dispose();
-    });
-
-    test('fresh install without marker becomes local', () async {
+    test('fresh install with iCloud adopts it and writes the marker', () async {
       final store = InMemoryPreferenceStore();
       final platform = ScriptedICloudPlatform();
 
-      final loaded = (await LoadStorageLocation(
-        locations: StorageLocationPreferences(store),
-        cloud: PlatformCloudContainerRepository(platform),
-      )()).valueOrNull!;
+      final loaded = (await load(store, platform)()).valueOrNull!;
 
+      expect(
+        loaded.decision,
+        const StorageDecision.useICloud(writeMarker: true),
+      );
+      expect(loaded.location, StorageLocation.iCloud);
+      expect(store.values['settings.storage.location.v1'], 'icloud');
+      expect(platform.marker, isNotNull);
+      await platform.dispose();
+    });
+
+    test(
+      'stored local with an empty device switches straight to iCloud',
+      () async {
+        final store = InMemoryPreferenceStore({
+          'settings.storage.location.v1': 'local',
+        });
+        final platform = _establishedPlatform();
+
+        final loaded = (await load(store, platform)()).valueOrNull!;
+
+        expect(loaded.decision, const StorageDecision.useICloud());
+        expect(store.values['settings.storage.location.v1'], 'icloud');
+        await platform.dispose();
+      },
+    );
+
+    test('stored local with documents needs the migration gate', () async {
+      await localStore.initialise();
+      await _write(localStore, scratch, 'Tax.pdf', 'tax');
+      final store = InMemoryPreferenceStore({
+        'settings.storage.location.v1': 'local',
+      });
+      final platform = _establishedPlatform();
+
+      final loaded = (await load(store, platform)()).valueOrNull!;
+
+      expect(loaded.decision, const StorageDecision.migrateToICloud());
       expect(loaded.location, StorageLocation.local);
+      // Authority only moves at the migration's verified switch.
       expect(store.values['settings.storage.location.v1'], 'local');
       await platform.dispose();
     });
 
-    test('selected iCloud remains authoritative while signed out', () async {
-      final preferences = StorageLocationPreferences(
-        InMemoryPreferenceStore({'settings.storage.location.v1': 'icloud'}),
+    test('an empty folder counts as device content', () async {
+      await localStore.initialise();
+      await localStore.createFolder(const ['Receipts']);
+      final platform = ScriptedICloudPlatform();
+
+      final loaded = (await load(
+        InMemoryPreferenceStore(),
+        platform,
+      )()).valueOrNull!;
+
+      expect(loaded.decision, const StorageDecision.migrateToICloud());
+      await platform.dispose();
+    });
+
+    test('continuing locally keeps the device for the session only', () async {
+      await localStore.initialise();
+      await _write(localStore, scratch, 'Tax.pdf', 'tax');
+      final store = InMemoryPreferenceStore({
+        'settings.storage.location.v1': 'local',
+      });
+      final platform = ScriptedICloudPlatform();
+
+      final loaded = (await load(store, platform)(
+        continueLocalThisSession: true,
+      )).valueOrNull!;
+
+      expect(
+        loaded.decision,
+        const StorageDecision.useLocal(
+          reason: CloudAvailabilityStatus.available,
+        ),
       );
+      expect(store.values['settings.storage.location.v1'], 'local');
+      await platform.dispose();
+    });
+
+    test('signed-out fresh install falls back to the device', () async {
+      final store = InMemoryPreferenceStore();
       final platform = ScriptedICloudPlatform(availabilityValue: 'signedOut');
 
-      final loaded = (await LoadStorageLocation(
-        locations: preferences,
-        cloud: PlatformCloudContainerRepository(platform),
+      final loaded = (await load(store, platform)()).valueOrNull!;
+
+      expect(
+        loaded.decision,
+        const StorageDecision.useLocal(
+          reason: CloudAvailabilityStatus.signedOut,
+        ),
+      );
+      expect(store.values['settings.storage.location.v1'], 'local');
+      expect(platform.marker, isNull);
+      await platform.dispose();
+    });
+
+    test('selected iCloud remains authoritative while signed out', () async {
+      final platform = ScriptedICloudPlatform(availabilityValue: 'signedOut');
+
+      final loaded = (await load(
+        InMemoryPreferenceStore({'settings.storage.location.v1': 'icloud'}),
+        platform,
       )()).valueOrNull!;
 
       expect(loaded.location, StorageLocation.iCloud);
-      expect(loaded.isAuthoritativeRootAvailable, isFalse);
+      expect(
+        loaded.decision,
+        const StorageDecision.iCloudUnavailable(
+          reason: CloudAvailabilityStatus.signedOut,
+        ),
+      );
+      await platform.dispose();
+    });
+
+    test(
+      'an unreadable newer marker is neither adopted nor overwritten',
+      () async {
+        final platform = ScriptedICloudPlatform(
+          marker: const {
+            'schemaVersion': 99,
+            'libraryIdentifier': 'docscanly-library',
+          },
+        );
+        final loaded = (await load(
+          InMemoryPreferenceStore(),
+          platform,
+        )()).valueOrNull!;
+
+        expect(
+          loaded.decision,
+          const StorageDecision.useLocal(
+            reason: CloudAvailabilityStatus.unavailable,
+          ),
+        );
+        expect(platform.marker!['schemaVersion'], 99);
+        await platform.dispose();
+      },
+    );
+
+    test('an interrupted move to iCloud is resumed', () async {
+      await localStore.initialise();
+      await _write(localStore, scratch, 'Tax.pdf', 'tax');
+      final store = InMemoryPreferenceStore({
+        'settings.storage.location.v1': 'local',
+      });
+      const checkpoint = StorageMigrationCheckpoint(
+        source: StorageLocation.local,
+        destination: StorageLocation.iCloud,
+        phase: StorageMigrationPhase.verifying,
+        verifiedRelativePaths: ['Tax.pdf'],
+      );
+      await StorageLocationPreferences(store).writeCheckpoint(checkpoint);
+      final platform = ScriptedICloudPlatform();
+
+      final loaded = (await load(store, platform)()).valueOrNull!;
+
+      expect(
+        loaded.decision,
+        const StorageDecision.migrateToICloud(resume: checkpoint),
+      );
+      await platform.dispose();
+    });
+
+    test('a legacy move to the device is discarded', () async {
+      final store = InMemoryPreferenceStore({
+        'settings.storage.location.v1': 'icloud',
+      });
+      final locations = StorageLocationPreferences(store);
+      await locations.writeCheckpoint(
+        const StorageMigrationCheckpoint(
+          source: StorageLocation.iCloud,
+          destination: StorageLocation.local,
+          phase: StorageMigrationPhase.copying,
+        ),
+      );
+      final platform = _establishedPlatform();
+
+      final loaded = (await load(store, platform)()).valueOrNull!;
+
+      expect(loaded.decision, const StorageDecision.useICloud());
+      expect((await locations.readCheckpoint()).valueOrNull, isNull);
       await platform.dispose();
     });
 
     test('propagates a persisted-authority read failure', () async {
       final platform = ScriptedICloudPlatform();
-      final result = await LoadStorageLocation(
-        locations: StorageLocationPreferences(_FailingPreferenceStore()),
-        cloud: PlatformCloudContainerRepository(platform),
-      )();
+      final result = await load(_FailingPreferenceStore(), platform)();
 
       expect(result.failureOrNull, isA<StorageFailure>());
       await platform.dispose();
@@ -97,88 +244,101 @@ void main() {
 
     test('propagates an availability failure', () async {
       final platform = _FailingICloudPlatform(failAvailability: true);
+      final result = await load(InMemoryPreferenceStore(), platform)();
+
+      expect(result.failureOrNull, isA<StorageFailure>());
+      await platform.dispose();
+    });
+
+    test('propagates a device listing failure', () async {
+      final platform = ScriptedICloudPlatform();
       final result = await LoadStorageLocation(
         locations: StorageLocationPreferences(InMemoryPreferenceStore()),
         cloud: PlatformCloudContainerRepository(platform),
+        localStore: _FailingListStore(),
       )();
 
       expect(result.failureOrNull, isA<StorageFailure>());
       await platform.dispose();
     });
 
-    test('propagates an invalid marker read', () async {
-      final platform = ScriptedICloudPlatform(
-        marker: const {
-          'schemaVersion': 99,
-          'libraryIdentifier': 'docscanly-library',
-        },
+    test('propagates writes for adopted and local authority', () async {
+      final localPrefs = InMemoryPreferenceStore()..failNextWrite = true;
+      final localPlatform = ScriptedICloudPlatform(
+        availabilityValue: 'disabled',
       );
-      final result = await LoadStorageLocation(
-        locations: StorageLocationPreferences(InMemoryPreferenceStore()),
-        cloud: PlatformCloudContainerRepository(platform),
-      )();
-
-      expect(result.failureOrNull, isA<CorruptFileFailure>());
-      await platform.dispose();
-    });
-
-    test('propagates writes for discovered and local authority', () async {
-      final localStore = InMemoryPreferenceStore()..failNextWrite = true;
-      final localPlatform = ScriptedICloudPlatform();
-      final local = await LoadStorageLocation(
-        locations: StorageLocationPreferences(localStore),
-        cloud: PlatformCloudContainerRepository(localPlatform),
-      )();
+      final local = await load(localPrefs, localPlatform)();
       expect(local.failureOrNull, isA<StorageFailure>());
 
-      final cloudStore = InMemoryPreferenceStore()..failNextWrite = true;
+      final cloudPrefs = InMemoryPreferenceStore()..failNextWrite = true;
       final cloudPlatform = _establishedPlatform();
-      final discovered = await LoadStorageLocation(
-        locations: StorageLocationPreferences(cloudStore),
-        cloud: PlatformCloudContainerRepository(cloudPlatform),
-      )();
-      expect(discovered.failureOrNull, isA<StorageFailure>());
+      final adopted = await load(cloudPrefs, cloudPlatform)();
+      expect(adopted.failureOrNull, isA<StorageFailure>());
       await localPlatform.dispose();
       await cloudPlatform.dispose();
     });
   });
 
-  group('ChooseStorageLocation', () {
-    test('requires available iCloud before returning a choice', () async {
-      final platform = ScriptedICloudPlatform(availabilityValue: 'restricted');
-      final result = await ChooseStorageLocation(
-        PlatformCloudContainerRepository(platform),
-      )(current: StorageLocation.local, destination: StorageLocation.iCloud);
-
-      expect(result.isFailure, isTrue);
-      await platform.dispose();
-    });
-
-    test('returns an explicit confirmable choice', () async {
-      final platform = ScriptedICloudPlatform();
-      final result = await ChooseStorageLocation(
-        PlatformCloudContainerRepository(platform),
-      )(current: StorageLocation.local, destination: StorageLocation.iCloud);
-
-      expect(
-        result.valueOrNull,
-        const StorageLocationChoice(
+  group('AdoptDeviceLibrary', () {
+    test('selects the device and leaves iCloud untouched', () async {
+      final scratch = await Directory.systemTemp.createTemp('adopt_device');
+      addTearDown(() => scratch.delete(recursive: true));
+      final cloudRoot = Directory('${scratch.path}/cloud')..createSync();
+      File('${cloudRoot.path}/Kept.pdf').writeAsStringSync('cloud');
+      final store = InMemoryPreferenceStore({
+        'settings.storage.location.v1': 'icloud',
+      });
+      final locations = StorageLocationPreferences(store);
+      await locations.writeCheckpoint(
+        const StorageMigrationCheckpoint(
           source: StorageLocation.local,
           destination: StorageLocation.iCloud,
+          phase: StorageMigrationPhase.cleaning,
         ),
       );
-      expect(result.valueOrNull!.changesLocation, isTrue);
+      final platform = ScriptedICloudPlatform(
+        availabilityValue: 'signedOut',
+        rootPath: cloudRoot.path,
+        marker: const {
+          'schemaVersion': 1,
+          'libraryIdentifier': 'docscanly-library',
+        },
+      );
+
+      final result = await AdoptDeviceLibrary(locations)();
+
+      expect(result.isSuccess, isTrue);
+      expect(store.values['settings.storage.location.v1'], 'local');
+      expect(platform.marker, isNotNull);
+      expect(File('${cloudRoot.path}/Kept.pdf').readAsStringSync(), 'cloud');
+      final loaded = await LoadStorageLocation(
+        locations: locations,
+        cloud: PlatformCloudContainerRepository(platform),
+        localStore: FilesystemPublicFileStore.atRoot(
+          Directory('${scratch.path}/local'),
+        ),
+      )();
+      expect(
+        loaded.valueOrNull!.decision,
+        const StorageDecision.useLocal(
+          reason: CloudAvailabilityStatus.signedOut,
+        ),
+      );
       await platform.dispose();
     });
 
-    test('propagates an availability transport failure', () async {
-      final platform = _FailingICloudPlatform(failAvailability: true);
-      final result = await ChooseStorageLocation(
-        PlatformCloudContainerRepository(platform),
-      )(current: StorageLocation.local, destination: StorageLocation.iCloud);
+    test('propagates a failed authority write', () async {
+      final store = InMemoryPreferenceStore({
+        'settings.storage.location.v1': 'icloud',
+      });
+      final locations = StorageLocationPreferences(store);
+      await locations.clearCheckpoint();
+      store.failNextWrite = true;
+
+      final result = await AdoptDeviceLibrary(locations)();
 
       expect(result.failureOrNull, isA<StorageFailure>());
-      await platform.dispose();
+      expect(store.values['settings.storage.location.v1'], 'icloud');
     });
   });
 
@@ -720,32 +880,183 @@ void main() {
       },
     );
 
-    test(
-      'collision preserves both authorities and does not overwrite',
-      () async {
-        await _write(local, localContainer, 'a.pdf', 'source');
-        await _write(cloudStore, cloudRoot, 'a.pdf', 'destination');
+    test('collision moving to the device still refuses to overwrite', () async {
+      await locations.writeLocation(StorageLocation.iCloud);
+      await _write(cloudStore, cloudRoot, 'a.pdf', 'cloud');
+      await _write(local, localContainer, 'a.pdf', 'device');
+
+      final result = await migrate(
+        source: StorageLocation.iCloud,
+        destination: StorageLocation.local,
+      );
+
+      expect(result.failureOrNull, isA<StorageFailure>());
+      expect(
+        File('${local.rootDirectory.path}/a.pdf').readAsStringSync(),
+        'device',
+      );
+      expect(
+        (await locations.readLocation()).valueOrNull,
+        StorageLocation.iCloud,
+      );
+    });
+
+    group('merging into an established iCloud library', () {
+      setUp(() {
+        platform.marker = const {
+          'schemaVersion': 1,
+          'libraryIdentifier': 'docscanly-library',
+        };
+      });
+
+      test('identical payloads are verified without a copy', () async {
+        await _write(local, localContainer, 'a.pdf', 'same');
+        await _write(cloudStore, cloudRoot, 'a.pdf', 'same');
 
         final result = await migrate(
           source: StorageLocation.local,
           destination: StorageLocation.iCloud,
         );
 
-        expect(result.isFailure, isTrue);
+        expect(result.isSuccess, isTrue);
         expect(
-          File('${cloudRoot.path}/a.pdf').readAsStringSync(),
-          'destination',
+          cloudRoot.listSync().whereType<File>().map(
+            (f) => f.uri.pathSegments.last,
+          ),
+          isNot(contains('a (Conflict device).pdf')),
+        );
+        expect(File('${local.rootDirectory.path}/a.pdf').existsSync(), isFalse);
+      });
+
+      test('a differing payload is kept beside the original', () async {
+        await _write(local, localContainer, 'Tax/a.pdf', 'device');
+        await _write(cloudStore, cloudRoot, 'Tax/a.pdf', 'cloud');
+        await _write(cloudStore, cloudRoot, 'Tax/a (Conflict device).pdf', 'x');
+
+        final result = await migrate(
+          source: StorageLocation.local,
+          destination: StorageLocation.iCloud,
+        );
+
+        expect(result.isSuccess, isTrue);
+        expect(File('${cloudRoot.path}/Tax/a.pdf').readAsStringSync(), 'cloud');
+        expect(
+          File(
+            '${cloudRoot.path}/Tax/a (Conflict device).pdf',
+          ).readAsStringSync(),
+          'x',
         );
         expect(
-          File('${local.rootDirectory.path}/a.pdf').readAsStringSync(),
-          'source',
+          File(
+            '${cloudRoot.path}/Tax/a (Conflict device 2).pdf',
+          ).readAsStringSync(),
+          'device',
+        );
+        expect(
+          (await locations.readLocation()).valueOrNull,
+          StorageLocation.iCloud,
+        );
+      });
+
+      test('a resumed merge accepts its earlier conflict copy', () async {
+        await _write(local, localContainer, 'a.pdf', 'device');
+        await _write(cloudStore, cloudRoot, 'a.pdf', 'cloud');
+        // What an interrupted earlier run left behind before its checkpoint.
+        await _write(
+          cloudStore,
+          cloudRoot,
+          'a (Conflict device).pdf',
+          'device',
+        );
+
+        final result = await migrate(
+          source: StorageLocation.local,
+          destination: StorageLocation.iCloud,
+        );
+
+        expect(result.isSuccess, isTrue);
+        expect(
+          File('${cloudRoot.path}/a (Conflict device 2).pdf').existsSync(),
+          isFalse,
+        );
+      });
+
+      test('a reserved Trash collision is never renamed', () async {
+        const trashPath = '$publicTrashFolderName/t-1/payload/a.pdf';
+        await _write(local, localContainer, trashPath, 'device');
+        await _write(cloudStore, cloudRoot, trashPath, 'cloud');
+
+        final result = await migrate(
+          source: StorageLocation.local,
+          destination: StorageLocation.iCloud,
+        );
+
+        expect(result.failureOrNull, isA<StorageFailure>());
+        expect(
+          File('${cloudRoot.path}/$trashPath').readAsStringSync(),
+          'cloud',
         );
         expect(
           (await locations.readLocation()).valueOrNull,
           StorageLocation.local,
         );
-      },
-    );
+      });
+
+      test('the established marker is not rewritten', () async {
+        final counting = _MarkerCountingPlatform();
+        await _write(local, localContainer, 'a.pdf', 'a');
+
+        final result = await MigrateLibraryLocation(
+          locations: locations,
+          stores: FixedLibraryStoreResolver(local: local, iCloud: cloudStore),
+          cloud: PlatformCloudContainerRepository(counting),
+        )(source: StorageLocation.local, destination: StorageLocation.iCloud);
+
+        expect(result.isSuccess, isTrue);
+        expect(counting.markerWrites, 0);
+        await counting.dispose();
+      });
+
+      test('cancellation removes only what this run wrote', () async {
+        await _write(cloudStore, cloudRoot, 'Shared/kept.pdf', 'other device');
+        await _write(cloudStore, cloudRoot, 'same.pdf', 'same');
+        await _write(local, localContainer, 'same.pdf', 'same');
+        await _write(local, localContainer, 'Shared/new.pdf', 'new');
+        await _write(local, localContainer, 'z.pdf', 'z');
+        var checks = 0;
+
+        final result = await migrate(
+          source: StorageLocation.local,
+          destination: StorageLocation.iCloud,
+          shouldCancel: () => checks++ > 1,
+        );
+
+        expect(result.failureOrNull, isA<CancelledFailure>());
+        expect(File('${cloudRoot.path}/Shared/new.pdf').existsSync(), isFalse);
+        expect(
+          File('${cloudRoot.path}/Shared/kept.pdf').readAsStringSync(),
+          'other device',
+        );
+        expect(File('${cloudRoot.path}/same.pdf').readAsStringSync(), 'same');
+        expect(File('${local.rootDirectory.path}/z.pdf').existsSync(), isTrue);
+      });
+    });
+
+    test('conflict names are ordinal, foldered and length-safe', () {
+      final path = LibraryPath.parse('Tax/2026/Receipt.pdf');
+      expect(
+        conflictCopyPath(path, 1).relative,
+        'Tax/2026/Receipt (Conflict device).pdf',
+      );
+      expect(
+        conflictCopyPath(path, 3).relative,
+        'Tax/2026/Receipt (Conflict device 3).pdf',
+      );
+      final long = LibraryPath.parse('${'x' * 251}.pdf');
+      final renamed = conflictCopyPath(long, 12).fileName;
+      expect(renamed.length, lessThanOrEqualTo(LibraryPath.maxNameLength));
+      expect(renamed, endsWith(' (Conflict device 12).pdf'));
+    });
 
     test('safe cancellation rolls back verified destination copies', () async {
       await _write(local, localContainer, 'a.pdf', 'a');
@@ -899,5 +1210,34 @@ class _FailingICloudPlatform extends ScriptedICloudPlatform {
   Future<void> releaseImportFolder(List<String> paths) {
     if (failRelease) throw PlatformException(code: 'release_failed');
     return super.releaseImportFolder(paths);
+  }
+}
+
+class _FailingListStore implements PublicFileStore {
+  @override
+  Future<Result<List<PublicEntry>>> listRecursive(List<String> folders) async =>
+      const Result<List<PublicEntry>>.failure(
+        Failure.storage(debugDetail: 'list'),
+      );
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _MarkerCountingPlatform extends ScriptedICloudPlatform {
+  _MarkerCountingPlatform()
+    : super(
+        marker: const {
+          'schemaVersion': 1,
+          'libraryIdentifier': 'docscanly-library',
+        },
+      );
+
+  int markerWrites = 0;
+
+  @override
+  Future<void> writeMarker(Map<String, Object?> marker) {
+    markerWrites++;
+    return super.writeMarker(marker);
   }
 }
