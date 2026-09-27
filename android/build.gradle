@@ -18,8 +18,10 @@ subprojects {
 // Some plugins (receive_sharing_intent among them) hardcode `compileSdk 37`,
 // but the Android SDK now installs that platform as `android-37.0`, so Gradle
 // fails with "Failed to find target with hash string 'android-37'". Overriding
-// here stops a single plugin from dictating the whole build's SDK, and applies
-// identically on a developer machine and in CI.
+// here with the exact platform string stops a single plugin from dictating the
+// whole build's SDK, and applies identically on a developer machine and in CI.
+// It must be 37, not 36: permission_handler_android 14.1+ references Android 17
+// APIs (VERSION_CODES.CINNAMON_BUN, ACCESS_LOCAL_NETWORK).
 //
 // This must be registered BEFORE the evaluationDependsOn block below: that call
 // forces subproject evaluation, after which afterEvaluate can no longer be
@@ -28,7 +30,7 @@ subprojects {
     afterEvaluate { evaluatedProject ->
         def androidExtension = evaluatedProject.extensions.findByName("android")
         if (androidExtension != null) {
-            androidExtension.compileSdkVersion(36)
+            androidExtension.compileSdkVersion("android-37.0")
         }
     }
 }
