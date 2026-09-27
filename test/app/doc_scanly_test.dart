@@ -18,6 +18,7 @@ import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
 import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_repository.dart';
 import 'package:doc_scanly/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
 import 'package:doc_scanly/features/app_security/presentation/screens/unlock_screen.dart';
@@ -290,7 +291,12 @@ void main() {
           SecureStorageKeys.appLockEnabled,
           'true',
         );
-        final authenticator = FakeDeviceAuthenticator();
+        // Rejecting keeps the app on the unlock screen. A succeeding fake lets
+        // the screen's automatic prompt unlock and redirect to the dashboard
+        // within the frames `settle` pumps, which go_router 18 does sooner.
+        final authenticator = FakeDeviceAuthenticator(
+          outcome: AuthOutcome.rejected,
+        );
 
         await tester.pumpWidget(
           await boot(
@@ -306,6 +312,7 @@ void main() {
         // frame — and the screen is driven by the authenticator passed in, not by
         // the real biometric prompt, which no host test could answer.
         expect(find.byType(UnlockScreen), findsOneWidget);
+        expect(authenticator.prompts, isNotEmpty);
       },
     );
 
