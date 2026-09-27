@@ -212,51 +212,66 @@ ViewerScreens buildViewerScreens({
                 if (useDedicatedCompressRoute) {
                   unawaited(_openCompressionRoute(context, id, viewerCubit));
                 } else {
-                  openEditor(
+                  unawaited(
+                    _openEditorAndRefresh(
+                      context,
+                      editing,
+                      documentFiles,
+                      id,
+                      viewerCubit,
+                      documentReader: library.documentReader,
+                      initialOperation: PdfEditOperation.compress,
+                    ),
+                  );
+                }
+              case ViewerDocumentAction.split:
+                unawaited(
+                  _openEditorAndRefresh(
                     context,
                     editing,
                     documentFiles,
                     id,
+                    viewerCubit,
                     documentReader: library.documentReader,
-                    initialOperation: PdfEditOperation.compress,
-                  );
-                }
-              case ViewerDocumentAction.split:
-                openEditor(
-                  context,
-                  editing,
-                  documentFiles,
-                  id,
-                  documentReader: library.documentReader,
-                  initialOperation: PdfEditOperation.split,
+                    initialOperation: PdfEditOperation.split,
+                  ),
                 );
               case ViewerDocumentAction.watermark:
-                openEditor(
-                  context,
-                  editing,
-                  documentFiles,
-                  id,
-                  documentReader: library.documentReader,
-                  initialOperation: PdfEditOperation.watermark,
+                unawaited(
+                  _openEditorAndRefresh(
+                    context,
+                    editing,
+                    documentFiles,
+                    id,
+                    viewerCubit,
+                    documentReader: library.documentReader,
+                    initialOperation: PdfEditOperation.watermark,
+                  ),
                 );
               case ViewerDocumentAction.protection:
-                openEditor(
-                  context,
-                  editing,
-                  documentFiles,
-                  id,
-                  documentReader: library.documentReader,
-                  initialOperation: PdfEditOperation.protect,
+                unawaited(
+                  _openEditorAndRefresh(
+                    context,
+                    editing,
+                    documentFiles,
+                    id,
+                    viewerCubit,
+                    documentReader: library.documentReader,
+                    initialOperation: PdfEditOperation.protect,
+                  ),
                 );
               case ViewerDocumentAction.forgetPassword:
                 viewerCubit.forgetPassword();
               case ViewerDocumentAction.pageManagement:
-                openEditor(
-                  context,
-                  editing,
-                  documentFiles,
-                  id,
-                  documentReader: library.documentReader,
+                unawaited(
+                  _openEditorAndRefresh(
+                    context,
+                    editing,
+                    documentFiles,
+                    id,
+                    viewerCubit,
+                    documentReader: library.documentReader,
+                  ),
                 );
             }
           },
@@ -265,6 +280,28 @@ ViewerScreens buildViewerScreens({
     },
     documentEdit: (_, id) => PlaceholderScreen('Edit ${id.value}'),
   );
+}
+
+/// Refreshes viewer metadata after an editor route that may mutate the source.
+Future<void> _openEditorAndRefresh(
+  BuildContext context,
+  PdfEditingModule editing,
+  DocumentFileResolver documentFiles,
+  DocumentId id,
+  ViewerCubit viewerCubit, {
+  required DocumentReader documentReader,
+  PdfEditOperation? initialOperation,
+}) async {
+  await openEditor(
+    context,
+    editing,
+    documentFiles,
+    id,
+    documentReader: documentReader,
+    initialOperation: initialOperation,
+  );
+  if (!context.mounted) return;
+  await viewerCubit.refreshMetadata();
 }
 
 /// Opens the dedicated compression route and applies its typed completion.

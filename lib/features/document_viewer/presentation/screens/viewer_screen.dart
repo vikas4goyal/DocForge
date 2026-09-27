@@ -118,6 +118,7 @@ class ViewerScreen extends StatelessWidget {
           previous.status != current.status ||
           previous.page != current.page ||
           previous.document?.title != current.document?.title ||
+          previous.document?.isProtected != current.document?.isProtected ||
           previous.filePath != current.filePath ||
           previous.pageCount != current.pageCount ||
           previous.password != current.password ||
@@ -169,6 +170,8 @@ class ViewerScreen extends StatelessWidget {
                         onAction(action);
                       }
                     },
+                    // Read the latest Cubit value when the lazy menu opens so
+                    // refreshed metadata cannot leave its actions stale.
                     itemBuilder: (_) => [
                       PopupMenuItem(
                         key: ViewerKeys.documentDetailsButton,
@@ -184,7 +187,7 @@ class ViewerScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (state.passwordRemembered)
+                      if (cubit.state.passwordRemembered)
                         const PopupMenuItem(
                           key: ViewerKeys.forgetPasswordButton,
                           value: ViewerDocumentAction.forgetPassword,
@@ -217,7 +220,7 @@ class ViewerScreen extends StatelessWidget {
                           title: Text('Duplicate'),
                         ),
                       ),
-                      if (state.document?.isArchived ?? false)
+                      if (cubit.state.document?.isArchived ?? false)
                         const PopupMenuItem(
                           key: ViewerKeys.restoreButton,
                           value: ViewerDocumentAction.restore,
@@ -281,7 +284,7 @@ class ViewerScreen extends StatelessWidget {
                         child: ListTile(
                           leading: const Icon(Icons.lock_outline),
                           title: Text(
-                            state.document?.isProtected ?? false
+                            cubit.state.document?.isProtected ?? false
                                 ? 'Remove password'
                                 : 'Set password',
                           ),

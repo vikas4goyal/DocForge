@@ -14,6 +14,12 @@ library;
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:doc_scanly/core/contracts/models/pdf_quality.dart';
+import 'package:doc_scanly/core/isolates/cancellation.dart';
+import 'package:doc_scanly/core/jobs/pdf_jobs.dart';
+import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/pdf_editing/domain/compression_candidate.dart';
+import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/bounded_compression_candidate_repository.dart';
 import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/pdf_manipulator_editor.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
@@ -89,79 +95,177 @@ void main() {
     expect(document.pageCount, 1);
   });
 
-  test('removing a password preserves visible page content', () async {
-    final source = File('${Directory.systemTemp.path}/password_source.pdf');
-    final protected = File(
-      '${Directory.systemTemp.path}/password_protected.pdf',
-    );
-    final unprotected = File(
-      '${Directory.systemTemp.path}/password_unprotected.pdf',
-    );
-    addTearDown(() {
-      for (final file in <File>[source, protected, unprotected]) {
-        if (file.existsSync()) file.deleteSync();
-      }
-    });
+  test(
+    'protected PDF compression and password removal preserve content',
+    () async {
+      final source = File('${Directory.systemTemp.path}/password_source.pdf');
+      final protected = File(
+        '${Directory.systemTemp.path}/password_protected.pdf',
+      );
+      final unprotected = File(
+        '${Directory.systemTemp.path}/password_unprotected.pdf',
+      );
+      final extracted = File(
+        '${Directory.systemTemp.path}/password_extracted.pdf',
+      );
+      final compressed = File(
+        '${Directory.systemTemp.path}/password_compressed.pdf',
+      );
+      final candidateDirectory = Directory.systemTemp.createTempSync(
+        'protected_compression',
+      );
+      addTearDown(() {
+        for (final file in <File>[
+          source,
+          protected,
+          unprotected,
+          extracted,
+          compressed,
+        ]) {
+          if (file.existsSync()) file.deleteSync();
+        }
+        if (candidateDirectory.existsSync()) {
+          candidateDirectory.deleteSync(recursive: true);
+        }
+      });
 
-    final generated = pw.Document()
-      ..addPage(
-        pw.Page(
-          pageFormat: pdf.PdfPageFormat.a4,
-          build: (_) => pw.Center(
-            child: pw.Container(
-              width: 240,
-              height: 240,
-              color: pdf.PdfColors.black,
+      final generated = pw.Document()
+        ..addPage(
+          pw.Page(
+            pageFormat: pdf.PdfPageFormat.a4,
+            build: (_) => pw.Center(
+              child: pw.Container(
+                width: 240,
+                height: 240,
+                color: pdf.PdfColors.black,
+              ),
             ),
           ),
-        ),
-      );
-    source.writeAsBytesSync(await generated.save());
-
-    final editor = PdfManipulatorEditor();
-    addTearDown(editor.dispose);
-    expect(
-      (await editor.protect(
-        source.path,
-        protected.path,
-        password: 'hunter2',
-      )).isSuccess,
-      isTrue,
-    );
-    expect(
-      (await editor.removePassword(
-        protected.path,
-        unprotected.path,
-        currentPassword: 'hunter2',
-      )).isSuccess,
-      isTrue,
-    );
-
-    final engine = Pdf();
-    addTearDown(engine.dispose);
-    final document = await engine.open(FileSource(unprotected));
-    addTearDown(document.dispose);
-    final rendered = await document
-        .render(
-          pages: const PdfPages.single(0),
-          size: const PdfRenderSize.thumbnail(512),
         )
-        .first;
-    final image = img.decodeImage(rendered.data);
-    expect(image, isNotNull);
-    final pixels = image!.getRange(0, 0, image.width, image.height);
-    var hasDarkPixel = false;
-    while (pixels.moveNext()) {
-      final pixel = pixels.current;
-      if (pixel.r < 32 && pixel.g < 32 && pixel.b < 32) {
-        hasDarkPixel = true;
-        break;
+        ..addPage(
+          pw.Page(
+            pageFormat: pdf.PdfPageFormat.a4,
+            build: (_) => pw.Center(
+              child: pw.Container(
+                width: 180,
+                height: 180,
+                color: pdf.PdfColors.grey,
+              ),
+            ),
+          ),
+        );
+      source.writeAsBytesSync(await generated.save());
+
+      final editor = PdfManipulatorEditor();
+      addTearDown(editor.dispose);
+      expect(
+        (await editor.protect(
+          source.path,
+          protected.path,
+          password: 'hunter2',
+        )).isSuccess,
+        isTrue,
+      );
+      expect(
+        (await editor.writePages(
+          protected.path,
+          extracted.path,
+          const <int>[0],
+          password: 'hunter2',
+          preserveProtection: false,
+        )).isSuccess,
+        isTrue,
+      );
+      expect(
+        (await editor.pageCountOf(extracted.path)).valueOrNull,
+        1,
+        reason: 'the compression intermediate must not require authentication',
+      );
+      expect(
+        (await editor.compress(
+          extracted.path,
+          compressed.path,
+          imageQuality: 80,
+          dimensionScalePercent: 80,
+        )).isSuccess,
+        isTrue,
+        reason: 'a protected source page must compress without an auth failure',
+      );
+      final candidateRepository = BoundedCompressionCandidateRepository(
+        workingDirectory: candidateDirectory,
+        ids: SequentialIdGenerator(prefix: 'native-compression'),
+        editor: editor,
+      );
+      final candidateResult = await candidateRepository.buildCandidate(
+        CompressionCandidateRequest(
+          sourcePath: protected.path,
+          pageCount: 2,
+          qualityPlan: PageQualityPlan(
+            documentQuality: PdfQualityPercent(value: 80),
+            pageOverrides: <String, PdfQualityPercent>{
+              '1': PdfQualityPercent(value: 100),
+            },
+          ),
+          fingerprint: const PdfCandidateFingerprint(
+            sourceIdentity: 'native-protected-source',
+            configurationIdentity: 'mixed-quality',
+            orderedPageQualities: <int>[80, 100],
+            isProtected: true,
+          ),
+          password: 'hunter2',
+        ),
+        token: CancellationToken(),
+        onProgress: (_) {},
+      );
+      expect(
+        candidateResult.isSuccess,
+        isTrue,
+        reason:
+            'the complete protected compression workflow failed: '
+            '${candidateResult.failureOrNull}',
+      );
+      expect(
+        (await editor.pageCountOf(
+          candidateResult.valueOrNull!.handle,
+          password: 'hunter2',
+        )).valueOrNull,
+        2,
+      );
+      expect(
+        (await editor.removePassword(
+          protected.path,
+          unprotected.path,
+          currentPassword: 'hunter2',
+        )).isSuccess,
+        isTrue,
+      );
+
+      final engine = Pdf();
+      addTearDown(engine.dispose);
+      final document = await engine.open(FileSource(unprotected));
+      addTearDown(document.dispose);
+      final rendered = await document
+          .render(
+            pages: const PdfPages.single(0),
+            size: const PdfRenderSize.thumbnail(512),
+          )
+          .first;
+      final image = img.decodeImage(rendered.data);
+      expect(image, isNotNull);
+      final pixels = image!.getRange(0, 0, image.width, image.height);
+      var hasDarkPixel = false;
+      while (pixels.moveNext()) {
+        final pixel = pixels.current;
+        if (pixel.r < 32 && pixel.g < 32 && pixel.b < 32) {
+          hasDarkPixel = true;
+          break;
+        }
       }
-    }
-    expect(
-      hasDarkPixel,
-      isTrue,
-      reason: 'the decrypted page must not render as all white',
-    );
-  });
+      expect(
+        hasDarkPixel,
+        isTrue,
+        reason: 'the decrypted page must not render as all white',
+      );
+    },
+  );
 }

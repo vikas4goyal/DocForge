@@ -147,6 +147,33 @@ void main() {
       expect(find.byKey(ViewerKeys.archiveButton), findsNothing);
     });
 
+    testWidgets('password action updates after protection metadata refresh', (
+      tester,
+    ) async {
+      final harness = ViewerHarness();
+      final cubit = await pump(tester, harness: harness);
+
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      expect(find.text('Set password'), findsOneWidget);
+      await tester.tap(find.byKey(ViewerKeys.passwordButton));
+      await tester.pumpAndSettle();
+      expect(find.byKey(ViewerKeys.passwordButton), findsNothing);
+
+      harness.documents.document = harness.documents.document!.copyWith(
+        isProtected: true,
+      );
+      await cubit.refreshMetadata();
+      await tester.pump();
+      expect(cubit.state.document?.isProtected, isTrue);
+
+      await tester.tap(find.byKey(ViewerKeys.actionsMenu));
+      await tester.pumpAndSettle();
+      expect(find.byKey(ViewerKeys.passwordButton), findsOneWidget);
+      expect(find.text('Remove password'), findsOneWidget);
+      expect(find.text('Set password'), findsNothing);
+    });
+
     testWidgets('shows a loading indicator while opening', (tester) async {
       await pump(tester, load: false);
 
