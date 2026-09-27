@@ -24,10 +24,18 @@ class OnboardingScreen extends StatelessWidget {
   ///
   /// [onFinished] is invoked once the flow completes, so this widget performs
   /// no navigation itself and can be previewed and widget-tested in isolation.
-  const OnboardingScreen({required this.onFinished, super.key});
+  const OnboardingScreen({
+    required this.onFinished,
+    super.key,
+    this.usesICloudLibrary = false,
+  });
 
   /// Called when onboarding finishes and the user should go to Home.
   final VoidCallback onFinished;
+
+  /// Whether finished PDFs are kept in the user's iCloud Drive whenever iCloud
+  /// is on (iOS), which changes what the privacy step may truthfully promise.
+  final bool usesICloudLibrary;
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +45,9 @@ class OnboardingScreen extends StatelessWidget {
       listener: (context, state) => onFinished(),
       builder: (context, state) => switch (state.step) {
         OnboardingStep.welcome => const _WelcomeStep(),
-        OnboardingStep.privacy => const _PrivacyStep(),
+        OnboardingStep.privacy => _PrivacyStep(
+          usesICloudLibrary: usesICloudLibrary,
+        ),
         OnboardingStep.permission => _PermissionStep(state: state),
         // Briefly visible between finishing and the router redirecting.
         OnboardingStep.finished => const SizedBox.shrink(),
@@ -152,7 +162,9 @@ class _WelcomeStep extends StatelessWidget {
 
 /// Step two: the privacy and offline guarantees.
 class _PrivacyStep extends StatelessWidget {
-  const _PrivacyStep();
+  const _PrivacyStep({required this.usesICloudLibrary});
+
+  final bool usesICloudLibrary;
 
   @override
   Widget build(BuildContext context) {
@@ -160,20 +172,30 @@ class _PrivacyStep extends StatelessWidget {
       screenKey: OnboardingKeys.privacyScreen,
       icon: Icons.lock_outline,
       title: 'Private by design',
-      content: const [
+      content: [
+        // On iOS the library lives in the user's own iCloud Drive whenever
+        // iCloud is on, so "only on this device" and "nothing is uploaded"
+        // would be untrue there; the promise that holds on both platforms is
+        // that DocScanly itself receives nothing.
         _PrivacyPoint(
           statementKey: OnboardingKeys.privacyLocalStorageStatement,
-          icon: Icons.smartphone_outlined,
-          text: 'Your documents are stored only on this device.',
+          icon: usesICloudLibrary
+              ? Icons.cloud_outlined
+              : Icons.smartphone_outlined,
+          text: usesICloudLibrary
+              ? OnboardingCopy.storageStatementICloud
+              : OnboardingCopy.storageStatementDevice,
         ),
-        SizedBox(height: 12),
+        const SizedBox(height: 12),
         _PrivacyPoint(
           statementKey: OnboardingKeys.privacyNoUploadStatement,
           icon: Icons.cloud_off_outlined,
-          text: 'Nothing is uploaded automatically. You choose what to share.',
+          text: usesICloudLibrary
+              ? OnboardingCopy.noServerStatement
+              : OnboardingCopy.noUploadStatement,
         ),
-        SizedBox(height: 12),
-        _PrivacyPoint(
+        const SizedBox(height: 12),
+        const _PrivacyPoint(
           statementKey: OnboardingKeys.privacyOfflineStatement,
           icon: Icons.wifi_off_outlined,
           text:

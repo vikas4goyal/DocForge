@@ -1,17 +1,13 @@
-import 'dart:io';
+/// Tier 2 — the storage status screen with its real Cubit and real use case;
+/// only the native iCloud edge is scripted.
+library;
 
-import 'package:doc_scanly/core/contracts/models/library_path.dart';
-import 'package:doc_scanly/core/failures/failure.dart';
-import 'package:doc_scanly/core/failures/result.dart';
-import 'package:doc_scanly/core/storage/key_value_store.dart';
-import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
-import 'package:doc_scanly/features/cloud_storage/application/usecases/choose_storage_location.dart';
-import 'package:doc_scanly/features/cloud_storage/application/usecases/load_storage_location.dart';
-import 'package:doc_scanly/features/cloud_storage/application/usecases/migrate_library_location.dart';
-import 'package:doc_scanly/features/cloud_storage/domain/entities/cloud_library_marker.dart';
+import 'dart:async';
+
+import 'package:doc_scanly/features/cloud_storage/application/usecases/load_storage_status.dart';
+import 'package:doc_scanly/features/cloud_storage/domain/entities/cloud_availability.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_location.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/scripted_icloud_platform.dart';
-import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/storage_location_preferences.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/repositories/platform_cloud_container_repository.dart';
 import 'package:doc_scanly/features/cloud_storage/presentation/cloud_storage_keys.dart';
 import 'package:doc_scanly/features/cloud_storage/presentation/cubit/storage_location_cubit.dart';
@@ -21,157 +17,29 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  late Directory localContainer;
-  late Directory cloudRoot;
-  late FilesystemPublicFileStore local;
-  late FilesystemPublicFileStore iCloud;
   late ScriptedICloudPlatform platform;
+  late int recompositions;
 
-  setUp(() async {
-    localContainer = await Directory.systemTemp.createTemp(
-      'docscanly_component_local_',
-    );
-    cloudRoot = await Directory.systemTemp.createTemp(
-      'docscanly_component_cloud_',
-    );
-    local = FilesystemPublicFileStore(localContainer);
-    iCloud = FilesystemPublicFileStore.atRoot(cloudRoot);
-    await local.initialise();
-    await iCloud.initialise();
-    platform = ScriptedICloudPlatform(rootPath: cloudRoot.path);
+  setUp(() {
+    platform = ScriptedICloudPlatform();
+    recompositions = 0;
   });
 
-  tearDown(() async {
-    await platform.dispose();
-    if (localContainer.existsSync()) {
-      await localContainer.delete(recursive: true);
-    }
-    if (cloudRoot.existsSync()) await cloudRoot.delete(recursive: true);
-  });
+  tearDown(() => platform.dispose());
 
-  test('real Cubit and migration move one authoritative library', () async {
-    final source = File('${localContainer.path}/source.pdf')
-      ..writeAsStringSync('authoritative-pdf');
-    await local.writeFile(LibraryPath.parse('Invoices/A.pdf'), source.path);
-    final preferenceStore = InMemoryPreferenceStore({
-      'settings.storage.location.v1': 'local',
-    });
-    final locations = StorageLocationPreferences(preferenceStore);
-    final cloud = PlatformCloudContainerRepository(platform);
-    final migrate = MigrateLibraryLocation(
-      locations: locations,
-      stores: FixedLibraryStoreResolver(local: local, iCloud: iCloud),
-      cloud: cloud,
-    );
-    final cubit = StorageLocationCubit(
-      loadLocation: LoadStorageLocation(locations: locations, cloud: cloud),
-      chooseLocation: ChooseStorageLocation(cloud),
-      runMigration: migrate.call,
-    );
-    addTearDown(cubit.close);
-    await cubit.load();
-    await cubit.choose(StorageLocation.iCloud);
-    await cubit.confirm();
-
-    expect(
-      (await iCloud.exists(LibraryPath.parse('Invoices/A.pdf'))).valueOrNull,
-      isTrue,
-    );
-    expect(
-      (await local.exists(LibraryPath.parse('Invoices/A.pdf'))).valueOrNull,
-      isFalse,
-    );
-    expect(preferenceStore.values['settings.storage.location.v1'], 'icloud');
-    expect(platform.marker, isNotNull);
-    expect(cubit.state.location, StorageLocation.iCloud);
-  });
-
-  test(
-    'interrupted migration remains retryable through the real Cubit',
-    () async {
-      final source = File('${localContainer.path}/retry-source.pdf')
-        ..writeAsStringSync('retryable-pdf');
-      await local.writeFile(LibraryPath.parse('Retry.pdf'), source.path);
-      final preferenceStore = InMemoryPreferenceStore({
-        'settings.storage.location.v1': 'local',
-      });
-      final locations = StorageLocationPreferences(preferenceStore);
-      final cloud = PlatformCloudContainerRepository(platform);
-      final migrate = MigrateLibraryLocation(
-        locations: locations,
-        stores: FixedLibraryStoreResolver(local: local, iCloud: iCloud),
-        cloud: cloud,
-      );
-      var attempts = 0;
-      final cubit = StorageLocationCubit(
-        loadLocation: LoadStorageLocation(locations: locations, cloud: cloud),
-        chooseLocation: ChooseStorageLocation(cloud),
-        runMigration:
-            ({
-              required source,
-              required destination,
-              onProgress,
-              shouldCancel,
-            }) async {
-              attempts++;
-              if (attempts == 1) {
-                return const Result<void>.failure(
-                  Failure.storage(debugDetail: 'interrupted copy'),
-                );
-              }
-              return migrate(
-                source: source,
-                destination: destination,
-                onProgress: onProgress,
-                shouldCancel: shouldCancel,
-              );
-            },
-      );
-      addTearDown(cubit.close);
-
-      await cubit.load();
-      await cubit.choose(StorageLocation.iCloud);
-      await cubit.confirm();
-      expect(cubit.state.failure, isA<StorageFailure>());
-      expect(cubit.state.location, StorageLocation.local);
-
-      await cubit.retry();
-
-      expect(attempts, 2);
-      expect(cubit.state.location, StorageLocation.iCloud);
-      expect(
-        (await iCloud.exists(LibraryPath.parse('Retry.pdf'))).valueOrNull,
-        isTrue,
-      );
-      expect(
-        (await local.exists(LibraryPath.parse('Retry.pdf'))).valueOrNull,
-        isFalse,
-      );
-    },
-  );
-
-  testWidgets('valid marker discovers an established library on a new device', (
-    tester,
+  Future<void> pumpScreen(
+    WidgetTester tester,
+    StorageLocation authority,
   ) async {
-    platform.marker = {
-      'schemaVersion': cloudLibraryMarkerSchemaVersion,
-      'libraryIdentifier': CloudLibraryMarker.defaultLibraryIdentifier,
-    };
-    final locations = StorageLocationPreferences(InMemoryPreferenceStore());
-    final cloud = PlatformCloudContainerRepository(platform);
     final cubit = StorageLocationCubit(
-      loadLocation: LoadStorageLocation(locations: locations, cloud: cloud),
-      chooseLocation: ChooseStorageLocation(cloud),
-      runMigration:
-          ({
-            required source,
-            required destination,
-            onProgress,
-            shouldCancel,
-          }) async => throw StateError('migration is not part of discovery'),
+      loadStatus: LoadStorageStatus(
+        authority: authority,
+        cloud: PlatformCloudContainerRepository(platform),
+      ),
+      onMoveNow: () async => recompositions++,
     );
     addTearDown(cubit.close);
-
+    unawaited(cubit.load());
     await tester.pumpWidget(
       MaterialApp(
         home: BlocProvider.value(
@@ -180,16 +48,65 @@ void main() {
         ),
       ),
     );
-    await cubit.load();
+    await tester.pump();
+  }
+
+  testWidgets('a signed-out device explains why iCloud is not used', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    platform.availabilityValue = 'signedOut';
+    await pumpScreen(tester, StorageLocation.local);
+
+    expect(
+      find.bySemanticsLabel(
+        '${CloudStorageSemantics.storedOnDevice}. '
+        '${CloudStorageSemantics.fallbackReason(CloudAvailabilityStatus.signedOut)}',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.byKey(CloudStorageKeys.moveNow));
+    expect(recompositions, 0);
+    semantics.dispose();
+  });
+
+  testWidgets('iCloud appearing during the session enables move now', (
+    tester,
+  ) async {
+    await pumpScreen(tester, StorageLocation.local);
+
+    await tester.tap(find.byKey(CloudStorageKeys.moveNow));
     await tester.pump();
 
-    final option = tester.widget<ListTile>(
-      find.descendant(
-        of: find.byKey(CloudStorageKeys.iCloudOption),
-        matching: find.byType(ListTile),
-      ),
+    expect(recompositions, 1);
+  });
+
+  testWidgets('an iCloud session reports iCloud Drive as active', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await pumpScreen(tester, StorageLocation.iCloud);
+
+    expect(
+      find.bySemanticsLabel(CloudStorageSemantics.storedInICloudDrive),
+      findsOneWidget,
     );
-    expect(option.leading, isA<Icon>());
-    expect(cubit.state.location?.name, 'iCloud');
+    expect(find.byKey(CloudStorageKeys.moveNow), findsNothing);
+    semantics.dispose();
+  });
+
+  testWidgets('an iCloud session that loses iCloud retries the connection', (
+    tester,
+  ) async {
+    platform.availabilityValue = 'disabled';
+    await pumpScreen(tester, StorageLocation.iCloud);
+    expect(find.byKey(CloudStorageKeys.unavailable), findsOneWidget);
+
+    platform.availabilityValue = 'available';
+    await tester.tap(find.byKey(CloudStorageKeys.retry));
+    await tester.pump();
+
+    expect(find.byKey(CloudStorageKeys.unavailable), findsNothing);
+    expect(find.byKey(CloudStorageKeys.status), findsOneWidget);
   });
 }

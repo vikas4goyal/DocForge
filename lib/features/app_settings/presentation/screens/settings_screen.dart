@@ -26,6 +26,7 @@ class SettingsScreen extends StatelessWidget {
     this.onBack,
     this.onToggleAppLock,
     this.onStorageLocation,
+    this.storageLocationSummary,
   });
 
   /// Invoked when the user leaves settings.
@@ -47,8 +48,12 @@ class SettingsScreen extends StatelessWidget {
   /// flag lives in secure storage, not in preferences.
   final ValueChanged<bool>? onToggleAppLock;
 
-  /// Opens iOS storage selection; null keeps cloud UI absent on Android.
+  /// Opens the iOS storage status; null keeps cloud UI absent on Android.
   final VoidCallback? onStorageLocation;
+
+  /// Where this session stores PDFs, such as “iCloud Drive” or “On this
+  /// device”; shown as the storage-location row's value.
+  final String? storageLocationSummary;
 
   @override
   Widget build(BuildContext context) {
@@ -193,7 +198,7 @@ class SettingsScreen extends StatelessWidget {
           SettingsValueTile(
             key: SettingsKeys.storageLocation,
             title: 'Storage location',
-            value: 'On this device or iCloud Drive',
+            value: storageLocationSummary ?? 'iCloud Drive',
             onTap: onStorageLocation,
           ),
         // Stated plainly rather than left to be discovered. Saved PDFs are
@@ -314,8 +319,8 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'A private document scanner with device-local storage and optional '
-            'iCloud Drive storage on iOS.',
+            'A private document scanner that keeps your PDFs in iCloud Drive on '
+            'iOS whenever iCloud is available, and on the device otherwise.',
             style: theme.textTheme.bodyMedium,
           ),
         ],

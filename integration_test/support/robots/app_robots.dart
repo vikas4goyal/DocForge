@@ -289,15 +289,26 @@ class DashboardRobot extends Robot {
     await tester.pump(const Duration(milliseconds: 600));
   });
 
+  Finder get _documentTiles => find.byWidgetPredicate(
+    (widget) =>
+        widget.key is ValueKey<String> &&
+        (widget.key! as ValueKey<String>).value.startsWith(
+          '${DashboardKeys.documentTilePrefix}_',
+        ),
+  );
+
+  /// Waits until at least one document row is listed.
+  ///
+  /// An iCloud library is indexed by reconciliation after the dashboard first
+  /// renders, so its rows arrive a moment after [waitUntilLoaded].
+  Future<void> waitForDocuments() =>
+      step('waiting for listed documents', () async {
+        await waitUntilVisible();
+        await pumpUntil(tester, _documentTiles, describe: 'a document row');
+      });
+
   /// Document identifiers currently exposed by dashboard rows.
-  List<String> get visibleDocumentIds => find
-      .byWidgetPredicate(
-        (widget) =>
-            widget.key is ValueKey<String> &&
-            (widget.key! as ValueKey<String>).value.startsWith(
-              '${DashboardKeys.documentTilePrefix}_',
-            ),
-      )
+  List<String> get visibleDocumentIds => _documentTiles
       .evaluate()
       .map(
         (element) => (element.widget.key! as ValueKey<String>).value.substring(

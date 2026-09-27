@@ -68,6 +68,8 @@ import 'package:flutter/material.dart';
 /// - [routeObserver] must be the one the router was built with. Home subscribes
 ///   to it so it reloads when a route pushed over it pops, which is the only
 ///   thing that makes a saved or imported document appear.
+/// - [storageLocationSummary] names where this iOS session stores PDFs; it is
+///   shown on the Settings storage-location row.
 AppScreens buildAppScreens({
   required LibraryModule library,
   required CreationModule creationFlow,
@@ -90,6 +92,7 @@ AppScreens buildAppScreens({
   required HomeRefreshObserver routeObserver,
   CameraResolutionLoader? loadCameraResolutions,
   ScreenBuilder? storageLocation,
+  String? storageLocationSummary,
   SavePdfScreenBuilder? savePdf,
   PdfTemporaryPreviewScreenBuilder? pdfTemporaryPreview,
   CompressPdfScreenBuilder? compressPdf,
@@ -104,6 +107,7 @@ AppScreens buildAppScreens({
     lockConfiguration: lockConfiguration,
     lockGate: lockGate,
     authenticator: authenticator,
+    usesICloudLibrary: storageLocation != null,
   );
 
   final libraryScreens = buildLibraryScreens(library: library);
@@ -117,6 +121,7 @@ AppScreens buildAppScreens({
     authenticator: authenticator,
     loadCameraResolutions: loadCameraResolutions,
     supportsCloudStorage: storageLocation != null,
+    storageLocationSummary: storageLocationSummary,
     pickSaveLocation: pickSaveLocation,
   );
 

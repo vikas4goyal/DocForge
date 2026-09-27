@@ -11,6 +11,11 @@
 /// straight back into the introduction they just finished.
 library;
 
+import 'dart:io';
+
+import 'package:doc_scanly/core/storage/storage_keys.dart';
+import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_location.dart';
+import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/scripted_icloud_platform.dart';
 import 'package:doc_scanly/features/onboarding/presentation/onboarding_keys.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
@@ -39,6 +44,29 @@ void main() {
     // later flow's "the document appears" from being satisfied by something
     // that was already there.
     expect(dashboard.isEmpty, isTrue);
+  });
+
+  testWidgets('on iOS with iCloud, a first-time user lands on an iCloud '
+      'library without being asked', (tester) async {
+    if (!Platform.isIOS) return;
+    final cloud = ScriptedICloudPlatform();
+    addTearDown(cloud.dispose);
+    final app = await bootDocScanly(
+      tester,
+      onboardingComplete: false,
+      iCloudPlatform: cloud,
+      isIOS: true,
+    );
+
+    await OnboardingRobot(tester).complete();
+    final dashboard = DashboardRobot(tester);
+    await dashboard.waitUntilLoaded();
+
+    expect(dashboard.isEmpty, isTrue);
+    final stored = await app.dependencies.preferences.readString(
+      PreferenceKeys.libraryStorageLocation,
+    );
+    expect(stored.valueOrNull, StorageLocation.iCloud.id);
   });
 
   testWidgets('onboarding does not run again on the next launch', (

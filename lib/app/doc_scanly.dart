@@ -57,6 +57,7 @@ import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/ensure_document_downloaded.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/import_existing_cloud_folder.dart';
+import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_decision.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_location.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/ios_icloud_channel.dart';
 import 'package:doc_scanly/features/cloud_storage/presentation/cloud_storage_keys.dart';
@@ -145,6 +146,11 @@ const appVersion = '1.0.0';
 /// [initialLocation] is where the router starts; the guard still redirects from
 /// it, so a flow that wants the dashboard asks for [AppRoutes.home] and lets the
 /// gates decide.
+///
+/// On iOS, [onRecompose] rebuilds the whole application from its host; the
+/// storage screen's "Move documents to iCloud now" uses it to pass through
+/// the migration gate. [continueLocalThisSession] is set only by that gate
+/// when the user keeps the device library after a failed move.
 Future<Widget> buildDocScanly({
   AppDependencies? dependencies,
   Directory? cacheDirectory,
@@ -168,6 +174,8 @@ Future<Widget> buildDocScanly({
   DirectoryPicker? pickSaveLocation,
   String initialLocation = AppRoutes.home,
   ImageProcessingBackend? imageProcessingBackend,
+  Future<void> Function()? onRecompose,
+  bool continueLocalThisSession = false,
 }) async {
   // Awaited together rather than one after another: none needs the other, and
   // everything here happens before the first frame, so each avoidable round
@@ -186,6 +194,35 @@ Future<Widget> buildDocScanly({
   ).wait;
 
   final supportsICloud = isIOS ?? Platform.isIOS;
+
+  // Re-runs this whole composition with the same edges. Used by the startup
+  // screens that stand in for the app until the storage authority is usable.
+  Future<Widget> recompose({bool continueLocal = false}) => buildDocScanly(
+    dependencies: resolvedDependencies,
+    cacheDirectory: resolvedCache,
+    documentsDirectory: resolvedDocuments,
+    publicStore: publicStore,
+    libraryOverride: libraryOverride,
+    scanner: scanner,
+    cameraCapabilities: cameraCapabilities,
+    authenticator: authenticator,
+    pdfRenderer: pdfRenderer,
+    pdfEditor: pdfEditor,
+    share: share,
+    printer: printer,
+    exportPicker: exportPicker,
+    gallery: gallery,
+    files: files,
+    sharedContent: sharedContent,
+    iCloudPlatform: iCloudPlatform,
+    isIOS: isIOS,
+    pickSaveLocation: pickSaveLocation,
+    initialLocation: initialLocation,
+    imageProcessingBackend: imageProcessingBackend,
+    onRecompose: onRecompose,
+    continueLocalThisSession: continueLocal,
+  );
+
   CloudStorageModule? cloudStorage;
   if (supportsICloud) {
     // This is a local compatibility migration and must precede authority
@@ -198,35 +235,38 @@ Future<Widget> buildDocScanly({
       platform:
           iCloudPlatform ??
           IosICloudChannel(telemetry: resolvedDependencies.telemetry),
+      continueLocalThisSession: continueLocalThisSession,
     );
-    if (builtCloud case Success(:final value)) {
-      cloudStorage = value;
-    } else {
-      return CloudLibraryUnavailableApp(
-        onRetry: () => buildDocScanly(
-          dependencies: resolvedDependencies,
-          cacheDirectory: resolvedCache,
-          documentsDirectory: resolvedDocuments,
-          publicStore: publicStore,
-          libraryOverride: libraryOverride,
-          scanner: scanner,
-          cameraCapabilities: cameraCapabilities,
-          authenticator: authenticator,
-          pdfRenderer: pdfRenderer,
-          pdfEditor: pdfEditor,
-          share: share,
-          printer: printer,
-          exportPicker: exportPicker,
-          gallery: gallery,
-          files: files,
-          sharedContent: sharedContent,
-          iCloudPlatform: iCloudPlatform,
-          isIOS: true,
-          pickSaveLocation: pickSaveLocation,
-          initialLocation: initialLocation,
-          imageProcessingBackend: imageProcessingBackend,
-        ),
-      );
+    switch (builtCloud) {
+      case Success(:final value):
+        cloudStorage = value;
+      case Failed():
+        return CloudLibraryUnavailableApp(onRetry: recompose);
+    }
+
+    final module = cloudStorage;
+    Future<Widget> useDevice() async {
+      await module.adoptDeviceLibrary();
+      return recompose();
+    }
+
+    switch (module.decision) {
+      // The move runs before anything below is composed: the migration
+      // inventories the device library once, so no screen may be able to write
+      // a document while it copies (`design.md` D2).
+      case MigrateToICloud():
+        return CloudMigrationGateApp(
+          runMigration: module.migrate,
+          onFinished: recompose,
+          onContinueLocal: () => recompose(continueLocal: true),
+        );
+      case ICloudUnavailable():
+        return CloudLibraryUnavailableApp(
+          onRetry: recompose,
+          onUseDevice: useDevice,
+        );
+      case UseICloud() || UseLocal():
+        break;
     }
   }
 
@@ -237,33 +277,17 @@ Future<Widget> buildDocScanly({
   if (publicStore != null) {
     store = publicStore;
   } else if (cloudStorage != null) {
-    final authoritative = await cloudStorage.authoritativeStore();
+    final module = cloudStorage;
+    final authoritative = await module.authoritativeStore();
     if (authoritative case Success(:final value)) {
       store = value;
     } else {
       return CloudLibraryUnavailableApp(
-        onRetry: () => buildDocScanly(
-          dependencies: resolvedDependencies,
-          cacheDirectory: resolvedCache,
-          documentsDirectory: resolvedDocuments,
-          libraryOverride: libraryOverride,
-          scanner: scanner,
-          cameraCapabilities: cameraCapabilities,
-          authenticator: authenticator,
-          pdfRenderer: pdfRenderer,
-          pdfEditor: pdfEditor,
-          share: share,
-          printer: printer,
-          exportPicker: exportPicker,
-          gallery: gallery,
-          files: files,
-          sharedContent: sharedContent,
-          iCloudPlatform: iCloudPlatform,
-          isIOS: true,
-          pickSaveLocation: pickSaveLocation,
-          initialLocation: initialLocation,
-          imageProcessingBackend: imageProcessingBackend,
-        ),
+        onRetry: recompose,
+        onUseDevice: () async {
+          await module.adoptDeviceLibrary();
+          return recompose();
+        },
       );
     }
   } else {
@@ -280,8 +304,7 @@ Future<Widget> buildDocScanly({
     ..createSync(recursive: true);
 
   final localDocumentFiles = PublicStoreDocumentFileResolver(store);
-  final usesICloudAuthority =
-      cloudStorage?.resolution.location == StorageLocation.iCloud;
+  final usesICloudAuthority = cloudStorage?.authority == StorageLocation.iCloud;
   final documentFiles = usesICloudAuthority
       ? DownloadAwareDocumentFileResolver(
           delegate: localDocumentFiles,
@@ -633,7 +656,9 @@ Future<Widget> buildDocScanly({
             },
           )();
         },
+        onRecompose: onRecompose,
       ),
+      storageLocationSummary: cloudStorage?.summary,
       onLibraryRefresh: () => reconcileLibrary(force: true),
       libraryRefreshKey: usesICloudAuthority
           ? CloudStorageKeys.libraryRefresh

@@ -15,10 +15,12 @@ import 'package:doc_scanly/core/previews/preview_scaffold.dart';
 import 'package:doc_scanly/core/theme/app_theme.dart';
 import 'package:doc_scanly/features/app_settings/presentation/settings_previews.dart';
 import 'package:doc_scanly/features/app_shell/presentation/shell_previews.dart';
+import 'package:doc_scanly/features/cloud_storage/presentation/cloud_migration_gate_previews.dart';
 import 'package:doc_scanly/features/cloud_storage/presentation/cloud_storage_previews.dart';
 import 'package:doc_scanly/features/document_creation/presentation/creation_previews.dart';
 import 'package:doc_scanly/features/document_library/presentation/library_previews.dart';
 import 'package:doc_scanly/features/document_viewer/presentation/viewer_previews.dart';
+import 'package:doc_scanly/features/onboarding/presentation/screens/onboarding_previews.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -126,18 +128,55 @@ void main() {
     }
   });
 
+  group('iOS onboarding privacy previews render', () {
+    for (final entry in <String, Widget Function()>{
+      'onboardingPrivacyICloud': onboardingPrivacyICloud,
+      'onboardingPrivacyICloudTabletDark': onboardingPrivacyICloudTabletDark,
+    }.entries) {
+      testWidgets(entry.key, (tester) => rendersCleanly(tester, entry.value));
+    }
+  });
+
   group('iOS cloud-storage previews render', () {
     for (final entry in <String, Widget Function()>{
-      'storageLocationLocal': storageLocationLocal,
+      'storageLocationDefault': storageLocationDefault,
+      'storageLocationICloud': storageLocationICloud,
       'storageLocationICloudDark': storageLocationICloudDark,
+      'storageLocationICloudTablet': storageLocationICloudTablet,
+      'storageLocationSignedOut': storageLocationSignedOut,
+      'storageLocationDisabled': storageLocationDisabled,
+      'storageLocationRestricted': storageLocationRestricted,
+      'storageLocationTemporarilyUnavailable':
+          storageLocationTemporarilyUnavailable,
+      'storageLocationMoveNow': storageLocationMoveNow,
+      'storageLocationMoveNowTabletDark': storageLocationMoveNowTabletDark,
       'storageLocationLoading': storageLocationLoading,
+      'storageLocationLoadingDark': storageLocationLoadingDark,
       'storageLocationEmpty': storageLocationEmpty,
       'storageLocationUnavailable': storageLocationUnavailable,
-      'storageLocationConfirmation': storageLocationConfirmation,
-      'storageLocationMigration': storageLocationMigration,
-      'storageLocationVerifying': storageLocationVerifying,
-      'storageLocationLongContent': storageLocationLongContent,
+      'storageLocationUnavailableTabletDark':
+          storageLocationUnavailableTabletDark,
       'storageLocationError': storageLocationError,
+      'storageLocationErrorTabletDark': storageLocationErrorTabletDark,
+      'storageLocationLongContent': storageLocationLongContent,
+      'storageLocationLongContentTabletDark':
+          storageLocationLongContentTabletDark,
+      'migrationGatePreparing': migrationGatePreparing,
+      'migrationGatePreparingTabletDark': migrationGatePreparingTabletDark,
+      'migrationGateCopying': migrationGateCopying,
+      'migrationGateCopyingTabletDark': migrationGateCopyingTabletDark,
+      'migrationGateVerifying': migrationGateVerifying,
+      'migrationGateVerifyingTabletDark': migrationGateVerifyingTabletDark,
+      'migrationGateCompleted': migrationGateCompleted,
+      'migrationGateCompletedTabletDark': migrationGateCompletedTabletDark,
+      'migrationGateFailed': migrationGateFailed,
+      'migrationGateFailedTabletDark': migrationGateFailedTabletDark,
+      'migrationGateCopyingDark': migrationGateCopyingDark,
+      'migrationGateCompletedTablet': migrationGateCompletedTablet,
+      'migrationGateLongContent': migrationGateLongContent,
+      'migrationGateLongContentTabletDark': migrationGateLongContentTabletDark,
+      'migrationGateDefault': migrationGateDefault,
+      'migrationGateEmpty': migrationGateEmpty,
     }.entries) {
       testWidgets(entry.key, (tester) => rendersCleanly(tester, entry.value));
     }

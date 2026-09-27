@@ -66,6 +66,25 @@ class StorageMigrationProgress extends Equatable {
 typedef StorageMigrationProgressCallback =
     void Function(StorageMigrationProgress progress);
 
+/// Returns the [ordinal]th keep-both name for [path] in the same folder.
+///
+/// `Scan.pdf` becomes `Scan (Conflict device).pdf`, then
+/// `Scan (Conflict device 2).pdf`, and so on. The wording differs from the
+/// reconciler's index-only `(Conflict <token>)` names so the two can never
+/// collide. A long base name is shortened to keep the result a legal name.
+LibraryPath conflictCopyPath(LibraryPath path, int ordinal) {
+  assert(ordinal > 0, 'ordinal 0 is the original path');
+  final suffix = ordinal == 1
+      ? ' (Conflict device)'
+      : ' (Conflict device $ordinal)';
+  final extension = path.fileName.substring(path.baseName.length);
+  final room = LibraryPath.maxNameLength - suffix.length - extension.length;
+  final base = path.baseName.length > room
+      ? path.baseName.substring(0, room).trimRight()
+      : path.baseName;
+  return path.withFileName('$base$suffix$extension');
+}
+
 /// Performs a durable migration while keeping exactly one authority.
 class MigrateLibraryLocation {
   /// Creates the migration use case.
@@ -119,6 +138,15 @@ class MigrateLibraryLocation {
       );
     final files = entries.where((entry) => !entry.isFolder).toList()
       ..sort((a, b) => a.path!.relative.compareTo(b.path!.relative));
+
+    // Merging into a library that already exists (another device's, or an
+    // earlier install's) must never delete anything it did not write itself.
+    final established = await _destinationEstablished(destination);
+    if (established case Failed(:final failure)) {
+      return Result<void>.failure(failure);
+    }
+    final merge = established.valueOrNull!;
+    final written = <LibraryPath>{};
 
     for (final directory in directories) {
       final created = await destinationStore.createFolder(
@@ -195,7 +223,13 @@ class MigrateLibraryLocation {
     for (final entry in files) {
       final path = entry.path!;
       if (shouldCancel?.call() ?? false) {
-        await _rollback(destinationStore, entries, verified);
+        await _rollback(
+          destinationStore,
+          entries,
+          verified: merge ? const {} : verified,
+          written: written,
+          removeFolders: !merge,
+        );
         await locations.clearCheckpoint();
         return const Result<void>.failure(Failure.cancelled());
       }
@@ -212,7 +246,13 @@ class MigrateLibraryLocation {
       if (stillAvailable case Failed(:final failure)) {
         return Result<void>.failure(failure);
       }
-      final copied = await _copyAndVerify(sourceStore, destinationStore, path);
+      final copied = await _copyAndVerify(
+        sourceStore,
+        destinationStore,
+        path,
+        keepBothOnConflict: destination == StorageLocation.iCloud,
+        written: written,
+      );
       if (copied case Failed(:final failure)) {
         return Result<void>.failure(failure);
       }
@@ -245,9 +285,17 @@ class MigrateLibraryLocation {
     }
 
     if (destination == StorageLocation.iCloud) {
-      final marker = await cloud.writeMarker(const CloudLibraryMarker());
-      if (marker case Failed(:final failure)) {
+      // An established marker identifies the library other devices already
+      // discovered; it is kept as is so the merged library stays that library.
+      final existing = await cloud.readMarker();
+      if (existing case Failed(:final failure)) {
         return Result<void>.failure(failure);
+      }
+      if (existing.valueOrNull == null) {
+        final marker = await cloud.writeMarker(const CloudLibraryMarker());
+        if (marker case Failed(:final failure)) {
+          return Result<void>.failure(failure);
+        }
       }
     }
 
@@ -335,76 +383,114 @@ class MigrateLibraryLocation {
     return Result<List<PublicEntry>>.success(all);
   }
 
+  /// Copies [path] into [destination] and proves the bytes match.
+  ///
+  /// An identical file already at [path] counts as verified. A different one
+  /// fails with `cloud:conflict`, unless [keepBothOnConflict] is set: then the
+  /// source is copied beside it under the first free conflict name. Probing
+  /// names in a fixed order and accepting an identical earlier copy keeps an
+  /// interrupted merge resumable without a third copy. Every path this call
+  /// creates is added to [written].
   Future<Result<void>> _copyAndVerify(
     PublicFileStore source,
     PublicFileStore destination,
-    LibraryPath path,
-  ) async {
+    LibraryPath path, {
+    required bool keepBothOnConflict,
+    required Set<LibraryPath> written,
+  }) async {
     final sourcePath = await source.materialise(path);
     if (sourcePath case Failed(:final failure)) {
       return Result<void>.failure(failure);
     }
     try {
-      final alreadyExists = await destination.exists(path);
-      if (alreadyExists case Failed(:final failure)) {
-        return Result<void>.failure(failure);
-      }
-      if (alreadyExists.valueOrNull!) {
-        final destinationPath = await destination.materialise(path);
-        if (destinationPath case Failed(:final failure)) {
-          return Result<void>.failure(failure);
+      final sourceFile = File(sourcePath.valueOrNull!);
+      // Reserved Trash payloads are addressed by their exact path from the
+      // device index, so they can never be renamed to keep both.
+      final canKeepBoth =
+          keepBothOnConflict &&
+          path.folders.firstOrNull != publicTrashFolderName;
+      for (var ordinal = 0; ; ordinal++) {
+        final candidate = ordinal == 0 ? path : conflictCopyPath(path, ordinal);
+        final present = await _matchesExisting(
+          destination,
+          candidate,
+          sourceFile,
+        );
+        switch (present) {
+          case Failed(:final failure):
+            return Result<void>.failure(failure);
+          case Success(value: true):
+            return const Result<void>.success(null);
+          case Success(value: false) when canKeepBoth:
+            continue;
+          case Success(value: false):
+            return const Result<void>.failure(
+              Failure.storage(debugDetail: 'cloud:conflict'),
+            );
+          case Success(value: null):
+            return await _writeVerified(
+              destination,
+              candidate,
+              sourceFile,
+              written,
+            );
         }
-        try {
-          final sourceDigest = await _streamedDigest(
-            File(sourcePath.valueOrNull!),
-          );
-          final destinationDigest = await _streamedDigest(
-            File(destinationPath.valueOrNull!),
-          );
-          return sourceDigest == destinationDigest
-              ? const Result<void>.success(null)
-              : const Result<void>.failure(
-                  Failure.storage(debugDetail: 'cloud:conflict'),
-                );
-        } finally {
-          await destination.releaseMaterialised(path);
-        }
-      }
-      final written = await destination.writeFile(
-        path,
-        sourcePath.valueOrNull!,
-      );
-      if (written case Failed(:final failure)) {
-        // The destination did not exist before this attempt, so any partial
-        // output belongs to this migration and is safe to remove for retry.
-        await destination.delete(path);
-        return Result<void>.failure(failure);
-      }
-      final destinationPath = await destination.materialise(path);
-      if (destinationPath case Failed(:final failure)) {
-        await destination.delete(path);
-        return Result<void>.failure(failure);
-      }
-      var digestMatches = false;
-      try {
-        final sourceDigest = await _streamedDigest(
-          File(sourcePath.valueOrNull!),
-        );
-        final destinationDigest = await _streamedDigest(
-          File(destinationPath.valueOrNull!),
-        );
-        digestMatches = sourceDigest == destinationDigest;
-      } finally {
-        await destination.releaseMaterialised(path);
-      }
-      if (!digestMatches) {
-        await destination.delete(path);
-        return const Result<void>.failure(
-          Failure.corruptFile(debugDetail: 'migration digest mismatch'),
-        );
       }
     } finally {
       await source.releaseMaterialised(path);
+    }
+  }
+
+  /// Whether [candidate] holds [sourceFile]'s bytes: null when absent.
+  Future<Result<bool?>> _matchesExisting(
+    PublicFileStore destination,
+    LibraryPath candidate,
+    File sourceFile,
+  ) async {
+    final exists = await destination.exists(candidate);
+    if (exists case Failed(:final failure)) {
+      return Result<bool?>.failure(failure);
+    }
+    if (!exists.valueOrNull!) return const Result<bool?>.success(null);
+    final destinationPath = await destination.materialise(candidate);
+    if (destinationPath case Failed(:final failure)) {
+      return Result<bool?>.failure(failure);
+    }
+    try {
+      final sourceDigest = await _streamedDigest(sourceFile);
+      final destinationDigest = await _streamedDigest(
+        File(destinationPath.valueOrNull!),
+      );
+      return Result<bool?>.success(sourceDigest == destinationDigest);
+    } finally {
+      await destination.releaseMaterialised(candidate);
+    }
+  }
+
+  Future<Result<void>> _writeVerified(
+    PublicFileStore destination,
+    LibraryPath path,
+    File sourceFile,
+    Set<LibraryPath> written,
+  ) async {
+    final result = await destination.writeFile(path, sourceFile.path);
+    if (result case Failed(:final failure)) {
+      // The destination did not exist before this attempt, so any partial
+      // output belongs to this migration and is safe to remove for retry.
+      await destination.delete(path);
+      return Result<void>.failure(failure);
+    }
+    written.add(path);
+    final matches = await _matchesExisting(destination, path, sourceFile);
+    if (matches case Failed(:final failure)) {
+      await destination.delete(path);
+      return Result<void>.failure(failure);
+    }
+    if (matches.valueOrNull != true) {
+      await destination.delete(path);
+      return const Result<void>.failure(
+        Failure.corruptFile(debugDetail: 'migration digest mismatch'),
+      );
     }
     return const Result<void>.success(null);
   }
@@ -451,14 +537,25 @@ class MigrateLibraryLocation {
     return const Result<void>.success(null);
   }
 
+  /// Removes what a cancelled migration put into [destination].
+  ///
+  /// [verified] and the folders are only removed when the destination was not
+  /// an established library; otherwise only this run's own [written] files
+  /// are, because every other file there belongs to that library.
   Future<void> _rollback(
     PublicFileStore destination,
-    List<PublicEntry> entries,
-    Set<String> verified,
-  ) async {
+    List<PublicEntry> entries, {
+    required Set<String> verified,
+    required Set<LibraryPath> written,
+    required bool removeFolders,
+  }) async {
+    for (final path in written) {
+      await destination.delete(path);
+    }
     for (final relative in verified) {
       await destination.delete(LibraryPath.parse(relative));
     }
+    if (!removeFolders) return;
     final directories = entries.where((entry) => entry.isFolder).toList()
       ..sort(
         (a, b) => b.folderSegments.length.compareTo(a.folderSegments.length),
@@ -466,6 +563,23 @@ class MigrateLibraryLocation {
     for (final entry in directories) {
       await destination.deleteFolder(entry.folderSegments);
     }
+  }
+
+  /// Whether [destination] already holds an established DocScanly library.
+  ///
+  /// Only an iCloud container carries a marker; an unreadable one is treated
+  /// as established so a failure can never widen what a rollback deletes.
+  Future<Result<bool>> _destinationEstablished(
+    StorageLocation destination,
+  ) async {
+    if (destination != StorageLocation.iCloud) {
+      return const Result<bool>.success(false);
+    }
+    final marker = await cloud.readMarker();
+    return switch (marker) {
+      Success(:final value) => Result<bool>.success(value != null),
+      Failed() => const Result<bool>.success(true),
+    };
   }
 
   /// FNV-1a over streamed bytes: deterministic corruption detection without
