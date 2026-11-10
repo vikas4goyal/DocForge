@@ -15,7 +15,9 @@ import 'package:doc_scanly/app/cloud_storage_module.dart';
 import 'package:doc_scanly/app/doc_scanly.dart';
 import 'package:doc_scanly/app/fake_dependencies.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
@@ -41,6 +43,7 @@ import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/
 import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:doc_scanly/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 
@@ -356,6 +359,63 @@ void main() {
         },
       );
 
+      // PR #2 review: a failed availability check showed the unavailable
+      // screen without the confirmed device escape.
+      compositionTestWidgets(
+        'a failed iCloud check still offers the device escape',
+        (tester) async {
+          await dependencies.preferences.writeString(
+            PreferenceKeys.libraryStorageLocation,
+            'icloud',
+          );
+          cloud = _FailingAvailabilityPlatform(rootPath: cloudRoot.path);
+
+          await tester.pumpWidget(await bootIOS(tester));
+          await tester.pump();
+
+          expect(find.byType(CloudLibraryUnavailableApp), findsOneWidget);
+          expect(find.byKey(CloudStorageKeys.useDevice), findsOneWidget);
+
+          await tester.tap(find.byKey(CloudStorageKeys.useDevice));
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(CloudStorageKeys.useDeviceConfirm));
+          await drain(tester);
+
+          expect(await storedLocation(tester), 'local');
+          expect(find.byType(DocScanlyApp), findsOneWidget);
+        },
+      );
+
+      // PR #2 review: a failed adoption was ignored and the app silently
+      // recomposed onto the same unavailable library.
+      compositionTestWidgets(
+        'a device escape that cannot be saved explains itself',
+        (tester) async {
+          final failing = _LocationWriteFailingStore();
+          await failing.writeString(
+            PreferenceKeys.libraryStorageLocation,
+            'icloud',
+          );
+          dependencies = buildFakeAppDependencies(preferences: failing);
+          cloud.availabilityValue = 'disabled';
+
+          await tester.pumpWidget(await bootIOS(tester));
+          await tester.pump();
+          failing.failLocationWrites = true;
+
+          await tester.tap(find.byKey(CloudStorageKeys.useDevice));
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(CloudStorageKeys.useDeviceConfirm));
+          await drain(tester);
+
+          expect(find.byKey(CloudStorageKeys.unavailable), findsOneWidget);
+          expect(find.byKey(CloudStorageKeys.useDeviceFailed), findsOneWidget);
+          // The escape remains, so the user can try again.
+          expect(find.byKey(CloudStorageKeys.useDevice), findsOneWidget);
+          expect(await storedLocation(tester), 'icloud');
+        },
+      );
+
       compositionTestWidgets(
         'an unreachable iCloud library offers retry and the device escape',
         (tester) async {
@@ -600,4 +660,28 @@ class _SilentSharedContentSource implements SharedContentSource {
 
   @override
   Future<void> dispose() async {}
+}
+
+/// An iCloud edge whose availability check fails in transport, as a broken
+/// platform channel would, rather than reporting a status.
+class _FailingAvailabilityPlatform extends ScriptedICloudPlatform {
+  _FailingAvailabilityPlatform({required super.rootPath});
+
+  @override
+  Future<String> availability() async =>
+      throw PlatformException(code: 'channel', message: 'no answer');
+}
+
+/// Preferences whose library-location writes fail once [failLocationWrites]
+/// is set — a full disk at the moment the user confirms the device escape.
+class _LocationWriteFailingStore extends InMemoryPreferenceStore {
+  var failLocationWrites = false;
+
+  @override
+  Future<Result<void>> writeString(String key, String value) async {
+    if (failLocationWrites && key == PreferenceKeys.libraryStorageLocation) {
+      return const Result<void>.failure(Failure.storage());
+    }
+    return super.writeString(key, value);
+  }
 }

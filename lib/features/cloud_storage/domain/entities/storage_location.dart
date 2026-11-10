@@ -57,6 +57,7 @@ class StorageMigrationCheckpoint extends Equatable {
     required this.destination,
     required this.phase,
     this.verifiedRelativePaths = const <String>[],
+    this.writtenRelativePaths = const <String>[],
   });
 
   /// The still-authoritative source.
@@ -69,7 +70,22 @@ class StorageMigrationCheckpoint extends Equatable {
   final StorageMigrationPhase phase;
 
   /// Payloads whose destination bytes have already been verified.
+  ///
+  /// These are *source* paths. A verified payload may have been satisfied by
+  /// an identical file that was already in the destination, so this list says
+  /// nothing about who owns the destination file and must never drive a
+  /// rollback deletion — see [writtenRelativePaths].
   final List<String> verifiedRelativePaths;
+
+  /// Destination paths this migration created, recorded *before* each write.
+  ///
+  /// A write-ahead record: a path is added only when it was absent and is
+  /// about to be written, and it is persisted before the write begins. So
+  /// after any interruption every file the migration may have put into the
+  /// destination — including keep-both conflict copies — is listed here, and
+  /// nothing that belonged to another device ever is. Cancellation removes
+  /// exactly these paths.
+  final List<String> writtenRelativePaths;
 
   @override
   List<Object?> get props => [
@@ -77,5 +93,6 @@ class StorageMigrationCheckpoint extends Equatable {
     destination,
     phase,
     verifiedRelativePaths,
+    writtenRelativePaths,
   ];
 }

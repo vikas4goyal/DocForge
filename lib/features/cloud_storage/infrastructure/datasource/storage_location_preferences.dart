@@ -47,8 +47,15 @@ class StorageLocationPreferences implements LibraryLocationRepository {
       preferences.readString(PreferenceKeys.migrationDestination),
       preferences.readString(PreferenceKeys.migrationPhase),
       preferences.readString(PreferenceKeys.migrationVerifiedPaths),
+      preferences.readString(PreferenceKeys.migrationWrittenPaths),
     ).wait;
-    for (final result in [results.$1, results.$2, results.$3, results.$4]) {
+    for (final result in [
+      results.$1,
+      results.$2,
+      results.$3,
+      results.$4,
+      results.$5,
+    ]) {
       if (result case Failed(failure: final failure)) {
         return Result<StorageMigrationCheckpoint?>.failure(failure);
       }
@@ -58,6 +65,9 @@ class StorageLocationPreferences implements LibraryLocationRepository {
     final destinationValue = results.$2.valueOrNull;
     final phaseValue = results.$3.valueOrNull;
     final pathsValue = results.$4.valueOrNull;
+    // Absent on checkpoints written before ownership was recorded; such a run
+    // simply owns nothing it can prove, so a cancel deletes nothing.
+    final writtenValue = results.$5.valueOrNull;
     if ([
       sourceValue,
       destinationValue,
@@ -87,6 +97,9 @@ class StorageLocationPreferences implements LibraryLocationRepository {
         verifiedRelativePaths: pathsValue == null || pathsValue.isEmpty
             ? const []
             : pathsValue.split('\n'),
+        writtenRelativePaths: writtenValue == null || writtenValue.isEmpty
+            ? const []
+            : writtenValue.split('\n'),
       ),
     );
   }
@@ -112,6 +125,10 @@ class StorageLocationPreferences implements LibraryLocationRepository {
         PreferenceKeys.migrationVerifiedPaths,
         checkpoint.verifiedRelativePaths.join('\n'),
       ),
+      () => preferences.writeString(
+        PreferenceKeys.migrationWrittenPaths,
+        checkpoint.writtenRelativePaths.join('\n'),
+      ),
     ];
     for (final write in writes) {
       final result = await write();
@@ -129,6 +146,7 @@ class StorageLocationPreferences implements LibraryLocationRepository {
       PreferenceKeys.migrationDestination,
       PreferenceKeys.migrationPhase,
       PreferenceKeys.migrationVerifiedPaths,
+      PreferenceKeys.migrationWrittenPaths,
     ]) {
       final result = await preferences.remove(key);
       if (result case Failed(failure: final failure)) {

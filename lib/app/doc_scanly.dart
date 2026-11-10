@@ -55,11 +55,13 @@ import 'package:doc_scanly/features/app_security/presentation/security_keys.dart
 import 'package:doc_scanly/features/app_security/presentation/widgets/app_lock_observer.dart';
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
+import 'package:doc_scanly/features/cloud_storage/application/usecases/adopt_device_library.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/ensure_document_downloaded.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/import_existing_cloud_folder.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_decision.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_location.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/ios_icloud_channel.dart';
+import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/storage_location_preferences.dart';
 import 'package:doc_scanly/features/cloud_storage/presentation/cloud_storage_keys.dart';
 import 'package:doc_scanly/features/document_creation/application/usecases/add_page.dart';
 import 'package:doc_scanly/features/document_creation/application/usecases/render_page.dart';
@@ -223,6 +225,26 @@ Future<Widget> buildDocScanly({
     continueLocalThisSession: continueLocal,
   );
 
+  // The confirmed "Use this device without iCloud" escape. Adoption only
+  // touches preferences, so it is offered even when the iCloud check itself
+  // failed. Its result is never ignored: a failed write keeps the user on
+  // the unavailable screen *with an explanation* and the escape still there,
+  // rather than recomposing onto the very library that was unavailable.
+  final adoptDevice = AdoptDeviceLibrary(
+    StorageLocationPreferences(resolvedDependencies.preferences),
+  );
+  Future<Widget> useDevice() async {
+    final adopted = await adoptDevice();
+    if (adopted case Failed()) {
+      return CloudLibraryUnavailableApp(
+        onRetry: recompose,
+        onUseDevice: useDevice,
+        useDeviceFailed: true,
+      );
+    }
+    return recompose();
+  }
+
   CloudStorageModule? cloudStorage;
   if (supportsICloud) {
     // This is a local compatibility migration and must precede authority
@@ -241,14 +263,13 @@ Future<Widget> buildDocScanly({
       case Success(:final value):
         cloudStorage = value;
       case Failed():
-        return CloudLibraryUnavailableApp(onRetry: recompose);
+        return CloudLibraryUnavailableApp(
+          onRetry: recompose,
+          onUseDevice: useDevice,
+        );
     }
 
     final module = cloudStorage;
-    Future<Widget> useDevice() async {
-      await module.adoptDeviceLibrary();
-      return recompose();
-    }
 
     switch (module.decision) {
       // The move runs before anything below is composed: the migration
@@ -284,10 +305,7 @@ Future<Widget> buildDocScanly({
     } else {
       return CloudLibraryUnavailableApp(
         onRetry: recompose,
-        onUseDevice: () async {
-          await module.adoptDeviceLibrary();
-          return recompose();
-        },
+        onUseDevice: useDevice,
       );
     }
   } else {

@@ -38,7 +38,7 @@ StorageLocationState _local(CloudAvailabilityStatus reason) =>
 
 void main() {
   test('fixed key registry is unique and complete', () {
-    expect(CloudStorageKeys.fixedValues, hasLength(14));
+    expect(CloudStorageKeys.fixedValues, hasLength(15));
     expect(
       CloudStorageKeys.fixedValues,
       containsAll(<String>[
@@ -47,6 +47,7 @@ void main() {
         'cloud_storage_migration_gate',
         'cloud_storage_continue_local',
         'cloud_storage_use_device',
+        'cloud_storage_use_device_failed',
         'cloud_storage_use_device_confirm',
       ]),
     );

@@ -146,7 +146,6 @@ class MigrateLibraryLocation {
       return Result<void>.failure(failure);
     }
     final merge = established.valueOrNull!;
-    final written = <LibraryPath>{};
 
     for (final directory in directories) {
       final created = await destinationStore.createFolder(
@@ -170,6 +169,18 @@ class MigrateLibraryLocation {
       // The authority already switched. A retry must only finish forward
       // cleanup; attempting to copy back from a partly-cleaned source can
       // neither restore authority nor prove a rollback is safe.
+      final fileCount = entries.where((entry) => !entry.isFolder).length;
+      // Reported before cleanup starts, exactly as a fresh run reports it
+      // after switching: observers decide whether the source is still
+      // authoritative from this phase, and a cleanup that then fails must not
+      // look like a move that never switched.
+      onProgress?.call(
+        StorageMigrationProgress(
+          phase: StorageMigrationPhase.cleaning,
+          completedFiles: fileCount,
+          totalFiles: fileCount,
+        ),
+      );
       final cleaned = await _cleanup(sourceStore, entries);
       if (cleaned case Failed(:final failure)) {
         return Result<void>.failure(failure);
@@ -187,27 +198,37 @@ class MigrateLibraryLocation {
       onProgress?.call(
         StorageMigrationProgress(
           phase: StorageMigrationPhase.completed,
-          completedFiles: entries.where((entry) => !entry.isFolder).length,
-          totalFiles: entries.where((entry) => !entry.isFolder).length,
+          completedFiles: fileCount,
+          totalFiles: fileCount,
         ),
       );
       return const Result<void>.success(null);
     }
 
-    final verified =
+    final resuming =
         resume != null &&
-            resume.source == source &&
-            resume.destination == destination
+        resume.source == source &&
+        resume.destination == destination;
+    final verified = resuming
         ? resume.verifiedRelativePaths.toSet()
         : <String>{};
+    // Destination paths this migration created, across every attempt. Only
+    // these may ever be deleted by a cancellation; see [_recordIntent].
+    final owned = resuming ? resume.writtenRelativePaths.toSet() : <String>{};
 
-    var checkpoint = StorageMigrationCheckpoint(
-      source: source,
-      destination: destination,
-      phase: StorageMigrationPhase.copying,
-      verifiedRelativePaths: verified.toList()..sort(),
+    StorageMigrationCheckpoint checkpointAt(StorageMigrationPhase phase) =>
+        StorageMigrationCheckpoint(
+          source: source,
+          destination: destination,
+          phase: phase,
+          verifiedRelativePaths: verified.toList()..sort(),
+          writtenRelativePaths: owned.toList()..sort(),
+        );
+
+    var phase = StorageMigrationPhase.copying;
+    final started = await locations.writeCheckpoint(
+      checkpointAt(StorageMigrationPhase.copying),
     );
-    final started = await locations.writeCheckpoint(checkpoint);
     if (started case Failed(:final failure)) {
       return Result<void>.failure(failure);
     }
@@ -226,8 +247,7 @@ class MigrateLibraryLocation {
         await _rollback(
           destinationStore,
           entries,
-          verified: merge ? const {} : verified,
-          written: written,
+          owned: owned,
           removeFolders: !merge,
         );
         await locations.clearCheckpoint();
@@ -251,19 +271,19 @@ class MigrateLibraryLocation {
         destinationStore,
         path,
         keepBothOnConflict: destination == StorageLocation.iCloud,
-        written: written,
+        recordIntent: (candidate) async {
+          // Persisted before the bytes are written: if the process dies
+          // mid-write, the next attempt still knows this file is its own.
+          owned.add(candidate.relative);
+          return locations.writeCheckpoint(checkpointAt(phase));
+        },
       );
       if (copied case Failed(:final failure)) {
         return Result<void>.failure(failure);
       }
       verified.add(path.relative);
-      checkpoint = StorageMigrationCheckpoint(
-        source: source,
-        destination: destination,
-        phase: StorageMigrationPhase.verifying,
-        verifiedRelativePaths: verified.toList()..sort(),
-      );
-      final persisted = await locations.writeCheckpoint(checkpoint);
+      phase = StorageMigrationPhase.verifying;
+      final persisted = await locations.writeCheckpoint(checkpointAt(phase));
       if (persisted case Failed(:final failure)) {
         return Result<void>.failure(failure);
       }
@@ -300,12 +320,7 @@ class MigrateLibraryLocation {
     }
 
     final switching = await locations.writeCheckpoint(
-      StorageMigrationCheckpoint(
-        source: source,
-        destination: destination,
-        phase: StorageMigrationPhase.switching,
-        verifiedRelativePaths: verified.toList()..sort(),
-      ),
+      checkpointAt(StorageMigrationPhase.switching),
     );
     if (switching case Failed(:final failure)) {
       return Result<void>.failure(failure);
@@ -316,12 +331,7 @@ class MigrateLibraryLocation {
     }
 
     await locations.writeCheckpoint(
-      StorageMigrationCheckpoint(
-        source: source,
-        destination: destination,
-        phase: StorageMigrationPhase.cleaning,
-        verifiedRelativePaths: verified.toList()..sort(),
-      ),
+      checkpointAt(StorageMigrationPhase.cleaning),
     );
     onProgress?.call(
       StorageMigrationProgress(
@@ -389,14 +399,20 @@ class MigrateLibraryLocation {
   /// fails with `cloud:conflict`, unless [keepBothOnConflict] is set: then the
   /// source is copied beside it under the first free conflict name. Probing
   /// names in a fixed order and accepting an identical earlier copy keeps an
-  /// interrupted merge resumable without a third copy. Every path this call
-  /// creates is added to [written].
+  /// interrupted merge resumable without a third copy.
+  ///
+  /// [recordIntent] is awaited with a path immediately before this call
+  /// creates it — and only for a path that was absent — so the caller can
+  /// durably record ownership ahead of the write. An identical file found at a
+  /// candidate is *not* recorded: it may be another device's copy, and if an
+  /// earlier attempt of this migration wrote it, that attempt already recorded
+  /// it before writing.
   Future<Result<void>> _copyAndVerify(
     PublicFileStore source,
     PublicFileStore destination,
     LibraryPath path, {
     required bool keepBothOnConflict,
-    required Set<LibraryPath> written,
+    required Future<Result<void>> Function(LibraryPath candidate) recordIntent,
   }) async {
     final sourcePath = await source.materialise(path);
     if (sourcePath case Failed(:final failure)) {
@@ -428,12 +444,13 @@ class MigrateLibraryLocation {
               Failure.storage(debugDetail: 'cloud:conflict'),
             );
           case Success(value: null):
-            return await _writeVerified(
-              destination,
-              candidate,
-              sourceFile,
-              written,
-            );
+            final recorded = await recordIntent(candidate);
+            if (recorded case Failed(:final failure)) {
+              // Never write a file whose ownership could not be recorded: a
+              // later cancel would have no way to know it may remove it.
+              return Result<void>.failure(failure);
+            }
+            return await _writeVerified(destination, candidate, sourceFile);
         }
       }
     } finally {
@@ -471,7 +488,6 @@ class MigrateLibraryLocation {
     PublicFileStore destination,
     LibraryPath path,
     File sourceFile,
-    Set<LibraryPath> written,
   ) async {
     final result = await destination.writeFile(path, sourceFile.path);
     if (result case Failed(:final failure)) {
@@ -480,7 +496,6 @@ class MigrateLibraryLocation {
       await destination.delete(path);
       return Result<void>.failure(failure);
     }
-    written.add(path);
     final matches = await _matchesExisting(destination, path, sourceFile);
     if (matches case Failed(:final failure)) {
       await destination.delete(path);
@@ -539,20 +554,24 @@ class MigrateLibraryLocation {
 
   /// Removes what a cancelled migration put into [destination].
   ///
-  /// [verified] and the folders are only removed when the destination was not
-  /// an established library; otherwise only this run's own [written] files
-  /// are, because every other file there belongs to that library.
+  /// Only [owned] files are deleted — paths this migration recorded before
+  /// creating them, in this attempt or an interrupted earlier one. A verified
+  /// path is never deleted on that basis alone: verification also succeeds
+  /// against an identical file another device already had there, and a
+  /// differing original kept beside a conflict copy is never this migration's
+  /// at all, even in a container without a library marker.
+  ///
+  /// Folders are removed only when [removeFolders] (the destination was not an
+  /// established library) *and* they are empty once the owned files are gone.
+  /// [PublicFileStore.deleteFolder] is recursive, so an unconditional removal
+  /// would delete whatever else lived in the folder.
   Future<void> _rollback(
     PublicFileStore destination,
     List<PublicEntry> entries, {
-    required Set<String> verified,
-    required Set<LibraryPath> written,
+    required Set<String> owned,
     required bool removeFolders,
   }) async {
-    for (final path in written) {
-      await destination.delete(path);
-    }
-    for (final relative in verified) {
+    for (final relative in owned) {
       await destination.delete(LibraryPath.parse(relative));
     }
     if (!removeFolders) return;
@@ -561,7 +580,12 @@ class MigrateLibraryLocation {
         (a, b) => b.folderSegments.length.compareTo(a.folderSegments.length),
       );
     for (final entry in directories) {
-      await destination.deleteFolder(entry.folderSegments);
+      final contents = await destination.listRecursive(entry.folderSegments);
+      // Unreadable or non-empty: keep it. A leftover empty folder is
+      // harmless; a deleted foreign document is not.
+      if (contents case Success(:final value) when value.isEmpty) {
+        await destination.deleteFolder(entry.folderSegments);
+      }
     }
   }
 

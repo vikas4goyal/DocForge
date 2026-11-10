@@ -90,10 +90,24 @@ class LoadStorageLocation {
       return Result<LoadedStorageLocation>.failure(failure);
     }
     final availability = await cloud.availability();
-    if (availability case Failed(:final failure)) {
-      return Result<LoadedStorageLocation>.failure(failure);
+    final CloudAvailability snapshot;
+    switch (availability) {
+      case Success(:final value):
+        snapshot = value;
+      // When the device is already the stored authority, a check that could
+      // not even be answered is treated as "iCloud unavailable": composing on
+      // the device forks nothing, and failing here would strand a user who
+      // just chose "Use this device without iCloud" on the same error screen.
+      // The policy still resumes a switched move as iCloud-unavailable.
+      case Failed(:final failure)
+          when stored.valueOrNull == StorageLocation.local:
+        snapshot = CloudAvailability(
+          CloudAvailabilityStatus.unavailable,
+          debugDetail: failure.toString(),
+        );
+      case Failed(:final failure):
+        return Result<LoadedStorageLocation>.failure(failure);
     }
-    final snapshot = availability.valueOrNull!;
 
     final checkpointResult = await locations.readCheckpoint();
     if (checkpointResult case Failed(:final failure)) {

@@ -255,13 +255,22 @@ class _CloudMigrationGateAppState extends State<CloudMigrationGateApp> {
 /// Keys: `cloud_storage_unavailable`, `cloud_storage_retry` (“Retry iCloud
 /// connection”), `cloud_storage_use_device` (“Use this device without
 /// iCloud”) and, in its confirmation, `cloud_storage_use_device_confirm`.
+/// When [useDeviceFailed] is set it also shows `cloud_storage_use_device_failed`
+/// (“Could not switch to this device. Nothing was changed.”).
 class CloudLibraryUnavailableApp extends StatefulWidget {
   /// Creates the unavailable application state.
   const CloudLibraryUnavailableApp({
     required this.onRetry,
     this.onUseDevice,
+    this.useDeviceFailed = false,
     super.key,
   });
+
+  /// Whether the user's last confirmed “Use this device” could not be saved.
+  ///
+  /// Set when the composition root's adoption failed, so the user learns why
+  /// they are still here instead of silently returning to the same screen.
+  final bool useDeviceFailed;
 
   /// Re-runs the complete composition root without selecting local fallback.
   final Future<Widget> Function() onRetry;
@@ -359,6 +368,24 @@ class _CloudLibraryUnavailableAppState
                             'create a duplicate on its own.',
                             textAlign: TextAlign.center,
                           ),
+                          if (widget.useDeviceFailed) ...[
+                            const SizedBox(height: 16),
+                            Semantics(
+                              key: CloudStorageKeys.useDeviceFailed,
+                              liveRegion: true,
+                              label: CloudStorageSemantics.useDeviceFailed,
+                              excludeSemantics: true,
+                              child: Text(
+                                'DocScanly could not switch to this device, so '
+                                'nothing was changed. Try again, or retry the '
+                                'iCloud connection.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error,
+                                ),
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 16),
                           Semantics(
                             label: CloudStorageSemantics.retryConnection,

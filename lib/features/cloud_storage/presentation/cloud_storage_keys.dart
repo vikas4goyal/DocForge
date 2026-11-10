@@ -43,6 +43,9 @@ abstract final class CloudStorageKeys {
   /// Confirms [useDevice].
   static const useDeviceConfirm = Key('cloud_storage_use_device_confirm');
 
+  /// Explains that switching to the device library could not be saved.
+  static const useDeviceFailed = Key('cloud_storage_use_device_failed');
+
   /// Explicit folder-import action.
   static const importFolder = Key('cloud_storage_import_folder');
 
@@ -60,6 +63,7 @@ abstract final class CloudStorageKeys {
     'cloud_storage_migration_continue',
     'cloud_storage_continue_local',
     'cloud_storage_unavailable',
+    'cloud_storage_use_device_failed',
     'cloud_storage_retry',
     'cloud_storage_use_device',
     'cloud_storage_use_device_confirm',
@@ -111,6 +115,10 @@ abstract final class CloudStorageSemantics {
 
   /// Confirms [useDevice].
   static const useDeviceConfirm = 'Confirm using this device without iCloud';
+
+  /// Announces that switching to the device library could not be saved.
+  static const useDeviceFailed =
+      'Could not switch to this device. Nothing was changed.';
 
   /// Explicitly import an external selected folder.
   static const importFolder = 'Import an existing iCloud Drive folder';

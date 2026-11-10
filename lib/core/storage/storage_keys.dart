@@ -72,6 +72,11 @@ abstract final class PreferenceKeys {
   static const migrationVerifiedPaths =
       'settings.storage.migration.v1.verifiedPaths';
 
+  /// Newline-delimited destination paths an interrupted migration created,
+  /// recorded before each write so a cancellation removes only its own files.
+  static const migrationWrittenPaths =
+      'settings.storage.migration.v1.writtenPaths';
+
   /// Every preference key, for tests that assert uniqueness and namespacing.
   static const all = <String>[
     onboardingComplete,
@@ -89,6 +94,7 @@ abstract final class PreferenceKeys {
     migrationDestination,
     migrationPhase,
     migrationVerifiedPaths,
+    migrationWrittenPaths,
   ];
 }
 
