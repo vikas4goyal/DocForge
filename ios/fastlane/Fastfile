@@ -176,9 +176,10 @@ platform :ios do
       itc_provider:TEAMID,
       skip_waiting_for_build_processing: true,
       ipa:resolve_ipa_path,
-      distribute_external: true,
-      notify_external_testers: true,
-      groups: ["QA","ExtQA"],
+      # Internal testers only: external distribution requires Beta App Review
+      # (and a Beta App Description in App Store Connect).
+      distribute_external: false,
+      groups: ["QA"],
       changelog: "improvement and bug fixes"
     )
   end
