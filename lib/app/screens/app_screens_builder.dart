@@ -28,7 +28,6 @@ import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.da
 import 'package:doc_scanly/core/theme/theme_mode_controller.dart';
 import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
 import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_repository.dart';
-import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
 import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
@@ -50,9 +49,6 @@ import 'package:flutter/material.dart';
 ///   rather than preferences, because an unprotected file can be edited on a
 ///   rooted device.
 /// - [documentFiles] resolves a document to the file its bytes live in.
-/// - [currentSettings] is the live copy of the persisted settings; the settings
-///   screen writes it so document creation reads what is on screen rather than
-///   what was loaded at startup.
 /// - [themeMode] is published to so an explicit theme choice applies without a
 ///   restart.
 /// - [appVersion] is shown on About.
@@ -80,7 +76,6 @@ AppScreens buildAppScreens({
   required PermissionService permissions,
   required SecureStore secureStorage,
   required DocumentFileResolver documentFiles,
-  required ValueNotifier<AppSettings> currentSettings,
   required ThemeModeController themeMode,
   required String appVersion,
   required AppLockGateImpl lockGate,
@@ -114,7 +109,6 @@ AppScreens buildAppScreens({
 
   final settingsScreens = buildSettingsScreens(
     settings: settings,
-    currentSettings: currentSettings,
     themeMode: themeMode,
     appVersion: appVersion,
     lockConfiguration: lockConfiguration,

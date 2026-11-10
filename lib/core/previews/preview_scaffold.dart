@@ -15,7 +15,7 @@
 /// Pass `size: PreviewSize.tablet` and `brightness: Brightness.dark` on the
 /// annotation for the form-factor and theme variants the specs require.
 ///
-/// Nothing here reaches a repository, camera, OCR engine, network or database:
+/// Nothing here reaches a repository, camera, network or database:
 /// previews are fed by fixtures alone (`design.md` §15).
 library;
 

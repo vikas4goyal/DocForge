@@ -5,7 +5,6 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/public_storage/document_file_resolver.dart';
@@ -590,17 +589,4 @@ Document viewerDocument() => Document(
   pageCount: 3,
   sizeInBytes: 40960,
   libraryPath: LibraryPath.parse('doc-1.pdf'),
-);
-
-/// A recognised-text fixture.
-RecognisedText viewerText() => RecognisedText(
-  pageId: const PageId('page-0'),
-  blocks: const [
-    TextBlock(
-      text: 'Invoice',
-      bounds: NormalisedRect(left: 0.1, top: 0.1, right: 0.5, bottom: 0.16),
-    ),
-  ],
-  languageTag: 'la',
-  recognisedAt: DateTime.utc(2026, 3, 14),
 );

@@ -24,6 +24,8 @@ class CapturedPage {
     this.rotation = PageRotation.none,
     this.thumbnailPath,
     this.isCorrected = false,
+    this.actualWidth,
+    this.actualHeight,
   });
 
   /// Identifier for this capture, stable for the life of the session.
@@ -47,6 +49,15 @@ class CapturedPage {
   /// already-rectangular image would distort it further.
   final bool isCorrected;
 
+  /// Pixel width decoded from the captured file, or null when unknown.
+  ///
+  /// What the camera actually delivered, which may differ from what was
+  /// requested: plugins can silently choose another size.
+  final int? actualWidth;
+
+  /// Pixel height decoded from the captured file, or null when unknown.
+  final int? actualHeight;
+
   /// Whether the crop covers the whole page, so no correction is needed.
   bool get needsCorrection => !isCorrected && !quad.isFullPage;
 
@@ -58,6 +69,8 @@ class CapturedPage {
     PageRotation? rotation,
     String? thumbnailPath,
     bool? isCorrected,
+    int? actualWidth,
+    int? actualHeight,
   }) => CapturedPage(
     id: id ?? this.id,
     imagePath: imagePath ?? this.imagePath,
@@ -65,6 +78,8 @@ class CapturedPage {
     rotation: rotation ?? this.rotation,
     thumbnailPath: thumbnailPath ?? this.thumbnailPath,
     isCorrected: isCorrected ?? this.isCorrected,
+    actualWidth: actualWidth ?? this.actualWidth,
+    actualHeight: actualHeight ?? this.actualHeight,
   );
 
   /// Converts to the cross-capability page reference.
@@ -79,11 +94,21 @@ class CapturedPage {
       other.quad == quad &&
       other.rotation == rotation &&
       other.thumbnailPath == thumbnailPath &&
-      other.isCorrected == isCorrected;
+      other.isCorrected == isCorrected &&
+      other.actualWidth == actualWidth &&
+      other.actualHeight == actualHeight;
 
   @override
-  int get hashCode =>
-      Object.hash(id, imagePath, quad, rotation, thumbnailPath, isCorrected);
+  int get hashCode => Object.hash(
+    id,
+    imagePath,
+    quad,
+    rotation,
+    thumbnailPath,
+    isCorrected,
+    actualWidth,
+    actualHeight,
+  );
 }
 
 /// The ordering and membership rules of a scanning session.

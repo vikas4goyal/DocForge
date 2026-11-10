@@ -28,8 +28,7 @@ class IsolatePdfComposer implements PdfComposer {
     final trace = await telemetry.startTrace('pdf_creation');
     trace
       ..setMetric('page_count', request.pages.length)
-      ..putAttribute('quality', request.quality.name)
-      ..putAttribute('searchable', request.isSearchable.toString());
+      ..putAttribute('quality', request.quality.name);
 
     try {
       // Only the request and the returned description cross the boundary. The
@@ -43,7 +42,6 @@ class IsolatePdfComposer implements PdfComposer {
           'outcome': 'success',
           'page_count': request.pages.length,
           'quality': request.quality.name,
-          'searchable': request.isSearchable ? 1 : 0,
         },
       );
       return Result<ComposedPdf>.success(composed);
@@ -55,7 +53,6 @@ class IsolatePdfComposer implements PdfComposer {
           'outcome': 'failure',
           'page_count': request.pages.length,
           'quality': request.quality.name,
-          'searchable': request.isSearchable ? 1 : 0,
         },
       );
       await telemetry.recordError(error, stackTrace, reason: 'PDF composition');

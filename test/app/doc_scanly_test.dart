@@ -40,7 +40,6 @@ import 'package:doc_scanly/features/document_library/presentation/widgets/librar
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
 import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
-import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:doc_scanly/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -65,7 +64,6 @@ void main() {
         FolderEntitySchema,
         PageEntitySchema,
         TrashEntitySchema,
-        OcrTextEntitySchema,
       ],
       directory: databaseDirectory.path,
       name: 'doc_scanly_composition_test',

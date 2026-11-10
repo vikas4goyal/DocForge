@@ -46,9 +46,10 @@ class _CameraResolutionScreenState extends State<CameraResolutionScreen> {
             ),
             CameraResolutionStatus.failure => AppErrorView(
               failure: state.cameraResolutionFailure ?? const Failure.camera(),
-              onRetry: context
+              // A retry must re-query the camera, not replay a cached answer.
+              onRetry: () => context
                   .read<SettingsCubit>()
-                  .loadCameraResolutionOptions,
+                  .loadCameraResolutionOptions(refresh: true),
               retryKey: SettingsKeys.cameraResolutionRetry,
             ),
             CameraResolutionStatus.unavailable => _ResolutionList(

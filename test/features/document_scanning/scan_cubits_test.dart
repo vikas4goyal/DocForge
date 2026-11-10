@@ -2,11 +2,14 @@ import 'dart:io';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:doc_scanly/core/contracts/geometry/perspective_transform.dart';
+import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
+import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/time/clock.dart';
 import 'package:doc_scanly/features/document_scanning/application/usecases/scanning_usecases.dart';
+import 'package:doc_scanly/features/document_scanning/domain/repositories/camera_capability_repository.dart';
 import 'package:doc_scanly/features/document_scanning/domain/scan_session.dart';
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_scanning/presentation/cubit/scan_cubits.dart';
@@ -288,6 +291,87 @@ void main() {
     });
   });
 
+  group('ScanCaptureCubit actual captured size', () {
+    final hd = SupportedCameraResolution(
+      tier: CameraResolutionTier.hd720,
+      width: 1280,
+      height: 720,
+    );
+
+    ScanCaptureCubit buildResolved(DesiredCameraResolution desired) =>
+        ScanCaptureCubit(
+          scanner,
+          CapturePage(
+            scanner,
+            resolveCaptureResolution: ResolveCaptureResolution(
+              LoadCameraResolutions(_Capabilities([hd])),
+            ),
+          ),
+          DiscardScanSession(staging, scanner),
+          desiredResolution: () => desired,
+        );
+
+    blocTest<ScanCaptureCubit, ScanCaptureState>(
+      'a capture reports the size the camera delivered',
+      build: () => buildResolved(
+        DesiredCameraResolution.tier(CameraResolutionTier.hd720),
+      ),
+      act: (cubit) async {
+        await cubit.start();
+        await cubit.capture();
+      },
+      skip: 3,
+      expect: () => [
+        isA<ScanCaptureState>()
+            .having((s) => s.capturedWidth, 'width', 1280)
+            .having((s) => s.capturedHeight, 'height', 720)
+            .having(
+              (s) => s.resolutionLabel,
+              'label',
+              '720p, captured 1280 by 720',
+            ),
+      ],
+    );
+
+    blocTest<ScanCaptureCubit, ScanCaptureState>(
+      'a capture below the requested tier never claims that tier',
+      setUp: () => scanner.actualSizeOverride = (960, 540),
+      build: () => buildResolved(
+        DesiredCameraResolution.tier(CameraResolutionTier.hd720),
+      ),
+      act: (cubit) async {
+        await cubit.start();
+        await cubit.capture();
+      },
+      skip: 3,
+      expect: () => [
+        isA<ScanCaptureState>().having(
+          (s) => s.resolutionLabel,
+          'label',
+          '720p requested, captured 960 by 540',
+        ),
+      ],
+    );
+
+    blocTest<ScanCaptureCubit, ScanCaptureState>(
+      're-opening the camera forgets the previous capture size',
+      build: () => buildResolved(
+        DesiredCameraResolution.tier(CameraResolutionTier.hd720),
+      ),
+      act: (cubit) async {
+        await cubit.start();
+        await cubit.capture();
+        await cubit.start();
+      },
+      skip: 5,
+      expect: () => [
+        isA<ScanCaptureState>()
+            .having((s) => s.capturedWidth, 'width', isNull)
+            .having((s) => s.resolutionLabel, 'label', '720p, 1280 by 720'),
+      ],
+    );
+  });
+
   group('PageReviewCubit', () {
     test('starts with the pages it was given', () {
       final cubit = PageReviewCubit(pages(3));
@@ -427,4 +511,16 @@ void main() {
       expect(cubit.state.pages.last.id.value, 'page-new');
     });
   });
+}
+
+/// Capabilities that always answer with [resolutions].
+class _Capabilities implements CameraCapabilityRepository {
+  _Capabilities(this.resolutions);
+
+  final List<SupportedCameraResolution> resolutions;
+
+  @override
+  Future<Result<List<SupportedCameraResolution>>> loadActiveResolutions({
+    bool refresh = false,
+  }) async => Result<List<SupportedCameraResolution>>.success(resolutions);
 }

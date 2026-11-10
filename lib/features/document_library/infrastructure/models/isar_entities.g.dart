@@ -52,63 +52,58 @@ const DocumentEntitySchema = CollectionSchema(
       name: r'folderUuid',
       type: IsarType.string,
     ),
-    r'hasRecognisedText': PropertySchema(
-      id: 7,
-      name: r'hasRecognisedText',
-      type: IsarType.bool,
-    ),
     r'isArchived': PropertySchema(
-      id: 8,
+      id: 7,
       name: r'isArchived',
       type: IsarType.bool,
     ),
     r'isFavourite': PropertySchema(
-      id: 9,
+      id: 8,
       name: r'isFavourite',
       type: IsarType.bool,
     ),
     r'isProtected': PropertySchema(
-      id: 10,
+      id: 9,
       name: r'isProtected',
       type: IsarType.bool,
     ),
     r'pageCount': PropertySchema(
-      id: 11,
+      id: 10,
       name: r'pageCount',
       type: IsarType.long,
     ),
     r'schemaVersion': PropertySchema(
-      id: 12,
+      id: 11,
       name: r'schemaVersion',
       type: IsarType.long,
     ),
     r'sizeInBytes': PropertySchema(
-      id: 13,
+      id: 12,
       name: r'sizeInBytes',
       type: IsarType.long,
     ),
-    r'title': PropertySchema(id: 14, name: r'title', type: IsarType.string),
+    r'title': PropertySchema(id: 13, name: r'title', type: IsarType.string),
     r'titleWords': PropertySchema(
-      id: 15,
+      id: 14,
       name: r'titleWords',
       type: IsarType.stringList,
     ),
     r'trashUuid': PropertySchema(
-      id: 16,
+      id: 15,
       name: r'trashUuid',
       type: IsarType.string,
     ),
     r'trashedAt': PropertySchema(
-      id: 17,
+      id: 16,
       name: r'trashedAt',
       type: IsarType.dateTime,
     ),
     r'updatedAt': PropertySchema(
-      id: 18,
+      id: 17,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
-    r'uuid': PropertySchema(id: 19, name: r'uuid', type: IsarType.string),
+    r'uuid': PropertySchema(id: 18, name: r'uuid', type: IsarType.string),
   },
 
   estimateSize: _documentEntityEstimateSize,
@@ -281,19 +276,18 @@ void _documentEntitySerialize(
   writer.writeString(offsets[4], object.fileName);
   writer.writeString(offsets[5], object.folderPath);
   writer.writeString(offsets[6], object.folderUuid);
-  writer.writeBool(offsets[7], object.hasRecognisedText);
-  writer.writeBool(offsets[8], object.isArchived);
-  writer.writeBool(offsets[9], object.isFavourite);
-  writer.writeBool(offsets[10], object.isProtected);
-  writer.writeLong(offsets[11], object.pageCount);
-  writer.writeLong(offsets[12], object.schemaVersion);
-  writer.writeLong(offsets[13], object.sizeInBytes);
-  writer.writeString(offsets[14], object.title);
-  writer.writeStringList(offsets[15], object.titleWords);
-  writer.writeString(offsets[16], object.trashUuid);
-  writer.writeDateTime(offsets[17], object.trashedAt);
-  writer.writeDateTime(offsets[18], object.updatedAt);
-  writer.writeString(offsets[19], object.uuid);
+  writer.writeBool(offsets[7], object.isArchived);
+  writer.writeBool(offsets[8], object.isFavourite);
+  writer.writeBool(offsets[9], object.isProtected);
+  writer.writeLong(offsets[10], object.pageCount);
+  writer.writeLong(offsets[11], object.schemaVersion);
+  writer.writeLong(offsets[12], object.sizeInBytes);
+  writer.writeString(offsets[13], object.title);
+  writer.writeStringList(offsets[14], object.titleWords);
+  writer.writeString(offsets[15], object.trashUuid);
+  writer.writeDateTime(offsets[16], object.trashedAt);
+  writer.writeDateTime(offsets[17], object.updatedAt);
+  writer.writeString(offsets[18], object.uuid);
 }
 
 DocumentEntity _documentEntityDeserialize(
@@ -310,20 +304,19 @@ DocumentEntity _documentEntityDeserialize(
   object.fileName = reader.readString(offsets[4]);
   object.folderPath = reader.readString(offsets[5]);
   object.folderUuid = reader.readStringOrNull(offsets[6]);
-  object.hasRecognisedText = reader.readBool(offsets[7]);
   object.id = id;
-  object.isArchived = reader.readBool(offsets[8]);
-  object.isFavourite = reader.readBool(offsets[9]);
-  object.isProtected = reader.readBool(offsets[10]);
-  object.pageCount = reader.readLong(offsets[11]);
-  object.schemaVersion = reader.readLong(offsets[12]);
-  object.sizeInBytes = reader.readLong(offsets[13]);
-  object.title = reader.readString(offsets[14]);
-  object.titleWords = reader.readStringList(offsets[15]) ?? [];
-  object.trashUuid = reader.readStringOrNull(offsets[16]);
-  object.trashedAt = reader.readDateTimeOrNull(offsets[17]);
-  object.updatedAt = reader.readDateTime(offsets[18]);
-  object.uuid = reader.readString(offsets[19]);
+  object.isArchived = reader.readBool(offsets[7]);
+  object.isFavourite = reader.readBool(offsets[8]);
+  object.isProtected = reader.readBool(offsets[9]);
+  object.pageCount = reader.readLong(offsets[10]);
+  object.schemaVersion = reader.readLong(offsets[11]);
+  object.sizeInBytes = reader.readLong(offsets[12]);
+  object.title = reader.readString(offsets[13]);
+  object.titleWords = reader.readStringList(offsets[14]) ?? [];
+  object.trashUuid = reader.readStringOrNull(offsets[15]);
+  object.trashedAt = reader.readDateTimeOrNull(offsets[16]);
+  object.updatedAt = reader.readDateTime(offsets[17]);
+  object.uuid = reader.readString(offsets[18]);
   return object;
 }
 
@@ -355,24 +348,22 @@ P _documentEntityDeserializeProp<P>(
     case 9:
       return (reader.readBool(offset)) as P;
     case 10:
-      return (reader.readBool(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 11:
       return (reader.readLong(offset)) as P;
     case 12:
       return (reader.readLong(offset)) as P;
     case 13:
-      return (reader.readLong(offset)) as P;
-    case 14:
       return (reader.readString(offset)) as P;
-    case 15:
+    case 14:
       return (reader.readStringList(offset) ?? []) as P;
-    case 16:
+    case 15:
       return (reader.readStringOrNull(offset)) as P;
-    case 17:
+    case 16:
       return (reader.readDateTimeOrNull(offset)) as P;
-    case 18:
+    case 17:
       return (reader.readDateTime(offset)) as P;
-    case 19:
+    case 18:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -2138,15 +2129,6 @@ extension DocumentEntityQueryFilter
     });
   }
 
-  QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition>
-  hasRecognisedTextEqualTo(bool value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'hasRecognisedText', value: value),
-      );
-    });
-  }
-
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterFilterCondition> idEqualTo(
     Id value,
   ) {
@@ -3263,20 +3245,6 @@ extension DocumentEntityQuerySortBy
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
-  sortByHasRecognisedText() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'hasRecognisedText', Sort.asc);
-    });
-  }
-
-  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
-  sortByHasRecognisedTextDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'hasRecognisedText', Sort.desc);
-    });
-  }
-
-  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
   sortByIsArchived() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'isArchived', Sort.asc);
@@ -3521,20 +3489,6 @@ extension DocumentEntityQuerySortThenBy
     });
   }
 
-  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
-  thenByHasRecognisedText() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'hasRecognisedText', Sort.asc);
-    });
-  }
-
-  QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy>
-  thenByHasRecognisedTextDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'hasRecognisedText', Sort.desc);
-    });
-  }
-
   QueryBuilder<DocumentEntity, DocumentEntity, QAfterSortBy> thenById() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'id', Sort.asc);
@@ -3758,13 +3712,6 @@ extension DocumentEntityQueryWhereDistinct
   }
 
   QueryBuilder<DocumentEntity, DocumentEntity, QDistinct>
-  distinctByHasRecognisedText() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'hasRecognisedText');
-    });
-  }
-
-  QueryBuilder<DocumentEntity, DocumentEntity, QDistinct>
   distinctByIsArchived() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'isArchived');
@@ -3902,13 +3849,6 @@ extension DocumentEntityQueryProperty
   QueryBuilder<DocumentEntity, String?, QQueryOperations> folderUuidProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'folderUuid');
-    });
-  }
-
-  QueryBuilder<DocumentEntity, bool, QQueryOperations>
-  hasRecognisedTextProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'hasRecognisedText');
     });
   }
 

@@ -205,7 +205,7 @@ case _:
 /// @nodoc
 mixin _$SupportedCameraResolution {
 
- CameraResolutionTier get tier; int get width; int get height;
+ CameraResolutionTier get tier; int get width; int get height; String? get requestKey;
 /// Create a copy of SupportedCameraResolution
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -216,16 +216,16 @@ $SupportedCameraResolutionCopyWith<SupportedCameraResolution> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SupportedCameraResolution&&(identical(other.tier, tier) || other.tier == tier)&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SupportedCameraResolution&&(identical(other.tier, tier) || other.tier == tier)&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height)&&(identical(other.requestKey, requestKey) || other.requestKey == requestKey));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,tier,width,height);
+int get hashCode => Object.hash(runtimeType,tier,width,height,requestKey);
 
 @override
 String toString() {
-  return 'SupportedCameraResolution(tier: $tier, width: $width, height: $height)';
+  return 'SupportedCameraResolution(tier: $tier, width: $width, height: $height, requestKey: $requestKey)';
 }
 
 
@@ -236,7 +236,7 @@ abstract mixin class $SupportedCameraResolutionCopyWith<$Res>  {
   factory $SupportedCameraResolutionCopyWith(SupportedCameraResolution value, $Res Function(SupportedCameraResolution) _then) = _$SupportedCameraResolutionCopyWithImpl;
 @useResult
 $Res call({
- CameraResolutionTier tier, int width, int height
+ CameraResolutionTier tier, int width, int height, String? requestKey
 });
 
 
@@ -253,12 +253,13 @@ class _$SupportedCameraResolutionCopyWithImpl<$Res>
 
 /// Create a copy of SupportedCameraResolution
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? tier = null,Object? width = null,Object? height = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? tier = null,Object? width = null,Object? height = null,Object? requestKey = freezed,}) {
   return _then(SupportedCameraResolution(
 tier: null == tier ? _self.tier : tier // ignore: cast_nullable_to_non_nullable
 as CameraResolutionTier,width: null == width ? _self.width : width // ignore: cast_nullable_to_non_nullable
 as int,height: null == height ? _self.height : height // ignore: cast_nullable_to_non_nullable
-as int,
+as int,requestKey: freezed == requestKey ? _self.requestKey : requestKey // ignore: cast_nullable_to_non_nullable
+as String?,
   ));
 }
 

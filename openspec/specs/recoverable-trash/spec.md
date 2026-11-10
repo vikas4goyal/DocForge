@@ -3,6 +3,7 @@
 ## Purpose
 TBD - created by archiving change add-recoverable-trash. Update Purpose after archive.
 ## Requirements
+
 ### Requirement: Recoverable Trash lifecycle
 The application SHALL move documents and complete folder trees deleted inside DocScanly to Trash, SHALL keep them recoverable for up to 30 days, and SHALL remove bytes irreversibly only through confirmed permanent removal or expiry.
 
@@ -36,7 +37,7 @@ Before moving a non-empty folder tree to Trash, the application SHALL recursivel
 
 #### Scenario: Cancel preserves everything
 - **WHEN** the user cancels the move-to-Trash confirmation
-- **THEN** no public file, folder, index record, OCR record, page record or password changes
+- **THEN** no public file, folder, index record, page record or password changes
 
 #### Scenario: Empty folder remains recoverable
 - **WHEN** the user moves an empty folder to Trash
@@ -51,7 +52,7 @@ The application SHALL restore a Trash entry with its metadata and protection int
 
 #### Scenario: Original path is free
 - **WHEN** the user activates `Key('trash_restore_<id>')` with semantics “Restore <name>” and the original path is available
-- **THEN** the complete entry returns to its original path, retains identifiers, favourite/archive state, pages, OCR and protection, and disappears from Trash
+- **THEN** the complete entry returns to its original path, retains identifiers, favourite/archive state, pages and protection, and disappears from Trash
 
 #### Scenario: Original path is occupied
 - **WHEN** restoration finds a file or folder at the original path
@@ -70,7 +71,7 @@ Permanent removal SHALL be available only in Trash, SHALL require an explicit ir
 
 #### Scenario: Permanently remove one entry
 - **WHEN** the user activates `Key('trash_delete_permanently_<id>')`, confirms through `Key('trash_permanent_delete_confirm')`, and the operation succeeds
-- **THEN** the payload, document/folder records, pages, OCR, derived caches and protected-document passwords are removed and the entry disappears from Trash
+- **THEN** the payload, document/folder records, pages, derived caches and protected-document passwords are removed and the entry disappears from Trash
 
 #### Scenario: Permanent removal warning
 - **WHEN** the permanent-removal dialog is shown
@@ -127,4 +128,3 @@ Recoverable Trash SHALL continue to count toward local storage usage until perma
 #### Scenario: Organise journey coverage
 - **WHEN** `integration_test/flows/organise_test.dart` runs
 - **THEN** it creates nested content, moves it to Trash, verifies active exclusion, restores it, moves it again, permanently removes it, and drives only registered keys/semantics through the real application composition
-

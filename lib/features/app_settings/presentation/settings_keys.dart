@@ -16,6 +16,9 @@ abstract final class SettingsKeys {
   /// The PDF-quality entry.
   static const pdfQuality = Key('settings_pdf_quality');
 
+  /// The inline slider that sets the default PDF quality percentage.
+  static const pdfQualitySlider = Key('settings_pdf_quality_slider');
+
   /// The active-camera resolution entry.
   static const cameraResolution = Key('settings_camera_resolution');
 
@@ -135,6 +138,10 @@ abstract final class SettingsSemantics {
 
   /// Announces iOS storage-location management.
   static const manageStorageLocation = 'Manage storage location';
+
+  /// What the PDF quality slider announces for [percent].
+  static String pdfQualitySlider(int percent) =>
+      'Default PDF quality, $percent percent';
 
   /// Announces a switch setting as its name and whether it is on.
   static String switchTile(String title, {required bool on}) =>

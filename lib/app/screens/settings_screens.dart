@@ -11,7 +11,6 @@ import 'package:doc_scanly/core/theme/theme_mode_controller.dart';
 import 'package:doc_scanly/features/app_security/application/usecases/app_lock_usecases.dart';
 import 'package:doc_scanly/features/app_security/domain/app_lock.dart';
 import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_repository.dart';
-import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_screen.dart';
@@ -51,10 +50,10 @@ class SettingsScreens {
 
 /// Builds settings over [settings], publishing what it persists.
 ///
-/// [currentSettings] is written on every rebuild so the naming pattern and
-/// quality presets a new document uses are the ones on screen rather than the
-/// ones loaded at startup. [themeMode] is published to so an explicit theme
-/// choice applies without a restart, which the spec requires.
+/// Other features read persisted values through the settings repository's
+/// read model, which only successful writes update; nothing here publishes
+/// them. [themeMode] is published to so an explicit theme choice applies
+/// without a restart, which the spec requires.
 ///
 /// [appVersion] is shown on About. [lockConfiguration] stores whether the lock
 /// is on, and [authenticator] confirms who is asking — in both directions, for
@@ -64,7 +63,6 @@ class SettingsScreens {
 /// stores PDFs on iOS.
 SettingsScreens buildSettingsScreens({
   required SettingsModule settings,
-  required ValueNotifier<AppSettings> currentSettings,
   required ThemeModeController themeMode,
   required String appVersion,
   required AppLockConfiguration lockConfiguration,
@@ -93,14 +91,6 @@ SettingsScreens buildSettingsScreens({
         )..load(),
         child: Builder(
           builder: (screenContext) {
-            // Kept in step with what was actually persisted, so the naming
-            // pattern and quality presets a new document uses are the ones on
-            // screen.
-            currentSettings.value = screenContext
-                .watch<SettingsCubit>()
-                .state
-                .settings;
-
             return SettingsScreen(
               onBack: isTab ? null : () => context.pop(),
               pickSaveLocation: directoryPicker,

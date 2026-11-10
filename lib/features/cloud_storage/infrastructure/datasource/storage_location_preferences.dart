@@ -97,9 +97,12 @@ class StorageLocationPreferences implements LibraryLocationRepository {
         verifiedRelativePaths: pathsValue == null || pathsValue.isEmpty
             ? const []
             : pathsValue.split('\n'),
-        writtenRelativePaths: writtenValue == null || writtenValue.isEmpty
+        writtenFiles: writtenValue == null || writtenValue.isEmpty
             ? const []
-            : writtenValue.split('\n'),
+            : [
+                for (final line in writtenValue.split('\n'))
+                  _decodeWritten(line),
+              ],
       ),
     );
   }
@@ -127,7 +130,9 @@ class StorageLocationPreferences implements LibraryLocationRepository {
       ),
       () => preferences.writeString(
         PreferenceKeys.migrationWrittenPaths,
-        checkpoint.writtenRelativePaths.join('\n'),
+        [
+          for (final file in checkpoint.writtenFiles) _encodeWritten(file),
+        ].join('\n'),
       ),
     ];
     for (final write in writes) {
@@ -155,4 +160,23 @@ class StorageLocationPreferences implements LibraryLocationRepository {
     }
     return const Result<void>.success(null);
   }
+}
+
+/// Encodes [file] as `<hex digest>\t<path>`; a missing digest leaves the first
+/// field empty.
+String _encodeWritten(MigrationWrittenFile file) =>
+    '${file.digest?.toRadixString(16) ?? ''}\t${file.relativePath}';
+
+/// Decodes one written-file line.
+///
+/// A line without a tab was written before digests were recorded: it decodes
+/// to a path with no digest, which a rollback preserves rather than deletes.
+MigrationWrittenFile _decodeWritten(String line) {
+  final tab = line.indexOf('\t');
+  if (tab < 0) return MigrationWrittenFile(relativePath: line);
+  final digestText = line.substring(0, tab);
+  return MigrationWrittenFile(
+    relativePath: line.substring(tab + 1),
+    digest: digestText.isEmpty ? null : int.tryParse(digestText, radix: 16),
+  );
 }

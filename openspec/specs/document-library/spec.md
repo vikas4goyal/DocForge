@@ -4,6 +4,7 @@
 
 Define the library: what a document record carries, how folders are managed as real directories in the library folder, how external PDFs are brought in by copying, the lifecycle operations and favourites the user can apply to a document, how document lists present themselves, and the rule that every library operation acts on the file identified by the document's library-relative path so that the index and the folder contents can never disagree.
 ## Requirements
+
 ### Requirement: Document record
 Every document SHALL carry a title, creation date, modified date, number of pages, file size, folder path relative to the library root, favourite status, archive status and whether it is password protected.
 
@@ -110,11 +111,11 @@ Every library and Trash operation SHALL act on the file identified by its librar
 
 #### Scenario: Permanent removal deletes all data
 - **WHEN** the user permanently deletes a Trash entry
-- **THEN** its payload is removed along with thumbnails, pages, recognised text and credentials
+- **THEN** its payload is removed along with thumbnails, pages and credentials
 
 #### Scenario: Delete removes the file
 - **WHEN** the user permanently deletes a document from Trash
-- **THEN** the file is removed from the reserved payload, along with its thumbnails and recognised text
+- **THEN** the file is removed from the reserved payload, along with its thumbnails
 
 #### Scenario: Duplicate creates a second file
 - **WHEN** the user duplicates a document
@@ -161,7 +162,7 @@ The application SHALL allow the user to rename, move, duplicate, archive, restor
 
 #### Scenario: Permanent removal
 - **WHEN** the user permanently removes a document from Trash and confirms in the dialog with key `trash_permanent_delete_dialog`
-- **THEN** the record, PDF payload, page records, derived images, recognised text and password are deleted, and storage usage decreases accordingly
+- **THEN** the record, PDF payload, page records, derived images and password are deleted, and storage usage decreases accordingly
 
 #### Scenario: Destructive actions require confirmation
 - **WHEN** the user initiates moving non-empty content to Trash, Empty Trash or permanent removal
@@ -306,7 +307,7 @@ On iOS with iCloud selected, the library SHALL distinguish remote-only, download
 - **THEN** its document row remains navigable and exposes `document_cloud_status_<document-id>` with the current availability
 
 #### Scenario: Byte-reading operation waits for download
-- **WHEN** a thumbnail, viewer, editor, share, print, or OCR operation needs a remote-only PDF
+- **WHEN** a thumbnail, viewer, editor, share, or print operation needs a remote-only PDF
 - **THEN** the operation invokes the injected download use case, reports bounded progress, and reads bytes only after the platform confirms availability
 
 #### Scenario: Password-protected PDF on a new device
@@ -315,7 +316,7 @@ On iOS with iCloud selected, the library SHALL distinguish remote-only, download
 
 #### Scenario: Device-local metadata limitation
 - **WHEN** a PDF is first discovered on another device
-- **THEN** DocScanly reconstructs metadata available from the folder and PDF but does not claim that unsynchronized favourites, archive state, OCR text, or custom ordering transferred
+- **THEN** DocScanly reconstructs metadata available from the folder and PDF but does not claim that unsynchronized favourites, archive state, or custom ordering transferred
 
 ### Requirement: Library remains usable during cloud conditions
 The library SHALL preserve local-first operations for downloaded content and SHALL clearly constrain operations that require unavailable remote bytes.

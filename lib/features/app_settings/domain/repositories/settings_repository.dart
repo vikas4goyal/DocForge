@@ -19,6 +19,25 @@ abstract interface class SettingsRepository {
   /// needs to know about.
   Future<AppSettings> load();
 
+  /// Returns the last settings that were successfully loaded or persisted.
+  ///
+  /// This is the read model every other feature consumes through the
+  /// composition root. It is never a loading placeholder and never reflects a
+  /// write that failed, so a Settings screen that is still loading or showing
+  /// an error cannot reset what capture, Save PDF, naming or export use.
+  ///
+  /// Purely in memory and offline; reading it performs no I/O.
+  ///
+  /// Throws a [StateError] when read before the first [load] completes — the
+  /// composition root awaits [load] before building any consumer.
+  AppSettings get current;
+
+  /// Emits [current] after every successful write.
+  ///
+  /// A broadcast stream that never emits errors: a failed write emits
+  /// nothing, because nothing other features use has changed.
+  Stream<AppSettings> get changes;
+
   /// Stores the theme choice.
   Future<Result<void>> saveTheme(AppThemeChoice theme);
 

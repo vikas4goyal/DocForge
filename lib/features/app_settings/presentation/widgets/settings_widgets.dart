@@ -128,6 +128,145 @@ class SettingsChoiceTile<T> extends StatelessWidget {
   }
 }
 
+/// A setting whose value is a whole number picked on an inline slider.
+///
+/// Used for the default PDF quality, a 30–100% range: a list of seventy-one
+/// radio options is not a usable way to pick a percentage. The title, the live
+/// value ("45%") and [description] sit above a full-width Material slider.
+///
+/// Required inputs: [title], [value], [min]/[max] and the two callbacks.
+/// [sliderKey] keys the slider itself so flows can drag it, and
+/// [semanticLabelFor] supplies what a screen reader announces for a value, for
+/// example "Default PDF quality, 45 percent". The tile's own `key` sits on the
+/// outer container. When [enabled] is false the slider is shown but inert,
+/// which is how the loading state presents it.
+class SettingsSliderTile extends StatelessWidget {
+  /// Creates a slider tile.
+  const SettingsSliderTile({
+    required this.title,
+    required this.value,
+    required this.min,
+    required this.max,
+    required this.onChanged,
+    required this.onChangeEnd,
+    required this.semanticLabelFor,
+    super.key,
+    this.sliderKey,
+    this.valueLabelFor,
+    this.description,
+    this.enabled = true,
+  });
+
+  /// The setting's name.
+  final String title;
+
+  /// The value shown on the slider, clamped into [min]..[max] for display.
+  final int value;
+
+  /// The smallest selectable value.
+  final int min;
+
+  /// The largest selectable value.
+  final int max;
+
+  /// Invoked continuously while the user drags, for a live preview only.
+  final ValueChanged<int> onChanged;
+
+  /// Invoked once when a drag or a keyboard/accessibility step ends — the
+  /// single point at which the value is persisted.
+  final ValueChanged<int> onChangeEnd;
+
+  /// What a screen reader announces for a value.
+  final String Function(int value) semanticLabelFor;
+
+  /// The key placed on the slider control itself.
+  final Key? sliderKey;
+
+  /// How a value is shown beside the title; defaults to the bare number.
+  final String Function(int value)? valueLabelFor;
+
+  /// The trade-off the value controls, shown under the title.
+  final String? description;
+
+  /// Whether the slider accepts input.
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final shown = value.clamp(min, max);
+    final label = valueLabelFor?.call(shown) ?? '$shown';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Title and value are one semantic node, "PDF quality, 45%", read
+          // together like every other tile; the slider below carries its own,
+          // more specific announcement.
+          Semantics(
+            container: true,
+            label: SettingsSemantics.choiceTile(title, label),
+            excludeSemantics: true,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: Text(title, style: theme.textTheme.bodyLarge)),
+                const SizedBox(width: 16),
+                Text(
+                  label,
+                  style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (description != null) ...[
+            const SizedBox(height: 4),
+            Semantics(
+              container: true,
+              child: Text(
+                description!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ],
+          // 48dp minimum, the touch-target floor, whatever the theme's
+          // default slider height happens to be.
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Semantics(
+              label: semanticLabelFor(shown),
+              child: Slider(
+                key: sliderKey,
+                value: shown.toDouble(),
+                min: min.toDouble(),
+                max: max.toDouble(),
+                divisions: max - min,
+                // The value is announced as the bare formatted value; the label
+                // above already names the setting.
+                semanticFormatterCallback: (raw) =>
+                    valueLabelFor?.call(raw.round()) ?? '${raw.round()}',
+                onChanged: enabled ? (raw) => onChanged(raw.round()) : null,
+                // Persisted here rather than in onChanged: a single drag passes
+                // through dozens of values, and writing each would mean dozens
+                // of preference writes and racing failure banners.
+                onChangeEnd: enabled ? (raw) => onChangeEnd(raw.round()) : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// A setting that shows a value and, optionally, does something when tapped.
 class SettingsValueTile extends StatelessWidget {
   /// Creates a value tile.
@@ -136,6 +275,7 @@ class SettingsValueTile extends StatelessWidget {
     required this.value,
     super.key,
     this.onTap,
+    this.detail,
   });
 
   /// The setting's name.
@@ -144,6 +284,9 @@ class SettingsValueTile extends StatelessWidget {
   /// The current value, or an empty string for an entry that has none.
   final String value;
 
+  /// A short line under the value explaining what it does, when it needs one.
+  final String? detail;
+
   /// Invoked when tapped. A null handler makes the tile inert.
   final VoidCallback? onTap;
 
@@ -151,11 +294,13 @@ class SettingsValueTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: onTap != null,
-      label: value.isEmpty ? title : '$title, $value',
+      label: [title, if (value.isNotEmpty) value, ?detail].join(', '),
       excludeSemantics: true,
       child: ListTile(
         title: Text(title),
-        subtitle: value.isEmpty ? null : Text(value),
+        subtitle: value.isEmpty
+            ? null
+            : Text(detail == null ? value : '$value\n$detail'),
         trailing: onTap == null ? null : const Icon(Icons.chevron_right),
         onTap: onTap,
       ),

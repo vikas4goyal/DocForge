@@ -102,7 +102,7 @@ class LibraryModule {
   /// Loads a preview through unified scanned/PDF-backed page access.
   final LoadDocumentPagePreview loadDocumentPagePreview;
 
-  /// Unified page access injected into OCR and sharing consumers.
+  /// Unified page access injected into page consumers such as sharing.
   final DocumentPageAccessRepository pageAccess;
 
   /// Loads folders for the move picker.
@@ -291,7 +291,6 @@ LibraryModule buildLibraryModuleOver({
   required SecureStore secureStorage,
   DocumentFileResolver? documentFileResolver,
   ThumbnailRenderer thumbnailRenderer = renderPdfrxThumbnail,
-  DocumentPageTextExtractor pageTextExtractor = extractPdfrxPageText,
 }) {
   final documents = IsarDocumentRepository(isar);
   final folders = IsarFolderRepository(isar);
@@ -316,7 +315,6 @@ LibraryModule buildLibraryModuleOver({
     secureStorage,
     documentsDirectory,
     thumbnailRenderer,
-    pageTextExtractor,
   );
   final displayDensity = PreferenceLibraryDisplayDensityRepository(preferences);
 

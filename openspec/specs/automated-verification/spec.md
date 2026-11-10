@@ -33,7 +33,7 @@ A test SHALL NOT span tiers: a Tier‑2 test MUST NOT construct the app's router
 
 ### Requirement: End-to-end UI tests boot the real application
 
-Tier‑3 tests SHALL launch the application through the same composition root that `main.dart` uses, substituting only services that sit at the platform edge — camera capture, OCR recognition, edge detection, biometric authentication, the share sheet and the print dialog.
+Tier‑3 tests SHALL launch the application through the same composition root that `main.dart` uses, substituting only services that sit at the platform edge — camera capture, edge detection, biometric authentication, the share sheet and the print dialog.
 
 Every other dependency, including the router, all Cubits, all use cases, all repositories and real on-device storage, SHALL be the production implementation.
 

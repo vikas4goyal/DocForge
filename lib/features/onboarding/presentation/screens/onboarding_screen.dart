@@ -199,7 +199,7 @@ class _PrivacyStep extends StatelessWidget {
           statementKey: OnboardingKeys.privacyOfflineStatement,
           icon: Icons.wifi_off_outlined,
           text:
-              'Scanning and text recognition work without an internet '
+              'Scanning and creating PDFs work without an internet '
               'connection.',
         ),
       ],

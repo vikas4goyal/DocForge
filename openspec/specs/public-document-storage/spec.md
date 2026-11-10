@@ -2,8 +2,9 @@
 
 ## Purpose
 
-Define where DocScanly keeps what it stores: finished PDFs in a user-visible `DocScanly` folder that the operating system's file browser and other applications can reach, and everything else — index, thumbnails, recognised text, passwords, in-progress captures — in app-private storage. Covers folder-relative addressing, reconciliation with changes made outside the application, migration from the earlier app-private layout, and the failure modes of platform storage.
+Define where DocScanly keeps what it stores: finished PDFs in a user-visible `DocScanly` folder that the operating system's file browser and other applications can reach, and everything else — index, thumbnails, passwords, in-progress captures — in app-private storage. Covers folder-relative addressing, reconciliation with changes made outside the application, migration from the earlier app-private layout, and the failure modes of platform storage.
 ## Requirements
+
 ### Requirement: Public document folder
 The application SHALL store every active saved PDF in the user-visible `DocScanly` folder tree and SHALL move app-trashed payloads into a reserved namespace excluded from normal browsing and active reconciliation.
 
@@ -36,11 +37,11 @@ The application SHALL store every active saved PDF in the user-visible `DocScanl
 - **THEN** no storage permission or folder-picker prompt is shown
 
 ### Requirement: Private working storage
-The application SHALL keep its index, Trash manifests, thumbnails, recognised text, passwords and in-progress captures in app-private storage, while Trash payload bytes SHALL be isolated behind the public-storage abstraction and excluded from the active public tree.
+The application SHALL keep its index, Trash manifests, thumbnails, passwords and in-progress captures in app-private storage, while Trash payload bytes SHALL be isolated behind the public-storage abstraction and excluded from the active public tree.
 
 #### Scenario: Index is not exposed
 - **WHEN** the user browses `DocScanly` from the file browser
-- **THEN** the database, Trash manifests, thumbnails, recognised text and passwords are not present
+- **THEN** the database, Trash manifests, thumbnails and passwords are not present
 
 #### Scenario: Only PDFs and folders are exposed
 - **WHEN** the user browses active `DocScanly` content
@@ -78,7 +79,7 @@ The application SHALL treat captured and imported page images as temporary worki
 - **THEN** no PDF page is rasterized or added to a derived page-preview cache
 
 #### Scenario: Explicit page previews are bounded
-- **WHEN** page management, page-image sharing, OCR, or another explicit page consumer derives cached thumbnail previews
+- **WHEN** page management, page-image sharing, or another explicit page consumer derives cached thumbnail previews
 - **THEN** the private `document-pages` cache retains no more than 128 files or 64 MiB and removes least-recently-used reproducible entries before accepting work beyond either limit
 
 #### Scenario: Evicted preview is regenerated

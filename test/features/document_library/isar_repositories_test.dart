@@ -230,7 +230,6 @@ void main() {
         folderId: const FolderId('folder-9'),
         isFavourite: true,
         isProtected: true,
-        hasRecognisedText: true,
       );
 
       await documents.save(full);

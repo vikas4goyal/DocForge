@@ -75,13 +75,6 @@ class _PageAccess implements DocumentPageAccessRepository {
 
   final List<DocumentPageHandle> handles;
   int released = 0;
-
-  @override
-  Future<Result<String?>> embeddedText(
-    Document document,
-    DocumentPageHandle page,
-  ) async => const Result<String?>.success(null);
-
   @override
   Future<Result<MaterializedDocumentPage>> materialize(
     Document document,

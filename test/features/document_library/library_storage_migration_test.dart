@@ -7,7 +7,6 @@ import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/library_storage_migration.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
-import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 
@@ -33,7 +32,6 @@ void main() {
       FolderEntitySchema,
       PageEntitySchema,
       TrashEntitySchema,
-      OcrTextEntitySchema,
     ], directory: databaseDirectory.path);
 
     store = FilesystemPublicFileStore(publicContainer);
@@ -92,7 +90,6 @@ void main() {
       ..isFavourite = true
       ..isArchived = false
       ..isProtected = false
-      ..hasRecognisedText = false
       ..schemaVersion = 1;
 
     await isar.writeTxn(() => isar.documentEntitys.put(entity));

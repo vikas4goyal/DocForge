@@ -66,7 +66,7 @@ void main() {
     if (temporary.existsSync()) temporary.deleteSync(recursive: true);
   });
 
-  Document doc({bool hasRecognisedText = false}) => Document(
+  Document doc() => Document(
     id: id,
     title: 'Invoice',
     createdAt: DateTime.utc(2026, 3, 14),
@@ -74,7 +74,6 @@ void main() {
     pageCount: 2,
     sizeInBytes: 1024,
     libraryPath: LibraryPath.parse('a.pdf'),
-    hasRecognisedText: hasRecognisedText,
   );
 
   DocumentPage page(int order) => DocumentPage(
@@ -97,6 +96,7 @@ void main() {
     FakeExportDestinationPicker? picker,
     List<DocumentPage> pages = const [],
     IsolateJob<SharePageRequest, String>? job,
+    String? Function()? defaultLocation,
   }) {
     File('${temporary.path}/a.pdf').writeAsStringSync('%PDF');
 
@@ -118,6 +118,7 @@ void main() {
         reader,
         picker ?? FakeExportDestinationPicker(),
         testFiles,
+        defaultLocation: defaultLocation,
       ),
       initial: const ShareState.initial(title: 'Invoice', pageCount: 2),
     );
@@ -288,6 +289,19 @@ void main() {
         final written = File('${Directory.systemTemp.path}/never_written.pdf');
         if (written.existsSync()) written.deleteSync();
       },
+    );
+
+    late FakeExportDestinationPicker recording;
+    blocTest<ShareCubit, ShareState>(
+      'starts in the configured default location with no screen passing it',
+      setUp: () => recording = FakeExportDestinationPicker(),
+      build: () => build(
+        picker: recording,
+        defaultLocation: () => '/storage/emulated/0/Download',
+      ),
+      act: (cubit) => cubit.export(),
+      verify: (_) =>
+          expect(recording.startLocations, ['/storage/emulated/0/Download']),
     );
 
     blocTest<ShareCubit, ShareState>(

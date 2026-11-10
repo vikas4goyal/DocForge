@@ -15,7 +15,7 @@ abstract interface class AppTrace {
 
 /// Analytics, performance, and non-fatal error reporting.
 ///
-/// Callers must never send document names, paths, OCR text, image data, or
+/// Callers must never send document names, paths, document text, image data, or
 /// other user content. Parameters are limited to operational outcomes and
 /// coarse settings that cannot identify a document or a person.
 abstract interface class AppTelemetry {

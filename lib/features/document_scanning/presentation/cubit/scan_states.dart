@@ -38,6 +38,8 @@ class ScanCaptureState extends Equatable {
     this.failure,
     this.desiredResolution = const DesiredCameraResolution.fullResolution(),
     this.activeResolution,
+    this.capturedWidth,
+    this.capturedHeight,
   });
 
   /// Before the camera is opened.
@@ -64,8 +66,32 @@ class ScanCaptureState extends Equatable {
   /// Exact active-camera dimensions selected, or null for plugin maximum.
   final SupportedCameraResolution? activeResolution;
 
+  /// Pixel width of the most recent capture, decoded from the file itself.
+  ///
+  /// Null until a capture reports its size. Cleared when the camera re-opens,
+  /// because a size from before a re-open says nothing about the next shot.
+  final int? capturedWidth;
+
+  /// Pixel height of the most recent capture, decoded from the file itself.
+  final int? capturedHeight;
+
   /// Accessible text describing the current source capture resolution.
-  String get resolutionLabel => desiredResolution.when(
+  String get resolutionLabel {
+    final width = capturedWidth;
+    final height = capturedHeight;
+    if (width == null || height == null) return _requestedLabel;
+    // Once a shot exists, report what the camera actually delivered — never a
+    // tier the file does not meet, whatever was requested.
+    return desiredResolution.when(
+      fullResolution: () => 'Full resolution, captured $width by $height',
+      tier: (tier) => tier.isSatisfiedBy(width: width, height: height)
+          ? '${tier.label}, captured $width by $height'
+          : '${tier.label} requested, captured $width by $height',
+    );
+  }
+
+  /// The label before any capture: the request and what the camera opened at.
+  String get _requestedLabel => desiredResolution.when(
     fullResolution: () => activeResolution == null
         ? 'Full resolution, camera maximum'
         : 'Full resolution, ${activeResolution!.width} by '
@@ -117,6 +143,9 @@ class ScanCaptureState extends Equatable {
     DesiredCameraResolution? desiredResolution,
     SupportedCameraResolution? activeResolution,
     bool clearActiveResolution = false,
+    int? capturedWidth,
+    int? capturedHeight,
+    bool clearCapturedSize = false,
   }) => ScanCaptureState._(
     status: status ?? this.status,
     pageCount: pageCount ?? this.pageCount,
@@ -127,6 +156,12 @@ class ScanCaptureState extends Equatable {
     activeResolution: clearActiveResolution
         ? null
         : (activeResolution ?? this.activeResolution),
+    capturedWidth: clearCapturedSize
+        ? null
+        : (capturedWidth ?? this.capturedWidth),
+    capturedHeight: clearCapturedSize
+        ? null
+        : (capturedHeight ?? this.capturedHeight),
   );
 
   @override
@@ -138,6 +173,8 @@ class ScanCaptureState extends Equatable {
     failure,
     desiredResolution,
     activeResolution,
+    capturedWidth,
+    capturedHeight,
   ];
 }
 

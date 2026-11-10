@@ -8,14 +8,16 @@
 library;
 
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/features/document_sharing/domain/document_export_result.dart';
 import 'package:doc_scanly/features/document_sharing/domain/repositories/share_repository.dart';
 import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
+import 'package:doc_scanly/features/document_sharing/infrastructure/export_start_location.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -110,13 +112,29 @@ Future<String?> _saveProviderFile({
   bytes: bytes,
 );
 
+bool _directoryExists(String path) => Directory(path).existsSync();
+
 /// An [ExportDocumentRepository] backed by the system document provider.
 class SystemExportDocumentRepository implements ExportDocumentRepository {
   /// Creates the platform-owned exporter.
-  const SystemExportDocumentRepository({this.saveFile = _saveProviderFile});
+  ///
+  /// [platform] defaults to the running platform; [directoryExists] to a real
+  /// filesystem check. Both are injectable so the starting-location
+  /// normalisation is testable on the host.
+  const SystemExportDocumentRepository({
+    this.saveFile = _saveProviderFile,
+    this.platform,
+    this.directoryExists = _directoryExists,
+  });
 
   /// Provider handoff, replaceable only to make the platform boundary testable.
   final SaveProviderFile saveFile;
+
+  /// The platform whose picker receives the hint; null means the running one.
+  final TargetPlatform? platform;
+
+  /// Whether a directory exists, consulted for iOS starting locations.
+  final bool Function(String path) directoryExists;
 
   @override
   Future<Result<DocumentExportResult>> export({
@@ -133,12 +151,30 @@ class SystemExportDocumentRepository implements ExportDocumentRepository {
       // themselves. Treating the returned provider value as a writable local
       // path is what caused exports to fail and create invalid `.partial`
       // siblings beside content-provider items.
-      final chosen = await saveFile(
-        fileName: suggestedName,
-        initialDirectory: initialDirectory,
-        allowedExtensions: [suggestedName.split('.').last],
-        bytes: await source.readAsBytes(),
+      final bytes = await source.readAsBytes();
+      final hint = exportStartLocation(
+        initialDirectory,
+        platform: platform ?? defaultTargetPlatform,
+        directoryExists: directoryExists,
       );
+      Future<String?> handOff(String? start) => saveFile(
+        fileName: suggestedName,
+        initialDirectory: start,
+        allowedExtensions: [suggestedName.split('.').last],
+        bytes: bytes,
+      );
+
+      String? chosen;
+      try {
+        chosen = await handOff(hint);
+      } on PlatformException {
+        // A starting location is only a hint. If the platform rejects it — a
+        // revoked grant, a volume that was unmounted — the export itself must
+        // still happen, so retry once at the picker's own default. Without a
+        // hint there is nothing to drop, and the failure is real.
+        if (hint == null) rethrow;
+        chosen = await handOff(null);
+      }
 
       return chosen == null
           ? const Result<DocumentExportResult>.success(

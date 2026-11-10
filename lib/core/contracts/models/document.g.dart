@@ -27,10 +27,6 @@ _Document _$DocumentFromJson(
     isFavourite: $checkedConvert('isFavourite', (v) => v as bool? ?? false),
     isArchived: $checkedConvert('isArchived', (v) => v as bool? ?? false),
     isProtected: $checkedConvert('isProtected', (v) => v as bool? ?? false),
-    hasRecognisedText: $checkedConvert(
-      'hasRecognisedText',
-      (v) => v as bool? ?? false,
-    ),
     cloudResourceIdentifier: $checkedConvert(
       'cloudResourceIdentifier',
       (v) => v as String?,
@@ -69,7 +65,6 @@ Map<String, dynamic> _$DocumentToJson(_Document instance) => <String, dynamic>{
   'isFavourite': instance.isFavourite,
   'isArchived': instance.isArchived,
   'isProtected': instance.isProtected,
-  'hasRecognisedText': instance.hasRecognisedText,
   'cloudResourceIdentifier': instance.cloudResourceIdentifier,
   'cloudRelativePath': instance.cloudRelativePath,
   'contentAvailability':

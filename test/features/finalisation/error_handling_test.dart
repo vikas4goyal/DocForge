@@ -20,7 +20,6 @@ const _everyFailure = <Failure>[
   Failure.permission(kind: PermissionKind.camera),
   Failure.permission(kind: PermissionKind.photos, permanentlyDenied: true),
   Failure.permission(kind: PermissionKind.files),
-  Failure.ocr(),
   Failure.pdf(),
   Failure.storageFull(),
   Failure.import(),
@@ -204,7 +203,6 @@ void main() {
       final covered = switch (sample) {
         CameraFailure() => true,
         PermissionFailure() => true,
-        OcrFailure() => true,
         PdfFailure() => true,
         StorageFullFailure() => true,
         ImportFailure() => true,
@@ -223,7 +221,7 @@ void main() {
 
       // And every one of those types is represented in the list above.
       final types = _everyFailure.map((f) => f.runtimeType).toSet();
-      expect(types, hasLength(15));
+      expect(types, hasLength(14));
     });
   });
 }

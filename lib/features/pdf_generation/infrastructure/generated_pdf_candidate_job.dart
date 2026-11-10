@@ -4,7 +4,6 @@ library;
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
-import 'dart:math' as math;
 
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
@@ -106,39 +105,7 @@ void _addCandidatePage(pw.Document document, GeneratedPdfCandidatePage spec) {
   document.addPage(
     pw.Page(
       pageFormat: format,
-      build: (_) => pw.Stack(
-        children: <pw.Widget>[
-          pw.Positioned.fill(child: pw.Image(image, fit: pw.BoxFit.fill)),
-          ..._textLayer(
-            spec.page,
-            pageWidth: pageWidth,
-            pageHeight: pageHeight,
-          ),
-        ],
-      ),
+      build: (_) => pw.Image(image, fit: pw.BoxFit.fill),
     ),
   );
 }
-
-List<pw.Widget> _textLayer(
-  PdfPageSpec page, {
-  required double pageWidth,
-  required double pageHeight,
-}) => <pw.Widget>[
-  for (final block in page.textBlocks)
-    pw.Positioned(
-      left: block.bounds.left * pageWidth,
-      top: block.bounds.top * pageHeight,
-      child: pw.SizedBox(
-        width: math.max(block.bounds.width * pageWidth, 1),
-        height: math.max(block.bounds.height * pageHeight, 1),
-        child: pw.Text(
-          block.text,
-          style: pw.TextStyle(
-            fontSize: math.max(block.bounds.height * pageHeight * 0.8, 1),
-            renderingMode: PdfTextRenderingMode.invisible,
-          ),
-        ),
-      ),
-    ),
-];

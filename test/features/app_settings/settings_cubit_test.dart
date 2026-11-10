@@ -24,6 +24,30 @@ class _FailingStore extends InMemoryPreferenceStore {
       const Result<void>.failure(Failure.storage());
 }
 
+/// A preference store whose integer writes fail — PDF quality is an integer.
+class _FailingIntStore extends InMemoryPreferenceStore {
+  /// How many integer writes were attempted.
+  var intWrites = 0;
+
+  @override
+  Future<Result<void>> writeInt(String key, int value) async {
+    intWrites++;
+    return const Result<void>.failure(Failure.storage());
+  }
+}
+
+/// A preference store counting integer writes, so a test can prove a drag
+/// persists exactly once.
+class _CountingIntStore extends InMemoryPreferenceStore {
+  var intWrites = 0;
+
+  @override
+  Future<Result<void>> writeInt(String key, int value) {
+    intWrites++;
+    return super.writeInt(key, value);
+  }
+}
+
 /// A storage reader answering with a fixed summary, or a failure.
 class _Storage implements StorageSummaryReader {
   _Storage({this.totalBytes = 2_097_152, this.documentCount = 8, this.failure});
@@ -216,7 +240,7 @@ void main() {
     blocTest<SettingsCubit, SettingsState>(
       'publishes loading and supported capability states',
       build: () => build(
-        loadCameraResolutions: () async =>
+        loadCameraResolutions: ({refresh = false}) async =>
             Result<List<SupportedCameraResolution>>.success([hd]),
       ),
       act: (cubit) => cubit.loadCameraResolutionOptions(),
@@ -245,7 +269,7 @@ void main() {
       build: () {
         var calls = 0;
         return build(
-          loadCameraResolutions: () async => calls++ == 0
+          loadCameraResolutions: ({refresh = false}) async => calls++ == 0
               ? const Result<List<SupportedCameraResolution>>.failure(
                   Failure.camera(),
                 )
@@ -272,7 +296,7 @@ void main() {
           PreferenceKeys.cameraResolution: '4k',
           PreferenceKeys.pdfQualityPercent: 60,
         }),
-        loadCameraResolutions: () async =>
+        loadCameraResolutions: ({refresh = false}) async =>
             Result<List<SupportedCameraResolution>>.success([hd]),
       ),
       act: (cubit) async {
@@ -370,6 +394,72 @@ void main() {
         expect(cubit.state.status, SettingsStatus.ready);
         expect(cubit.state.failure, isNull);
       },
+    );
+  });
+
+  group('PDF quality slider', () {
+    late _CountingIntStore counting;
+
+    blocTest<SettingsCubit, SettingsState>(
+      'previewing emits a draft without persisting it',
+      setUp: () => counting = _CountingIntStore(),
+      build: () => build(store: counting),
+      act: (cubit) async {
+        await cubit.load();
+        cubit
+          ..previewPdfQuality(60)
+          ..previewPdfQuality(45);
+      },
+      skip: 3,
+      expect: () => [
+        isA<SettingsState>()
+            .having((s) => s.pdfQualityDraft, 'draft', 60)
+            .having((s) => s.displayedPdfQuality, 'displayed', 60)
+            .having((s) => s.settings.pdfQuality.value, 'persisted', 70),
+        isA<SettingsState>().having((s) => s.pdfQualityDraft, 'draft', 45),
+      ],
+      verify: (_) => expect(counting.intWrites, 0),
+    );
+
+    blocTest<SettingsCubit, SettingsState>(
+      'committing persists once and clears the draft',
+      setUp: () => counting = _CountingIntStore(),
+      build: () => build(store: counting),
+      act: (cubit) async {
+        await cubit.load();
+        cubit
+          ..previewPdfQuality(60)
+          ..previewPdfQuality(45);
+        await cubit.setPdfQuality(PdfQualityPercent(value: 45));
+      },
+      skip: 5,
+      expect: () => [
+        isA<SettingsState>()
+            .having((s) => s.status, 'status', SettingsStatus.ready)
+            .having((s) => s.pdfQualityDraft, 'draft', isNull)
+            .having((s) => s.settings.pdfQuality.value, 'persisted', 45),
+      ],
+      verify: (_) => expect(counting.intWrites, 1),
+    );
+
+    late _FailingIntStore failing;
+    blocTest<SettingsCubit, SettingsState>(
+      'a failed commit reverts to the persisted value and reports failure',
+      setUp: () => failing = _FailingIntStore(),
+      build: () => build(store: failing),
+      act: (cubit) async {
+        await cubit.load();
+        cubit.previewPdfQuality(30);
+        await cubit.setPdfQuality(PdfQualityPercent(value: 30));
+      },
+      skip: 4,
+      expect: () => [
+        isA<SettingsState>()
+            .having((s) => s.status, 'status', SettingsStatus.failure)
+            .having((s) => s.pdfQualityDraft, 'draft', isNull)
+            .having((s) => s.displayedPdfQuality, 'displayed', 70),
+      ],
+      verify: (_) => expect(failing.intWrites, 1),
     );
   });
 }

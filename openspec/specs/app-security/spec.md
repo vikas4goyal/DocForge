@@ -7,7 +7,7 @@ Define the application's privacy and security posture: private working data stay
 ## Requirements
 
 ### Requirement: Local-first and user-controlled document storage
-The application SHALL keep private working data on the device. On iOS, it SHALL store finished PDFs in the app-owned iCloud library whenever that library is available, and SHALL disclose this on the storage-location screen and when an automatic migration completes. Finished PDFs SHALL remain user-visible in the authoritative storage location. Page images, thumbnails, recognised text, the Isar database, and stored passwords SHALL remain app-private and device-local.
+The application SHALL keep private working data on the device. On iOS, it SHALL store finished PDFs in the app-owned iCloud library whenever that library is available, and SHALL disclose this on the storage-location screen and when an automatic migration completes. Finished PDFs SHALL remain user-visible in the authoritative storage location. Page images, thumbnails, the Isar database, and stored passwords SHALL remain app-private and device-local.
 
 #### Scenario: No automatic cloud opt-in
 - **WHEN** a user without an available iCloud container creates, edits, or opens documents
@@ -30,7 +30,7 @@ The application SHALL keep private working data on the device. On iOS, it SHALL 
 - **THEN** it is written to the authoritative DocScanly folder where the operating system's file browser and other applications can reach it
 
 #### Scenario: Everything else is app-private
-- **WHEN** a page image, thumbnail, recognised text, database file or stored password is persisted
+- **WHEN** a page image, thumbnail, database file or stored password is persisted
 - **THEN** it is written to app-private device storage, never to the iCloud Documents container or public folder
 
 #### Scenario: Passwords do not synchronize

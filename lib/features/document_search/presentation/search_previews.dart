@@ -44,17 +44,9 @@ List<Folder> _folders() => [
 ];
 
 /// Fixture results.
-List<SearchResult> _results({int count = 4, bool withSnippets = true}) => [
+List<SearchResult> _results({int count = 4}) => [
   for (var index = 0; index < count; index++)
-    SearchResult(
-      document: _document('preview-$index', 'Invoice $index'),
-      source: withSnippets && index.isOdd
-          ? MatchSource.recognisedText
-          : MatchSource.title,
-      snippet: withSnippets && index.isOdd
-          ? '…Acme Limited issued this invoice on the fourteenth of March…'
-          : '',
-    ),
+    SearchResult(document: _document('preview-$index', 'Invoice $index')),
 ];
 
 /// A [SearchBloc] frozen at a chosen state.
@@ -219,30 +211,11 @@ Widget searchTabletDark() => _screen(
   wrapper: previewSurface,
 )
 Widget resultRowDefault() => SearchResultRow(
-  result: SearchResult(
-    document: _document('preview-0', 'Invoice 2026'),
-    source: MatchSource.title,
-  ),
+  result: SearchResult(document: _document('preview-0', 'Invoice 2026')),
   onTap: () {},
 );
 
-/// A row whose recognised text matched, showing its snippet.
-@Preview(
-  name: 'SearchResultRow — text match',
-  group: 'Search',
-  theme: appPreviewTheme,
-  wrapper: previewSurface,
-)
-Widget resultRowTextMatch() => SearchResultRow(
-  result: SearchResult(
-    document: _document('preview-1', 'Scan 2026-03-14'),
-    source: MatchSource.recognisedText,
-    snippet: '…Acme Limited issued this invoice on the fourteenth of March…',
-  ),
-  onTap: () {},
-);
-
-/// A row with a title and snippet long enough to truncate.
+/// A row with a title long enough to truncate.
 @Preview(
   name: 'SearchResultRow — long content',
   group: 'Search',
@@ -255,10 +228,6 @@ Widget resultRowLongContent() => SearchResultRow(
       'preview-2',
       'Quarterly consulting invoice for services rendered to Acme Limited',
     ),
-    source: MatchSource.recognisedText,
-    snippet:
-        '…the quick brown fox jumps over the lazy dog, twice, and then once '
-        'more for good measure before the sentence finally ends…',
   ),
   onTap: () {},
 );
@@ -271,8 +240,5 @@ Widget resultRowLongContent() => SearchResultRow(
   wrapper: previewSurface,
 )
 Widget resultRowDisabled() => SearchResultRow(
-  result: SearchResult(
-    document: _document('preview-3', 'Receipt'),
-    source: MatchSource.title,
-  ),
+  result: SearchResult(document: _document('preview-3', 'Receipt')),
 );

@@ -8,7 +8,6 @@ import 'package:doc_scanly/core/contracts/contracts.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
@@ -94,7 +93,7 @@ class _PreviewPdfCubit extends PdfGenerationCubit
     : super(
         state.pages,
         SaveDocument(
-          const BuildSearchablePdf(_InertComposer(), _noText),
+          const BuildPdf(_InertComposer()),
           const _InertWriter(),
           // Fixed, so every preview is byte-stable.
           FixedClock(DateTime.utc(2026, 3, 14, 9, 30)),
@@ -113,9 +112,6 @@ class _PreviewPdfCubit extends PdfGenerationCubit
     seed(state);
   }
 }
-
-/// A text lookup that finds nothing.
-Future<Map<String, RecognisedText>> _noText(List<PageId> ids) async => const {};
 
 /// Names a destination without creating one.
 String _previewDestination(DocumentId id) => '/preview/${id.value}.pdf';

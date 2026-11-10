@@ -120,6 +120,46 @@ void main() {
     expect(app.platform.exportPicker.suggestions, hasLength(1));
   });
 
+  testWidgets('export starts in the default save location from Settings', (
+    tester,
+  ) async {
+    final staging = await Directory.systemTemp.createTemp(
+      'docscanly_share_location_',
+    );
+    final destination = File('${staging.path}/exported.pdf');
+    addTearDown(() {
+      if (staging.existsSync()) staging.deleteSync(recursive: true);
+    });
+    final importable = await Fixtures(staging).importable();
+    final app = await bootDocScanly(
+      tester,
+      pickedFiles: [importable],
+      exportDestination: destination.path,
+      saveLocationDirectory: '/storage/emulated/0/Download',
+    );
+    await seedDocumentByImport(tester);
+    await DashboardRobot(tester).waitUntilLoaded();
+
+    // Chosen in Settings, then used from the viewer without a restart.
+    final shell = TabShellRobot(tester);
+    await shell.openSettings();
+    final settings = SettingsRobot(tester);
+    await settings.chooseDefaultSaveFolder();
+    await shell.openDashboard();
+    final dashboard = DashboardRobot(tester);
+    await dashboard.waitUntilLoaded();
+    await dashboard.openDocument(dashboard.visibleDocumentIds.single);
+    final viewer = ViewerRobot(tester);
+    await viewer.waitUntilOpen();
+    await viewer.openShare();
+    await ShareRobot(tester).export();
+
+    expect(destination.existsSync(), isTrue);
+    expect(app.platform.exportPicker.startLocations, [
+      '/storage/emulated/0/Download',
+    ], reason: 'The picker must be asked to start in the configured folder.');
+  });
+
   testWidgets('cancelled export writes nothing and shows no error', (
     tester,
   ) async {

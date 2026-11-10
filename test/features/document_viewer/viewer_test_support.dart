@@ -6,7 +6,6 @@ import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/previews/fakes/fake_document_file_resolver.dart';
@@ -138,29 +137,6 @@ class StubViewerDocuments implements DocumentReader {
   @override
   Future<Result<List<DocumentPage>>> pagesOf(DocumentId id) async =>
       const Result<List<DocumentPage>>.success([]);
-}
-
-/// An OCR text source returning fixed text.
-class StubOcrTextSource implements OcrTextSource {
-  /// Creates a source returning [text], or failing with [failure].
-  StubOcrTextSource({this.text = '', this.failure});
-
-  /// The text every document has.
-  final String text;
-
-  /// When set, every lookup fails with this.
-  final Failure? failure;
-
-  @override
-  Future<Result<RecognisedText?>> textForPage(PageId pageId) async =>
-      const Result<RecognisedText?>.success(null);
-
-  @override
-  Future<Result<String>> textForDocument(DocumentId documentId) async {
-    final configured = failure;
-    if (configured != null) return Result<String>.failure(configured);
-    return Result<String>.success(text);
-  }
 }
 
 /// Builds viewer Cubits over in-memory collaborators.

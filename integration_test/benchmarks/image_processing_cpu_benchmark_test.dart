@@ -29,57 +29,55 @@ const _samples = int.fromEnvironment('BENCHMARK_SAMPLES', defaultValue: 30);
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets(
-    'records preview and full-resolution CPU baselines',
-    (tester) async {
-      await tester.runAsync(() async {
-        final root = Directory.systemTemp.createTempSync('image_cpu_benchmark');
-        try {
-          final bytes = await rootBundle.load(_fixtureAsset);
-          final source = File('${root.path}/source.jpg');
-          await source.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
+  testWidgets('records preview and full-resolution CPU baselines', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final root = Directory.systemTemp.createTempSync('image_cpu_benchmark');
+      try {
+        final bytes = await rootBundle.load(_fixtureAsset);
+        final source = File('${root.path}/source.jpg');
+        await source.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
 
-          final preview = await _measure(
-            root: root,
-            sourcePath: source.path,
-            kind: 'preview',
-            isPreview: true,
-          );
-          final full = await _measure(
-            root: root,
-            sourcePath: source.path,
-            kind: 'full',
-            isPreview: false,
-          );
+        final preview = await _measure(
+          root: root,
+          sourcePath: source.path,
+          kind: 'preview',
+          isPreview: true,
+        );
+        final full = await _measure(
+          root: root,
+          sourcePath: source.path,
+          kind: 'full',
+          isPreview: false,
+        );
 
-          final report = <String, Object?>{
-            'schemaVersion': 1,
-            'backend': 'dart_cpu_isolate_reference',
-            'fixture': _fixtureAsset,
-            'fixtureWidth': 4000,
-            'fixtureHeight': 3000,
-            'buildMode': kReleaseMode
-                ? 'release'
-                : kProfileMode
-                ? 'profile'
-                : 'debug',
-            'operatingSystem': Platform.operatingSystem,
-            'operatingSystemVersion': Platform.operatingSystemVersion,
-            'warmups': _warmups,
-            'samples': _samples,
-            'preview': preview,
-            'full': full,
-          };
+        final report = <String, Object?>{
+          'schemaVersion': 1,
+          'backend': 'dart_cpu_isolate_reference',
+          'fixture': _fixtureAsset,
+          'fixtureWidth': 4000,
+          'fixtureHeight': 3000,
+          'buildMode': kReleaseMode
+              ? 'release'
+              : kProfileMode
+              ? 'profile'
+              : 'debug',
+          'operatingSystem': Platform.operatingSystem,
+          'operatingSystemVersion': Platform.operatingSystemVersion,
+          'warmups': _warmups,
+          'samples': _samples,
+          'preview': preview,
+          'full': full,
+        };
 
-          // A stable prefix lets automation extract the JSON from Flutter logs.
-          debugPrint('IMAGE_PROCESSING_BENCHMARK ${jsonEncode(report)}');
-        } finally {
-          if (root.existsSync()) root.deleteSync(recursive: true);
-        }
-      });
-    },
-    timeout: const Timeout(Duration(minutes: 90)),
-  );
+        // A stable prefix lets automation extract the JSON from Flutter logs.
+        debugPrint('IMAGE_PROCESSING_BENCHMARK ${jsonEncode(report)}');
+      } finally {
+        if (root.existsSync()) root.deleteSync(recursive: true);
+      }
+    });
+  }, timeout: const Timeout(Duration(minutes: 90)));
 }
 
 Future<Map<String, Object?>> _measure({

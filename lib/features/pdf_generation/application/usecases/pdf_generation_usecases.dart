@@ -6,7 +6,6 @@ import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
@@ -34,15 +33,6 @@ Future<String> _unmodifiedPage(
   PageRef page, {
   required int maxDimension,
 }) async => page.imagePath;
-
-/// Reads recognised text for pages about to be composed.
-///
-/// A function rather than the whole `OcrTextSource` contract, because
-/// composition needs exactly one thing from OCR and taking the narrower
-/// dependency keeps a test from having to stand up a text source it does not
-/// care about.
-typedef PageTextLookup =
-    Future<Map<String, RecognisedText>> Function(List<PageId> pageIds);
 
 /// Decides where a document's PDF is written.
 ///
@@ -98,17 +88,12 @@ class GenerateDocumentName {
   }
 }
 
-/// Builds a searchable PDF from a bundle of pages.
-class BuildSearchablePdf {
+/// Builds a PDF from a bundle of pages.
+class BuildPdf {
   /// Creates the use case.
-  const BuildSearchablePdf(
-    this._composer,
-    this._textFor, {
-    this.resolveImage = _unmodifiedPage,
-  });
+  const BuildPdf(this._composer, {this.resolveImage = _unmodifiedPage});
 
   final PdfComposer _composer;
-  final PageTextLookup _textFor;
 
   /// Produces the image each page is drawn from.
   ///
@@ -118,30 +103,15 @@ class BuildSearchablePdf {
 
   /// Composes [pages] into a PDF at [destinationPath].
   ///
-  /// Attaches an invisible text layer wherever recognition has produced one.
-  /// A page with no recognised text simply gets no layer: the spec states
-  /// outright that a PDF must still be produced when OCR is unavailable, so a
-  /// text lookup that fails degrades to an unsearchable document rather than
-  /// to no document at all.
+  /// Each page is drawn from its enhanced image at the requested [quality].
+  /// Fails with a cancellation when [token] is cancelled before composition
+  /// starts, or with the composer's failure.
   Future<Result<ComposedPdf>> call(
     List<PageRef> pages, {
     required String destinationPath,
     PdfQuality quality = PdfQuality.defaultQuality,
     CancellationToken? token,
   }) async {
-    if (token?.isCancelled ?? false) {
-      return const Result<ComposedPdf>.failure(Failure.cancelled());
-    }
-
-    Map<String, RecognisedText> texts;
-    try {
-      texts = await _textFor([for (final page in pages) page.id]);
-    } on Object {
-      texts = const {};
-    }
-
-    // Checked again after the lookup: it is the last point before composition
-    // begins, and composition is the expensive part.
     if (token?.isCancelled ?? false) {
       return const Result<ComposedPdf>.failure(Failure.cancelled());
     }
@@ -166,7 +136,7 @@ class BuildSearchablePdf {
 
     return _composer.compose(
       PdfBuildRequest(
-        pages: PdfComposition.specsFor(drawable, texts),
+        pages: PdfComposition.specsFor(drawable),
         destinationPath: destinationPath,
         quality: quality,
       ),
@@ -254,7 +224,7 @@ class SaveDocument {
     this._protect,
   );
 
-  final BuildSearchablePdf _build;
+  final BuildPdf _build;
   final DocumentWriter _writer;
   final Clock _clock;
   final IdGenerator _ids;

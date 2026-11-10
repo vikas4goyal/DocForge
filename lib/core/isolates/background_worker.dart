@@ -1,6 +1,6 @@
 /// Runs heavy work off the UI thread.
 ///
-/// Every image enhancement, perspective correction, OCR pass and PDF operation
+/// Every image enhancement, perspective correction and PDF operation
 /// goes through here. Two shapes are supported:
 ///
 /// * [BackgroundWorker.run] — a single one-shot job.

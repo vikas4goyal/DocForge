@@ -13,7 +13,7 @@ import 'package:meta/meta.dart';
 /// A file as the library folder currently holds it.
 ///
 /// Deliberately not a [Document]: a file found in the folder has no title,
-/// favourite status or recognised text until the index gives it one.
+/// favourite status until the index gives it one.
 @immutable
 class LibraryFile {
   /// Creates a description of a file in the library folder.
@@ -170,7 +170,7 @@ abstract final class LibraryReconciliation {
   ///
   /// Reversing 2 and 3 would make every rename look like a delete followed by
   /// an unrelated arrival, which throws away the favourite status, the archive
-  /// state and the recognised text the user built up.
+  /// state the user built up.
   static LibraryDiff diff({
     required List<Document> indexed,
     required List<LibraryFile> found,

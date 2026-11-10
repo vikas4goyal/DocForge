@@ -16,7 +16,7 @@ void main() {
   group('the image a page is composed from', () {
     test('is the capture when nothing resolves it', () async {
       final composer = FakePdfComposer();
-      final build = BuildSearchablePdf(composer, _noText);
+      final build = BuildPdf(composer);
 
       await build([page('a')], destinationPath: '/out.pdf');
 
@@ -29,9 +29,8 @@ void main() {
       final composer = FakePdfComposer();
       final asked = <(String, int)>[];
 
-      final build = BuildSearchablePdf(
+      final build = BuildPdf(
         composer,
-        _noText,
         resolveImage: (page, {required maxDimension}) async {
           asked.add((page.imagePath, maxDimension));
           return '${page.imagePath}.enhanced.jpg';
@@ -59,9 +58,8 @@ void main() {
         final composer = FakePdfComposer();
         var requested = 0;
 
-        final build = BuildSearchablePdf(
+        final build = BuildPdf(
           composer,
-          _noText,
           resolveImage: (page, {required maxDimension}) async {
             requested = maxDimension;
             return page.imagePath;
@@ -81,5 +79,3 @@ void main() {
     );
   });
 }
-
-Future<Map<String, Never>> _noText(List<PageId> ids) async => const {};

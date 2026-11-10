@@ -10,7 +10,6 @@ Document indexed(
   int sizeBytes = 1024,
   bool isFavourite = false,
   bool isArchived = false,
-  bool hasRecognisedText = false,
 }) => Document(
   id: DocumentId(id),
   title: LibraryPath.parse(relative).baseName,
@@ -21,7 +20,6 @@ Document indexed(
   libraryPath: LibraryPath.parse(relative),
   isFavourite: isFavourite,
   isArchived: isArchived,
-  hasRecognisedText: hasRecognisedText,
 );
 
 LibraryFile found(
@@ -165,7 +163,6 @@ void main() {
           'Invoice.pdf',
           isFavourite: true,
           isArchived: true,
-          hasRecognisedText: true,
         ),
         file: found('Renamed.pdf'),
       );
@@ -176,7 +173,6 @@ void main() {
       // records that the user starred it.
       expect(updated.isFavourite, isTrue);
       expect(updated.isArchived, isTrue);
-      expect(updated.hasRecognisedText, isTrue);
       expect(updated.id, const DocumentId('a'));
     });
 

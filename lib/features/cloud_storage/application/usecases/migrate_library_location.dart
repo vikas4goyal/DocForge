@@ -212,9 +212,13 @@ class MigrateLibraryLocation {
     final verified = resuming
         ? resume.verifiedRelativePaths.toSet()
         : <String>{};
-    // Destination paths this migration created, across every attempt. Only
-    // these may ever be deleted by a cancellation; see [_recordIntent].
-    final owned = resuming ? resume.writtenRelativePaths.toSet() : <String>{};
+    // Destination files this migration created across every attempt, keyed
+    // by path, with the digest of what was written. Only these may ever be
+    // deleted by a cancellation, and only while they still hold those bytes.
+    final owned = <String, int?>{
+      if (resuming)
+        for (final file in resume.writtenFiles) file.relativePath: file.digest,
+    };
 
     StorageMigrationCheckpoint checkpointAt(StorageMigrationPhase phase) =>
         StorageMigrationCheckpoint(
@@ -222,7 +226,10 @@ class MigrateLibraryLocation {
           destination: destination,
           phase: phase,
           verifiedRelativePaths: verified.toList()..sort(),
-          writtenRelativePaths: owned.toList()..sort(),
+          writtenFiles: [
+            for (final path in owned.keys.toList()..sort())
+              MigrationWrittenFile(relativePath: path, digest: owned[path]),
+          ],
         );
 
     var phase = StorageMigrationPhase.copying;
@@ -271,10 +278,11 @@ class MigrateLibraryLocation {
         destinationStore,
         path,
         keepBothOnConflict: destination == StorageLocation.iCloud,
-        recordIntent: (candidate) async {
+        recordIntent: (candidate, digest) async {
           // Persisted before the bytes are written: if the process dies
-          // mid-write, the next attempt still knows this file is its own.
-          owned.add(candidate.relative);
+          // mid-write, the next attempt still knows this file is its own, and
+          // exactly which bytes make it so.
+          owned[candidate.relative] = digest;
           return locations.writeCheckpoint(checkpointAt(phase));
         },
       );
@@ -401,9 +409,10 @@ class MigrateLibraryLocation {
   /// names in a fixed order and accepting an identical earlier copy keeps an
   /// interrupted merge resumable without a third copy.
   ///
-  /// [recordIntent] is awaited with a path immediately before this call
-  /// creates it — and only for a path that was absent — so the caller can
-  /// durably record ownership ahead of the write. An identical file found at a
+  /// [recordIntent] is awaited with a path, and the digest of the bytes about
+  /// to be written there, immediately before this call creates it — and only
+  /// for a path that was absent — so the caller can durably record ownership
+  /// ahead of the write. An identical file found at a
   /// candidate is *not* recorded: it may be another device's copy, and if an
   /// earlier attempt of this migration wrote it, that attempt already recorded
   /// it before writing.
@@ -412,7 +421,8 @@ class MigrateLibraryLocation {
     PublicFileStore destination,
     LibraryPath path, {
     required bool keepBothOnConflict,
-    required Future<Result<void>> Function(LibraryPath candidate) recordIntent,
+    required Future<Result<void>> Function(LibraryPath candidate, int digest)
+    recordIntent,
   }) async {
     final sourcePath = await source.materialise(path);
     if (sourcePath case Failed(:final failure)) {
@@ -444,7 +454,10 @@ class MigrateLibraryLocation {
               Failure.storage(debugDetail: 'cloud:conflict'),
             );
           case Success(value: null):
-            final recorded = await recordIntent(candidate);
+            final recorded = await recordIntent(
+              candidate,
+              await contentDigest(sourceFile),
+            );
             if (recorded case Failed(:final failure)) {
               // Never write a file whose ownership could not be recorded: a
               // later cancel would have no way to know it may remove it.
@@ -474,8 +487,8 @@ class MigrateLibraryLocation {
       return Result<bool?>.failure(failure);
     }
     try {
-      final sourceDigest = await _streamedDigest(sourceFile);
-      final destinationDigest = await _streamedDigest(
+      final sourceDigest = await contentDigest(sourceFile);
+      final destinationDigest = await contentDigest(
         File(destinationPath.valueOrNull!),
       );
       return Result<bool?>.success(sourceDigest == destinationDigest);
@@ -555,7 +568,11 @@ class MigrateLibraryLocation {
   /// Removes what a cancelled migration put into [destination].
   ///
   /// Only [owned] files are deleted — paths this migration recorded before
-  /// creating them, in this attempt or an interrupted earlier one. A verified
+  /// creating them, in this attempt or an interrupted earlier one — and only
+  /// while their contents still match the recorded digest. Another device can
+  /// edit a file between an interrupted attempt and a cancelled retry; that
+  /// edited version is not this migration's to delete. An entry without a
+  /// digest (an older checkpoint) cannot be proven unchanged, so it is kept. A verified
   /// path is never deleted on that basis alone: verification also succeeds
   /// against an identical file another device already had there, and a
   /// differing original kept beside a conflict copy is never this migration's
@@ -568,11 +585,15 @@ class MigrateLibraryLocation {
   Future<void> _rollback(
     PublicFileStore destination,
     List<PublicEntry> entries, {
-    required Set<String> owned,
+    required Map<String, int?> owned,
     required bool removeFolders,
   }) async {
-    for (final relative in owned) {
-      await destination.delete(LibraryPath.parse(relative));
+    for (final MapEntry(key: relative, value: digest) in owned.entries) {
+      if (digest == null) continue;
+      final path = LibraryPath.parse(relative);
+      if (await _stillHolds(destination, path, digest)) {
+        await destination.delete(path);
+      }
     }
     if (!removeFolders) return;
     final directories = entries.where((entry) => entry.isFolder).toList()
@@ -606,16 +627,42 @@ class MigrateLibraryLocation {
     };
   }
 
-  /// FNV-1a over streamed bytes: deterministic corruption detection without
-  /// buffering large PDFs or adding a new cryptography dependency.
-  Future<int> _streamedDigest(File file) async {
-    var hash = 0xcbf29ce484222325;
-    await for (final chunk in file.openRead()) {
-      for (final byte in chunk) {
-        hash ^= byte;
-        hash = (hash * 0x100000001b3) & 0xffffffffffffffff;
-      }
+  /// Whether [path] exists in [destination] and holds bytes with [digest].
+  ///
+  /// Any failure to read it counts as "no": a rollback that cannot prove a
+  /// file is its own leaves it in place.
+  Future<bool> _stillHolds(
+    PublicFileStore destination,
+    LibraryPath path,
+    int digest,
+  ) async {
+    final exists = await destination.exists(path);
+    if (exists.valueOrNull != true) return false;
+    final materialised = await destination.materialise(path);
+    final local = materialised.valueOrNull;
+    if (local == null) return false;
+    try {
+      return await contentDigest(File(local)) == digest;
+    } on Object {
+      return false;
+    } finally {
+      await destination.releaseMaterialised(path);
     }
-    return hash;
   }
+}
+
+/// FNV-1a over [file]'s streamed bytes.
+///
+/// Deterministic corruption detection, and the identity of the bytes a
+/// migration wrote, without buffering large PDFs or adding a cryptography
+/// dependency.
+Future<int> contentDigest(File file) async {
+  var hash = 0xcbf29ce484222325;
+  await for (final chunk in file.openRead()) {
+    for (final byte in chunk) {
+      hash ^= byte;
+      hash = (hash * 0x100000001b3) & 0xffffffffffffffff;
+    }
+  }
+  return hash;
 }

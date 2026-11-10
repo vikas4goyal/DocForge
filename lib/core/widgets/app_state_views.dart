@@ -42,7 +42,7 @@ class AppLoadingIndicator extends StatelessWidget {
 /// A determinate progress indicator for a long-running operation.
 ///
 /// Shows completed-out-of-total rather than only a bar, because that is what
-/// the OCR, enhancement, PDF and import specs require the user to see, and it
+/// the enhancement, PDF and import specs require the user to see, and it
 /// is what a screen reader can announce meaningfully.
 class AppProgressIndicator extends StatelessWidget {
   /// Creates a progress indicator for [completed] of [total] units.

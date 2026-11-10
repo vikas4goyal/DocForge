@@ -45,7 +45,7 @@ abstract final class OnboardingKeys {
   /// Statement that no document is uploaded automatically.
   static const privacyNoUploadStatement = Key('onboarding_privacy_no_upload');
 
-  /// Statement that scanning and OCR work offline.
+  /// Statement that scanning and creating PDFs work offline.
   static const privacyOfflineStatement = Key('onboarding_privacy_offline');
 }
 

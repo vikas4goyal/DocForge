@@ -50,8 +50,8 @@ class StorageLocationScreen extends StatelessWidget {
               children: [
                 Text(
                   'DocScanly keeps your PDFs in iCloud Drive whenever iCloud '
-                  'is available. Thumbnails, recognised text, settings, and '
-                  'passwords stay only on this device.',
+                  'is available. Thumbnails, settings, and passwords stay '
+                  'only on this device.',
                   style: Theme.of(context).textTheme.bodyLarge,
                 ),
                 const SizedBox(height: 16),

@@ -40,7 +40,7 @@ class IndexedSearchRepository implements SearchRepository {
     final matches = [
       for (final document in titles.valueOrNull ?? const <Document>[])
         if (SearchRules.matchesFilters(document, query))
-          SearchResult(document: document, source: MatchSource.title),
+          SearchResult(document: document),
     ];
     return Result<List<SearchResult>>.success(
       matches.length > limit ? matches.sublist(0, limit) : matches,

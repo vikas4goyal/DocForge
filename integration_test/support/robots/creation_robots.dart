@@ -46,6 +46,17 @@ class CaptureRobot extends Robot {
         }
       });
 
+  /// The capture-resolution status the camera screen shows, as read by the
+  /// user: what was requested and, after a shot, what the camera delivered.
+  String get resolutionStatus => tester
+      .widget<Text>(
+        find.descendant(
+          of: find.byKey(ScanKeys.cameraResolutionStatus),
+          matching: find.byType(Text),
+        ),
+      )
+      .data!;
+
   /// Leaves capture for the review list.
   Future<void> finish() => step('finishing capture', () async {
     await tap(ScanKeys.doneButton);
@@ -375,6 +386,18 @@ class SavePdfRobot extends Robot {
     await type(PdfKeys.saveNameField, value);
     await dismissKeyboard(tester);
   });
+
+  /// The name currently in the keyed name field — the prefilled suggestion
+  /// until the user types.
+  String get currentName => tester
+      .widget<EditableText>(
+        find.descendant(
+          of: find.byKey(PdfKeys.saveNameField),
+          matching: find.byType(EditableText),
+        ),
+      )
+      .controller
+      .text;
 
   /// Current document-quality percentage from the keyed slider.
   int get documentQuality => tester

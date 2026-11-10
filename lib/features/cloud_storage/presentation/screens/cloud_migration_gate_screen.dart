@@ -197,8 +197,8 @@ class _Completed extends StatelessWidget {
                   const SizedBox(height: 8),
                   const Text(
                     'Find them in the Files app under iCloud Drive → '
-                    'DocScanly. Thumbnails, recognised text, settings and '
-                    'passwords stay only on this device.',
+                    'DocScanly. Thumbnails, settings and passwords stay only '
+                    'on this device.',
                   ),
                 ],
               ),

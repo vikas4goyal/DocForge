@@ -1,17 +1,22 @@
 import 'dart:io';
 
+import 'package:doc_scanly/app/settings_module.dart';
 import 'package:doc_scanly/core/contracts/contracts.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/pdf_quality.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/isolates/cancellation.dart';
 import 'package:doc_scanly/core/jobs/pdf_jobs.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/in_memory_public_file_store.dart';
+import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/core/time/clock.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/infrastructure/repositories/preference_settings_repository.dart';
+import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
+import 'package:doc_scanly/features/pdf_generation/application/usecases/pdf_generation_usecases.dart';
 import 'package:doc_scanly/features/pdf_generation/application/usecases/save_pdf_workflow.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/repositories/pdf_repository.dart';
@@ -20,6 +25,8 @@ import 'package:doc_scanly/features/pdf_generation/presentation/pdf_keys.dart';
 import 'package:doc_scanly/features/pdf_generation/presentation/screens/save_pdf_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'pdf_test_support.dart';
 
 void main() {
   late Directory directory;
@@ -61,6 +68,84 @@ void main() {
     expect(find.text('Calculated size: 2.0 KB'), findsOneWidget);
     expect(find.byKey(PdfKeys.savePageQuality('page-0')), findsOneWidget);
   });
+
+  testWidgets('opens at the persisted Settings default and a per-document '
+      'override leaves that default alone', (tester) async {
+    // The real settings repository, as the composition root uses it: the
+    // value Settings persisted is the value the Save screen starts at.
+    final preferences = InMemoryPreferenceStore();
+    final settings = PreferenceSettingsRepository(preferences);
+    await settings.load();
+    await settings.savePdfQuality(PdfQualityPercent(value: 45));
+    await harness.cubit.close();
+    harness = _Harness(directory, initialQuality: settings.current.pdfQuality);
+
+    await pump(tester);
+    await harness.cubit.load();
+    await tester.pumpAndSettle();
+
+    expect(find.text('PDF quality · 45%'), findsOneWidget);
+    expect(
+      tester.widget<Slider>(find.byKey(PdfKeys.saveQualitySlider)).value,
+      45,
+    );
+
+    harness.cubit.documentQualityChanged(40);
+    await tester.pump();
+    expect(harness.cubit.state.qualityPlan.documentQuality.value, 40);
+    expect(settings.current.pdfQuality.value, 45);
+    expect(
+      (await preferences.readInt(PreferenceKeys.pdfQualityPercent)).valueOrNull,
+      45,
+    );
+  });
+
+  testWidgets(
+    'a naming pattern changed in Settings prefills the next Save screen',
+    (tester) async {
+      // The real settings stack: Cubit → use case → repository → store.
+      final settings = buildSettingsModule(
+        preferences: InMemoryPreferenceStore(),
+        storageReader: const _NoStorage(),
+        clock: FixedClock(DateTime.utc(2026, 8, 8)),
+      );
+      await settings.load();
+      final settingsCubit = SettingsCubit(
+        settings.load,
+        settings.update,
+        settings.previewName,
+        settings.storage,
+        onThemeChanged: (_) {},
+      );
+      addTearDown(settingsCubit.close);
+      await settingsCubit.load();
+      expect(
+        settings.repository.current.namingPattern,
+        NamingPattern.dateAndTime,
+      );
+
+      await settingsCubit.setNamingPattern(NamingPattern.sequential);
+
+      // What the composition root's `suggestName` does, read without a
+      // restart and without the Settings screen being involved.
+      final suggested = await GenerateDocumentName(
+        FixedClock(DateTime.utc(2026, 8, 8)),
+        StubDocumentReader(count: 4),
+      )(settings.repository.current.namingPattern);
+      await harness.cubit.close();
+      harness = _Harness(directory, initialName: suggested);
+
+      await pump(tester);
+
+      expect(
+        find.descendant(
+          of: find.byKey(PdfKeys.saveNameField),
+          matching: find.text('Scan 5'),
+        ),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('name, document quality, page override, and reset update state', (
     tester,
@@ -223,14 +308,17 @@ void main() {
 }
 
 class _Harness {
-  _Harness(this.directory)
-    : repository = _Repository(directory),
-      writer = _Writer() {
+  _Harness(
+    this.directory, {
+    PdfQualityPercent? initialQuality,
+    String initialName = 'Invoice',
+  }) : repository = _Repository(directory),
+       writer = _Writer() {
     final cache = SavePdfCandidateCache();
     cubit = SavePdfCubit(
       pages: _pages,
-      initialName: 'Invoice',
-      initialQuality: PdfQualityPercent(value: 70),
+      initialName: initialName,
+      initialQuality: initialQuality ?? PdfQualityPercent(value: 70),
       calculate: CalculateSavePdfSize(
         repository,
         cache,
@@ -388,4 +476,15 @@ class _Writer implements DocumentWriter {
   @override
   Future<Result<Document>> updateMetadata(Document document) async =>
       Result<Document>.success(document);
+}
+
+/// A storage reader the naming test never needs to answer meaningfully.
+class _NoStorage implements StorageSummaryReader {
+  const _NoStorage();
+
+  @override
+  Future<Result<StorageSummary>> summary() async =>
+      const Result<StorageSummary>.success(
+        StorageSummary(documentCount: 0, totalBytes: 0),
+      );
 }

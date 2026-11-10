@@ -117,7 +117,7 @@ Every successfully imported PDF SHALL expose its complete page sequence through 
 - **THEN** page consumers can enumerate exactly that many ordered page handles whose identities remain stable across application launches
 
 #### Scenario: Imported page renders on demand
-- **WHEN** Viewer, Editor, OCR, Sharing, or another explicit page consumer requests an imported PDF page
+- **WHEN** Viewer, Editor, Sharing, or another explicit page consumer requests an imported PDF page
 - **THEN** that page is rendered from the copied library PDF at the bounded resolution required by the consumer
 
 #### Scenario: No eager raster duplication

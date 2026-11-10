@@ -394,4 +394,27 @@ void main() {
       );
     });
   });
+
+  group('SettingsCopy.folderName', () {
+    for (final (location, expected) in [
+      ('/storage/emulated/0/Download', 'Download'),
+      ('/storage/emulated/0/Documents/Scans/', 'Scans'),
+      ('/var/mobile/Containers/Data/Exports', 'Exports'),
+      (
+        'content://com.android.externalstorage.documents/tree/'
+            'primary%3ADocuments%2FScans',
+        'Scans',
+      ),
+      (
+        'content://com.android.externalstorage.documents/tree/primary%3ADownload',
+        'Download',
+      ),
+      ('file:///var/mobile/Docs/', 'Docs'),
+      ('/', '/'),
+    ]) {
+      test('$location → $expected', () {
+        expect(SettingsCopy.folderName(location), expected);
+      });
+    }
+  });
 }

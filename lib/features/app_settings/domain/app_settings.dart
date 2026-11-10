@@ -186,6 +186,30 @@ abstract final class SettingsCopy {
   /// How the save location is described when none has been chosen.
   static const systemSaveLocation = 'Ask each time';
 
+  /// Says what a chosen default save location does — and no more: the
+  /// platform treats it as where the export picker *starts*, not a place
+  /// files are silently written.
+  static const exportsStartHere = 'Exports start in this folder';
+
+  /// Returns the readable name of the folder at [location].
+  ///
+  /// The last segment of a filesystem path (`/storage/emulated/0/Download` →
+  /// `Download`), or of a document URI's id (`…primary%3ADocuments%2FScans` →
+  /// `Scans`). Falls back to [location] itself when it has no usable segment,
+  /// so the label is never empty.
+  static String folderName(String location) {
+    var value = location.trim();
+    if (value.contains('://')) {
+      final segments = Uri.parse(value).pathSegments.where((s) => s.isNotEmpty);
+      if (segments.isEmpty) return location;
+      // A document id is `<volume>:<relative path>`; keep only the path.
+      value = segments.last;
+      value = value.substring(value.lastIndexOf(':') + 1);
+    }
+    final segments = value.split('/').where((part) => part.isNotEmpty);
+    return segments.isEmpty ? location : segments.last;
+  }
+
   /// How storage usage is announced alongside the figure.
   static String storageSummaryLabel(String size, int documentCount) =>
       '$size used by $documentCount '

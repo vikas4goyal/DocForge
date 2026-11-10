@@ -97,7 +97,7 @@ class _StubCubit extends ShareCubit {
   Future<void> printDocument() async => calls.add('print');
 
   @override
-  Future<void> export({String? initialDirectory}) async => calls.add('export');
+  Future<void> export() async => calls.add('export');
 
   @override
   void cancel() => calls.add('cancel');

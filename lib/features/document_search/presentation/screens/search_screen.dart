@@ -11,7 +11,7 @@ import 'package:doc_scanly/features/document_search/presentation/search_keys.dar
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-/// Searches documents by title and recognised text.
+/// Searches documents by title.
 class SearchScreen extends StatefulWidget {
   /// Creates the search screen.
   const SearchScreen({
@@ -258,10 +258,11 @@ class _Results extends StatelessWidget {
   }
 }
 
-/// One search result, showing why it matched.
+/// One search result: a document whose title matched.
 ///
-/// A recognised-text match shows its snippet: without one, a document whose
-/// title does not contain the term looks like a mistake.
+/// Shows the title and the usual document subtitle, keyed
+/// `search_result_<documentId>` and announced as the title followed by the
+/// subtitle.
 class SearchResultRow extends StatelessWidget {
   /// Creates a result row.
   const SearchResultRow({required this.result, super.key, this.onTap});
@@ -277,26 +278,17 @@ class SearchResultRow extends StatelessWidget {
     final theme = Theme.of(context);
     final document = result.document;
 
-    final subtitle = result.hasSnippet
-        ? result.snippet
-        : DisplayFormatting.documentSubtitle(document);
+    final subtitle = DisplayFormatting.documentSubtitle(document);
 
     return Semantics(
       button: onTap != null,
-      label: [
-        document.title,
-        if (result.source == MatchSource.recognisedText)
-          'matched in the document text',
-        subtitle,
-      ].join(', '),
+      label: [document.title, subtitle].join(', '),
       child: ExcludeSemantics(
         child: ListTile(
           key: SearchKeys.resultRow(document.id.value),
           onTap: onTap,
           leading: Icon(
-            result.source == MatchSource.recognisedText
-                ? Icons.text_snippet_outlined
-                : Icons.description_outlined,
+            Icons.description_outlined,
             color: theme.colorScheme.primary,
           ),
           title: Text(

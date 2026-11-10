@@ -103,7 +103,11 @@ class DefaultSaveLocationScreen extends StatelessWidget {
               child: ListTile(
                 key: SettingsKeys.saveLocationChooseFolder,
                 title: const Text('Choose a folder…'),
-                subtitle: currentPath == null ? null : Text(currentPath!),
+                // The full path here, where the user is deciding, so two
+                // folders with the same name can be told apart.
+                subtitle: currentPath == null
+                    ? null
+                    : Text('${SettingsCopy.exportsStartHere}:\n$currentPath'),
                 trailing: currentPath == null
                     ? const Icon(Icons.chevron_right)
                     : const Icon(Icons.check),

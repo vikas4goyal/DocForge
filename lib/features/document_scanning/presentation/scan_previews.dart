@@ -171,6 +171,52 @@ Widget captureLowerResolution() => _capture(
   ),
 );
 
+/// After a shot: the camera delivered exactly the requested tier.
+@Preview(
+  name: 'Capture — captured at requested tier',
+  group: 'Scanning',
+  theme: appPreviewTheme,
+)
+Widget captureAtRequestedTier() => _capture(
+  const ScanCaptureState.initial().copyWith(
+    status: ScanCaptureStatus.ready,
+    pageCount: 1,
+    desiredResolution: SupportedCameraResolutionPreview.hdDesired,
+    activeResolution: SupportedCameraResolutionPreview.hd,
+    capturedWidth: 1280,
+    capturedHeight: 720,
+  ),
+);
+
+/// After a shot: the plugin delivered less than the requested tier, so the
+/// status names the real size instead of claiming 720p.
+@Preview(
+  name: 'Capture — captured below tier',
+  group: 'Scanning',
+  theme: appPreviewTheme,
+)
+Widget captureBelowTier() => _capture(
+  const ScanCaptureState.initial().copyWith(
+    status: ScanCaptureStatus.ready,
+    pageCount: 1,
+    desiredResolution: SupportedCameraResolutionPreview.hdDesired,
+    activeResolution: SupportedCameraResolutionPreview.hd,
+    capturedWidth: 960,
+    capturedHeight: 540,
+  ),
+);
+
+/// The below-tier status in dark mode at double text scale on a phone.
+@Preview(
+  name: 'Capture — captured below tier, dark, large text',
+  group: 'Scanning',
+  brightness: Brightness.dark,
+  textScaleFactor: 2,
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget captureBelowTierDarkLargeText() => captureBelowTier();
+
 /// Deterministic values used by capture previews without a capability query.
 abstract final class SupportedCameraResolutionPreview {
   /// Full-resolution exact active-camera result.

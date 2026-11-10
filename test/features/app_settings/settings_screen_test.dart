@@ -228,6 +228,40 @@ void main() {
       expect(cubit.state.settings.saveLocation, '/Exports');
     });
 
+    testWidgets('a chosen folder is named, and says what it does', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pump(
+        tester,
+        pickSaveLocation: () async => '/storage/emulated/0/Documents/Scans',
+      );
+
+      await tester.ensureVisible(find.byKey(SettingsKeys.saveLocation));
+      await tester.tap(find.byKey(SettingsKeys.saveLocation));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(SettingsKeys.saveLocationChooseFolder));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.bySemanticsLabel(
+          'Default save location, Scans, ${SettingsCopy.exportsStartHere}',
+        ),
+        findsOneWidget,
+      );
+      expect(find.textContaining('/storage/emulated'), findsNothing);
+
+      // The detail screen keeps the full path, where folders are compared.
+      await tester.ensureVisible(find.byKey(SettingsKeys.saveLocation));
+      await tester.tap(find.byKey(SettingsKeys.saveLocation));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('/storage/emulated/0/Documents/Scans'),
+        findsOneWidget,
+      );
+      handle.dispose();
+    });
+
     testWidgets('cancelling the folder picker changes nothing', (tester) async {
       final cubit = await pump(tester, pickSaveLocation: () async => null);
 
@@ -271,51 +305,67 @@ void main() {
       expect(find.byKey(SettingsKeys.storageManageLocation), findsNothing);
     });
 
-    testWidgets('choosing a PDF quality shows its trade-off first', (
+    testWidgets('PDF quality is an inline slider, not a choice sheet', (
       tester,
     ) async {
       await pump(tester);
 
-      await tester.tap(find.byKey(SettingsKeys.pdfQuality));
-      await tester.pumpAndSettle();
-
+      final slider = tester.widget<Slider>(
+        find.byKey(SettingsKeys.pdfQualitySlider),
+      );
+      expect(slider.min, PdfQualityPercent.minimum);
+      expect(slider.max, PdfQualityPercent.maximum);
+      expect(slider.divisions, 70);
+      expect(slider.value, 70);
       expect(
         find.text(
-          SettingsCopy.pdfQualityDescription(PdfQualityPercent(value: 30)),
+          SettingsCopy.pdfQualityDescription(PdfQualityPercent(value: 70)),
         ),
         findsOneWidget,
       );
+
+      await tester.tap(find.text('PDF quality'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(SettingsKeys.choiceSheet), findsNothing);
     });
 
-    testWidgets(
-      'PDF quality remains scrollable without overflow at large text',
-      (tester) async {
-        await pump(tester, viewport: const Size(390, 600), textScale: 3);
-
-        await tester.scrollUntilVisible(
-          find.byKey(SettingsKeys.pdfQuality),
-          180,
-          scrollable: find.byType(Scrollable).first,
-        );
-        await tester.ensureVisible(find.byKey(SettingsKeys.pdfQuality));
-        await tester.tap(find.byKey(SettingsKeys.pdfQuality));
-        await tester.pumpAndSettle();
-
-        expect(find.byKey(SettingsKeys.choiceSheet), findsOneWidget);
-        expect(find.byType(Scrollable), findsWidgets);
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets('choosing a value applies it', (tester) async {
+    testWidgets('dragging previews live and persists exactly once', (
+      tester,
+    ) async {
       final cubit = await pump(tester);
+      final slider = find.byKey(SettingsKeys.pdfQualitySlider);
+      await tester.ensureVisible(slider);
 
-      await tester.tap(find.byKey(SettingsKeys.pdfQuality));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('30%'));
+      // Drag from the thumb all the way left: the value clamps at 30%.
+      final gesture = await tester.startGesture(tester.getCenter(slider));
+      await gesture.moveBy(const Offset(-120, 0));
+      await tester.pump();
+      expect(cubit.state.pdfQualityDraft, isNotNull);
+      expect(cubit.state.settings.pdfQuality, PdfQualityPercent(value: 70));
+      await gesture.moveBy(const Offset(-2000, 0));
+      await gesture.up();
       await tester.pumpAndSettle();
 
+      expect(cubit.state.pdfQualityDraft, isNull);
       expect(cubit.state.settings.pdfQuality, PdfQualityPercent(value: 30));
+      expect(find.text('30%'), findsOneWidget);
+    });
+
+    testWidgets('the slider stays usable at large text without overflow', (
+      tester,
+    ) async {
+      await pump(tester, viewport: const Size(390, 600), textScale: 3);
+
+      await tester.scrollUntilVisible(
+        find.byKey(SettingsKeys.pdfQualitySlider),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.byKey(SettingsKeys.pdfQualitySlider)).height,
+        greaterThanOrEqualTo(48),
+      );
     });
 
     testWidgets('changing the theme re-renders immediately', (tester) async {
@@ -435,6 +485,10 @@ void main() {
         findsOneWidget,
       );
       expect(find.bySemanticsLabel('PDF quality, 70%'), findsOneWidget);
+      expect(
+        find.bySemanticsLabel(SettingsSemantics.pdfQualitySlider(70)),
+        findsOneWidget,
+      );
       expect(find.bySemanticsLabel('App lock, off'), findsOneWidget);
 
       handle.dispose();

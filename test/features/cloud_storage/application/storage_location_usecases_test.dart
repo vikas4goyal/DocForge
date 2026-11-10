@@ -1168,7 +1168,11 @@ void main() {
     test('ownership is recorded in the checkpoint before each write', () async {
       await _write(local, localContainer, 'a.pdf', 'a');
       await _write(local, localContainer, 'b.pdf', 'b');
-      final observed = <List<String>>[];
+      // Taken now: a successful migration cleans the source up afterwards.
+      final aDigest = await contentDigest(
+        File('${local.rootDirectory.path}/a.pdf'),
+      );
+      final observed = <List<MigrationWrittenFile>>[];
 
       final result = await migrate(
         source: StorageLocation.local,
@@ -1176,16 +1180,16 @@ void main() {
         onProgress: (progress) async {
           if (progress.phase == StorageMigrationPhase.verifying) {
             observed.add(
-              (await locations.readCheckpoint())
-                  .valueOrNull!
-                  .writtenRelativePaths,
+              (await locations.readCheckpoint()).valueOrNull!.writtenFiles,
             );
           }
         },
       );
 
       expect(result.isSuccess, isTrue);
-      expect(observed.first, contains('a.pdf'));
+      final a = observed.first.singleWhere((f) => f.relativePath == 'a.pdf');
+      // The digest of the bytes about to be written, recorded with the path.
+      expect(a.digest, aDigest);
     });
 
     // PR #2 review: a retry that recognised its earlier conflict copy did not
@@ -1209,11 +1213,18 @@ void main() {
           'device',
         );
         await locations.writeCheckpoint(
-          const StorageMigrationCheckpoint(
+          StorageMigrationCheckpoint(
             source: StorageLocation.local,
             destination: StorageLocation.iCloud,
             phase: StorageMigrationPhase.copying,
-            writtenRelativePaths: ['a (Conflict device).pdf'],
+            writtenFiles: [
+              MigrationWrittenFile(
+                relativePath: 'a (Conflict device).pdf',
+                digest: await contentDigest(
+                  File('${local.rootDirectory.path}/a.pdf'),
+                ),
+              ),
+            ],
           ),
         );
         var checks = 0;
@@ -1232,6 +1243,95 @@ void main() {
         expect(File('${cloudRoot.path}/a.pdf').readAsStringSync(), 'cloud');
         expect(File('${local.rootDirectory.path}/a.pdf').existsSync(), isTrue);
         expect((await locations.readCheckpoint()).valueOrNull, isNull);
+      },
+    );
+
+    // PR #2 review: after an interrupted merge, another device may edit a file
+    // the earlier attempt wrote. Cancelling the retry must not delete that
+    // edit, even though the path is recorded as this migration's.
+    test(
+      'a cancelled retry keeps an owned file another device has since edited',
+      () async {
+        platform.marker = const {
+          'schemaVersion': 1,
+          'libraryIdentifier': 'docscanly-library',
+        };
+        await _write(cloudStore, cloudRoot, 'a.pdf', 'cloud');
+        await _write(local, localContainer, 'a.pdf', 'device');
+        await _write(local, localContainer, 'b.pdf', 'b');
+        final written = await contentDigest(
+          File('${local.rootDirectory.path}/a.pdf'),
+        );
+        // The interrupted attempt wrote its conflict copy and recorded it…
+        await locations.writeCheckpoint(
+          StorageMigrationCheckpoint(
+            source: StorageLocation.local,
+            destination: StorageLocation.iCloud,
+            phase: StorageMigrationPhase.copying,
+            writtenFiles: [
+              MigrationWrittenFile(
+                relativePath: 'a (Conflict device).pdf',
+                digest: written,
+              ),
+            ],
+          ),
+        );
+        // …and another device has since edited that copy in iCloud.
+        await _write(
+          cloudStore,
+          cloudRoot,
+          'a (Conflict device).pdf',
+          'edited on the other device',
+        );
+        var checks = 0;
+
+        final result = await migrate(
+          source: StorageLocation.local,
+          destination: StorageLocation.iCloud,
+          shouldCancel: () => checks++ > 0,
+        );
+
+        expect(result.failureOrNull, isA<CancelledFailure>());
+        expect(
+          File('${cloudRoot.path}/a (Conflict device).pdf').readAsStringSync(),
+          'edited on the other device',
+          reason: 'Another device\'s edit must survive the rollback.',
+        );
+        // The retry's own new copy, under the next conflict name, is removed.
+        expect(
+          File('${cloudRoot.path}/a (Conflict device 2).pdf').existsSync(),
+          isFalse,
+        );
+        expect(File('${cloudRoot.path}/a.pdf').readAsStringSync(), 'cloud');
+        expect((await locations.readCheckpoint()).valueOrNull, isNull);
+      },
+    );
+
+    test(
+      'an owned entry from an older checkpoint without a digest is kept',
+      () async {
+        await _write(local, localContainer, 'a.pdf', 'a');
+        await _write(local, localContainer, 'b.pdf', 'b');
+        await _write(cloudStore, cloudRoot, 'legacy.pdf', 'unknown');
+        await locations.writeCheckpoint(
+          const StorageMigrationCheckpoint(
+            source: StorageLocation.local,
+            destination: StorageLocation.iCloud,
+            phase: StorageMigrationPhase.copying,
+            writtenFiles: [MigrationWrittenFile(relativePath: 'legacy.pdf')],
+          ),
+        );
+        var checks = 0;
+
+        final result = await migrate(
+          source: StorageLocation.local,
+          destination: StorageLocation.iCloud,
+          shouldCancel: () => checks++ > 0,
+        );
+
+        expect(result.failureOrNull, isA<CancelledFailure>());
+        expect(File('${cloudRoot.path}/legacy.pdf').existsSync(), isTrue);
+        expect(File('${cloudRoot.path}/a.pdf').existsSync(), isFalse);
       },
     );
 

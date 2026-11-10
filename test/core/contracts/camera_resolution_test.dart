@@ -72,6 +72,24 @@ void main() {
         ultraHd,
       );
     });
+
+    test('the request key round trips and is omitted when absent', () {
+      final keyed = SupportedCameraResolution(
+        tier: CameraResolutionTier.qhd2k,
+        width: 2560,
+        height: 1440,
+        requestKey: 'veryHigh',
+      );
+      final decoded = jsonDecode(jsonEncode(keyed.toJson()));
+      final restored = SupportedCameraResolution.fromJson(
+        decoded as Map<String, dynamic>,
+      );
+
+      expect(restored, keyed);
+      expect(restored.requestKey, 'veryHigh');
+      expect(ultraHd.toJson().containsKey('requestKey'), isFalse);
+      expect(ultraHd.requestKey, isNull);
+    });
   });
 
   group('DesiredCameraResolution', () {

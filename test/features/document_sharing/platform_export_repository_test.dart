@@ -1,9 +1,9 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/features/document_sharing/domain/document_export_result.dart';
 import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/platform_share_repositories.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -37,18 +37,24 @@ void main() {
             expect(allowedExtensions, ['pdf']);
             return 'Provider/Invoice.pdf';
           },
+      platform: TargetPlatform.android,
     );
 
     final result = await repository.export(
       sourcePath: source.path,
       suggestedName: 'Invoice.pdf',
-      initialDirectory: 'Provider',
+      initialDirectory: '/storage/emulated/0/Provider',
     );
 
     expect(writes, 1);
     expect(String.fromCharCodes(received), 'pdf');
     expect(name, 'Invoice.pdf');
-    expect(directory, 'Provider');
+    // Normalised to the document URI Android's picker understands.
+    expect(
+      directory,
+      'content://com.android.externalstorage.documents/document/'
+      'primary%3AProvider',
+    );
     expect(
       (result as Success<DocumentExportResult>).value,
       const DocumentExportResult.completed(
@@ -155,5 +161,96 @@ void main() {
 
     expect(writes, 0);
     expect(result, isA<Failed<DocumentExportResult>>());
+  });
+
+  group('starting location', () {
+    SystemExportDocumentRepository recording(
+      List<String?> hints, {
+      TargetPlatform platform = TargetPlatform.android,
+      bool exists = true,
+      Exception? Function(String? hint)? fail,
+      String? answer = 'Files/Invoice.pdf',
+    }) => SystemExportDocumentRepository(
+      platform: platform,
+      directoryExists: (_) => exists,
+      saveFile:
+          ({
+            required fileName,
+            initialDirectory,
+            required allowedExtensions,
+            required bytes,
+          }) async {
+            hints.add(initialDirectory);
+            final error = fail?.call(initialDirectory);
+            if (error != null) throw error;
+            return answer;
+          },
+    );
+
+    test('iOS receives an existing folder as a file URL', () async {
+      final hints = <String?>[];
+      await recording(hints, platform: TargetPlatform.iOS).export(
+        sourcePath: source.path,
+        suggestedName: 'Invoice.pdf',
+        initialDirectory: '/var/mobile/Exports',
+      );
+
+      expect(hints, ['file:///var/mobile/Exports/']);
+    });
+
+    test('no configured location means no hint', () async {
+      final hints = <String?>[];
+      await recording(
+        hints,
+      ).export(sourcePath: source.path, suggestedName: 'Invoice.pdf');
+
+      expect(hints, [null]);
+    });
+
+    test('a rejected hint is retried once at the picker default', () async {
+      final hints = <String?>[];
+      final result =
+          await recording(
+            hints,
+            fail: (hint) =>
+                hint == null ? null : PlatformException(code: 'bad_uri'),
+          ).export(
+            sourcePath: source.path,
+            suggestedName: 'Invoice.pdf',
+            initialDirectory: '/storage/emulated/0/Gone',
+          );
+
+      expect(hints, hasLength(2));
+      expect(hints.last, isNull);
+      expect(
+        result.valueOrNull,
+        const DocumentExportResult.completed(
+          destinationLabel: 'Files/Invoice.pdf',
+        ),
+      );
+    });
+
+    test('a platform failure without a hint is not retried', () async {
+      final hints = <String?>[];
+      final result = await recording(
+        hints,
+        fail: (_) => PlatformException(code: 'provider_down'),
+      ).export(sourcePath: source.path, suggestedName: 'Invoice.pdf');
+
+      expect(hints, [null]);
+      expect(result, isA<Failed<DocumentExportResult>>());
+    });
+
+    test('cancelling with a hint is still not an error', () async {
+      final hints = <String?>[];
+      final result = await recording(hints, answer: null).export(
+        sourcePath: source.path,
+        suggestedName: 'Invoice.pdf',
+        initialDirectory: '/storage/emulated/0/Download',
+      );
+
+      expect(hints, hasLength(1));
+      expect(result.valueOrNull, const DocumentExportResult.cancelled());
+    });
   });
 }

@@ -3,6 +3,7 @@ library;
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:camera/camera.dart';
 import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
@@ -185,8 +186,14 @@ class CameraScannerRepository implements ScannerRepository {
       // in the review list must not be able to vanish from under them.
       await File(file.path).rename(destination);
 
+      final size = await decodedImageSize(destination);
       return Result<CaptureResult>.success(
-        CaptureResult(id: id, imagePath: destination),
+        CaptureResult(
+          id: id,
+          imagePath: destination,
+          actualWidth: size?.$1,
+          actualHeight: size?.$2,
+        ),
       );
     } on CameraException catch (error) {
       return Result<CaptureResult>.failure(_cameraFailureFor(error));
@@ -242,15 +249,49 @@ class CameraScannerRepository implements ScannerRepository {
   }
 }
 
-/// Maps a resolved, honestly supported tier to the camera plugin request.
+/// Returns the encoded pixel size of the image at [path], or null when it
+/// cannot be read.
 ///
-/// Null means enumeration was unavailable or Full resolution was selected, so
+/// Reads only the image header through [ui.ImageDescriptor]; no pixels are
+/// decoded, so this costs microseconds even for a 12 MP capture. This is the
+/// ground truth for what the camera delivered — a plugin may silently pick a
+/// size other than the one requested — and it is what the capture screen
+/// reports. Never throws: an unreadable header just leaves the size unknown.
+Future<(int, int)?> decodedImageSize(String path) async {
+  ui.ImmutableBuffer? buffer;
+  ui.ImageDescriptor? descriptor;
+  try {
+    buffer = await ui.ImmutableBuffer.fromFilePath(path);
+    descriptor = await ui.ImageDescriptor.encoded(buffer);
+    return (descriptor.width, descriptor.height);
+  } on Object {
+    return null;
+  } finally {
+    descriptor?.dispose();
+    buffer?.dispose();
+  }
+}
+
+/// Returns the camera plugin preset that requests [resolution].
+///
+/// Prefers [SupportedCameraResolution.requestKey]: the exact preset whose
+/// measurement produced this resolution, replayed verbatim. Deriving a preset
+/// from the tier instead let two tiers collapse onto one request — 2K and 4K
+/// both became `ultraHigh`, so choosing 2K could capture 4K.
+///
+/// Falls back to a tier mapping only when the key is absent or not a preset
+/// this plugin version knows. Null means enumeration was unavailable, so the
 /// maximum is requested. Actual capture dimensions are still decoded after the
-/// shutter because plugins may silently choose another size.
-/// Returns the plugin preset used to request [resolution].
+/// shutter, because plugins may silently choose another size.
 ResolutionPreset resolutionPresetFor(SupportedCameraResolution? resolution) {
-  final tier = resolution?.tier;
-  if (tier == null) return ResolutionPreset.max;
+  if (resolution == null) return ResolutionPreset.max;
+  final key = resolution.requestKey;
+  if (key != null) {
+    for (final preset in ResolutionPreset.values) {
+      if (preset.name == key) return preset;
+    }
+  }
+  final tier = resolution.tier;
   if (tier == CameraResolutionTier.hd720) return ResolutionPreset.high;
   if (tier == CameraResolutionTier.fullHd1080) {
     return ResolutionPreset.veryHigh;
@@ -310,6 +351,14 @@ class FakeScannerRepository implements ScannerRepository {
   /// Fails [capture] with this failure when set.
   Failure? captureFailure;
 
+  /// The pixel size every capture reports, overriding the default.
+  ///
+  /// By default a capture reports the dimensions of the resolution the camera
+  /// was opened at — a camera that honoured the request — or nothing when it
+  /// was opened at the plugin maximum. Set this to model a plugin that
+  /// silently delivered another size.
+  (int, int)? actualSizeOverride;
+
   /// Every capture this fake produced, in order.
   final List<CaptureResult> captures = [];
 
@@ -324,6 +373,7 @@ class FakeScannerRepository implements ScannerRepository {
 
   bool _ready = false;
   bool _torchOn = false;
+  SupportedCameraResolution? _openResolution;
 
   @override
   bool get isReady => _ready;
@@ -335,11 +385,17 @@ class FakeScannerRepository implements ScannerRepository {
   Future<Result<void>> initialise({
     SupportedCameraResolution? resolution,
   }) async {
+    // Mirrors the real adapter's contract: an unchanged request on an open
+    // camera is a no-op, so it is not recorded as an initialisation.
+    if (_ready && _openResolution == resolution) {
+      return const Result<void>.success(null);
+    }
     requestedResolutions.add(resolution);
     if (initialiseFailure != null) {
       return Result<void>.failure(initialiseFailure!);
     }
     _ready = true;
+    _openResolution = resolution;
     return const Result<void>.success(null);
   }
 
@@ -365,7 +421,18 @@ class FakeScannerRepository implements ScannerRepository {
       await File(path).writeAsBytes(imageBytes ?? const [0]);
     }
 
-    final result = CaptureResult(id: id, imagePath: path);
+    final size =
+        actualSizeOverride ??
+        switch (_openResolution) {
+          final SupportedCameraResolution open => (open.width, open.height),
+          null => null,
+        };
+    final result = CaptureResult(
+      id: id,
+      imagePath: path,
+      actualWidth: size?.$1,
+      actualHeight: size?.$2,
+    );
     captures.add(result);
     return Result<CaptureResult>.success(result);
   }

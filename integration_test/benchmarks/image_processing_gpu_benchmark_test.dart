@@ -21,50 +21,48 @@ const _samples = int.fromEnvironment('BENCHMARK_SAMPLES', defaultValue: 30);
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets(
-    'native GPU preview and full-resolution benchmark',
-    (tester) async {
-      await tester.runAsync(() async {
-        final root = Directory.systemTemp.createTempSync('image_gpu_benchmark');
-        final kind = Platform.isIOS
-            ? ImageProcessingBackendKind.iosCoreImage
-            : ImageProcessingBackendKind.androidOpenGl;
-        final backend = NativeImageProcessingDataSource(backend: kind);
-        try {
-          final bytes = await rootBundle.load(_fixture);
-          final source = File('${root.path}/source.jpg');
-          await source.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
-          final capability = await backend.capability();
-          expect(capability.isSupported, isTrue);
-          final preview = await _measure(backend, root, source.path, true);
-          final full = await _measure(backend, root, source.path, false);
-          final cpuPreviewMedian = Platform.isIOS ? 3881959 : 4665289;
-          final cpuFullMedian = Platform.isIOS ? 12404061 : 15355661;
-          expect(preview['p95Us'] as int, lessThanOrEqualTo(200000));
-          expect(full['p95Us'] as int, lessThanOrEqualTo(1500000));
-          expect(
-            cpuPreviewMedian / (preview['medianUs'] as int),
-            greaterThanOrEqualTo(3),
-          );
-          expect(
-            cpuFullMedian / (full['medianUs'] as int),
-            greaterThanOrEqualTo(3),
-          );
-          debugPrint(
-            'IMAGE_PROCESSING_GPU_BENCHMARK ${jsonEncode({'schemaVersion': 1, 'backend': kind.name, 'buildMode': kReleaseMode
-                ? 'release'
-                : kProfileMode
-                ? 'profile'
-                : 'debug', 'operatingSystem': Platform.operatingSystem, 'operatingSystemVersion': Platform.operatingSystemVersion, 'warmups': _warmups, 'samples': _samples, 'preview': preview, 'full': full})}',
-          );
-        } finally {
-          await backend.dispose();
-          if (root.existsSync()) root.deleteSync(recursive: true);
-        }
-      });
-    },
-    timeout: const Timeout(Duration(minutes: 30)),
-  );
+  testWidgets('native GPU preview and full-resolution benchmark', (
+    tester,
+  ) async {
+    await tester.runAsync(() async {
+      final root = Directory.systemTemp.createTempSync('image_gpu_benchmark');
+      final kind = Platform.isIOS
+          ? ImageProcessingBackendKind.iosCoreImage
+          : ImageProcessingBackendKind.androidOpenGl;
+      final backend = NativeImageProcessingDataSource(backend: kind);
+      try {
+        final bytes = await rootBundle.load(_fixture);
+        final source = File('${root.path}/source.jpg');
+        await source.writeAsBytes(bytes.buffer.asUint8List(), flush: true);
+        final capability = await backend.capability();
+        expect(capability.isSupported, isTrue);
+        final preview = await _measure(backend, root, source.path, true);
+        final full = await _measure(backend, root, source.path, false);
+        final cpuPreviewMedian = Platform.isIOS ? 3881959 : 4665289;
+        final cpuFullMedian = Platform.isIOS ? 12404061 : 15355661;
+        expect(preview['p95Us'] as int, lessThanOrEqualTo(200000));
+        expect(full['p95Us'] as int, lessThanOrEqualTo(1500000));
+        expect(
+          cpuPreviewMedian / (preview['medianUs'] as int),
+          greaterThanOrEqualTo(3),
+        );
+        expect(
+          cpuFullMedian / (full['medianUs'] as int),
+          greaterThanOrEqualTo(3),
+        );
+        debugPrint(
+          'IMAGE_PROCESSING_GPU_BENCHMARK ${jsonEncode({'schemaVersion': 1, 'backend': kind.name, 'buildMode': kReleaseMode
+              ? 'release'
+              : kProfileMode
+              ? 'profile'
+              : 'debug', 'operatingSystem': Platform.operatingSystem, 'operatingSystemVersion': Platform.operatingSystemVersion, 'warmups': _warmups, 'samples': _samples, 'preview': preview, 'full': full})}',
+        );
+      } finally {
+        await backend.dispose();
+        if (root.existsSync()) root.deleteSync(recursive: true);
+      }
+    });
+  }, timeout: const Timeout(Duration(minutes: 30)));
 }
 
 Future<Map<String, Object?>> _measure(

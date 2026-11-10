@@ -228,7 +228,7 @@ The application SHALL measure backend performance and fallback outcomes without 
 
 #### Scenario: Sensitive image data is excluded
 - **WHEN** enhancement telemetry is emitted
-- **THEN** it contains no source or destination path, pixel data, document identifier, OCR text, document metadata, or exact enhancement values
+- **THEN** it contains no source or destination path, pixel data, document identifier, document metadata, or exact enhancement values
 
 #### Scenario: Enhancement remains offline
 - **WHEN** either the GPU or CPU backend processes a page without network connectivity

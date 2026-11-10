@@ -64,6 +64,12 @@ abstract interface class ScannerRepository {
   /// Fails with a permission failure when access was refused and a camera
   /// failure when the device could not be opened — the two lead to different
   /// recovery actions, so they are never collapsed into one.
+  ///
+  /// Idempotent for an unchanged request: when the camera is already open at
+  /// [resolution] this succeeds without touching the device. A *different*
+  /// [resolution] re-opens it. Capture relies on this to re-apply the user's
+  /// current preference before every shot without paying for a re-open when
+  /// nothing changed.
   Future<Result<void>> initialise({SupportedCameraResolution? resolution});
 
   /// Captures one page, writing it to disk before returning.

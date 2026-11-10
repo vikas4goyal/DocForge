@@ -37,13 +37,7 @@ Document _document(String id, String title) => Document(
 
 List<SearchResult> _results(int count) => [
   for (var index = 0; index < count; index++)
-    SearchResult(
-      document: _document('golden-$index', 'Invoice $index'),
-      source: index.isOdd ? MatchSource.recognisedText : MatchSource.title,
-      snippet: index.isOdd
-          ? '…Acme Limited issued this invoice on the fourteenth of March…'
-          : '',
-    ),
+    SearchResult(document: _document('golden-$index', 'Invoice $index')),
 ];
 
 /// A Bloc frozen at a chosen state.

@@ -120,11 +120,9 @@ class FakePdfEditor implements PdfEditorRepository {
 
       // The order of `pages` is the order of the result, which is what makes
       // extraction and splitting produce document order rather than tap order.
-      _write(
-        destinationPath,
-        [for (final page in pages) source[page]],
-        password: preserveProtection ? fakePdfPassword(sourcePath) : null,
-      );
+      _write(destinationPath, [
+        for (final page in pages) source[page],
+      ], password: preserveProtection ? fakePdfPassword(sourcePath) : null);
     });
   }
 

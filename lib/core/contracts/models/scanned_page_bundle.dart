@@ -14,8 +14,8 @@ part 'scanned_page_bundle.g.dart';
 
 /// Where the pages in a bundle came from.
 ///
-/// Recorded because the two sources warrant different defaults — an imported
-/// PDF already has a text layer, a camera capture does not.
+/// Recorded because the two sources warrant different defaults: an imported
+/// PDF is already a finished document, a camera capture is raw pages.
 enum PageSource {
   /// Captured with the device camera.
   camera,

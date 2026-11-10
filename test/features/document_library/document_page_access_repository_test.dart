@@ -35,7 +35,6 @@ void main() {
       secrets,
       directory,
       engine.render,
-      engine.extract,
     );
   });
 
@@ -202,7 +201,6 @@ void main() {
       secrets,
       directory,
       engine.render,
-      engine.extract,
       cache: DocumentPageCacheMaintenance(
         root: Directory('${directory.path}/document-pages'),
         maxFiles: 1,
@@ -260,7 +258,6 @@ void main() {
       secrets,
       directory,
       engine.render,
-      engine.extract,
       cache: DocumentPageCacheMaintenance(
         root: Directory('${directory.path}/document-pages'),
         maxFiles: 1,
@@ -285,26 +282,6 @@ void main() {
     expect(File(second.valueOrNull!.path).existsSync(), isTrue);
     expect((await access.release(second.valueOrNull!)).isSuccess, isTrue);
   });
-
-  test(
-    'embedded text uses PDF engine and stored image returns no text',
-    () async {
-      engine.text = ' Policy text ';
-      final pdf = (await access.pagesOf(sampleDocument)).valueOrNull!.first;
-      expect(
-        (await access.embeddedText(sampleDocument, pdf)).valueOrNull,
-        ' Policy text ',
-      );
-
-      final stored = pdf.copyWith(
-        source: const DocumentPageSource.storedImage(imagePath: '/missing.jpg'),
-      );
-      expect(
-        (await access.embeddedText(sampleDocument, stored)).valueOrNull,
-        isNull,
-      );
-    },
-  );
 
   test('render failure is typed and still releases resolved PDF', () async {
     engine.failure = const Failure.corruptFile();
@@ -339,7 +316,6 @@ class _PdfEngine {
   int renderCount = 0;
   int? width;
   String? password;
-  String? text;
   Failure? failure;
 
   Future<Result<Uint8List>> render(
@@ -355,10 +331,4 @@ class _PdfEngine {
         ? Result<Uint8List>.success(Uint8List.fromList([1, 2, 3]))
         : Result<Uint8List>.failure(failure!);
   }
-
-  Future<Result<String?>> extract(
-    String filePath, {
-    required int pageNumber,
-    String? password,
-  }) async => Result<String?>.success(text);
 }

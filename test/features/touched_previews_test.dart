@@ -19,6 +19,7 @@ import 'package:doc_scanly/features/cloud_storage/presentation/cloud_migration_g
 import 'package:doc_scanly/features/cloud_storage/presentation/cloud_storage_previews.dart';
 import 'package:doc_scanly/features/document_creation/presentation/creation_previews.dart';
 import 'package:doc_scanly/features/document_library/presentation/library_previews.dart';
+import 'package:doc_scanly/features/document_scanning/presentation/scan_previews.dart';
 import 'package:doc_scanly/features/document_viewer/presentation/viewer_previews.dart';
 import 'package:doc_scanly/features/onboarding/presentation/screens/onboarding_previews.dart';
 import 'package:flutter/material.dart';
@@ -103,6 +104,20 @@ void main() {
     }
   });
 
+  group('capture resolution previews still render', () {
+    // The capture status now reports the size the camera actually delivered.
+    for (final entry in <String, Widget Function()>{
+      'captureReady': captureReady,
+      'captureFullResolution': captureFullResolution,
+      'captureLowerResolution': captureLowerResolution,
+      'captureAtRequestedTier': captureAtRequestedTier,
+      'captureBelowTier': captureBelowTier,
+      'captureBelowTierDarkLargeText': captureBelowTierDarkLargeText,
+    }.entries) {
+      testWidgets(entry.key, (tester) => rendersCleanly(tester, entry.value));
+    }
+  });
+
   group('settings previews still render', () {
     // Every tile's semantics label moved into SettingsSemantics, and the choice
     // sheet's options gained keys.
@@ -123,6 +138,21 @@ void main() {
       'switchTileOn': switchTileOn,
       'switchTileDisabled': switchTileDisabled,
       'namingPreviewDefault': namingPreviewDefault,
+      // The PDF-quality slider replaced its 71-option choice sheet.
+      'settingsEmpty': settingsEmpty,
+      'settingsLongContent': settingsLongContent,
+      'settingsPhoneLight': settingsPhoneLight,
+      'settingsTabletDark': settingsTabletDark,
+      'settingsPdfQualityDragging': settingsPdfQualityDragging,
+      'sliderTileDefault': sliderTileDefault,
+      'sliderTileDragging': sliderTileDragging,
+      'sliderTileMinimum': sliderTileMinimum,
+      'sliderTileMaximum': sliderTileMaximum,
+      'sliderTileLoading': sliderTileLoading,
+      'sliderTileError': sliderTileError,
+      'sliderTileLongContent': sliderTileLongContent,
+      'sliderTileLight': sliderTileLight,
+      'sliderTileDark': sliderTileDark,
     }.entries) {
       testWidgets(entry.key, (tester) => rendersCleanly(tester, entry.value));
     }

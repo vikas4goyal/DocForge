@@ -5,7 +5,7 @@
 /// and golden images byte-stable between runs and between machines — a fixture
 /// built from `DateTime.now()` would produce a new golden every day.
 ///
-/// Nothing in this file touches a repository, a camera, an OCR engine, the
+/// Nothing in this file touches a repository, a camera, the
 /// network or Isar. A preview that needs data gets it from here.
 library;
 
@@ -13,7 +13,6 @@ import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
 
 /// The instant every fixture is anchored to.
@@ -31,7 +30,6 @@ final sampleDocument = Document(
   pageCount: 3,
   sizeInBytes: 482 * 1024,
   libraryPath: LibraryPath.parse('Invoice — Acme Ltd.pdf'),
-  hasRecognisedText: true,
 );
 
 /// A document with a title long enough to exercise truncation and wrapping.
@@ -143,55 +141,6 @@ const sampleBundle = ScannedPageBundle(
     PageRef(id: PageId('page-2'), imagePath: '/tmp/scan/page-2.jpg'),
   ],
   source: PageSource.camera,
-);
-
-/// Recognised text with realistic bounding boxes.
-final sampleRecognisedText = RecognisedText(
-  pageId: const PageId('page-1'),
-  languageTag: 'en',
-  recognisedAt: fixtureNow,
-  blocks: const [
-    TextBlock(
-      text: 'ACME LTD',
-      bounds: NormalisedRect(left: 0.08, top: 0.06, right: 0.42, bottom: 0.11),
-    ),
-    TextBlock(
-      text: 'Invoice #2026-0417',
-      bounds: NormalisedRect(left: 0.08, top: 0.14, right: 0.55, bottom: 0.18),
-    ),
-    TextBlock(
-      text: 'Total due: 1,248.00',
-      bounds: NormalisedRect(left: 0.08, top: 0.72, right: 0.60, bottom: 0.77),
-    ),
-  ],
-);
-
-/// A long recognition result, for long-content previews of the text view.
-final longRecognisedText = RecognisedText(
-  pageId: const PageId('page-1'),
-  languageTag: 'en',
-  recognisedAt: fixtureNow,
-  blocks: List.generate(
-    40,
-    (index) => TextBlock(
-      text:
-          'Line ${index + 1}: the quick brown fox jumps over the lazy dog, '
-          'repeatedly and without complaint.',
-      bounds: NormalisedRect(
-        left: 0.08,
-        top: 0.05 + index * 0.02,
-        right: 0.92,
-        bottom: 0.06 + index * 0.02,
-      ),
-    ),
-  ),
-);
-
-/// An empty recognition result, for the no-text-found state.
-final emptyRecognisedText = RecognisedText.empty(
-  pageId: const PageId('page-1'),
-  languageTag: 'en',
-  recognisedAt: fixtureNow,
 );
 
 /// A representative storage summary.

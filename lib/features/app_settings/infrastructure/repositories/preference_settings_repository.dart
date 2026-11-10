@@ -12,6 +12,8 @@
 /// (`design.md` §8). This repository reads it through an injected reader.
 library;
 
+import 'dart:async';
+
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
@@ -32,12 +34,15 @@ class PreferenceSettingsRepository implements SettingsRepository {
   /// [isAppLockEnabled] reads the lock flag from wherever it really lives,
   /// which is secure storage. Defaults to reporting the lock as off, which is
   /// the correct answer before the security feature is wired in.
-  const PreferenceSettingsRepository(
-    this._preferences, {
-    this.isAppLockEnabled,
-  });
+  PreferenceSettingsRepository(this._preferences, {this.isAppLockEnabled});
 
   final PreferenceStore _preferences;
+
+  // Instance-owned rather than static: the composition root builds exactly
+  // one repository and injects it, so there is no global settings state.
+  AppSettings? _current;
+  final StreamController<AppSettings> _changes =
+      StreamController<AppSettings>.broadcast();
 
   /// Reads the lock flag from wherever it really lives.
   ///
@@ -65,7 +70,7 @@ class PreferenceSettingsRepository implements SettingsRepository {
 
     final lockEnabled = await isAppLockEnabled?.call() ?? false;
 
-    return AppSettings(
+    return _current = AppSettings(
       // Every `from…` falls back to the default for an unrecognised value, so a
       // preference written by a newer release degrades rather than crashing.
       theme: AppThemeChoice.fromId(theme.valueOrNull),
@@ -81,28 +86,77 @@ class PreferenceSettingsRepository implements SettingsRepository {
   }
 
   @override
-  Future<Result<void>> saveTheme(AppThemeChoice theme) =>
-      _preferences.writeString(PreferenceKeys.themeMode, theme.name);
+  AppSettings get current {
+    final current = _current;
+    if (current == null) {
+      throw StateError('SettingsRepository.current read before load()');
+    }
+    return current;
+  }
+
+  @override
+  Stream<AppSettings> get changes => _changes.stream;
+
+  @override
+  Future<Result<void>> saveTheme(AppThemeChoice theme) => _publishOnSuccess(
+    _preferences.writeString(PreferenceKeys.themeMode, theme.name),
+    (settings) => settings.copyWith(theme: theme),
+  );
 
   @override
   Future<Result<void>> savePdfQuality(PdfQualityPercent quality) =>
-      _preferences.writeInt(PreferenceKeys.pdfQualityPercent, quality.value);
+      _publishOnSuccess(
+        _preferences.writeInt(PreferenceKeys.pdfQualityPercent, quality.value),
+        (settings) => settings.copyWith(pdfQuality: quality),
+      );
 
   @override
   Future<Result<void>> saveCameraResolution(DesiredCameraResolution desired) =>
-      _preferences.writeString(
-        PreferenceKeys.cameraResolution,
-        desired.when(fullResolution: () => 'full', tier: (tier) => tier.id),
+      _publishOnSuccess(
+        _preferences.writeString(
+          PreferenceKeys.cameraResolution,
+          desired.when(fullResolution: () => 'full', tier: (tier) => tier.id),
+        ),
+        (settings) => settings.copyWith(cameraResolution: desired),
       );
 
   @override
   Future<Result<void>> saveNamingPattern(NamingPattern pattern) =>
-      _preferences.writeString(PreferenceKeys.fileNamingPattern, pattern.id);
+      _publishOnSuccess(
+        _preferences.writeString(PreferenceKeys.fileNamingPattern, pattern.id),
+        (settings) => settings.copyWith(namingPattern: pattern),
+      );
 
   @override
-  Future<Result<void>> saveSaveLocation(String? path) => path == null
-      ? _preferences.remove(PreferenceKeys.defaultSaveLocation)
-      : _preferences.writeString(PreferenceKeys.defaultSaveLocation, path);
+  Future<Result<void>> saveSaveLocation(String? path) => _publishOnSuccess(
+    path == null
+        ? _preferences.remove(PreferenceKeys.defaultSaveLocation)
+        : _preferences.writeString(PreferenceKeys.defaultSaveLocation, path),
+    (settings) =>
+        settings.copyWith(saveLocation: path, clearSaveLocation: path == null),
+  );
+
+  /// Applies [change] to [current] and emits it, but only once [write] has
+  /// succeeded.
+  ///
+  /// A failed write leaves the read model untouched: the value on disk did not
+  /// change, so neither may what other features use. A write that lands before
+  /// the first [load] publishes nothing — [load] will read it from disk, and
+  /// publishing a defaults-based object would hand consumers placeholder
+  /// values for every other setting.
+  Future<Result<void>> _publishOnSuccess(
+    Future<Result<void>> write,
+    AppSettings Function(AppSettings settings) change,
+  ) async {
+    final result = await write;
+    final current = _current;
+    if (result.isSuccess && current != null) {
+      final next = change(current);
+      _current = next;
+      _changes.add(next);
+    }
+    return result;
+  }
 
   static PdfQualityPercent _readPdfQuality(
     int? percentage,

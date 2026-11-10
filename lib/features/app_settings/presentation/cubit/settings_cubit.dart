@@ -45,8 +45,10 @@ enum CameraResolutionStatus {
 }
 
 /// Loads active-camera resolutions without importing the scanning feature.
+///
+/// `refresh` bypasses any cached capability answer; it is passed on Retry.
 typedef CameraResolutionLoader =
-    Future<Result<List<SupportedCameraResolution>>> Function();
+    Future<Result<List<SupportedCameraResolution>>> Function({bool refresh});
 
 /// Immutable state of the settings screen.
 class SettingsState extends Equatable {
@@ -61,6 +63,7 @@ class SettingsState extends Equatable {
     this.cameraResolutionStatus = CameraResolutionStatus.idle,
     this.supportedCameraResolutions = const [],
     this.cameraResolutionFailure,
+    this.pdfQualityDraft,
   });
 
   /// Before settings have been read.
@@ -100,6 +103,18 @@ class SettingsState extends Equatable {
   /// Why capability loading failed, when Retry is available.
   final Failure? cameraResolutionFailure;
 
+  /// The PDF quality percentage under the user's finger while the slider is
+  /// being dragged, or null when no drag is in progress.
+  ///
+  /// Shown instead of the persisted value during a drag but never persisted
+  /// itself: the persisted value changes only when the drag ends and the write
+  /// succeeds.
+  final int? pdfQualityDraft;
+
+  /// The PDF quality percentage the slider should show: the draft during a
+  /// drag, otherwise the persisted value.
+  int get displayedPdfQuality => pdfQualityDraft ?? settings.pdfQuality.value;
+
   /// The user-facing message for [failure].
   ///
   /// The domain's own wording is used rather than the generic failure message:
@@ -111,8 +126,17 @@ class SettingsState extends Equatable {
   String? get failureDetail => failure?.presentation.message;
 
   /// How the save location is described.
-  String get saveLocationLabel =>
-      settings.saveLocation ?? SettingsCopy.systemSaveLocation;
+  ///
+  /// The folder's readable name rather than its full path: a path such as
+  /// `/storage/emulated/0/Documents/Scans` is noise on a settings row.
+  String get saveLocationLabel => switch (settings.saveLocation) {
+    final String location => SettingsCopy.folderName(location),
+    null => SettingsCopy.systemSaveLocation,
+  };
+
+  /// Explains the save-location value, or null while asking each time.
+  String? get saveLocationDetail =>
+      settings.saveLocation == null ? null : SettingsCopy.exportsStartHere;
 
   @override
   List<Object?> get props => [
@@ -126,6 +150,7 @@ class SettingsState extends Equatable {
     cameraResolutionStatus,
     supportedCameraResolutions,
     cameraResolutionFailure,
+    pdfQualityDraft,
   ];
 
   /// Returns a copy with the given fields replaced.
@@ -145,6 +170,8 @@ class SettingsState extends Equatable {
     List<SupportedCameraResolution>? supportedCameraResolutions,
     Failure? cameraResolutionFailure,
     bool clearCameraResolutionFailure = false,
+    int? pdfQualityDraft,
+    bool clearPdfQualityDraft = false,
   }) => SettingsState._(
     status: status ?? this.status,
     settings: settings ?? this.settings,
@@ -162,6 +189,9 @@ class SettingsState extends Equatable {
     cameraResolutionFailure: clearCameraResolutionFailure
         ? null
         : (cameraResolutionFailure ?? this.cameraResolutionFailure),
+    pdfQualityDraft: clearPdfQualityDraft
+        ? null
+        : (pdfQualityDraft ?? this.pdfQualityDraft),
   );
 }
 
@@ -239,7 +269,10 @@ class SettingsCubit extends Cubit<SettingsState> {
   }
 
   /// Loads the exact options supported by the active camera.
-  Future<void> loadCameraResolutionOptions() async {
+  ///
+  /// [refresh] re-queries the camera instead of accepting a cached answer, as
+  /// the error state's Retry requires.
+  Future<void> loadCameraResolutionOptions({bool refresh = false}) async {
     if (isClosed) return;
     emit(
       state.copyWith(
@@ -250,7 +283,7 @@ class SettingsCubit extends Cubit<SettingsState> {
     final loader = loadCameraResolutions;
     final result = loader == null
         ? const Result<List<SupportedCameraResolution>>.success([])
-        : await loader();
+        : await loader(refresh: refresh);
     if (isClosed) return;
 
     switch (result) {
@@ -287,9 +320,24 @@ class SettingsCubit extends Cubit<SettingsState> {
     if (result case Success(:final value)) onThemeChanged(value.theme);
   }
 
-  /// Applies the default PDF quality percentage.
-  Future<void> setPdfQuality(PdfQualityPercent quality) async =>
-      _settle(await _update.pdfQuality(state.settings, quality));
+  /// Shows [percent] as the PDF quality while the slider is being dragged.
+  ///
+  /// In memory only — nothing is persisted and no other feature sees it. The
+  /// slider calls [setPdfQuality] once, when the drag ends.
+  void previewPdfQuality(int percent) {
+    if (isClosed) return;
+    emit(state.copyWith(status: state.status, pdfQualityDraft: percent));
+  }
+
+  /// Applies the default PDF quality percentage and ends any drag preview.
+  ///
+  /// On a failed write the draft is discarded, so the slider springs back to
+  /// the previously persisted value alongside the failure banner.
+  Future<void> setPdfQuality(PdfQualityPercent quality) async {
+    final result = await _update.pdfQuality(state.settings, quality);
+    if (isClosed) return;
+    _settle(result, clearPdfQualityDraft: true);
+  }
 
   /// Applies the desired camera capture resolution.
   Future<void> setCameraResolution(DesiredCameraResolution desired) async =>
@@ -311,7 +359,11 @@ class SettingsCubit extends Cubit<SettingsState> {
   void dismissError() => emit(state.copyWith(status: SettingsStatus.ready));
 
   /// Emits the outcome of a save.
-  void _settle(Result<AppSettings> result, {String? namingPreview}) {
+  void _settle(
+    Result<AppSettings> result, {
+    String? namingPreview,
+    bool clearPdfQualityDraft = false,
+  }) {
     if (isClosed) return;
 
     switch (result) {
@@ -321,12 +373,19 @@ class SettingsCubit extends Cubit<SettingsState> {
             status: SettingsStatus.ready,
             settings: value,
             namingPreview: namingPreview,
+            clearPdfQualityDraft: clearPdfQualityDraft,
           ),
         );
       case Failed(:final failure):
         // `settings` is deliberately not touched: the previous value stays in
         // effect, which is exactly what the spec requires of a failed write.
-        emit(state.copyWith(status: SettingsStatus.failure, failure: failure));
+        emit(
+          state.copyWith(
+            status: SettingsStatus.failure,
+            failure: failure,
+            clearPdfQualityDraft: clearPdfQualityDraft,
+          ),
+        );
     }
   }
 }

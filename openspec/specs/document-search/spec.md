@@ -2,28 +2,9 @@
 
 ## Purpose
 
-Define searching the library: matching on document titles and on recognised OCR text, results that update as the user types, folder and date filters, and the loading, empty and error states the search screen presents.
+Define searching the library: matching on document titles, results that update as the user types, folder and date filters, and the loading, empty and error states the search screen presents.
 
 ## Requirements
-
-### Requirement: Search by title and recognised text
-The application SHALL allow the user to search documents by title and by recognised OCR text.
-
-#### Scenario: Search by title
-- **WHEN** the user enters a term that appears in a document's title into the field with key `search_input_field`
-- **THEN** that document appears in the results list with key `search_results_list`
-
-#### Scenario: Search by recognised text
-- **WHEN** the user enters a term that appears only in a document's recognised text
-- **THEN** that document appears in the results
-
-#### Scenario: Match context shown
-- **WHEN** a result matched on recognised text rather than title
-- **THEN** the result row shows a snippet of the matching text so the user can see why it matched
-
-#### Scenario: Search is case-insensitive
-- **WHEN** the user searches using different letter casing from the stored text
-- **THEN** the same documents are returned
 
 ### Requirement: Results update as the user types
 Search results SHALL update as the user types, without requiring an explicit submit action.
@@ -82,7 +63,7 @@ The search screen SHALL present distinct initial, loading, empty and error state
 Search SHALL remain responsive on large libraries.
 
 #### Scenario: Large library search
-- **WHEN** a search is performed against a library of several thousand documents with recognised text
+- **WHEN** a search is performed against a library of several thousand documents
 - **THEN** results are returned without blocking the UI thread and the results list scrolls smoothly
 
 #### Scenario: Indexed queries
@@ -104,3 +85,18 @@ The search screen SHALL support screen readers, dark mode, phone and tablet layo
 #### Scenario: Search offline
 - **WHEN** the device has no network connection
 - **THEN** search runs entirely against local storage and returns results with no network request
+
+### Requirement: Search by title
+The application SHALL allow the user to search documents by title. Documents carry no recognised text, so no result is attributed to one.
+
+#### Scenario: Search by title
+- **WHEN** the user enters a term that appears in a document's title into the field with key `search_input_field`
+- **THEN** that document appears in the results list with key `search_results_list`
+
+#### Scenario: Result rows show the document, not a snippet
+- **WHEN** results are displayed
+- **THEN** each row with key `search_result_<documentId>` shows the document title and its usual subtitle, and is announced to screen readers as the title followed by that subtitle
+
+#### Scenario: Search is case-insensitive
+- **WHEN** the user searches using different letter casing from the stored text
+- **THEN** the same documents are returned

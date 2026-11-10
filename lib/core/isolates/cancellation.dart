@@ -4,7 +4,7 @@
 /// outright, which would leave half-written files behind. Cancellation is
 /// therefore cooperative: the worker checks its token between units of work and
 /// returns cleanly, so completed pages survive and partial output is removed —
-/// exactly what the scanning, enhancement, OCR and PDF specs require.
+/// exactly what the scanning, enhancement and PDF specs require.
 library;
 
 import 'dart:async';

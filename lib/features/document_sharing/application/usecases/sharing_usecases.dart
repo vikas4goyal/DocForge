@@ -368,11 +368,24 @@ class PrintDocument {
 /// Exports a document's PDF to a destination the user chooses.
 class ExportDocument {
   /// Creates the use case.
-  const ExportDocument(this._documents, this._exporter, this._files);
+  ///
+  /// [defaultLocation] returns the user's configured default save location,
+  /// or null for "Ask each time". It is read on every export rather than
+  /// passed in by each screen: a share surface that forgot to pass it is
+  /// exactly how the setting came to do nothing.
+  const ExportDocument(
+    this._documents,
+    this._exporter,
+    this._files, {
+    this.defaultLocation,
+  });
 
   final DocumentReader _documents;
   final ExportDocumentRepository _exporter;
   final DocumentFileResolver _files;
+
+  /// Returns the configured default save location, or null to ask each time.
+  final String? Function()? defaultLocation;
 
   /// Exports [documentId], asking the user where it should go.
   ///
@@ -380,11 +393,11 @@ class ExportDocument {
   /// the provider write; this use case never treats an opaque provider value as
   /// a local path or creates an application-managed `.partial` sibling.
   ///
-  /// [initialDirectory] is the configured default save location, when set.
-  Future<Result<DocumentExportResult>> call(
-    DocumentId documentId, {
-    String? initialDirectory,
-  }) async {
+  /// The configured default save location, read at the moment of export so a
+  /// change in Settings applies without reopening anything, is offered as the
+  /// destination picker's starting location. The exporter decides how — and
+  /// whether — the platform can honour it.
+  Future<Result<DocumentExportResult>> call(DocumentId documentId) async {
     final found = await _documents.findById(documentId);
     if (found case Failed(:final failure)) {
       return Result<DocumentExportResult>.failure(failure);
@@ -398,7 +411,7 @@ class ExportDocument {
     return _exporter.export(
       sourcePath: resolved.valueOrNull!,
       suggestedName: ShareRules.pdfFileName(document.title),
-      initialDirectory: initialDirectory,
+      initialDirectory: defaultLocation?.call(),
     );
   }
 }

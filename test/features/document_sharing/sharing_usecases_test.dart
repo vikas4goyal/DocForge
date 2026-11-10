@@ -82,7 +82,6 @@ void main() {
   Document doc({
     String title = 'Invoice',
     bool isProtected = false,
-    bool hasRecognisedText = false,
     String? filePath,
   }) => Document(
     id: id,
@@ -93,7 +92,6 @@ void main() {
     sizeInBytes: 1024,
     libraryPath: LibraryPath.parse(filePath ?? 'a.pdf'),
     isProtected: isProtected,
-    hasRecognisedText: hasRecognisedText,
   );
 
   /// Writes a stand-in PDF into the library so resolution finds one.
@@ -387,6 +385,47 @@ void main() {
       );
       expect(File(destination).readAsStringSync(), 'the document');
     });
+
+    test('starts the picker in the configured default location', () async {
+      writeStoredPdf();
+      final picker = FakeExportDestinationPicker(
+        destination: '${temporary.path}/exported.pdf',
+      );
+
+      await ExportDocument(
+        _Reader(document: doc()),
+        picker,
+        testFiles,
+        defaultLocation: () => '/storage/emulated/0/Download',
+      )(id);
+
+      expect(picker.startLocations, ['/storage/emulated/0/Download']);
+    });
+
+    test(
+      'reads the default location at export time, not construction',
+      () async {
+        writeStoredPdf();
+        final picker = FakeExportDestinationPicker(
+          destination: '${temporary.path}/exported.pdf',
+        );
+        String? configured;
+        final export = ExportDocument(
+          _Reader(document: doc()),
+          picker,
+          testFiles,
+          defaultLocation: () => configured,
+        );
+
+        await export(id);
+        configured = '/storage/emulated/0/Scans';
+        File('${temporary.path}/exported.pdf').deleteSync();
+        await export(id);
+
+        // "Ask each time" first, then the folder chosen in Settings meanwhile.
+        expect(picker.startLocations, [null, '/storage/emulated/0/Scans']);
+      },
+    );
 
     test('leaves the source in place', () async {
       final stored = writeStoredPdf();

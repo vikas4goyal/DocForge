@@ -35,7 +35,7 @@ The application SHALL navigate directly to the dashboard on every launch after o
 - **THEN** the persisted onboarding-completed flag is still honoured and onboarding is not shown again
 
 ### Requirement: Privacy and offline introduction
-The Privacy & Offline Introduction screen SHALL state truthfully where documents are stored and what leaves the device, and that scanning and OCR work without an internet connection. On Android it SHALL state that documents are stored only on the device and that no document is uploaded automatically. On iOS, where the library is kept in the user's own iCloud Drive whenever iCloud is on, it SHALL state that documents are kept in the user's own iCloud Drive when iCloud is on and otherwise only on the device, and that nothing is sent to DocScanly servers.
+The Privacy & Offline Introduction screen SHALL state truthfully where documents are stored and what leaves the device, and that scanning and creating PDFs work without an internet connection. On Android it SHALL state that documents are stored only on the device and that no document is uploaded automatically. On iOS, where the library is kept in the user's own iCloud Drive whenever iCloud is on, it SHALL state that documents are kept in the user's own iCloud Drive when iCloud is on and otherwise only on the device, and that nothing is sent to DocScanly servers.
 
 #### Scenario: Privacy statements are presented
 - **WHEN** the Privacy & Offline Introduction screen is displayed

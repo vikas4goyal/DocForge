@@ -126,7 +126,10 @@ class ShareCubit extends Cubit<ShareState> {
   }
 
   /// Exports the document to a destination the user picks.
-  Future<void> export({String? initialDirectory}) async {
+  ///
+  /// Where the picker starts is the export use case's concern — it reads the
+  /// configured default save location itself.
+  Future<void> export() async {
     emit(
       state.copyWith(
         status: ShareStatus.exporting,
@@ -135,10 +138,7 @@ class ShareCubit extends Cubit<ShareState> {
       ),
     );
 
-    final result = await _export(
-      _documentId,
-      initialDirectory: initialDirectory,
-    );
+    final result = await _export(_documentId);
     if (isClosed) return;
 
     switch (result) {

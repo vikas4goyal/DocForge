@@ -47,7 +47,7 @@ void main() {
   PdfGenerationCubit cubitFor(int pageCount) => PdfGenerationCubit(
     pages(pageCount),
     SaveDocument(
-      BuildSearchablePdf(FakePdfComposer(), (_) async => const {}),
+      BuildPdf(FakePdfComposer()),
       RecordingDocumentWriter(),
       FixedClock(DateTime.utc(2026, 3, 14, 9, 30)),
       SequentialIdGenerator(prefix: 'doc'),

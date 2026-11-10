@@ -24,14 +24,6 @@ typedef DocumentPagePdfRenderer =
       String? password,
     });
 
-/// Extracts embedded text from one PDF page.
-typedef DocumentPageTextExtractor =
-    Future<Result<String?>> Function(
-      String filePath, {
-      required int pageNumber,
-      String? password,
-    });
-
 /// Resolves document pages without persisting synthetic image-backed rows.
 class LibraryDocumentPageAccessRepository
     implements DocumentPageAccessRepository {
@@ -41,8 +33,7 @@ class LibraryDocumentPageAccessRepository
     this._files,
     this._secrets,
     this._cacheDirectory,
-    this._renderPdfPage,
-    this._extractPdfText, {
+    this._renderPdfPage, {
     DocumentPageCacheMaintenance? cache,
   }) : _cache =
            cache ??
@@ -55,7 +46,6 @@ class LibraryDocumentPageAccessRepository
   final SecureStore _secrets;
   final Directory _cacheDirectory;
   final DocumentPagePdfRenderer _renderPdfPage;
-  final DocumentPageTextExtractor _extractPdfText;
   final DocumentPageCacheMaintenance _cache;
 
   @override
@@ -199,29 +189,6 @@ class LibraryDocumentPageAccessRepository
           Failure.storage(debugDetail: '$error'),
         );
       }
-    } finally {
-      await _files.release(document);
-    }
-  }
-
-  @override
-  Future<Result<String?>> embeddedText(
-    Document document,
-    DocumentPageHandle page,
-  ) async {
-    if (page.source is StoredImageDocumentPageSource) {
-      return const Result<String?>.success(null);
-    }
-    final resolved = await _files.pathFor(document);
-    if (resolved case Failed(:final failure)) {
-      return Result<String?>.failure(failure);
-    }
-    try {
-      return await _extractPdfText(
-        resolved.valueOrNull!,
-        pageNumber: page.pageNumber,
-        password: await _passwordFor(document),
-      );
     } finally {
       await _files.release(document);
     }

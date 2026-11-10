@@ -57,7 +57,6 @@ void main() {
             isFavourite: true,
             isArchived: true,
             isProtected: true,
-            hasRecognisedText: true,
             cloudResourceIdentifier: 'cloud-1',
             contentAvailability: DocumentContentAvailability.remote,
           );
@@ -72,7 +71,6 @@ void main() {
       expect(restored.isFavourite, isTrue);
       expect(restored.isArchived, isTrue);
       expect(restored.isProtected, isTrue);
-      expect(restored.hasRecognisedText, isTrue);
       expect(restored.cloudResourceIdentifier, 'cloud-1');
       expect(restored.contentAvailability, DocumentContentAvailability.remote);
       expect(restored.libraryPath, document.libraryPath);

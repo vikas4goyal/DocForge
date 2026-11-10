@@ -31,7 +31,6 @@ import 'package:doc_scanly/features/document_import/domain/import_rules.dart';
 import 'package:doc_scanly/features/document_import/infrastructure/repositories/fake_import_sources.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
-import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
@@ -60,7 +59,6 @@ void main() {
       FolderEntitySchema,
       PageEntitySchema,
       TrashEntitySchema,
-      OcrTextEntitySchema,
     ], directory: root.path);
 
     publicStore = FilesystemPublicFileStore(documents);

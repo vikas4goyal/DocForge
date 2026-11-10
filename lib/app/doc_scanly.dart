@@ -53,7 +53,6 @@ import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_re
 import 'package:doc_scanly/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
 import 'package:doc_scanly/features/app_security/presentation/security_keys.dart';
 import 'package:doc_scanly/features/app_security/presentation/widgets/app_lock_observer.dart';
-import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/adopt_device_library.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/ensure_document_downloaded.dart';
@@ -428,16 +427,18 @@ Future<Widget> buildDocScanly({
     )(),
   );
 
-  // Read once at startup and kept current by the settings screen. The features
-  // that consume a setting — naming, quality — read it through this holder
-  // rather than hitting preferences on every save, which would put a disk read
-  // in the middle of document creation.
-  final currentSettings = ValueNotifier<AppSettings>(await settings.load());
+  // Loaded once before any consumer is built, which primes the repository's
+  // read model. Features read settings through `settingsModel.current` — the
+  // last *successfully persisted* values — rather than hitting preferences on
+  // every save (a disk read in the middle of document creation) or trusting a
+  // widget to copy them across (which published defaults while loading).
+  final settingsModel = settings.repository;
+  await settings.load();
 
   // Seeded from the stored choice so the very first frame is already in the
   // right theme; a default-then-correct sequence would flash light before dark.
   final themeMode = ThemeModeController(
-    themeModeFor(currentSettings.value.theme),
+    themeModeFor(settingsModel.current.theme),
   );
 
   // One editor instance, shared: generation protects through it and the editing
@@ -464,7 +465,7 @@ Future<Widget> buildDocScanly({
     ids: resolvedDependencies.idGenerator,
     documentReader: library.documentReader,
     documentWriter: library.documentWriter,
-    namingPattern: () => currentSettings.value.namingPattern,
+    namingPattern: () => settingsModel.current.namingPattern,
     // Shared with crop/enhance previews so saving uses the same native-first
     // GPU pipeline and CPU fallback rather than a second pixel implementation.
     renderPage: renderPage,
@@ -508,9 +509,9 @@ Future<Widget> buildDocScanly({
           folderId: folderId,
         ),
     suggestName: () =>
-        creation.generateName(currentSettings.value.namingPattern),
+        creation.generateName(settingsModel.current.namingPattern),
     store: store,
-    desiredCameraResolution: () => currentSettings.value.cameraResolution,
+    desiredCameraResolution: () => settingsModel.current.cameraResolution,
     openSavePdf: (context, session) {
       final handle = savePdfSessions.register(session);
       final route = SavePdfRoute(sessionHandle: handle);
@@ -539,6 +540,9 @@ Future<Widget> buildDocScanly({
     share: share,
     printer: printer,
     exporter: exportPicker,
+    // Read at export time from the persisted settings, so every share surface
+    // starts in the configured folder and a change applies immediately.
+    defaultSaveLocation: () => settingsModel.current.saveLocation,
   );
 
   // Onboarding owns its own gate. The flag is read once here, before the first
@@ -587,7 +591,6 @@ Future<Widget> buildDocScanly({
       permissions: resolvedDependencies.permissions,
       secureStorage: resolvedDependencies.secureStorage,
       documentFiles: documentFiles,
-      currentSettings: currentSettings,
       themeMode: themeMode,
       appVersion: appVersion,
       lockGate: lockGate,
@@ -602,7 +605,7 @@ Future<Widget> buildDocScanly({
         sessionHandle: handle,
         sessions: savePdfSessions,
         renderPage: renderPage,
-        initialQuality: currentSettings.value.pdfQuality,
+        initialQuality: settingsModel.current.pdfQuality,
         candidateRepository: creation.candidateRepository,
         documents: library.documentWriter,
         rollbackDocument: (documentId) async {

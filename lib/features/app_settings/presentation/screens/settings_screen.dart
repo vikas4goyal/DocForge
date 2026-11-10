@@ -113,24 +113,35 @@ class SettingsScreen extends StatelessWidget {
           labelFor: (choice) => choice.label,
           onSelected: cubit.setTheme,
         ),
-        SettingsChoiceTile<PdfQualityPercent>(
-          key: SettingsKeys.pdfQuality,
-          title: 'PDF quality',
-          value: settings.pdfQuality,
-          valueLabel: '${settings.pdfQuality.value}%',
-          options: [
-            for (
-              var value = PdfQualityPercent.minimum;
-              value <= PdfQualityPercent.maximum;
-              value++
-            )
-              PdfQualityPercent(value: value),
-          ],
-          labelFor: (quality) => '${quality.value}%',
-          // The spec requires the effect on size and fidelity to be described;
-          // a preset name alone does not say what is being traded.
-          descriptionFor: SettingsCopy.pdfQualityDescription,
-          onSelected: cubit.setPdfQuality,
+        // Rebuilt on its own so a drag, which emits on every step, repaints
+        // this tile rather than the whole list.
+        BlocSelector<SettingsCubit, SettingsState, (int, bool)>(
+          selector: (state) => (
+            state.displayedPdfQuality,
+            state.status != SettingsStatus.loading,
+          ),
+          builder: (context, selected) {
+            final (percent, enabled) = selected;
+            return SettingsSliderTile(
+              key: SettingsKeys.pdfQuality,
+              sliderKey: SettingsKeys.pdfQualitySlider,
+              title: 'PDF quality',
+              value: percent,
+              min: PdfQualityPercent.minimum,
+              max: PdfQualityPercent.maximum,
+              enabled: enabled,
+              valueLabelFor: (value) => '$value%',
+              semanticLabelFor: SettingsSemantics.pdfQualitySlider,
+              // The spec requires the effect on size and fidelity to be
+              // described; a number alone does not say what is traded.
+              description: SettingsCopy.pdfQualityDescription(
+                PdfQualityPercent(value: percent),
+              ),
+              onChanged: cubit.previewPdfQuality,
+              onChangeEnd: (value) =>
+                  cubit.setPdfQuality(PdfQualityPercent(value: value)),
+            );
+          },
         ),
         SettingsValueTile(
           key: SettingsKeys.cameraResolution,
@@ -163,6 +174,7 @@ class SettingsScreen extends StatelessWidget {
           key: SettingsKeys.saveLocation,
           title: 'Default save location',
           value: state.saveLocationLabel,
+          detail: state.saveLocationDetail,
           onTap: () => Navigator.of(context).push<void>(
             SettingsDetailRoutes.saveLocation(
               currentPath: settings.saveLocation,
