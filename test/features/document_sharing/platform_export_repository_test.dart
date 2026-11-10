@@ -207,28 +207,34 @@ void main() {
       expect(hints, [null]);
     });
 
-    test('a rejected hint is retried once at the picker default', () async {
-      final hints = <String?>[];
-      final result =
-          await recording(
-            hints,
-            fail: (hint) =>
-                hint == null ? null : PlatformException(code: 'bad_uri'),
-          ).export(
-            sourcePath: source.path,
-            suggestedName: 'Invoice.pdf',
-            initialDirectory: '/storage/emulated/0/Gone',
-          );
+    // PR #2 review: a write failure after the user picked a destination (a
+    // full disk, a failed provider write) arrives as a PlatformException too.
+    // Retrying reopened the picker over a real failure.
+    test(
+      'a failure with a starting location is reported, never retried',
+      () async {
+        final hints = <String?>[];
+        final result =
+            await recording(
+              hints,
+              fail: (_) => PlatformException(
+                code: 'Error while saving file',
+                message: 'No space left on device',
+              ),
+            ).export(
+              sourcePath: source.path,
+              suggestedName: 'Invoice.pdf',
+              initialDirectory: '/storage/emulated/0/Download',
+            );
 
-      expect(hints, hasLength(2));
-      expect(hints.last, isNull);
-      expect(
-        result.valueOrNull,
-        const DocumentExportResult.completed(
-          destinationLabel: 'Files/Invoice.pdf',
-        ),
-      );
-    });
+        expect(hints, hasLength(1), reason: 'The picker must open only once.');
+        expect(result, isA<Failed<DocumentExportResult>>());
+        expect(
+          result.failureOrNull.toString(),
+          contains('No space left on device'),
+        );
+      },
+    );
 
     test('a platform failure without a hint is not retried', () async {
       final hints = <String?>[];

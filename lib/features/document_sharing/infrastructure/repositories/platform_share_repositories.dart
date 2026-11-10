@@ -17,7 +17,6 @@ import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 import 'package:doc_scanly/features/document_sharing/infrastructure/export_start_location.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:printing/printing.dart';
 import 'package:share_plus/share_plus.dart';
 
@@ -157,24 +156,19 @@ class SystemExportDocumentRepository implements ExportDocumentRepository {
         platform: platform ?? defaultTargetPlatform,
         directoryExists: directoryExists,
       );
-      Future<String?> handOff(String? start) => saveFile(
+      // Handed over exactly once. A starting location the platform cannot
+      // use never fails the call: Android's DocumentsUI ignores an unusable
+      // EXTRA_INITIAL_URI and iOS ignores an invalid directoryURL. Every
+      // error file_picker does report is unrelated to the hint, and on
+      // Android that includes a failed write *after* the user picked a
+      // destination — so retrying would reopen the picker over a real
+      // failure, and could leave a partial file at the first destination.
+      final chosen = await saveFile(
         fileName: suggestedName,
-        initialDirectory: start,
+        initialDirectory: hint,
         allowedExtensions: [suggestedName.split('.').last],
         bytes: bytes,
       );
-
-      String? chosen;
-      try {
-        chosen = await handOff(hint);
-      } on PlatformException {
-        // A starting location is only a hint. If the platform rejects it — a
-        // revoked grant, a volume that was unmounted — the export itself must
-        // still happen, so retry once at the picker's own default. Without a
-        // hint there is nothing to drop, and the failure is real.
-        if (hint == null) rethrow;
-        chosen = await handOff(null);
-      }
 
       return chosen == null
           ? const Result<DocumentExportResult>.success(
