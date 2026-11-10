@@ -37,6 +37,8 @@ class ViewerCubit extends Cubit<ViewerState> {
     emit(state.copyWith(status: ViewerStatus.loading));
 
     final result = await _open(_documentId);
+    // The user can leave the viewer while the document is still opening.
+    if (isClosed) return;
 
     switch (result) {
       case Success(:final value):
@@ -61,6 +63,7 @@ class ViewerCubit extends Cubit<ViewerState> {
     emit(state.copyWith(status: ViewerStatus.loading));
 
     final result = await _open(_documentId, password: password);
+    if (isClosed) return;
 
     switch (result) {
       case Success(:final value):
@@ -172,6 +175,7 @@ class ViewerCubit extends Cubit<ViewerState> {
     ViewableDocument viewable, {
     bool? passwordRemembered,
   }) async {
+    if (isClosed) return;
     emit(
       state.copyWith(
         status: ViewerStatus.ready,

@@ -93,7 +93,6 @@ void main() {
     await save.waitForExactSize();
     await save.previewAndClose();
     await save.cancelPreview();
-    await save.cancelCommit();
     // Changing quality starts a debounced calculation; Save must supersede it
     // immediately rather than waiting for an unrelated size job.
     await save.setDocumentQuality(80);

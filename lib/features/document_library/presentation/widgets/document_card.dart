@@ -91,7 +91,7 @@ class DocumentCard extends StatelessWidget {
                   DocumentContentAvailability.local)
                 Padding(
                   padding: const EdgeInsets.only(left: 8),
-                  child: _CloudStatusIcon(document: document),
+                  child: DocumentCloudStatusIcon(document: document),
                 ),
             ],
           ),
@@ -148,9 +148,12 @@ class _RestoreButton extends StatelessWidget {
   }
 }
 
-class _CloudStatusIcon extends StatelessWidget {
-  const _CloudStatusIcon({required this.document});
+/// Shows where [document]'s content currently is.
+class DocumentCloudStatusIcon extends StatelessWidget {
+  /// Creates the status icon for [document].
+  const DocumentCloudStatusIcon({required this.document, super.key});
 
+  /// The document whose availability is shown.
   final Document document;
 
   @override

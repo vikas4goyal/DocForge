@@ -180,6 +180,73 @@ Future<void> tapKey(
   await _advance(tester, const Duration(milliseconds: 50));
 }
 
+/// Starts a preview job and cancels it if its progress dialog can be caught.
+///
+/// On a device these jobs can finish in about 200ms, so whether the cancel
+/// lands first is a race. Cancellation itself is proved deterministically by
+/// the cubit and component tests; this proves the route stays usable whichever
+/// side wins, and closes the preview when the job got there first.
+Future<void> previewAttemptingCancel(
+  WidgetTester tester, {
+  required Key start,
+  required Key dialog,
+  required Key cancel,
+  required Key preview,
+  required Key closePreview,
+  Duration timeout = defaultTimeout,
+}) async {
+  // The previous preview can still be animating out.
+  await _pumpWhileFound(tester, preview, timeout);
+  await pumpUntilFound(tester, start, timeout: timeout);
+  await tester.tap(find.byKey(start));
+
+  var cancelRequested = false;
+  final deadline = DateTime.now().add(timeout);
+  while (DateTime.now().isBefore(deadline)) {
+    await tester.pump(const Duration(milliseconds: 10));
+    final dialogVisible = find.byKey(dialog).evaluate().isNotEmpty;
+    if (dialogVisible && !cancelRequested) {
+      await tester.tap(find.byKey(cancel), warnIfMissed: false);
+      cancelRequested = true;
+    } else if (find.byKey(preview).evaluate().isNotEmpty) {
+      await tapKey(tester, closePreview, timeout: timeout);
+      await _pumpWhileFound(tester, preview, timeout);
+      return;
+    } else if (cancelRequested && !dialogVisible) {
+      return;
+    }
+  }
+  fail('The preview neither opened nor cancelled during: $currentStep.');
+}
+
+Future<void> _pumpWhileFound(
+  WidgetTester tester,
+  Key key,
+  Duration timeout,
+) async {
+  final deadline = DateTime.now().add(timeout);
+  while (find.byKey(key).evaluate().isNotEmpty) {
+    if (DateTime.now().isAfter(deadline)) {
+      fail('$key did not go away during: $currentStep.');
+    }
+    await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
+/// Closes the on-screen keyboard and waits for it to finish leaving.
+///
+/// A simulator with a software keyboard covers the lower half of the screen,
+/// so a control below the field just typed into cannot be tapped until the
+/// keyboard has gone.
+Future<void> dismissKeyboard(WidgetTester tester) async {
+  FocusManager.instance.primaryFocus?.unfocus();
+  for (var i = 0; i < 50; i++) {
+    await tester.pump(const Duration(milliseconds: 100));
+    if (tester.view.viewInsets.bottom == 0) return;
+  }
+  fail('The on-screen keyboard did not close within 5s.');
+}
+
 /// Enters [text] into the field carrying [key], waiting for it first.
 Future<void> enterTextInto(
   WidgetTester tester,

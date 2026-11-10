@@ -389,12 +389,14 @@ Future<Widget> buildDocScanly({
         )
       : null;
 
-  Future<void> reconcileLibrary({bool force = false}) async {
+  /// Returns whether the run changed what the library index holds.
+  Future<bool> reconcileLibrary({bool force = false}) async {
     if (cloudReconcile == null) {
-      await library.reconcile(force: force);
-    } else {
-      await cloudReconcile();
+      final outcome = await library.reconcile(force: force);
+      return outcome.valueOrNull?.changedAnything ?? false;
     }
+    final outcome = await cloudReconcile();
+    return outcome.valueOrNull?.changedAnything ?? false;
   }
 
   final settings = buildSettingsModule(
@@ -687,7 +689,9 @@ Future<Widget> buildDocScanly({
         // is retried on the next launch/resume, while reconciliation can still
         // adopt user-visible file changes immediately.
         await library.expireTrash();
-        await reconcileLibrary();
+        // Only on a real change: this runs on every resume, and a reload puts
+        // Home back into its loading state.
+        if (await reconcileLibrary()) routeObserver.libraryChanged();
       },
       externalTriggers: usesICloudAuthority
           ? cloudStorage!.cloud.identityChanges

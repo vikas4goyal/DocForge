@@ -274,6 +274,15 @@ void main() {
 
     setUp(() => harness = ViewerHarness());
 
+    test('leaving while the document is opening does not throw', () async {
+      final cubit = harness.cubit();
+
+      final opening = cubit.load();
+      await cubit.close();
+
+      await expectLater(opening, completes);
+    });
+
     blocTest<ViewerCubit, ViewerState>(
       'loads and becomes ready',
       build: () => harness.cubit(),

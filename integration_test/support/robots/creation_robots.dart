@@ -373,6 +373,7 @@ class SavePdfRobot extends Robot {
   Future<void> name(String value) => step('naming the PDF "$value"', () async {
     await waitUntilVisible();
     await type(PdfKeys.saveNameField, value);
+    await dismissKeyboard(tester);
   });
 
   /// Current document-quality percentage from the keyed slider.
@@ -461,10 +462,14 @@ class SavePdfRobot extends Robot {
 
   /// Cancels candidate preparation while retaining the Save route.
   Future<void> cancelPreview() => step('cancelling PDF preview', () async {
-    await tap(PdfKeys.savePreviewButton);
-    await waitFor(PdfKeys.jobProgressDialog);
-    await tap(PdfKeys.jobCancelButton);
-    await waitUntilGone(PdfKeys.jobProgressDialog);
+    await previewAttemptingCancel(
+      tester,
+      start: PdfKeys.savePreviewButton,
+      dialog: PdfKeys.jobProgressDialog,
+      cancel: PdfKeys.jobCancelButton,
+      preview: PdfKeys.temporaryPreviewScreen,
+      closePreview: PdfKeys.temporaryPreviewClose,
+    );
     await waitUntilVisible();
   });
 
@@ -472,15 +477,6 @@ class SavePdfRobot extends Robot {
   Future<void> commit() => step('committing the PDF', () async {
     await tap(PdfKeys.saveConfirmButton);
     await waitUntilGone(screenKey, timeout: const Duration(seconds: 120));
-  });
-
-  /// Cancels an authoritative commit and waits for the same route to recover.
-  Future<void> cancelCommit() => step('cancelling PDF save', () async {
-    await tap(PdfKeys.saveConfirmButton);
-    await waitFor(PdfKeys.jobProgressDialog);
-    await tap(PdfKeys.jobCancelButton);
-    await waitUntilGone(PdfKeys.jobProgressDialog);
-    await waitUntilVisible();
   });
 }
 

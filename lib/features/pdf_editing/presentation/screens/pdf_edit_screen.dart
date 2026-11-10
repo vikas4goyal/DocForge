@@ -942,7 +942,8 @@ class _WatermarkToolState extends State<_WatermarkTool> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    // Scrollable because the keyboard leaves less room than the form needs.
+    return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -417,8 +417,18 @@ class SettingsRobot extends Robot {
         await waitUntilVisible();
         await tap(settingKey);
         await waitFor(SettingsKeys.choiceSheet);
-        final option = find.byKey(SettingsKeys.choiceOption(optionName));
-        await tester.ensureVisible(option);
+        // The options are a lazy list, and a long one (PDF quality) has not
+        // built the rows below the fold, so ensureVisible alone finds nothing.
+        await tester.scrollUntilVisible(
+          find.byKey(SettingsKeys.choiceOption(optionName)),
+          300,
+          scrollable: find
+              .descendant(
+                of: find.byKey(SettingsKeys.choiceSheet),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
         await tester.pump();
         await tap(SettingsKeys.choiceOption(optionName));
         await waitUntilGone(SettingsKeys.choiceSheet);
