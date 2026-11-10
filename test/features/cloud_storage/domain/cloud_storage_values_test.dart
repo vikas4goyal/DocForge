@@ -2,6 +2,7 @@ import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/load_storage_location.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/entities/cloud_availability.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/entities/cloud_library_marker.dart';
+import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_decision.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_location.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/failures/cloud_storage_failure.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -58,33 +59,57 @@ void main() {
     );
   });
 
-  test('loaded authority uses value equality and availability policy', () {
-    final availableStatus = CloudAvailabilityStatus.values.firstWhere(
-      (status) => status.name == 'available',
-    );
-    final available = CloudAvailability(availableStatus);
+  test('loaded decisions use value equality and name the current root', () {
+    const available = CloudAvailability(CloudAvailabilityStatus.available);
+    const signedOut = CloudAvailability(CloudAvailabilityStatus.signedOut);
     expect(
-      LoadedStorageLocation(
-        location: StorageLocation.iCloud,
+      const LoadedStorageLocation(
+        decision: StorageDecision.useICloud(),
         cloudAvailability: available,
-        discoveredEstablishedLibrary: true,
       ),
-      LoadedStorageLocation(
-        location: StorageLocation.iCloud,
+      const LoadedStorageLocation(
+        decision: StorageDecision.useICloud(),
         cloudAvailability: available,
-        discoveredEstablishedLibrary: true,
       ),
     );
+    StorageLocation rootOf(StorageDecision decision) => LoadedStorageLocation(
+      decision: decision,
+      cloudAvailability: signedOut,
+    ).location;
+
+    expect(rootOf(const StorageDecision.useICloud()), StorageLocation.iCloud);
     expect(
-      LoadedStorageLocation(
-        location: StorageLocation.local,
-        cloudAvailability: CloudAvailability(
-          CloudAvailabilityStatus.values.firstWhere(
-            (status) => status.name == 'signedOut',
+      rootOf(
+        const StorageDecision.iCloudUnavailable(
+          reason: CloudAvailabilityStatus.signedOut,
+        ),
+      ),
+      StorageLocation.iCloud,
+    );
+    expect(
+      rootOf(
+        const StorageDecision.useLocal(
+          reason: CloudAvailabilityStatus.signedOut,
+        ),
+      ),
+      StorageLocation.local,
+    );
+    expect(
+      rootOf(const StorageDecision.migrateToICloud()),
+      StorageLocation.local,
+    );
+    // Once a resumed move has switched, iCloud is already the authority.
+    expect(
+      rootOf(
+        const StorageDecision.migrateToICloud(
+          resume: StorageMigrationCheckpoint(
+            source: StorageLocation.local,
+            destination: StorageLocation.iCloud,
+            phase: StorageMigrationPhase.cleaning,
           ),
         ),
-      ).isAuthoritativeRootAvailable,
-      isTrue,
+      ),
+      StorageLocation.iCloud,
     );
   });
 

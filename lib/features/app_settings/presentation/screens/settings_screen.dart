@@ -26,6 +26,7 @@ class SettingsScreen extends StatelessWidget {
     this.onBack,
     this.onToggleAppLock,
     this.onStorageLocation,
+    this.storageLocationSummary,
   });
 
   /// Invoked when the user leaves settings.
@@ -47,8 +48,12 @@ class SettingsScreen extends StatelessWidget {
   /// flag lives in secure storage, not in preferences.
   final ValueChanged<bool>? onToggleAppLock;
 
-  /// Opens iOS storage selection; null keeps cloud UI absent on Android.
+  /// Opens the iOS storage status; null keeps cloud UI absent on Android.
   final VoidCallback? onStorageLocation;
+
+  /// Where this session stores PDFs, such as “iCloud Drive” or “On this
+  /// device”; shown as the storage-location row's value.
+  final String? storageLocationSummary;
 
   @override
   Widget build(BuildContext context) {
@@ -108,24 +113,35 @@ class SettingsScreen extends StatelessWidget {
           labelFor: (choice) => choice.label,
           onSelected: cubit.setTheme,
         ),
-        SettingsChoiceTile<PdfQualityPercent>(
-          key: SettingsKeys.pdfQuality,
-          title: 'PDF quality',
-          value: settings.pdfQuality,
-          valueLabel: '${settings.pdfQuality.value}%',
-          options: [
-            for (
-              var value = PdfQualityPercent.minimum;
-              value <= PdfQualityPercent.maximum;
-              value++
-            )
-              PdfQualityPercent(value: value),
-          ],
-          labelFor: (quality) => '${quality.value}%',
-          // The spec requires the effect on size and fidelity to be described;
-          // a preset name alone does not say what is being traded.
-          descriptionFor: SettingsCopy.pdfQualityDescription,
-          onSelected: cubit.setPdfQuality,
+        // Rebuilt on its own so a drag, which emits on every step, repaints
+        // this tile rather than the whole list.
+        BlocSelector<SettingsCubit, SettingsState, (int, bool)>(
+          selector: (state) => (
+            state.displayedPdfQuality,
+            state.status != SettingsStatus.loading,
+          ),
+          builder: (context, selected) {
+            final (percent, enabled) = selected;
+            return SettingsSliderTile(
+              key: SettingsKeys.pdfQuality,
+              sliderKey: SettingsKeys.pdfQualitySlider,
+              title: 'PDF quality',
+              value: percent,
+              min: PdfQualityPercent.minimum,
+              max: PdfQualityPercent.maximum,
+              enabled: enabled,
+              valueLabelFor: (value) => '$value%',
+              semanticLabelFor: SettingsSemantics.pdfQualitySlider,
+              // The spec requires the effect on size and fidelity to be
+              // described; a number alone does not say what is traded.
+              description: SettingsCopy.pdfQualityDescription(
+                PdfQualityPercent(value: percent),
+              ),
+              onChanged: cubit.previewPdfQuality,
+              onChangeEnd: (value) =>
+                  cubit.setPdfQuality(PdfQualityPercent(value: value)),
+            );
+          },
         ),
         SettingsValueTile(
           key: SettingsKeys.cameraResolution,
@@ -158,6 +174,7 @@ class SettingsScreen extends StatelessWidget {
           key: SettingsKeys.saveLocation,
           title: 'Default save location',
           value: state.saveLocationLabel,
+          detail: state.saveLocationDetail,
           onTap: () => Navigator.of(context).push<void>(
             SettingsDetailRoutes.saveLocation(
               currentPath: settings.saveLocation,
@@ -193,7 +210,7 @@ class SettingsScreen extends StatelessWidget {
           SettingsValueTile(
             key: SettingsKeys.storageLocation,
             title: 'Storage location',
-            value: 'On this device or iCloud Drive',
+            value: storageLocationSummary ?? 'iCloud Drive',
             onTap: onStorageLocation,
           ),
         // Stated plainly rather than left to be discovered. Saved PDFs are
@@ -314,8 +331,8 @@ class AboutScreen extends StatelessWidget {
           ),
           const SizedBox(height: 24),
           Text(
-            'A private document scanner with device-local storage and optional '
-            'iCloud Drive storage on iOS.',
+            'A private document scanner that keeps your PDFs in iCloud Drive on '
+            'iOS whenever iCloud is available, and on the device otherwise.',
             style: theme.textTheme.bodyMedium,
           ),
         ],

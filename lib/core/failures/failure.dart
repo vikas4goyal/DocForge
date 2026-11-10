@@ -83,12 +83,6 @@ sealed class Failure with _$Failure {
     String? debugDetail,
   }) = PermissionFailure;
 
-  /// Text recognition failed for a page.
-  ///
-  /// Never fatal to document creation: the specs require a PDF to be produced
-  /// without a text layer rather than the save being blocked.
-  const factory Failure.ocr({String? debugDetail}) = OcrFailure;
-
   /// A PDF could not be generated, read or modified.
   const factory Failure.pdf({String? debugDetail}) = PdfFailure;
 

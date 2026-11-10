@@ -16,7 +16,8 @@ library;
 
 import 'package:doc_scanly/app/cpu_image_processing_backend.dart';
 import 'package:doc_scanly/core/contracts/image_processing/image_processing.dart';
-import 'package:doc_scanly/core/contracts/models/camera_resolution.dart';
+import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
+import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:doc_scanly/features/image_enhancement/infrastructure/repositories/native_first_image_renderer.dart';
 import 'package:doc_scanly/features/image_enhancement/presentation/enhance_keys.dart';
@@ -93,7 +94,6 @@ void main() {
     await save.waitForExactSize();
     await save.previewAndClose();
     await save.cancelPreview();
-    await save.cancelCommit();
     // Changing quality starts a debounced calculation; Save must supersede it
     // immediately rather than waiting for an unrelated size job.
     await save.setDocumentQuality(80);
@@ -193,6 +193,84 @@ void main() {
       expect(pageTable.pageCount, 3);
     },
   );
+
+  testWidgets('settings changed in Settings drive the next capture and save, '
+      'without revisiting Settings', (tester) async {
+    final app = await bootDocScanly(tester);
+    await DashboardRobot(tester).waitUntilLoaded();
+    final shell = TabShellRobot(tester);
+
+    await shell.openSettings();
+    final settings = SettingsRobot(tester);
+    await settings.waitUntilVisible();
+    await settings.setPdfQuality(45);
+    await settings.choose(
+      SettingsKeys.fileNaming,
+      SettingsKeys.optionNameOf(NamingPattern.sequential),
+    );
+    await settings.expectCameraResolutions(const <String>['720p']);
+    await settings.chooseCameraResolution('720p');
+    await shell.openDashboard();
+    await DashboardRobot(tester).waitUntilLoaded();
+
+    Future<void> captureOnePage(PageTableRobot pageTable) async {
+      await pageTable.beginAddingPageFromCamera();
+      await CropRobot(tester).acceptAndContinue();
+      await EnhanceRobot(tester).done();
+      await pageTable.waitUntilLoaded();
+    }
+
+    await shell.startCreation();
+    final pageTable = PageTableRobot(tester);
+    await pageTable.waitUntilLoaded();
+    await captureOnePage(pageTable);
+
+    // The camera opened with the request measured for 720p, and the
+    // delivered image is reported at that size.
+    expect(app.platform.scanner.requestedResolutions.last?.requestKey, 'high');
+    expect(app.platform.scanner.captures.last.actualWidth, 1280);
+    expect(app.platform.scanner.captures.last.actualHeight, 720);
+
+    await pageTable.openSavePdf();
+    final save = SavePdfRobot(tester);
+    expect(save.documentQuality, 45, reason: 'Settings default applies.');
+    expect(
+      save.currentName,
+      matches(RegExp(r'^Scan \d+$')),
+      reason: 'The sequential naming pattern chosen in Settings applies.',
+    );
+    await save.commit();
+    final viewer = ViewerRobot(tester);
+    await viewer.waitUntilOpen();
+    await viewer.goBack();
+    await DashboardRobot(tester).waitUntilLoaded();
+
+    // The same capture saved at 100%, to show the default really changed
+    // the bytes rather than only the number on screen.
+    await shell.startCreation();
+    await pageTable.waitUntilLoaded();
+    await captureOnePage(pageTable);
+    await pageTable.openSavePdf();
+    expect(save.documentQuality, 45);
+    await save.name('Full quality');
+    await save.setDocumentQuality(100);
+    await save.commit();
+    await viewer.waitUntilOpen();
+
+    final records = await app.isar.documentEntitys.where().findAll();
+    expect(records, hasLength(2));
+    final defaultQuality = records.firstWhere(
+      (record) => record.title != 'Full quality',
+    );
+    final fullQuality = records.firstWhere(
+      (record) => record.title == 'Full quality',
+    );
+    expect(
+      defaultQuality.sizeInBytes,
+      lessThan(fullQuality.sizeInBytes),
+      reason: 'A 45% default must produce a smaller PDF than 100%.',
+    );
+  });
 
   testWidgets('a page abandoned at crop is not added', (tester) async {
     final app = await bootDocScanly(tester);

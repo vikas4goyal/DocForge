@@ -45,6 +45,29 @@ abstract final class OnboardingKeys {
   /// Statement that no document is uploaded automatically.
   static const privacyNoUploadStatement = Key('onboarding_privacy_no_upload');
 
-  /// Statement that scanning and OCR work offline.
+  /// Statement that scanning and creating PDFs work offline.
   static const privacyOfflineStatement = Key('onboarding_privacy_offline');
+}
+
+/// The privacy step's storage and upload statements.
+///
+/// Held as constants so tests assert on one string, and so a change to a
+/// privacy promise is a deliberate edit rather than a copy tweak in a widget.
+abstract final class OnboardingCopy {
+  /// Where documents live when the library is always on the device (Android).
+  static const storageStatementDevice =
+      'Your documents are stored only on this device.';
+
+  /// Where documents live when the library uses iCloud whenever it is on (iOS).
+  static const storageStatementICloud =
+      'Your documents are kept in your own iCloud Drive when iCloud is on, '
+      'otherwise only on this device.';
+
+  /// The upload promise when nothing leaves the device automatically.
+  static const noUploadStatement =
+      'Nothing is uploaded automatically. You choose what to share.';
+
+  /// The upload promise when the user's own iCloud Drive holds the library.
+  static const noServerStatement =
+      'Nothing is sent to DocScanly servers — we don’t have any.';
 }

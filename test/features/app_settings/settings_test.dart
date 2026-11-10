@@ -136,17 +136,21 @@ void main() {
       expect(description, contains('PDF scaling'));
     });
 
-    test('the privacy statement distinguishes Android and optional iCloud', () {
-      final statement = SettingsCopy.privacyStatement.toLowerCase();
+    test(
+      'the privacy statement distinguishes Android and automatic iCloud',
+      () {
+        final statement = SettingsCopy.privacyStatement.toLowerCase();
 
-      expect(
-        statement,
-        contains('on android this library is always on the device'),
-      );
-      expect(statement, contains('explicitly select'));
-      expect(statement, contains('icloud drive container'));
-      expect(statement, contains('never silently switches'));
-    });
+        expect(
+          statement,
+          contains('on android this library is always on the device'),
+        );
+        expect(statement, contains('whenever icloud is available'));
+        expect(statement, contains('turn docscanly off in ios settings'));
+        expect(statement, contains('icloud drive container'));
+        expect(statement, contains('never silently switches'));
+      },
+    );
 
     test('the storage label agrees in number', () {
       expect(
@@ -389,5 +393,28 @@ void main() {
         isNot(preview(NamingPattern.sequential, existingCount: 7)),
       );
     });
+  });
+
+  group('SettingsCopy.folderName', () {
+    for (final (location, expected) in [
+      ('/storage/emulated/0/Download', 'Download'),
+      ('/storage/emulated/0/Documents/Scans/', 'Scans'),
+      ('/var/mobile/Containers/Data/Exports', 'Exports'),
+      (
+        'content://com.android.externalstorage.documents/tree/'
+            'primary%3ADocuments%2FScans',
+        'Scans',
+      ),
+      (
+        'content://com.android.externalstorage.documents/tree/primary%3ADownload',
+        'Download',
+      ),
+      ('file:///var/mobile/Docs/', 'Docs'),
+      ('/', '/'),
+    ]) {
+      test('$location → $expected', () {
+        expect(SettingsCopy.folderName(location), expected);
+      });
+    }
   });
 }

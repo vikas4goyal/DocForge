@@ -10,6 +10,7 @@ library;
 import 'package:doc_scanly/app/settings_module.dart';
 import 'package:doc_scanly/core/contracts/contracts.dart';
 import 'package:doc_scanly/core/contracts/models/document.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
@@ -18,7 +19,7 @@ import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/cubit/settings_cubit.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_screen.dart';
 import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -50,6 +51,21 @@ class _CountingStorageReader implements StorageSummaryReader {
   }
 }
 
+/// A store whose reads work but whose every write fails, as a full disk would.
+class _WriteFailingStore extends InMemoryPreferenceStore {
+  @override
+  Future<Result<void>> writeString(String key, String value) async =>
+      const Result<void>.failure(Failure.storage());
+
+  @override
+  Future<Result<void>> writeInt(String key, int value) async =>
+      const Result<void>.failure(Failure.storage());
+
+  @override
+  Future<Result<void>> remove(String key) async =>
+      const Result<void>.failure(Failure.storage());
+}
+
 void main() {
   late InMemoryPreferenceStore preferences;
   late List<AppThemeChoice> published;
@@ -63,12 +79,16 @@ void main() {
     WidgetTester tester, {
     StorageSummaryReader storageReader = const _FixedStorageReader(),
     VoidCallback? onStorageLocation,
+    SettingsModule? prebuilt,
+    bool settle = true,
   }) async {
-    final module = buildSettingsModule(
-      preferences: preferences,
-      storageReader: storageReader,
-      clock: FixedClock(DateTime.utc(2026, 7, 26)),
-    );
+    final module =
+        prebuilt ??
+        buildSettingsModule(
+          preferences: preferences,
+          storageReader: storageReader,
+          clock: FixedClock(DateTime.utc(2026, 7, 26)),
+        );
 
     await pumpComponent(
       tester,
@@ -92,7 +112,7 @@ void main() {
         ),
       ],
     );
-    await settleComponent(tester);
+    if (settle) await settleComponent(tester);
   }
 
   group('SettingsScreen over its real state machine', () {
@@ -193,5 +213,115 @@ void main() {
       expect(reader.reads, greaterThanOrEqualTo(3));
       expect(managed, isTrue);
     });
+
+    testWidgets('dragging the PDF quality slider persists the new default', (
+      tester,
+    ) async {
+      final module = buildSettingsModule(
+        preferences: preferences,
+        storageReader: const _FixedStorageReader(),
+        clock: FixedClock(DateTime.utc(2026, 7, 26)),
+      );
+      await module.load();
+      await pumpSettings(tester, prebuilt: module);
+
+      final slider = find.byKey(SettingsKeys.pdfQualitySlider);
+      await tester.ensureVisible(slider);
+      await tester.drag(slider, const Offset(-2000, 0));
+      await tester.pumpAndSettle();
+
+      expect(
+        (await preferences.readInt(
+          PreferenceKeys.pdfQualityPercent,
+        )).valueOrNull,
+        PdfQualityPercent.minimum,
+      );
+      expect(
+        module.repository.current.pdfQuality,
+        PdfQualityPercent(value: PdfQualityPercent.minimum),
+      );
+      expect(find.text('30%'), findsOneWidget);
+    });
+
+    testWidgets('a failed slider write springs back to the persisted value', (
+      tester,
+    ) async {
+      final seeded = InMemoryPreferenceStore();
+      await seeded.writeInt(PreferenceKeys.pdfQualityPercent, 60);
+      final module = buildSettingsModule(
+        preferences: _SeededWriteFailingStore(seeded),
+        storageReader: const _FixedStorageReader(),
+        clock: FixedClock(DateTime.utc(2026, 7, 26)),
+      );
+      await module.load();
+      await pumpSettings(tester, prebuilt: module);
+
+      final slider = find.byKey(SettingsKeys.pdfQualitySlider);
+      await tester.ensureVisible(slider);
+      await tester.drag(slider, const Offset(-2000, 0));
+      await tester.pumpAndSettle();
+
+      expect(tester.widget<Slider>(slider).value, 60);
+      // The banner leads the list; scroll back up to where the user sees it.
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 2000));
+      await tester.pumpAndSettle();
+      expectVisible(SettingsKeys.errorView);
+      expect(find.text('60%'), findsOneWidget);
+      expect(module.repository.current.pdfQuality.value, 60);
+    });
+
+    testWidgets(
+      'neither loading nor a failed write changes what other features read',
+      (tester) async {
+        // The failing store refuses writes, so its reads come from a seed.
+        final seeded = InMemoryPreferenceStore();
+        await seeded.writeInt(PreferenceKeys.pdfQualityPercent, 45);
+        await seeded.writeString(PreferenceKeys.fileNamingPattern, 'dateOnly');
+        final failing = _SeededWriteFailingStore(seeded);
+        final module = buildSettingsModule(
+          preferences: failing,
+          storageReader: const _FixedStorageReader(),
+          clock: FixedClock(DateTime.utc(2026, 7, 26)),
+        );
+        // What the composition root does before building any consumer.
+        await module.load();
+        final persisted = module.repository.current;
+
+        await pumpSettings(tester, prebuilt: module, settle: false);
+        // While the Cubit is still loading it holds defaults; consumers must
+        // not see them.
+        expect(module.repository.current, persisted);
+        await settleComponent(tester);
+
+        await tester.tap(find.byKey(SettingsKeys.fileNaming));
+        await tester.pumpAndSettle();
+        await tester.tap(
+          find.byKey(
+            SettingsKeys.choiceOption(
+              SettingsKeys.optionNameOf(NamingPattern.sequential),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expectVisible(SettingsKeys.errorView);
+        expect(module.repository.current, persisted);
+        expect(module.repository.current.pdfQuality.value, 45);
+        expect(module.repository.current.namingPattern, NamingPattern.dateOnly);
+      },
+    );
   });
+}
+
+/// Reads from [_seed]; refuses every write.
+class _SeededWriteFailingStore extends _WriteFailingStore {
+  _SeededWriteFailingStore(this._seed);
+
+  final InMemoryPreferenceStore _seed;
+
+  @override
+  Future<Result<String?>> readString(String key) => _seed.readString(key);
+
+  @override
+  Future<Result<int?>> readInt(String key) => _seed.readInt(key);
 }

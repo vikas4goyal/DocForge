@@ -11,10 +11,13 @@ import 'dart:io';
 
 import 'package:doc_scanly/app/app.dart';
 import 'package:doc_scanly/app/app_dependencies.dart';
+import 'package:doc_scanly/app/cloud_storage_module.dart';
 import 'package:doc_scanly/app/doc_scanly.dart';
 import 'package:doc_scanly/app/fake_dependencies.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
+import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
+import 'package:doc_scanly/core/storage/key_value_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/filesystem_public_file_store.dart';
 import 'package:doc_scanly/core/storage/public_storage/public_file_store.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
@@ -26,6 +29,7 @@ import 'package:doc_scanly/features/app_security/presentation/security_keys.dart
 import 'package:doc_scanly/features/app_security/presentation/widgets/app_lock_observer.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/ios_icloud_channel.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/scripted_icloud_platform.dart';
+import 'package:doc_scanly/features/cloud_storage/presentation/cloud_storage_keys.dart';
 import 'package:doc_scanly/features/document_import/domain/repositories/import_repository.dart';
 import 'package:doc_scanly/features/document_import/presentation/import_keys.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
@@ -36,9 +40,9 @@ import 'package:doc_scanly/features/document_library/presentation/widgets/librar
 import 'package:doc_scanly/features/document_scanning/infrastructure/camera_scanner_repository.dart';
 import 'package:doc_scanly/features/document_viewer/domain/repositories/pdf_renderer.dart';
 import 'package:doc_scanly/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart';
-import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:doc_scanly/features/onboarding/presentation/screens/onboarding_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 
@@ -60,7 +64,6 @@ void main() {
         FolderEntitySchema,
         PageEntitySchema,
         TrashEntitySchema,
-        OcrTextEntitySchema,
       ],
       directory: databaseDirectory.path,
       name: 'doc_scanly_composition_test',
@@ -95,14 +98,17 @@ void main() {
     ICloudPlatformApi? iCloudPlatform,
     bool? isIOS,
     String initialLocation = '/',
+    bool cloudChoosesStore = false,
   }) async {
     return (await tester.runAsync(
       () => buildDocScanly(
         dependencies: dependencies ?? buildFakeAppDependencies(),
         cacheDirectory: cacheDirectory,
         documentsDirectory: documentsDirectory,
-        publicStore:
-            publicStore ?? FilesystemPublicFileStore(documentsDirectory),
+        // An iOS cloud test lets the composition root choose the authority.
+        publicStore: cloudChoosesStore
+            ? null
+            : publicStore ?? FilesystemPublicFileStore(documentsDirectory),
         libraryOverride: LibraryOverride(
           isar: isar,
           documentsDirectory: derivedDirectory,
@@ -250,6 +256,197 @@ void main() {
         expect(find.text('Storage location'), findsNothing);
       },
     );
+
+    group('on iOS the storage decision', () {
+      late Directory cloudRoot;
+      late ScriptedICloudPlatform cloud;
+      late AppDependencies dependencies;
+
+      setUp(() async {
+        cloudRoot = await Directory.systemTemp.createTemp('docscanly_icloud_');
+        cloud = ScriptedICloudPlatform(rootPath: cloudRoot.path);
+        dependencies = buildFakeAppDependencies();
+      });
+
+      tearDown(() async {
+        await cloud.dispose();
+        if (cloudRoot.existsSync()) cloudRoot.deleteSync(recursive: true);
+      });
+
+      Future<Widget> bootIOS(WidgetTester tester) => boot(
+        tester,
+        dependencies: dependencies,
+        iCloudPlatform: cloud,
+        isIOS: true,
+        cloudChoosesStore: true,
+      );
+
+      Future<String?> storedLocation(WidgetTester tester) async =>
+          (await tester.runAsync(
+            () => dependencies.preferences.readString(
+              PreferenceKeys.libraryStorageLocation,
+            ),
+          ))!.valueOrNull;
+
+      /// Lets real file I/O started by a startup screen finish, then pumps.
+      Future<void> drain(WidgetTester tester) async {
+        for (var turn = 0; turn < 20; turn++) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 20)),
+          );
+          await tester.pump();
+        }
+      }
+
+      Future<void> seedDeviceDocument(WidgetTester tester) async {
+        await tester.runAsync(() async {
+          final device = FilesystemPublicFileStore(documentsDirectory);
+          await device.initialise();
+          final source = File('${cacheDirectory.path}/seed.pdf')
+            ..writeAsStringSync('%PDF-1.7 seed');
+          await device.writeFile(LibraryPath.parse('Seed.pdf'), source.path);
+        });
+      }
+
+      compositionTestWidgets('a fresh install composes on iCloud', (
+        tester,
+      ) async {
+        await tester.pumpWidget(await bootIOS(tester));
+        await settle(tester);
+
+        expect(find.byType(DocScanlyApp), findsOneWidget);
+        expect(await storedLocation(tester), 'icloud');
+        expect(cloud.marker, isNotNull);
+      });
+
+      compositionTestWidgets('a signed-out install composes on the device', (
+        tester,
+      ) async {
+        cloud.availabilityValue = 'signedOut';
+
+        await tester.pumpWidget(await bootIOS(tester));
+        await settle(tester);
+
+        expect(find.byType(DocScanlyApp), findsOneWidget);
+        expect(await storedLocation(tester), 'local');
+        expect(cloud.marker, isNull);
+      });
+
+      compositionTestWidgets(
+        'device documents pass through the migration gate first',
+        (tester) async {
+          await seedDeviceDocument(tester);
+
+          await tester.pumpWidget(await bootIOS(tester));
+          await tester.pump();
+          expect(find.byType(CloudMigrationGateApp), findsOneWidget);
+          expect(find.byType(DocScanlyApp), findsNothing);
+
+          await drain(tester);
+          expect(find.byKey(CloudStorageKeys.migrationDone), findsOneWidget);
+          expect(await storedLocation(tester), 'icloud');
+          expect(File('${cloudRoot.path}/Seed.pdf').existsSync(), isTrue);
+
+          await tester.ensureVisible(
+            find.byKey(CloudStorageKeys.migrationContinue),
+          );
+          await tester.tap(find.byKey(CloudStorageKeys.migrationContinue));
+          await drain(tester);
+
+          expect(find.byType(DocScanlyApp), findsOneWidget);
+        },
+      );
+
+      // PR #2 review: a failed availability check showed the unavailable
+      // screen without the confirmed device escape.
+      compositionTestWidgets(
+        'a failed iCloud check still offers the device escape',
+        (tester) async {
+          await dependencies.preferences.writeString(
+            PreferenceKeys.libraryStorageLocation,
+            'icloud',
+          );
+          cloud = _FailingAvailabilityPlatform(rootPath: cloudRoot.path);
+
+          await tester.pumpWidget(await bootIOS(tester));
+          await tester.pump();
+
+          expect(find.byType(CloudLibraryUnavailableApp), findsOneWidget);
+          expect(find.byKey(CloudStorageKeys.useDevice), findsOneWidget);
+
+          await tester.tap(find.byKey(CloudStorageKeys.useDevice));
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(CloudStorageKeys.useDeviceConfirm));
+          await drain(tester);
+
+          expect(await storedLocation(tester), 'local');
+          expect(find.byType(DocScanlyApp), findsOneWidget);
+        },
+      );
+
+      // PR #2 review: a failed adoption was ignored and the app silently
+      // recomposed onto the same unavailable library.
+      compositionTestWidgets(
+        'a device escape that cannot be saved explains itself',
+        (tester) async {
+          final failing = _LocationWriteFailingStore();
+          await failing.writeString(
+            PreferenceKeys.libraryStorageLocation,
+            'icloud',
+          );
+          dependencies = buildFakeAppDependencies(preferences: failing);
+          cloud.availabilityValue = 'disabled';
+
+          await tester.pumpWidget(await bootIOS(tester));
+          await tester.pump();
+          failing.failLocationWrites = true;
+
+          await tester.tap(find.byKey(CloudStorageKeys.useDevice));
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(CloudStorageKeys.useDeviceConfirm));
+          await drain(tester);
+
+          expect(find.byKey(CloudStorageKeys.unavailable), findsOneWidget);
+          expect(find.byKey(CloudStorageKeys.useDeviceFailed), findsOneWidget);
+          // The escape remains, so the user can try again.
+          expect(find.byKey(CloudStorageKeys.useDevice), findsOneWidget);
+          expect(await storedLocation(tester), 'icloud');
+        },
+      );
+
+      compositionTestWidgets(
+        'an unreachable iCloud library offers retry and the device escape',
+        (tester) async {
+          await dependencies.preferences.writeString(
+            PreferenceKeys.libraryStorageLocation,
+            'icloud',
+          );
+          cloud.availabilityValue = 'disabled';
+
+          await tester.pumpWidget(await bootIOS(tester));
+          await tester.pump();
+
+          expect(find.byType(CloudLibraryUnavailableApp), findsOneWidget);
+          expect(find.byKey(CloudStorageKeys.retry), findsOneWidget);
+
+          // Dismissing keeps the iCloud authority.
+          await tester.tap(find.byKey(CloudStorageKeys.useDevice));
+          await tester.pumpAndSettle();
+          await tester.tap(find.text('Cancel'));
+          await tester.pumpAndSettle();
+          expect(await storedLocation(tester), 'icloud');
+          expect(find.byType(CloudLibraryUnavailableApp), findsOneWidget);
+
+          await tester.tap(find.byKey(CloudStorageKeys.useDevice));
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(CloudStorageKeys.useDeviceConfirm));
+          await drain(tester);
+
+          expect(await storedLocation(tester), 'local');
+          expect(find.byType(DocScanlyApp), findsOneWidget);
+        },
+      );
+    });
 
     compositionTestWidgets(
       'lands on onboarding when the flag has never been written',
@@ -461,4 +658,28 @@ class _SilentSharedContentSource implements SharedContentSource {
 
   @override
   Future<void> dispose() async {}
+}
+
+/// An iCloud edge whose availability check fails in transport, as a broken
+/// platform channel would, rather than reporting a status.
+class _FailingAvailabilityPlatform extends ScriptedICloudPlatform {
+  _FailingAvailabilityPlatform({required super.rootPath});
+
+  @override
+  Future<String> availability() async =>
+      throw PlatformException(code: 'channel', message: 'no answer');
+}
+
+/// Preferences whose library-location writes fail once [failLocationWrites]
+/// is set — a full disk at the moment the user confirms the device escape.
+class _LocationWriteFailingStore extends InMemoryPreferenceStore {
+  var failLocationWrites = false;
+
+  @override
+  Future<Result<void>> writeString(String key, String value) async {
+    if (failLocationWrites && key == PreferenceKeys.libraryStorageLocation) {
+      return const Result<void>.failure(Failure.storage());
+    }
+    return super.writeString(key, value);
+  }
 }

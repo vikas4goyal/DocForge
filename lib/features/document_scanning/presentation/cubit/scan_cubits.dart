@@ -63,6 +63,7 @@ class ScanCaptureCubit extends Cubit<ScanCaptureState> {
         desiredResolution: desired,
         activeResolution: value,
         clearActiveResolution: value == null,
+        clearCapturedSize: true,
       ),
       Failed(:final failure) => state.copyWith(
         status: ScanCaptureStatus.failure,
@@ -80,7 +81,8 @@ class ScanCaptureCubit extends Cubit<ScanCaptureState> {
 
     emit(state.copyWith(status: ScanCaptureStatus.capturing));
 
-    final result = await _capturePage(desired: _desiredResolution());
+    final desired = _desiredResolution();
+    final result = await _capturePage(desired: desired);
 
     switch (result) {
       case Success(:final value):
@@ -89,6 +91,12 @@ class ScanCaptureCubit extends Cubit<ScanCaptureState> {
           state.copyWith(
             status: ScanCaptureStatus.ready,
             pageCount: pages.length,
+            // The capture re-applied the current preference, so the label
+            // must describe that request and the size it actually produced.
+            desiredResolution: desired,
+            capturedWidth: value.actualWidth,
+            capturedHeight: value.actualHeight,
+            clearCapturedSize: value.actualWidth == null,
           ),
         );
       case Failed(:final failure):

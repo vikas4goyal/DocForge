@@ -147,7 +147,7 @@ class ReconcileLibrary {
     }
 
     for (final document in diff.removed) {
-      // Page rows go with the record. Recognised text and any stored password
+      // Page rows go with the record. Any stored password
       // are removed by the purge path; here the file is already gone, so there
       // is nothing to delete from the folder.
       await pages.deleteForDocument(document.id);

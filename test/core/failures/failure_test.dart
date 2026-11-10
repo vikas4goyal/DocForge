@@ -13,7 +13,6 @@ const allFailures = <Failure>[
   Failure.permission(kind: PermissionKind.photos),
   Failure.permission(kind: PermissionKind.files),
   Failure.permission(kind: PermissionKind.camera, permanentlyDenied: true),
-  Failure.ocr(),
   Failure.pdf(),
   Failure.storageFull(),
   Failure.import(),
@@ -37,7 +36,7 @@ const allFailures = <Failure>[
 void main() {
   group('Failure equality', () {
     test('identical variants are equal', () {
-      expect(const Failure.ocr(), const Failure.ocr());
+      expect(const Failure.pdf(), const Failure.pdf());
       expect(
         const Failure.permission(kind: PermissionKind.camera),
         const Failure.permission(kind: PermissionKind.camera),
@@ -45,7 +44,7 @@ void main() {
     });
 
     test('different variants are not equal', () {
-      expect(const Failure.ocr(), isNot(const Failure.pdf()));
+      expect(const Failure.storage(), isNot(const Failure.pdf()));
     });
 
     test('the same variant with different data is not equal', () {
@@ -210,15 +209,6 @@ void main() {
 
       expect(message, contains('pdf'));
       expect(message, contains('image'));
-    });
-
-    test('OCR failure reassures that the document is still usable', () {
-      // The specs require OCR failure never to block document creation, so the
-      // message must not imply the document was lost.
-      expect(
-        const Failure.ocr().presentation.message.toLowerCase(),
-        contains('still saved'),
-      );
     });
 
     test('not-enrolled authentication points at device setup', () {

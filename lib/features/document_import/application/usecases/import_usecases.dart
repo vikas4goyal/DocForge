@@ -318,7 +318,7 @@ class ImportPdf {
     );
 
     // An imported PDF has no page images, so no page records are written. The
-    // viewer renders from the file itself, and OCR runs on demand.
+    // viewer renders from the file itself.
     final saved = await _writer.save(document, const []);
 
     if (saved case Failed(:final failure)) {

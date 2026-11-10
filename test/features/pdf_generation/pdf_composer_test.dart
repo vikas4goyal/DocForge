@@ -3,14 +3,12 @@
 /// The rules are covered in `pdf_composition_test.dart` without producing a
 /// PDF. What this file verifies is the part that only shows up once a document
 /// exists: page count and order, that rotation and quality reach the output,
-/// that the text layer is present and positioned, and that a failure leaves no
-/// partial artefact.
+/// and that a failure leaves no partial artefact.
 library;
 
 import 'dart:io';
 
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
@@ -49,17 +47,11 @@ String writePage(
 /// The readable strings in [bytes].
 ///
 /// A PDF's text is stored inside compressed streams, so this is not a parser —
-/// it is used only to assert that the *file* is larger or smaller, never to
-/// read the text layer back. Text-layer presence is asserted structurally.
+/// it only counts page objects.
 int pageCountIn(List<int> bytes) {
   final text = String.fromCharCodes(bytes.where((byte) => byte < 128));
   return RegExp(r'/Type\s*/Page[^s]').allMatches(text).length;
 }
-
-const _block = TextBlock(
-  text: 'Invoice total 240.00',
-  bounds: NormalisedRect(left: 0.1, top: 0.12, right: 0.7, bottom: 0.17),
-);
 
 void main() {
   late Directory directory;
@@ -73,11 +65,8 @@ void main() {
     if (directory.existsSync()) directory.deleteSync(recursive: true);
   });
 
-  PdfPageSpec spec(
-    String path, {
-    PageRotation rotation = PageRotation.none,
-    List<TextBlock> blocks = const [],
-  }) => PdfPageSpec(imagePath: path, rotation: rotation, textBlocks: blocks);
+  PdfPageSpec spec(String path, {PageRotation rotation = PageRotation.none}) =>
+      PdfPageSpec(imagePath: path, rotation: rotation);
 
   Future<ComposedPdf> compose(
     List<PdfPageSpec> pages, {
@@ -227,74 +216,6 @@ void main() {
         expect(composed.pageCount, 1);
       }
     });
-  });
-
-  group('the text layer', () {
-    test('a searchable page produces a larger file than a bare one', () async {
-      // The text layer is real content in the PDF's content stream, so its
-      // presence is measurable even though the stream is compressed.
-      final page = writePage(directory, 'a.jpg');
-
-      final bare = await compose([spec(page)], name: 'bare.pdf');
-      final searchable = await compose([
-        spec(
-          page,
-          blocks: const [
-            _block,
-            TextBlock(
-              text: 'Acme Limited, 14 March 2026, payment terms 30 days',
-              bounds: NormalisedRect(
-                left: 0.1,
-                top: 0.3,
-                right: 0.9,
-                bottom: 0.35,
-              ),
-            ),
-          ],
-        ),
-      ], name: 'searchable.pdf');
-
-      expect(searchable.sizeInBytes, greaterThan(bare.sizeInBytes));
-    });
-
-    test('a page with no recognised text still composes', () async {
-      // The spec is explicit: OCR failure must not prevent a document existing.
-      final composed = await compose([spec(writePage(directory, 'a.jpg'))]);
-
-      expect(composed.pageCount, 1);
-      expect(File(composed.filePath).existsSync(), isTrue);
-    });
-
-    test(
-      'a document mixing recognised and unrecognised pages composes',
-      () async {
-        final composed = await compose([
-          spec(writePage(directory, 'a.jpg'), blocks: const [_block]),
-          spec(writePage(directory, 'b.jpg')),
-        ]);
-
-        expect(composed.pageCount, 2);
-      },
-    );
-
-    test(
-      'a block spanning the full page composes without overflowing',
-      () async {
-        final composed = await compose([
-          spec(
-            writePage(directory, 'a.jpg'),
-            blocks: const [
-              TextBlock(
-                text: 'A line of text running the whole width of the page',
-                bounds: NormalisedRect(left: 0, top: 0, right: 1, bottom: 1),
-              ),
-            ],
-          ),
-        ]);
-
-        expect(composed.pageCount, 1);
-      },
-    );
   });
 
   group('failure', () {

@@ -4,19 +4,6 @@ library;
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 
-/// Where a search result matched.
-///
-/// Shown beside the snippet so the user understands *why* a document is in the
-/// list — a match on recognised text is not obvious from a title that does not
-/// contain the term.
-enum MatchSource {
-  /// The document's title contained the term.
-  title,
-
-  /// The document's recognised text contained the term.
-  recognisedText,
-}
-
 /// A date range a search is restricted to.
 ///
 /// Both bounds are inclusive and either may be absent, so "everything since
@@ -98,7 +85,7 @@ class SearchQuery {
 
   /// The term split into the words the index is queried with.
   ///
-  /// Tokenised the same way titles and recognised text are on write, so a term
+  /// Tokenised the same way titles are on write, so a term
   /// that indexes one way cannot fail to match itself.
   List<String> get words => normalisedTerm
       .split(RegExp('[^a-z0-9]+'))
@@ -144,76 +131,25 @@ class SearchQuery {
   String toString() => 'SearchQuery("$term", folder: $folderId)';
 }
 
-/// One document that matched, and why.
+/// One document that matched the search term in its title.
 class SearchResult {
   /// Creates a result.
-  const SearchResult({
-    required this.document,
-    required this.source,
-    this.snippet = '',
-  });
+  const SearchResult({required this.document});
 
   /// The document that matched.
   final Document document;
 
-  /// Where the match was found.
-  final MatchSource source;
-
-  /// The matching text in context.
-  ///
-  /// Empty for a title match, where the title itself is already shown.
-  final String snippet;
-
-  /// Whether this result has a snippet worth showing.
-  bool get hasSnippet => snippet.trim().isNotEmpty;
-
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is SearchResult &&
-          other.document == document &&
-          other.source == source &&
-          other.snippet == snippet;
+      other is SearchResult && other.document == document;
 
   @override
-  int get hashCode => Object.hash(document, source, snippet);
+  int get hashCode => document.hashCode;
 }
 
 /// Rules for matching and presenting search results.
 abstract final class SearchRules {
-  /// How much context a snippet shows either side of the match.
-  ///
-  /// Enough to read the phrase the term appears in, short enough that a result
-  /// row stays one or two lines and the list is still scannable.
-  static const snippetPadding = 40;
-
-  /// Builds a snippet of [text] around the first occurrence of [term].
-  ///
-  /// Returns an empty string when the term does not appear. Ellipses mark where
-  /// the snippet was cut, so a user can tell a fragment from a whole line.
-  static String snippet(String text, String term) {
-    if (term.isEmpty || text.isEmpty) return '';
-
-    final haystack = text.toLowerCase();
-    final index = haystack.indexOf(term.toLowerCase());
-    if (index < 0) return '';
-
-    final start = (index - snippetPadding).clamp(0, text.length);
-    final end = (index + term.length + snippetPadding).clamp(0, text.length);
-
-    final prefix = start > 0 ? '…' : '';
-    final suffix = end < text.length ? '…' : '';
-
-    // Collapsed to one line: recognised text is full of line breaks, and a
-    // result row that grows to five lines makes the list unscannable.
-    final body = text
-        .substring(start, end)
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
-
-    return '$prefix$body$suffix';
-  }
-
   /// Whether [document] satisfies the non-text parts of [query].
   ///
   /// Applied after the indexed lookup rather than instead of it: the index
@@ -232,29 +168,6 @@ abstract final class SearchRules {
     }
 
     return true;
-  }
-
-  /// Merges title and text matches into one ordered result list.
-  ///
-  /// A document matching both ways appears once, attributed to its title: the
-  /// title is what the user sees in the row, so claiming the match came from
-  /// the recognised text would send them looking for something already in front
-  /// of them.
-  ///
-  /// Order follows [titleMatches] then [textMatches], each of which arrives
-  /// already sorted by the query that produced it.
-  static List<SearchResult> merge(
-    List<SearchResult> titleMatches,
-    List<SearchResult> textMatches,
-  ) {
-    final seen = <DocumentId>{};
-    final merged = <SearchResult>[];
-
-    for (final result in [...titleMatches, ...textMatches]) {
-      if (seen.add(result.document.id)) merged.add(result);
-    }
-
-    return merged;
   }
 
   /// The message announced when the result count changes.

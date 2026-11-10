@@ -16,22 +16,13 @@ abstract interface class DocumentPageAccessRepository {
   /// Materialises [page] for [purpose].
   ///
   /// Returns an authoritative, cached, or temporary readable path. Callers
-  /// must pass temporary results to [release] after their platform or OCR
+  /// must pass temporary results to [release] after their platform
   /// consumer has finished. Failures are typed and never thrown across this
   /// boundary.
   Future<Result<MaterializedDocumentPage>> materialize(
     Document document,
     DocumentPageHandle page,
     DocumentPageRenderPurpose purpose,
-  );
-
-  /// Returns embedded PDF text for [page], or successful null when absent.
-  ///
-  /// Stored-image pages always return null so the caller can choose on-device
-  /// OCR. Protected PDF credentials are resolved inside the implementation.
-  Future<Result<String?>> embeddedText(
-    Document document,
-    DocumentPageHandle page,
   );
 
   /// Releases a temporary [page] after its consumer has completed.

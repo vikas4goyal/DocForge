@@ -41,7 +41,6 @@ import 'package:doc_scanly/features/document_search/domain/search_query.dart';
 import 'package:doc_scanly/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart';
 import 'package:doc_scanly/features/image_enhancement/application/usecases/enhancement_usecases.dart';
 import 'package:doc_scanly/features/image_enhancement/infrastructure/enhancement_job.dart';
-import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:doc_scanly/features/pdf_editing/infrastructure/repositories/fake_pdf_editor.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:doc_scanly/features/pdf_generation/infrastructure/pdf_composer.dart';
@@ -120,7 +119,6 @@ void main() {
       FolderEntitySchema,
       PageEntitySchema,
       TrashEntitySchema,
-      OcrTextEntitySchema,
     ], directory: root.path);
 
     secrets = _Secrets();
@@ -187,7 +185,6 @@ void main() {
       File('${documents.path}/DocScanly/${document.relativePath}').existsSync(),
       isTrue,
     );
-    expect(document.hasRecognisedText, isFalse);
 
     // ---- Find it from the dashboard --------------------------------------
     final dashboard = DashboardCubit(
@@ -211,10 +208,6 @@ void main() {
     final textHits = (byText as Success<List<SearchResult>>).value;
 
     expect(textHits.map((r) => r.document.id), contains(document.id));
-    expect(
-      textHits.firstWhere((r) => r.document.id == document.id).source,
-      MatchSource.title,
-    );
 
     // ---- Edit it ---------------------------------------------------------
     // The real engine cannot load here, so the editor runs over the fake — what

@@ -33,8 +33,15 @@ class _CapabilityLoader {
   final List<FutureOr<Result<List<SupportedCameraResolution>>>> responses;
   int calls = 0;
 
-  Future<Result<List<SupportedCameraResolution>>> call() async =>
-      responses[calls++];
+  /// Every `refresh` flag received, in call order.
+  final refreshes = <bool>[];
+
+  Future<Result<List<SupportedCameraResolution>>> call({
+    bool refresh = false,
+  }) async {
+    refreshes.add(refresh);
+    return responses[calls++];
+  }
 }
 
 void main() {
@@ -86,6 +93,17 @@ void main() {
         ),
       ),
     );
+    await tester.pump();
+    // The inline PDF-quality slider sits above this entry and, at large text,
+    // pushes it below the fold.
+    await tester.scrollUntilVisible(
+      find.byKey(SettingsKeys.cameraResolution),
+      120,
+      scrollable: find.byType(Scrollable).first,
+    );
+    // At large text the tile is taller than the scroll step; bring all of it
+    // on screen so the tap lands inside it.
+    await tester.ensureVisible(find.byKey(SettingsKeys.cameraResolution));
     await tester.pump();
     await tester.tap(find.byKey(SettingsKeys.cameraResolution));
     await tester.pump();
@@ -155,6 +173,8 @@ void main() {
 
     expect(find.text('1280 × 720'), findsWidgets);
     expect(loader.calls, 2);
+    // Opening may use a cached answer; Retry must re-query the camera.
+    expect(loader.refreshes, [false, true]);
   });
 
   testWidgets('unavailable probing shows maximum copy at large text', (

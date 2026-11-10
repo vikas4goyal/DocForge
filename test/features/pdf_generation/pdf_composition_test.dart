@@ -1,32 +1,19 @@
 /// Tests the PDF composition rules.
 ///
 /// No PDF is produced here. What is verified is everything that decides what
-/// goes *into* a document — naming, quality, which text blocks are placeable —
+/// goes *into* a document — naming, quality and page order —
 /// which is testable without composing a file and reading it back. Composition
 /// itself is covered in `pdf_composer_test.dart`.
 library;
 
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/pdf_composition.dart';
 import 'package:doc_scanly/features/pdf_generation/domain/repositories/pdf_repository.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 PageRef page(String id, {PageRotation rotation = PageRotation.none}) =>
     PageRef(id: PageId(id), imagePath: '/$id.jpg', rotation: rotation);
-
-RecognisedText textFor(String pageId, List<TextBlock> blocks) => RecognisedText(
-  pageId: PageId(pageId),
-  blocks: blocks,
-  languageTag: 'la',
-  recognisedAt: DateTime.utc(2026, 3, 14),
-);
-
-const _validBlock = TextBlock(
-  text: 'Invoice',
-  bounds: NormalisedRect(left: 0.1, top: 0.1, right: 0.5, bottom: 0.16),
-);
 
 void main() {
   group('composed PDF result', () {
@@ -35,13 +22,11 @@ void main() {
         filePath: '/result.pdf',
         sizeInBytes: 2048,
         pageCount: 2,
-        hasTextLayer: true,
       );
       final same = ComposedPdf(
         filePath: result.filePath,
         sizeInBytes: result.sizeInBytes,
         pageCount: result.pageCount,
-        hasTextLayer: result.hasTextLayer,
       );
 
       expect(result, same);
@@ -58,7 +43,6 @@ void main() {
             filePath: '/other.pdf',
             sizeInBytes: 2048,
             pageCount: 2,
-            hasTextLayer: true,
           ),
         ),
       );
@@ -69,7 +53,6 @@ void main() {
             filePath: '/result.pdf',
             sizeInBytes: 1024,
             pageCount: 2,
-            hasTextLayer: true,
           ),
         ),
       );
@@ -80,17 +63,6 @@ void main() {
             filePath: '/result.pdf',
             sizeInBytes: 2048,
             pageCount: 1,
-            hasTextLayer: true,
-          ),
-        ),
-      );
-      expect(
-        result,
-        isNot(
-          const ComposedPdf(
-            filePath: '/result.pdf',
-            sizeInBytes: 2048,
-            pageCount: 2,
           ),
         ),
       );
@@ -272,11 +244,7 @@ void main() {
 
   group('building page specifications', () {
     test('preserves page order', () {
-      final specs = PdfComposition.specsFor([
-        page('a'),
-        page('b'),
-        page('c'),
-      ], const {});
+      final specs = PdfComposition.specsFor([page('a'), page('b'), page('c')]);
 
       expect(specs.map((spec) => spec.imagePath), [
         '/a.jpg',
@@ -288,150 +256,13 @@ void main() {
     test('preserves rotation', () {
       final specs = PdfComposition.specsFor([
         page('a', rotation: PageRotation.quarter),
-      ], const {});
+      ]);
 
       expect(specs.single.rotation, PageRotation.quarter);
-    });
-
-    test('attaches recognised text as a layer', () {
-      final specs = PdfComposition.specsFor(
-        [page('a')],
-        {
-          'a': textFor('a', const [_validBlock]),
-        },
-      );
-
-      expect(specs.single.hasTextLayer, isTrue);
-      expect(specs.single.textBlocks.single.text, 'Invoice');
-    });
-
-    test('a page with no recognised text simply gets no layer', () {
-      // Recognition failure must never prevent a document being created: a PDF
-      // without a searchable layer is still a valid document.
-      final specs = PdfComposition.specsFor([page('a')], const {});
-
-      expect(specs.single.hasTextLayer, isFalse);
-    });
-
-    test('drops a block whose box has no area', () {
-      // A text-layer entry with no position lands somewhere arbitrary, and
-      // selecting text in a reader then highlights the wrong part of the page.
-      final specs = PdfComposition.specsFor(
-        [page('a')],
-        {
-          'a': textFor('a', const [
-            TextBlock(
-              text: 'nowhere',
-              bounds: NormalisedRect(
-                left: 0.5,
-                top: 0.5,
-                right: 0.5,
-                bottom: 0.5,
-              ),
-            ),
-          ]),
-        },
-      );
-
-      expect(specs.single.hasTextLayer, isFalse);
-    });
-
-    test('drops a block whose box escapes the page', () {
-      final specs = PdfComposition.specsFor(
-        [page('a')],
-        {
-          'a': textFor('a', const [
-            TextBlock(
-              text: 'off the page',
-              bounds: NormalisedRect(
-                left: 0.5,
-                top: 0.5,
-                right: 1.5,
-                bottom: 0.6,
-              ),
-            ),
-          ]),
-        },
-      );
-
-      expect(specs.single.hasTextLayer, isFalse);
-    });
-
-    test('drops a block whose text is only whitespace', () {
-      final specs = PdfComposition.specsFor(
-        [page('a')],
-        {
-          'a': textFor('a', const [
-            TextBlock(
-              text: '  ',
-              bounds: NormalisedRect(
-                left: 0.1,
-                top: 0.1,
-                right: 0.9,
-                bottom: 0.2,
-              ),
-            ),
-          ]),
-        },
-      );
-
-      expect(specs.single.hasTextLayer, isFalse);
-    });
-
-    test('keeps the valid blocks of a partly-unplaceable result', () {
-      final specs = PdfComposition.specsFor(
-        [page('a')],
-        {
-          'a': textFor('a', const [
-            _validBlock,
-            TextBlock(
-              text: 'nowhere',
-              bounds: NormalisedRect(left: 0, top: 0, right: 0, bottom: 0),
-            ),
-          ]),
-        },
-      );
-
-      expect(specs.single.textBlocks, hasLength(1));
-    });
-
-    test('text is matched to the right page', () {
-      final specs = PdfComposition.specsFor(
-        [page('a'), page('b')],
-        {
-          'b': textFor('b', const [_validBlock]),
-        },
-      );
-
-      expect(specs[0].hasTextLayer, isFalse);
-      expect(specs[1].hasTextLayer, isTrue);
     });
   });
 
   group('the build request', () {
-    test('reports itself searchable when any page has a layer', () {
-      final request = PdfBuildRequest(
-        pages: PdfComposition.specsFor(
-          [page('a'), page('b')],
-          {
-            'b': textFor('b', const [_validBlock]),
-          },
-        ),
-        destinationPath: '/out.pdf',
-      );
-
-      expect(request.isSearchable, isTrue);
-    });
-
-    test('reports itself unsearchable when no page has one', () {
-      final request = PdfBuildRequest(
-        pages: PdfComposition.specsFor([page('a')], const {}),
-        destinationPath: '/out.pdf',
-      );
-
-      expect(request.isSearchable, isFalse);
-    });
-
     test('defaults to the balanced quality', () {
       const request = PdfBuildRequest(pages: [], destinationPath: '/out.pdf');
 

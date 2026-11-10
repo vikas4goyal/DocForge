@@ -67,7 +67,10 @@ class _BootstrapAppState extends State<_BootstrapApp> {
       } on Object {
         // Observability must never prevent the application from starting.
       }
-      final application = await buildDocScanly();
+      // Rebuilding through this state, rather than inside the composed tree,
+      // disposes the running app first: moving the library to iCloud needs a
+      // composition in which nothing can still write to the device library.
+      final application = await buildDocScanly(onRecompose: _recompose);
       final elapsed = stopwatch.elapsedMilliseconds;
       try {
         await FirebaseCrashlytics.instance.log(
@@ -96,6 +99,10 @@ class _BootstrapAppState extends State<_BootstrapApp> {
 
   void _retry() {
     setState(() => _application = _buildApplication());
+  }
+
+  Future<void> _recompose() async {
+    if (mounted) _retry();
   }
 
   @override

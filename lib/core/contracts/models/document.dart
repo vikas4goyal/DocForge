@@ -56,9 +56,6 @@ abstract class Document with _$Document {
     /// The password itself is never held here — it lives in secure storage.
     @Default(false) bool isProtected,
 
-    /// Whether text recognition has been run and produced a stored result.
-    @Default(false) bool hasRecognisedText,
-
     /// Stable iCloud resource identity, when Foundation supplied one.
     ///
     /// This is metadata only. Local and Android documents leave it null.

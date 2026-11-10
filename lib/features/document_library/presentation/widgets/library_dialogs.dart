@@ -124,8 +124,8 @@ Future<bool> confirmPermanentRemoval(
       key: LibraryKeys.documentDeleteConfirmDialog,
       title: const Text('Delete permanently?'),
       content: Text(
-        '“$title” and all of its pages and recognised text will be removed '
-        'from this device. This cannot be undone.',
+        '“$title” and all of its pages will be removed from this device. '
+        'This cannot be undone.',
       ),
       actions: [
         // Labelled with what is being deleted, not just "Delete": a listener

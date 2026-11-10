@@ -117,50 +117,6 @@ void main() {
     });
   });
 
-  group('snippets', () {
-    const text =
-        'Acme Limited issued this invoice on the fourteenth of March for '
-        'consulting services rendered during the previous quarter.';
-
-    test('shows the term in context', () {
-      final snippet = SearchRules.snippet(text, 'invoice');
-
-      expect(snippet, contains('invoice'));
-      expect(snippet.length, lessThan(text.length));
-    });
-
-    test('marks where it was cut', () {
-      // So a user can tell a fragment from a whole line.
-      expect(SearchRules.snippet(text, 'consulting'), startsWith('…'));
-    });
-
-    test('does not mark a cut that did not happen', () {
-      expect(
-        SearchRules.snippet('Short invoice', 'invoice'),
-        isNot(startsWith('…')),
-      );
-    });
-
-    test('collapses line breaks so a row stays scannable', () {
-      final snippet = SearchRules.snippet('one\ntwo\nthree', 'two');
-
-      expect(snippet, isNot(contains('\n')));
-    });
-
-    test('is empty when the term does not appear', () {
-      expect(SearchRules.snippet(text, 'aardvark'), isEmpty);
-    });
-
-    test('is empty for an empty term or text', () {
-      expect(SearchRules.snippet(text, ''), isEmpty);
-      expect(SearchRules.snippet('', 'invoice'), isEmpty);
-    });
-
-    test('is case-insensitive', () {
-      expect(SearchRules.snippet(text, 'INVOICE'), isNotEmpty);
-    });
-  });
-
   group('filters', () {
     test('a folder filter excludes documents elsewhere', () {
       expect(
@@ -241,57 +197,6 @@ void main() {
         ),
         isFalse,
       );
-    });
-  });
-
-  group('merging matches', () {
-    test('a document matching both ways appears once', () {
-      final document = doc('a', title: 'Invoice');
-
-      final merged = SearchRules.merge(
-        [SearchResult(document: document, source: MatchSource.title)],
-        [
-          SearchResult(
-            document: document,
-            source: MatchSource.recognisedText,
-            snippet: '…invoice…',
-          ),
-        ],
-      );
-
-      expect(merged, hasLength(1));
-    });
-
-    test('and is attributed to its title', () {
-      // The title is what the row shows; claiming the match came from the text
-      // would send the user looking for something already in front of them.
-      final document = doc('a', title: 'Invoice');
-
-      final merged = SearchRules.merge(
-        [SearchResult(document: document, source: MatchSource.title)],
-        [
-          SearchResult(
-            document: document,
-            source: MatchSource.recognisedText,
-            snippet: '…invoice…',
-          ),
-        ],
-      );
-
-      expect(merged.single.source, MatchSource.title);
-    });
-
-    test('title matches come before text matches', () {
-      final merged = SearchRules.merge(
-        [SearchResult(document: doc('a'), source: MatchSource.title)],
-        [SearchResult(document: doc('b'), source: MatchSource.recognisedText)],
-      );
-
-      expect(merged.map((r) => r.document.id.value), ['a', 'b']);
-    });
-
-    test('an empty merge is empty', () {
-      expect(SearchRules.merge(const [], const []), isEmpty);
     });
   });
 

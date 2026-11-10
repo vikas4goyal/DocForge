@@ -61,6 +61,7 @@ SharingModule buildSharingModule({
   ShareRepository share = const SystemShareRepository(),
   PrintRepository printer = const SystemPrintRepository(),
   ExportDocumentRepository exporter = const SystemExportDocumentRepository(),
+  String? Function()? defaultSaveLocation,
 }) {
   Directory staging() {
     final directory = Directory(
@@ -82,6 +83,11 @@ SharingModule buildSharingModule({
       pageAccess,
     ),
     printDocument: PrintDocument(documentReader, printer, documentFiles),
-    export: ExportDocument(documentReader, exporter, documentFiles),
+    export: ExportDocument(
+      documentReader,
+      exporter,
+      documentFiles,
+      defaultLocation: defaultSaveLocation,
+    ),
   );
 }

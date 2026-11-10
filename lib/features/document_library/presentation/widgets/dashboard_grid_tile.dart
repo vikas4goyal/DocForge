@@ -5,6 +5,7 @@ import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/formatting/display_formatting.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_state.dart';
 import 'package:doc_scanly/features/document_library/presentation/library_dashboard_keys.dart';
+import 'package:doc_scanly/features/document_library/presentation/widgets/document_card.dart';
 import 'package:doc_scanly/features/document_library/presentation/widgets/document_thumbnail.dart';
 import 'package:flutter/material.dart';
 
@@ -70,13 +71,41 @@ class DashboardDocumentGridTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) => DocumentThumbnail(
-                        document: document,
-                        loadThumbnail: loadThumbnail,
-                        width: constraints.maxWidth,
-                        height: constraints.maxHeight,
-                      ),
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        LayoutBuilder(
+                          builder: (context, constraints) => DocumentThumbnail(
+                            document: document,
+                            loadThumbnail: loadThumbnail,
+                            width: constraints.maxWidth,
+                            height: constraints.maxHeight,
+                          ),
+                        ),
+                        if (document.contentAvailability !=
+                            DocumentContentAvailability.local)
+                          Positioned(
+                            right: 4,
+                            bottom: 4,
+                            // Over the preview so tile geometry is unchanged,
+                            // and ignoring pointers so its tooltip cannot take
+                            // the long press that starts selection.
+                            child: IgnorePointer(
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surface,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(3),
+                                  child: DocumentCloudStatusIcon(
+                                    document: document,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 9),

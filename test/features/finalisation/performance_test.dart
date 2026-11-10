@@ -27,7 +27,6 @@ import 'package:doc_scanly/features/document_library/application/usecases/docume
 import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
 import 'package:doc_scanly/features/document_library/presentation/cubit/dashboard_cubit.dart';
 import 'package:doc_scanly/features/document_search/domain/search_query.dart';
-import 'package:doc_scanly/features/ocr/infrastructure/models/ocr_entities.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 
@@ -59,7 +58,6 @@ void main() {
       FolderEntitySchema,
       PageEntitySchema,
       TrashEntitySchema,
-      OcrTextEntitySchema,
     ], directory: root.path);
 
     publicStore = FilesystemPublicFileStore(documents);

@@ -1,7 +1,7 @@
 /// The seams between capabilities.
 ///
 /// Features genuinely need each other — the viewer needs a document, search
-/// needs OCR text, scanning hands pages to PDF generation — but a direct import
+/// needs document metadata, scanning hands pages to PDF generation — but a direct import
 /// between two features is forbidden and enforced by `tool/check_layering.dart`.
 /// Each seam is therefore an interface declared here, implemented by the owning
 /// feature's infrastructure, and injected into the consuming feature's use case
@@ -14,7 +14,6 @@ library;
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_scanly/core/failures/result.dart';
 
@@ -74,21 +73,6 @@ abstract interface class FolderReader {
   Future<Result<Folder>> findById(FolderId id);
 }
 
-/// Access to recognised page text.
-///
-/// Implemented by `ocr`. Consumed by search, which indexes it, and by sharing,
-/// which exports it.
-abstract interface class OcrTextSource {
-  /// Returns the stored recognition result for [pageId], if one exists.
-  ///
-  /// A page that has never been recognised yields a successful null rather than
-  /// a failure — absence is a normal state, not an error.
-  Future<Result<RecognisedText?>> textForPage(PageId pageId);
-
-  /// Returns the combined recognised text of every page of [documentId].
-  Future<Result<String>> textForDocument(DocumentId documentId);
-}
-
 /// Turns captured or imported pages into a stored document.
 ///
 /// Implemented by `pdf-generation`. Consumed by scanning and import, so neither
@@ -120,39 +104,6 @@ abstract interface class DocumentTitleIndex {
   /// archive is where a user puts things they have finished with, and the rule
   /// belongs with the query that could otherwise surface them.
   Future<Result<List<Document>>> documentsMatchingWord(
-    String word, {
-    int limit = 50,
-  });
-}
-
-/// One document's recognised text, as search sees it.
-class OcrIndexHit {
-  /// Creates a hit for [documentId].
-  const OcrIndexHit({required this.documentId, required this.text});
-
-  /// The document whose page matched.
-  final DocumentId documentId;
-
-  /// The page's recognised text, as it was read.
-  ///
-  /// Carried so the caller can build a snippet showing the match in context;
-  /// reassembling one from a word index is not possible.
-  ///
-  /// Original casing, deliberately. The index stores a lower-cased copy for
-  /// matching, but a snippet is shown to the user — quoting a document back at
-  /// them in lower case makes it look like something else.
-  final String text;
-}
-
-/// Finds documents whose *recognised text* matches a search word.
-///
-/// Implemented by `ocr`, which owns the text collection and its word index.
-abstract interface class OcrSearchIndex {
-  /// Returns one hit per document with a page whose text matches [word].
-  ///
-  /// Grouped by document rather than by page: a fifty-page document whose every
-  /// page matched is one result, not fifty.
-  Future<Result<List<OcrIndexHit>>> documentsMatchingWord(
     String word, {
     int limit = 50,
   });

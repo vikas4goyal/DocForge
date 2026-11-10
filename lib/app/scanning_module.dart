@@ -111,7 +111,7 @@ ScanningModule buildScanningModule({
   final resolvedCapabilities =
       cameraCapabilities ??
       (scanner == null
-          ? const CameraPluginCapabilityRepository(FlutterCameraPresetProbe())
+          ? CameraPluginCapabilityRepository(const FlutterCameraPresetProbe())
           : const _UnavailableCameraCapabilities());
   final loadCameraResolutions = LoadCameraResolutions(resolvedCapabilities);
 
@@ -142,9 +142,9 @@ class _UnavailableCameraCapabilities implements CameraCapabilityRepository {
   const _UnavailableCameraCapabilities();
 
   @override
-  Future<Result<List<SupportedCameraResolution>>>
-  loadActiveResolutions() async =>
-      const Result<List<SupportedCameraResolution>>.success([]);
+  Future<Result<List<SupportedCameraResolution>>> loadActiveResolutions({
+    bool refresh = false,
+  }) async => const Result<List<SupportedCameraResolution>>.success([]);
 }
 
 /// The preview surface for a scanner that has no camera behind it.

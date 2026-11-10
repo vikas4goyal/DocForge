@@ -155,12 +155,14 @@ abstract final class SettingsCopy {
   /// test can assert on, and so changing it is a deliberate act rather than a
   /// copy edit in a widget tree.
   static const privacyStatement =
-      'DocScanly stores PDFs in the DocScanly folder selected for your library. '
-      'On Android this library is always on the device. On iOS you can keep it '
-      'on the device or explicitly select DocScanly’s app-owned iCloud Drive '
-      'container. Apple then transfers those PDFs between devices signed into '
-      'the same iCloud account. DocScanly never silently switches an iCloud '
-      'library to a separate local copy.\n\n'
+      'DocScanly stores PDFs in its DocScanly library folder. On Android this '
+      'library is always on the device. On iOS DocScanly automatically keeps '
+      'it in its app-owned iCloud Drive container whenever iCloud is '
+      'available, moving any documents already on the device there, and on '
+      'the device while iCloud is off. Apple then transfers those PDFs between '
+      'devices signed into the same iCloud account. To keep documents only on '
+      'the device, turn DocScanly off in iOS Settings under iCloud. DocScanly '
+      'never silently switches an iCloud library to a separate local copy.\n\n'
       'Captured page images, search indexes, preferences '
       'and other database metadata remain local to each device. They are not '
       'synchronised through iCloud, so a new device rebuilds its document list '
@@ -183,6 +185,30 @@ abstract final class SettingsCopy {
 
   /// How the save location is described when none has been chosen.
   static const systemSaveLocation = 'Ask each time';
+
+  /// Says what a chosen default save location does — and no more: the
+  /// platform treats it as where the export picker *starts*, not a place
+  /// files are silently written.
+  static const exportsStartHere = 'Exports start in this folder';
+
+  /// Returns the readable name of the folder at [location].
+  ///
+  /// The last segment of a filesystem path (`/storage/emulated/0/Download` →
+  /// `Download`), or of a document URI's id (`…primary%3ADocuments%2FScans` →
+  /// `Scans`). Falls back to [location] itself when it has no usable segment,
+  /// so the label is never empty.
+  static String folderName(String location) {
+    var value = location.trim();
+    if (value.contains('://')) {
+      final segments = Uri.parse(value).pathSegments.where((s) => s.isNotEmpty);
+      if (segments.isEmpty) return location;
+      // A document id is `<volume>:<relative path>`; keep only the path.
+      value = segments.last;
+      value = value.substring(value.lastIndexOf(':') + 1);
+    }
+    final segments = value.split('/').where((part) => part.isNotEmpty);
+    return segments.isEmpty ? location : segments.last;
+  }
 
   /// How storage usage is announced alongside the figure.
   static String storageSummaryLabel(String size, int documentCount) =>

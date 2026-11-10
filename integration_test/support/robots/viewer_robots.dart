@@ -256,10 +256,14 @@ class CompressPdfRobot extends Robot {
   /// Cancels candidate preparation while keeping the compression choices.
   Future<void> cancelPreview() =>
       step('cancelling compression preview', () async {
-        await tap(PdfEditKeys.compressPreview);
-        await waitFor(PdfEditKeys.compressProgressDialog);
-        await tap(PdfEditKeys.compressCancelJob);
-        await waitUntilGone(PdfEditKeys.compressProgressDialog);
+        await previewAttemptingCancel(
+          tester,
+          start: PdfEditKeys.compressPreview,
+          dialog: PdfEditKeys.compressProgressDialog,
+          cancel: PdfEditKeys.compressCancelJob,
+          preview: PdfKeys.temporaryPreviewScreen,
+          closePreview: PdfKeys.temporaryPreviewClose,
+        );
         await waitUntilVisible();
       });
 
@@ -290,28 +294,6 @@ class CompressPdfRobot extends Robot {
     await _continueNoBenefitIfNeeded();
     await ViewerRobot(tester).waitUntilOpen();
   });
-
-  /// Starts Save during recalculation, cancels it, then retries as a copy.
-  Future<void> cancelAndRetryAsCopy() =>
-      step('cancelling and retrying compressed copy', () async {
-        await tester.drag(
-          find.byKey(PdfEditKeys.compressQualitySlider),
-          const Offset(-120, 0),
-        );
-        await tester.pump();
-        await tap(PdfEditKeys.compressSave);
-        await waitFor(PdfEditKeys.compressDestinationDialog);
-        await tap(PdfEditKeys.compressDestinationCopy);
-        await waitFor(PdfEditKeys.compressProgressDialog);
-        await tap(PdfEditKeys.compressCancelJob);
-        await waitUntilGone(PdfEditKeys.compressProgressDialog);
-        await waitUntilVisible();
-        await tap(PdfEditKeys.compressSave);
-        await waitFor(PdfEditKeys.compressDestinationDialog);
-        await tap(PdfEditKeys.compressDestinationCopy);
-        await _continueNoBenefitIfNeeded();
-        await ViewerRobot(tester).waitUntilOpen();
-      });
 
   /// Safely overwrites the source and waits for its refreshed Viewer.
   Future<void> overwriteOriginal() =>

@@ -65,6 +65,11 @@ build/
 
 # Test / tooling output
 /test/failures/
+# Written next to each golden test whenever a comparison fails.
+test/**/failures/*_isolatedDiff.png
+test/**/failures/*_maskedDiff.png
+test/**/failures/*_testImage.png
+test/**/failures/*_masterImage.png
 *.mocks.dart
 .flutter-plugins
 

@@ -1,4 +1,4 @@
-/// PDF composition: page images plus the invisible OCR text layer.
+/// PDF composition: one page per prepared page image.
 ///
 /// Everything here runs **inside a background isolate**. Two consequences that
 /// are easy to forget: it may not touch Flutter, and only the request and the
@@ -44,9 +44,6 @@ Future<ComposedPdf> composePdfJob(PdfBuildRequest request) async {
 
     return ComposedPdf(
       filePath: destination.path,
-      // True when any page carried recognised text, which is exactly when an
-      // invisible layer was written above.
-      hasTextLayer: request.pages.any((page) => page.textBlocks.isNotEmpty),
       // Measured from the file rather than from the byte list, so the figure
       // stored on the document record is what the filesystem actually reports.
       sizeInBytes: destination.lengthSync(),
@@ -60,7 +57,7 @@ Future<ComposedPdf> composePdfJob(PdfBuildRequest request) async {
   }
 }
 
-/// Adds one page image, and its text layer, to [document].
+/// Adds one page image to [document].
 void _addPage(pw.Document document, PdfPageSpec page, PdfQuality quality) {
   final decoded = img.decodeImage(File(page.imagePath).readAsBytesSync());
 
@@ -70,10 +67,8 @@ void _addPage(pw.Document document, PdfPageSpec page, PdfQuality quality) {
     );
   }
 
-  // Rotation is baked into the image rather than applied as a page transform.
-  // A PDF page rotation is metadata a reader may or may not honour, and the
-  // text layer's coordinates would then have to be rotated to match it — two
-  // chances to disagree where there can be one.
+  // Rotation is baked into the image rather than applied as a page transform:
+  // a PDF page rotation is metadata a reader may or may not honour.
   final oriented = page.rotation == PageRotation.none
       ? decoded
       : img.copyRotate(decoded, angle: page.rotation.degrees);
@@ -82,8 +77,7 @@ void _addPage(pw.Document document, PdfPageSpec page, PdfQuality quality) {
   final bytes = img.encodeJpg(scaled, quality: quality.imageQuality);
 
   // The page is exactly the image's aspect ratio at a fixed points-per-pixel
-  // scale, so the image fills it edge to edge with no letterboxing — and the
-  // normalised text boxes map onto the page by multiplication alone.
+  // scale, so the image fills it edge to edge with no letterboxing.
   final pageWidth = PdfPageFormat.a4.width;
   final pageHeight = pageWidth * scaled.height / scaled.width;
   final format = PdfPageFormat(pageWidth, pageHeight);
@@ -93,56 +87,9 @@ void _addPage(pw.Document document, PdfPageSpec page, PdfQuality quality) {
   document.addPage(
     pw.Page(
       pageFormat: format,
-      build: (context) => pw.Stack(
-        children: [
-          pw.Positioned.fill(child: pw.Image(image, fit: pw.BoxFit.fill)),
-          ..._textLayer(page, pageWidth: pageWidth, pageHeight: pageHeight),
-        ],
-      ),
+      build: (context) => pw.Image(image, fit: pw.BoxFit.fill),
     ),
   );
-}
-
-/// Builds the invisible text layer for [page].
-///
-/// Each block is positioned over the region of the page image the text was read
-/// from, which is what makes selection in a reader land on the words the user
-/// is pointing at rather than somewhere near them.
-///
-/// The text is rendered in an invisible mode rather than in white or at zero
-/// opacity: white text is visible against a dark scan and selectable text at
-/// zero opacity still prints. `PdfTextRenderingMode.invisible` is the mechanism
-/// PDF defines for exactly this.
-List<pw.Widget> _textLayer(
-  PdfPageSpec page, {
-  required double pageWidth,
-  required double pageHeight,
-}) {
-  return [
-    for (final block in page.textBlocks)
-      pw.Positioned(
-        left: block.bounds.left * pageWidth,
-        // PDF's own origin is bottom-left, but `pw.Positioned` inside a Stack
-        // measures from the top, matching the normalised boxes — so no flip is
-        // needed here, and adding one would put every line on the wrong half of
-        // the page.
-        top: block.bounds.top * pageHeight,
-        child: pw.SizedBox(
-          width: math.max(block.bounds.width * pageWidth, 1),
-          height: math.max(block.bounds.height * pageHeight, 1),
-          child: pw.Text(
-            block.text,
-            style: pw.TextStyle(
-              // Sized to the box the text was read from, so a reader's
-              // selection highlight covers the words rather than a band of
-              // arbitrary height.
-              fontSize: math.max(block.bounds.height * pageHeight * 0.8, 1),
-              renderingMode: PdfTextRenderingMode.invisible,
-            ),
-          ),
-        ),
-      ),
-  ];
 }
 
 /// Returns [source] scaled so its longest edge is at most [maxDimension].

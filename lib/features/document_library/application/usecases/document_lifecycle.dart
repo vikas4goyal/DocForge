@@ -155,7 +155,6 @@ class MoveDocument {
         isFavourite: document.isFavourite,
         isArchived: document.isArchived,
         isProtected: document.isProtected,
-        hasRecognisedText: document.hasRecognisedText,
         cloudResourceIdentifier: document.cloudResourceIdentifier,
         cloudRelativePath: document.cloudRelativePath,
         contentAvailability: document.contentAvailability,

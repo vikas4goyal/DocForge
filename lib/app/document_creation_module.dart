@@ -95,9 +95,8 @@ DocumentCreationModule buildDocumentCreationModule({
   }
 
   final save = SaveDocument(
-    BuildSearchablePdf(
+    BuildPdf(
       composer ?? IsolatePdfComposer(telemetry: telemetry),
-      (_) async => const {},
       resolveImage: resolvePageImage,
     ),
     documentWriter,

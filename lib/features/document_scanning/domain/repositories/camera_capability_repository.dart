@@ -13,7 +13,12 @@ import 'package:doc_scanly/core/failures/result.dart';
 abstract interface class CameraCapabilityRepository {
   /// Loads resolutions for whichever camera is currently active.
   ///
-  /// Implementations must query again after the active camera changes; a list
-  /// from the rear camera is not valid evidence about the front camera.
-  Future<Result<List<SupportedCameraResolution>>> loadActiveResolutions();
+  /// Implementations may answer from a cache of the last successful query,
+  /// because probing can open the camera several times and capture re-resolves
+  /// before every shot. [refresh] bypasses that cache; callers pass it when the
+  /// user retries or the active camera may have changed — a list from the rear
+  /// camera is not valid evidence about the front camera.
+  Future<Result<List<SupportedCameraResolution>>> loadActiveResolutions({
+    bool refresh = false,
+  });
 }

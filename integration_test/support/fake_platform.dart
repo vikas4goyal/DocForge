@@ -151,16 +151,21 @@ class FakeCameraCapabilityRepository implements CameraCapabilityRepository {
               tier: CameraResolutionTier.hd720,
               width: 1280,
               height: 720,
+              requestKey: 'high',
             ),
             SupportedCameraResolution(
               tier: CameraResolutionTier.fullHd1080,
               width: 1920,
               height: 1080,
+              requestKey: 'veryHigh',
             ),
             SupportedCameraResolution(
               tier: CameraResolutionTier.ultraHd4k,
               width: 4032,
               height: 3024,
+              // Full resolution replays the plugin's maximum, as the real
+              // probe now measures it.
+              requestKey: 'max',
             ),
           ];
 
@@ -174,8 +179,9 @@ class FakeCameraCapabilityRepository implements CameraCapabilityRepository {
   int loads = 0;
 
   @override
-  Future<Result<List<SupportedCameraResolution>>>
-  loadActiveResolutions() async {
+  Future<Result<List<SupportedCameraResolution>>> loadActiveResolutions({
+    bool refresh = false,
+  }) async {
     loads++;
     final configured = failure;
     return configured == null

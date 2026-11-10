@@ -55,13 +55,12 @@ extension FailurePatterns on Failure {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( CameraFailure value)?  camera,TResult Function( PermissionFailure value)?  permission,TResult Function( OcrFailure value)?  ocr,TResult Function( PdfFailure value)?  pdf,TResult Function( StorageFullFailure value)?  storageFull,TResult Function( ImportFailure value)?  import,TResult Function( ExportFailure value)?  export,TResult Function( AuthFailure value)?  auth,TResult Function( ValidationFailure value)?  validation,TResult Function( NotFoundFailure value)?  notFound,TResult Function( CorruptFileFailure value)?  corruptFile,TResult Function( SecureStorageFailure value)?  secureStorageUnavailable,TResult Function( StorageFailure value)?  storage,TResult Function( CancelledFailure value)?  cancelled,TResult Function( UnexpectedFailure value)?  unexpected,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( CameraFailure value)?  camera,TResult Function( PermissionFailure value)?  permission,TResult Function( PdfFailure value)?  pdf,TResult Function( StorageFullFailure value)?  storageFull,TResult Function( ImportFailure value)?  import,TResult Function( ExportFailure value)?  export,TResult Function( AuthFailure value)?  auth,TResult Function( ValidationFailure value)?  validation,TResult Function( NotFoundFailure value)?  notFound,TResult Function( CorruptFileFailure value)?  corruptFile,TResult Function( SecureStorageFailure value)?  secureStorageUnavailable,TResult Function( StorageFailure value)?  storage,TResult Function( CancelledFailure value)?  cancelled,TResult Function( UnexpectedFailure value)?  unexpected,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case CameraFailure() when camera != null:
 return camera(_that);case PermissionFailure() when permission != null:
-return permission(_that);case OcrFailure() when ocr != null:
-return ocr(_that);case PdfFailure() when pdf != null:
+return permission(_that);case PdfFailure() when pdf != null:
 return pdf(_that);case StorageFullFailure() when storageFull != null:
 return storageFull(_that);case ImportFailure() when import != null:
 return import(_that);case ExportFailure() when export != null:
@@ -91,13 +90,12 @@ return unexpected(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( CameraFailure value)  camera,required TResult Function( PermissionFailure value)  permission,required TResult Function( OcrFailure value)  ocr,required TResult Function( PdfFailure value)  pdf,required TResult Function( StorageFullFailure value)  storageFull,required TResult Function( ImportFailure value)  import,required TResult Function( ExportFailure value)  export,required TResult Function( AuthFailure value)  auth,required TResult Function( ValidationFailure value)  validation,required TResult Function( NotFoundFailure value)  notFound,required TResult Function( CorruptFileFailure value)  corruptFile,required TResult Function( SecureStorageFailure value)  secureStorageUnavailable,required TResult Function( StorageFailure value)  storage,required TResult Function( CancelledFailure value)  cancelled,required TResult Function( UnexpectedFailure value)  unexpected,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( CameraFailure value)  camera,required TResult Function( PermissionFailure value)  permission,required TResult Function( PdfFailure value)  pdf,required TResult Function( StorageFullFailure value)  storageFull,required TResult Function( ImportFailure value)  import,required TResult Function( ExportFailure value)  export,required TResult Function( AuthFailure value)  auth,required TResult Function( ValidationFailure value)  validation,required TResult Function( NotFoundFailure value)  notFound,required TResult Function( CorruptFileFailure value)  corruptFile,required TResult Function( SecureStorageFailure value)  secureStorageUnavailable,required TResult Function( StorageFailure value)  storage,required TResult Function( CancelledFailure value)  cancelled,required TResult Function( UnexpectedFailure value)  unexpected,}){
 final _that = this;
 switch (_that) {
 case CameraFailure():
 return camera(_that);case PermissionFailure():
-return permission(_that);case OcrFailure():
-return ocr(_that);case PdfFailure():
+return permission(_that);case PdfFailure():
 return pdf(_that);case StorageFullFailure():
 return storageFull(_that);case ImportFailure():
 return import(_that);case ExportFailure():
@@ -123,13 +121,12 @@ return unexpected(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( CameraFailure value)?  camera,TResult? Function( PermissionFailure value)?  permission,TResult? Function( OcrFailure value)?  ocr,TResult? Function( PdfFailure value)?  pdf,TResult? Function( StorageFullFailure value)?  storageFull,TResult? Function( ImportFailure value)?  import,TResult? Function( ExportFailure value)?  export,TResult? Function( AuthFailure value)?  auth,TResult? Function( ValidationFailure value)?  validation,TResult? Function( NotFoundFailure value)?  notFound,TResult? Function( CorruptFileFailure value)?  corruptFile,TResult? Function( SecureStorageFailure value)?  secureStorageUnavailable,TResult? Function( StorageFailure value)?  storage,TResult? Function( CancelledFailure value)?  cancelled,TResult? Function( UnexpectedFailure value)?  unexpected,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( CameraFailure value)?  camera,TResult? Function( PermissionFailure value)?  permission,TResult? Function( PdfFailure value)?  pdf,TResult? Function( StorageFullFailure value)?  storageFull,TResult? Function( ImportFailure value)?  import,TResult? Function( ExportFailure value)?  export,TResult? Function( AuthFailure value)?  auth,TResult? Function( ValidationFailure value)?  validation,TResult? Function( NotFoundFailure value)?  notFound,TResult? Function( CorruptFileFailure value)?  corruptFile,TResult? Function( SecureStorageFailure value)?  secureStorageUnavailable,TResult? Function( StorageFailure value)?  storage,TResult? Function( CancelledFailure value)?  cancelled,TResult? Function( UnexpectedFailure value)?  unexpected,}){
 final _that = this;
 switch (_that) {
 case CameraFailure() when camera != null:
 return camera(_that);case PermissionFailure() when permission != null:
-return permission(_that);case OcrFailure() when ocr != null:
-return ocr(_that);case PdfFailure() when pdf != null:
+return permission(_that);case PdfFailure() when pdf != null:
 return pdf(_that);case StorageFullFailure() when storageFull != null:
 return storageFull(_that);case ImportFailure() when import != null:
 return import(_that);case ExportFailure() when export != null:
@@ -158,12 +155,11 @@ return unexpected(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( bool inUseByAnotherApp,  String? debugDetail)?  camera,TResult Function( PermissionKind kind,  bool permanentlyDenied,  String? debugDetail)?  permission,TResult Function( String? debugDetail)?  ocr,TResult Function( String? debugDetail)?  pdf,TResult Function( String? debugDetail)?  storageFull,TResult Function( bool unsupportedType,  String? debugDetail)?  import,TResult Function( bool noReceivingApp,  String? debugDetail)?  export,TResult Function( bool rejected,  bool notEnrolled,  String? debugDetail)?  auth,TResult Function( ValidationIssue issue,  String? debugDetail)?  validation,TResult Function( String? debugDetail)?  notFound,TResult Function( String? debugDetail)?  corruptFile,TResult Function( String? debugDetail)?  secureStorageUnavailable,TResult Function( String? debugDetail)?  storage,TResult Function()?  cancelled,TResult Function( String? debugDetail)?  unexpected,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( bool inUseByAnotherApp,  String? debugDetail)?  camera,TResult Function( PermissionKind kind,  bool permanentlyDenied,  String? debugDetail)?  permission,TResult Function( String? debugDetail)?  pdf,TResult Function( String? debugDetail)?  storageFull,TResult Function( bool unsupportedType,  String? debugDetail)?  import,TResult Function( bool noReceivingApp,  String? debugDetail)?  export,TResult Function( bool rejected,  bool notEnrolled,  String? debugDetail)?  auth,TResult Function( ValidationIssue issue,  String? debugDetail)?  validation,TResult Function( String? debugDetail)?  notFound,TResult Function( String? debugDetail)?  corruptFile,TResult Function( String? debugDetail)?  secureStorageUnavailable,TResult Function( String? debugDetail)?  storage,TResult Function()?  cancelled,TResult Function( String? debugDetail)?  unexpected,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case CameraFailure() when camera != null:
 return camera(_that.inUseByAnotherApp,_that.debugDetail);case PermissionFailure() when permission != null:
-return permission(_that.kind,_that.permanentlyDenied,_that.debugDetail);case OcrFailure() when ocr != null:
-return ocr(_that.debugDetail);case PdfFailure() when pdf != null:
+return permission(_that.kind,_that.permanentlyDenied,_that.debugDetail);case PdfFailure() when pdf != null:
 return pdf(_that.debugDetail);case StorageFullFailure() when storageFull != null:
 return storageFull(_that.debugDetail);case ImportFailure() when import != null:
 return import(_that.unsupportedType,_that.debugDetail);case ExportFailure() when export != null:
@@ -193,12 +189,11 @@ return unexpected(_that.debugDetail);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( bool inUseByAnotherApp,  String? debugDetail)  camera,required TResult Function( PermissionKind kind,  bool permanentlyDenied,  String? debugDetail)  permission,required TResult Function( String? debugDetail)  ocr,required TResult Function( String? debugDetail)  pdf,required TResult Function( String? debugDetail)  storageFull,required TResult Function( bool unsupportedType,  String? debugDetail)  import,required TResult Function( bool noReceivingApp,  String? debugDetail)  export,required TResult Function( bool rejected,  bool notEnrolled,  String? debugDetail)  auth,required TResult Function( ValidationIssue issue,  String? debugDetail)  validation,required TResult Function( String? debugDetail)  notFound,required TResult Function( String? debugDetail)  corruptFile,required TResult Function( String? debugDetail)  secureStorageUnavailable,required TResult Function( String? debugDetail)  storage,required TResult Function()  cancelled,required TResult Function( String? debugDetail)  unexpected,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( bool inUseByAnotherApp,  String? debugDetail)  camera,required TResult Function( PermissionKind kind,  bool permanentlyDenied,  String? debugDetail)  permission,required TResult Function( String? debugDetail)  pdf,required TResult Function( String? debugDetail)  storageFull,required TResult Function( bool unsupportedType,  String? debugDetail)  import,required TResult Function( bool noReceivingApp,  String? debugDetail)  export,required TResult Function( bool rejected,  bool notEnrolled,  String? debugDetail)  auth,required TResult Function( ValidationIssue issue,  String? debugDetail)  validation,required TResult Function( String? debugDetail)  notFound,required TResult Function( String? debugDetail)  corruptFile,required TResult Function( String? debugDetail)  secureStorageUnavailable,required TResult Function( String? debugDetail)  storage,required TResult Function()  cancelled,required TResult Function( String? debugDetail)  unexpected,}) {final _that = this;
 switch (_that) {
 case CameraFailure():
 return camera(_that.inUseByAnotherApp,_that.debugDetail);case PermissionFailure():
-return permission(_that.kind,_that.permanentlyDenied,_that.debugDetail);case OcrFailure():
-return ocr(_that.debugDetail);case PdfFailure():
+return permission(_that.kind,_that.permanentlyDenied,_that.debugDetail);case PdfFailure():
 return pdf(_that.debugDetail);case StorageFullFailure():
 return storageFull(_that.debugDetail);case ImportFailure():
 return import(_that.unsupportedType,_that.debugDetail);case ExportFailure():
@@ -224,12 +219,11 @@ return unexpected(_that.debugDetail);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( bool inUseByAnotherApp,  String? debugDetail)?  camera,TResult? Function( PermissionKind kind,  bool permanentlyDenied,  String? debugDetail)?  permission,TResult? Function( String? debugDetail)?  ocr,TResult? Function( String? debugDetail)?  pdf,TResult? Function( String? debugDetail)?  storageFull,TResult? Function( bool unsupportedType,  String? debugDetail)?  import,TResult? Function( bool noReceivingApp,  String? debugDetail)?  export,TResult? Function( bool rejected,  bool notEnrolled,  String? debugDetail)?  auth,TResult? Function( ValidationIssue issue,  String? debugDetail)?  validation,TResult? Function( String? debugDetail)?  notFound,TResult? Function( String? debugDetail)?  corruptFile,TResult? Function( String? debugDetail)?  secureStorageUnavailable,TResult? Function( String? debugDetail)?  storage,TResult? Function()?  cancelled,TResult? Function( String? debugDetail)?  unexpected,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( bool inUseByAnotherApp,  String? debugDetail)?  camera,TResult? Function( PermissionKind kind,  bool permanentlyDenied,  String? debugDetail)?  permission,TResult? Function( String? debugDetail)?  pdf,TResult? Function( String? debugDetail)?  storageFull,TResult? Function( bool unsupportedType,  String? debugDetail)?  import,TResult? Function( bool noReceivingApp,  String? debugDetail)?  export,TResult? Function( bool rejected,  bool notEnrolled,  String? debugDetail)?  auth,TResult? Function( ValidationIssue issue,  String? debugDetail)?  validation,TResult? Function( String? debugDetail)?  notFound,TResult? Function( String? debugDetail)?  corruptFile,TResult? Function( String? debugDetail)?  secureStorageUnavailable,TResult? Function( String? debugDetail)?  storage,TResult? Function()?  cancelled,TResult? Function( String? debugDetail)?  unexpected,}) {final _that = this;
 switch (_that) {
 case CameraFailure() when camera != null:
 return camera(_that.inUseByAnotherApp,_that.debugDetail);case PermissionFailure() when permission != null:
-return permission(_that.kind,_that.permanentlyDenied,_that.debugDetail);case OcrFailure() when ocr != null:
-return ocr(_that.debugDetail);case PdfFailure() when pdf != null:
+return permission(_that.kind,_that.permanentlyDenied,_that.debugDetail);case PdfFailure() when pdf != null:
 return pdf(_that.debugDetail);case StorageFullFailure() when storageFull != null:
 return storageFull(_that.debugDetail);case ImportFailure() when import != null:
 return import(_that.unsupportedType,_that.debugDetail);case ExportFailure() when export != null:
@@ -384,72 +378,6 @@ class _$PermissionFailureCopyWithImpl<$Res>
 kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as PermissionKind,permanentlyDenied: null == permanentlyDenied ? _self.permanentlyDenied : permanentlyDenied // ignore: cast_nullable_to_non_nullable
 as bool,debugDetail: freezed == debugDetail ? _self.debugDetail : debugDetail // ignore: cast_nullable_to_non_nullable
-as String?,
-  ));
-}
-
-
-}
-
-/// @nodoc
-
-
-class OcrFailure extends Failure {
-  const OcrFailure({this.debugDetail}): super._();
-  
-
- final  String? debugDetail;
-
-/// Create a copy of Failure
-/// with the given fields replaced by the non-null parameter values.
-@JsonKey(includeFromJson: false, includeToJson: false)
-@pragma('vm:prefer-inline')
-$OcrFailureCopyWith<OcrFailure> get copyWith => _$OcrFailureCopyWithImpl<OcrFailure>(this, _$identity);
-
-
-
-@override
-bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is OcrFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
-}
-
-
-@override
-int get hashCode => Object.hash(runtimeType,debugDetail);
-
-@override
-String toString() {
-  return 'Failure.ocr(debugDetail: $debugDetail)';
-}
-
-
-}
-
-/// @nodoc
-abstract mixin class $OcrFailureCopyWith<$Res> implements $FailureCopyWith<$Res> {
-  factory $OcrFailureCopyWith(OcrFailure value, $Res Function(OcrFailure) _then) = _$OcrFailureCopyWithImpl;
-@useResult
-$Res call({
- String? debugDetail
-});
-
-
-
-
-}
-/// @nodoc
-class _$OcrFailureCopyWithImpl<$Res>
-    implements $OcrFailureCopyWith<$Res> {
-  _$OcrFailureCopyWithImpl(this._self, this._then);
-
-  final OcrFailure _self;
-  final $Res Function(OcrFailure) _then;
-
-/// Create a copy of Failure
-/// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? debugDetail = freezed,}) {
-  return _then(OcrFailure(
-debugDetail: freezed == debugDetail ? _self.debugDetail : debugDetail // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

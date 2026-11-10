@@ -65,7 +65,7 @@ void main() {
     await compress.previewAndClose();
     await compress.cancelPreview();
     await compress.reviewAll100AndAdjust();
-    await compress.cancelAndRetryAsCopy();
+    await compress.saveAsCopy();
 
     final after = await app.publicStore.list(const []);
     expect(after.valueOrNull, hasLength(2));

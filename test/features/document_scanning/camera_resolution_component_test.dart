@@ -21,8 +21,9 @@ class _Capabilities implements CameraCapabilityRepository {
   int calls = 0;
 
   @override
-  Future<Result<List<SupportedCameraResolution>>>
-  loadActiveResolutions() async => responses[calls++];
+  Future<Result<List<SupportedCameraResolution>>> loadActiveResolutions({
+    bool refresh = false,
+  }) async => responses[calls++];
 }
 
 void main() {
@@ -44,10 +45,11 @@ void main() {
 
   Future<ScanCaptureCubit> pumpCapture(
     WidgetTester tester, {
-    required _Capabilities capabilities,
+    required CameraCapabilityRepository capabilities,
     required DesiredCameraResolution Function() desired,
+    FakeScannerRepository? scanner,
   }) async {
-    final scanner = FakeScannerRepository();
+    scanner ??= FakeScannerRepository();
     final load = LoadCameraResolutions(capabilities);
     final capture = CapturePage(
       scanner,
@@ -181,6 +183,89 @@ void main() {
 
     expect(find.text('Full resolution • camera maximum'), findsOneWidget);
   });
+
+  testWidgets(
+    'a preference changed between shots re-opens the camera with the new '
+    'request and reports the real captured size',
+    (tester) async {
+      final qhd = SupportedCameraResolution(
+        tier: CameraResolutionTier.qhd2k,
+        width: 2560,
+        height: 1440,
+        requestKey: 'veryHigh',
+      );
+      final fourK = ultraHd.copyWith(requestKey: 'max');
+      final scanner = FakeScannerRepository();
+      var desired = DesiredCameraResolution.tier(CameraResolutionTier.qhd2k);
+      await pumpCapture(
+        tester,
+        capabilities: _CachedCapabilities([qhd, fourK]),
+        desired: () => desired,
+        scanner: scanner,
+      );
+      // Batch mode keeps the capture screen up so its status can be read.
+      await tester.tap(find.byKey(ScanKeys.batchModeToggle));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(ScanKeys.shutterButton));
+      await tester.pumpAndSettle();
+      expect(find.text('2K • captured 2560 by 1440'), findsOneWidget);
+
+      // Settings changes while the camera stays open.
+      desired = const DesiredCameraResolution.fullResolution();
+      await tester.tap(find.byKey(ScanKeys.shutterButton));
+      await tester.pumpAndSettle();
+
+      // 2K replayed its own measured request; Full replayed `max`.
+      expect(scanner.requestedResolutions.map((r) => r?.requestKey), [
+        'veryHigh',
+        'max',
+      ]);
+      expect(
+        find.text('Full resolution • captured 4032 by 3024'),
+        findsOneWidget,
+      );
+    },
+  );
+
+  testWidgets('a plugin that under-delivers is reported honestly', (
+    tester,
+  ) async {
+    final scanner = FakeScannerRepository()..actualSizeOverride = (1920, 1080);
+    await pumpCapture(
+      tester,
+      capabilities: _CachedCapabilities([ultraHd]),
+      desired: () =>
+          DesiredCameraResolution.tier(CameraResolutionTier.ultraHd4k),
+      scanner: scanner,
+    );
+    // Batch mode keeps the capture screen up so its status can be read.
+    await tester.tap(find.byKey(ScanKeys.batchModeToggle));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(ScanKeys.shutterButton));
+    await tester.pumpAndSettle();
+
+    expect(find.text('4K requested • captured 1920 by 1080'), findsOneWidget);
+    expect(find.textContaining('4K •'), findsNothing);
+  });
+}
+
+/// Capabilities that answer every load with [resolutions], as the real
+/// repository's cache does once the camera has been probed.
+class _CachedCapabilities implements CameraCapabilityRepository {
+  _CachedCapabilities(this.resolutions);
+
+  final List<SupportedCameraResolution> resolutions;
+  final refreshes = <bool>[];
+
+  @override
+  Future<Result<List<SupportedCameraResolution>>> loadActiveResolutions({
+    bool refresh = false,
+  }) async {
+    refreshes.add(refresh);
+    return Result<List<SupportedCameraResolution>>.success(resolutions);
+  }
 }
 
 class _NoopStaging implements ScanStagingArea {

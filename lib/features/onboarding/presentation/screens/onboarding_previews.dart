@@ -50,10 +50,14 @@ class _PreviewOnboardingCubit extends OnboardingCubit
 }
 
 /// Builds the flow seeded to [state], with collaborators that do nothing.
-Widget _onboardingAt(OnboardingState state) => BlocProvider<OnboardingCubit>(
-  create: (_) => _PreviewOnboardingCubit(state),
-  child: OnboardingScreen(onFinished: () {}),
-);
+Widget _onboardingAt(OnboardingState state, {bool usesICloudLibrary = false}) =>
+    BlocProvider<OnboardingCubit>(
+      create: (_) => _PreviewOnboardingCubit(state),
+      child: OnboardingScreen(
+        onFinished: () {},
+        usesICloudLibrary: usesICloudLibrary,
+      ),
+    );
 
 /// Welcome step.
 @Preview(
@@ -99,6 +103,32 @@ Widget onboardingPrivacy() =>
 )
 Widget onboardingPrivacyDark() =>
     _onboardingAt(const OnboardingState(step: OnboardingStep.privacy));
+
+/// Privacy introduction as iOS states it: the library uses iCloud Drive.
+@Preview(
+  name: 'Onboarding — privacy, iOS iCloud',
+  group: 'Onboarding',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget onboardingPrivacyICloud() => _onboardingAt(
+  const OnboardingState(step: OnboardingStep.privacy),
+  usesICloudLibrary: true,
+);
+
+/// iOS privacy introduction on a tablet in dark mode at a large text scale.
+@Preview(
+  name: 'Onboarding — privacy, iOS iCloud, tablet dark long content',
+  group: 'Onboarding',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  textScaleFactor: 2,
+  theme: appPreviewTheme,
+)
+Widget onboardingPrivacyICloudTabletDark() => _onboardingAt(
+  const OnboardingState(step: OnboardingStep.privacy),
+  usesICloudLibrary: true,
+);
 
 /// Privacy introduction on a tablet.
 @Preview(

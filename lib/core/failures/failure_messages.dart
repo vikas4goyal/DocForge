@@ -75,13 +75,6 @@ extension FailurePresentationX on Failure {
             : RecoveryAction.retry,
       ),
 
-    OcrFailure() => const FailurePresentation(
-      message:
-          'Text could not be recognised on this page. '
-          'The document is still saved and can be used.',
-      action: RecoveryAction.retry,
-    ),
-
     PdfFailure() => const FailurePresentation(
       message: 'The PDF could not be processed. Please try again.',
       action: RecoveryAction.retry,

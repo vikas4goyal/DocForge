@@ -39,6 +39,7 @@ SupportedCameraResolution _$SupportedCameraResolutionFromJson(
     ),
     width: $checkedConvert('width', (v) => (v as num).toInt()),
     height: $checkedConvert('height', (v) => (v as num).toInt()),
+    requestKey: $checkedConvert('requestKey', (v) => v as String?),
   );
   return val;
 });
@@ -49,6 +50,7 @@ Map<String, dynamic> _$SupportedCameraResolutionToJson(
   'tier': instance.tier.toJson(),
   'width': instance.width,
   'height': instance.height,
+  'requestKey': ?instance.requestKey,
 };
 
 FullCameraResolution _$FullCameraResolutionFromJson(

@@ -69,7 +69,7 @@ void main() {
     await viewer.waitUntilOpen();
 
     await viewer.openCompress();
-    await PdfEditRobot(tester).waitUntilFocused();
+    await CompressPdfRobot(tester).waitUntilCalculated();
     await PdfEditRobot(tester).close();
     await viewer.waitUntilOpen();
 

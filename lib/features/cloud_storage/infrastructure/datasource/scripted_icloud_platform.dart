@@ -92,6 +92,22 @@ class ScriptedICloudPlatform implements ICloudPlatformApi {
   /// Optional stable platform error returned by the next download.
   PlatformException? nextDownloadFailure;
 
+  int? _checksBeforeOutage;
+  String _outageValue = 'unavailable';
+
+  /// Scripts an outage: after [afterChecks] more availability checks, every
+  /// check reports [value] until [availabilityValue] is set again.
+  ///
+  /// Counting checks rather than time keeps a mid-migration outage
+  /// deterministic: the migration checks availability before each file.
+  void scheduleOutage({
+    required int afterChecks,
+    String value = 'unavailable',
+  }) {
+    _checksBeforeOutage = afterChecks;
+    _outageValue = value;
+  }
+
   /// Replaces the listed items with [items].
   void replaceItems(List<ScriptedICloudItem> items) {
     _items
@@ -108,6 +124,15 @@ class ScriptedICloudPlatform implements ICloudPlatformApi {
   @override
   Future<String> availability() async {
     operationRequests++;
+    final remaining = _checksBeforeOutage;
+    if (remaining != null) {
+      if (remaining == 0) {
+        _checksBeforeOutage = null;
+        availabilityValue = _outageValue;
+      } else {
+        _checksBeforeOutage = remaining - 1;
+      }
+    }
     return availabilityValue;
   }
 

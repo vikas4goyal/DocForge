@@ -8,7 +8,6 @@ library;
 
 import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/core/contracts/models/pdf_quality.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/contracts/models/settings_values.dart';
 import 'package:doc_scanly/core/jobs/pdf_jobs.dart';
 
@@ -24,11 +23,7 @@ export 'package:doc_scanly/core/contracts/models/settings_values.dart'
 /// is what crosses into the composition isolate (`design.md` §7).
 class PdfPageSpec {
   /// Creates a specification for one page.
-  const PdfPageSpec({
-    required this.imagePath,
-    required this.rotation,
-    this.textBlocks = const [],
-  });
+  const PdfPageSpec({required this.imagePath, required this.rotation});
 
   /// The image to draw, already enhanced.
   final String imagePath;
@@ -36,38 +31,18 @@ class PdfPageSpec {
   /// Rotation to apply when the page is drawn.
   final PageRotation rotation;
 
-  /// Recognised text to place invisibly over the image.
-  ///
-  /// Empty when the page has not been recognised, or when recognition found
-  /// nothing. A page without a text layer is still a valid page — the spec
-  /// requires the PDF to be produced either way.
-  final List<TextBlock> textBlocks;
-
-  /// Whether this page carries a searchable text layer.
-  bool get hasTextLayer => textBlocks.isNotEmpty;
-
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is PdfPageSpec &&
           other.imagePath == imagePath &&
-          other.rotation == rotation &&
-          _sameBlocks(other.textBlocks, textBlocks);
+          other.rotation == rotation;
 
   @override
-  int get hashCode => Object.hash(imagePath, rotation, textBlocks.length);
-
-  static bool _sameBlocks(List<TextBlock> a, List<TextBlock> b) {
-    if (a.length != b.length) return false;
-    for (var index = 0; index < a.length; index++) {
-      if (a[index] != b[index]) return false;
-    }
-    return true;
-  }
+  int get hashCode => Object.hash(imagePath, rotation);
 
   @override
-  String toString() =>
-      'PdfPageSpec($imagePath, $rotation, ${textBlocks.length} blocks)';
+  String toString() => 'PdfPageSpec($imagePath, $rotation)';
 }
 
 /// Everything the composer needs to build one PDF.
@@ -87,9 +62,6 @@ class PdfBuildRequest {
 
   /// How much fidelity to keep.
   final PdfQuality quality;
-
-  /// Whether any page carries a text layer.
-  bool get isSearchable => pages.any((page) => page.hasTextLayer);
 
   @override
   bool operator ==(Object other) =>
@@ -115,7 +87,7 @@ class GeneratedPdfCandidatePage {
   /// Stable page identity used by quality overrides and fingerprints.
   final String stableId;
 
-  /// Prepared page image, orientation, and optional searchable text.
+  /// Prepared page image and orientation.
   final PdfPageSpec page;
 
   /// Effective document-or-page quality for this page.
@@ -178,35 +150,9 @@ class GeneratedPdfCandidateRequest {
 
 /// Rules for assembling a build request from a session.
 abstract final class PdfComposition {
-  /// Builds the page specifications for [pages], attaching any recognised text.
-  ///
-  /// A page with no recognition result, or one whose blocks are all
-  /// unplaceable, simply gets no text layer. Recognition failure must never
-  /// prevent a document being created — a PDF without a searchable layer is
-  /// still a valid document, which the spec states outright.
-  static List<PdfPageSpec> specsFor(
-    List<PageRef> pages,
-    Map<String, RecognisedText> textByPageId,
-  ) => [
+  /// Builds the page specifications for [pages], in order.
+  static List<PdfPageSpec> specsFor(List<PageRef> pages) => [
     for (final page in pages)
-      PdfPageSpec(
-        imagePath: page.imagePath,
-        rotation: page.rotation,
-        textBlocks: _placeable(textByPageId[page.id.value]),
-      ),
+      PdfPageSpec(imagePath: page.imagePath, rotation: page.rotation),
   ];
-
-  /// The blocks of [text] that can be positioned, or none.
-  ///
-  /// A block with an invalid or zero-area box is dropped rather than placed at
-  /// a guess: a text-layer entry with no position lands somewhere arbitrary,
-  /// and selecting text in a reader then highlights the wrong part of the page.
-  static List<TextBlock> _placeable(RecognisedText? text) {
-    if (text == null) return const [];
-
-    return [
-      for (final block in text.blocks)
-        if (block.bounds.isValid && block.text.trim().isNotEmpty) block,
-    ];
-  }
 }

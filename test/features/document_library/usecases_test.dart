@@ -154,7 +154,6 @@ void main() {
       documents.documents[sampleDocument.id] = sampleDocument.copyWith(
         isFavourite: true,
         isProtected: true,
-        hasRecognisedText: true,
       );
 
       final moved = (await MoveDocument(documents, clock)(
@@ -164,7 +163,6 @@ void main() {
 
       expect(moved.isFavourite, isTrue);
       expect(moved.isProtected, isTrue);
-      expect(moved.hasRecognisedText, isTrue);
       expect(moved.pageCount, sampleDocument.pageCount);
     });
   });

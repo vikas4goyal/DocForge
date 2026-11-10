@@ -53,12 +53,14 @@ import 'package:doc_scanly/features/app_security/domain/repositories/app_lock_re
 import 'package:doc_scanly/features/app_security/infrastructure/repositories/local_auth_authenticator.dart';
 import 'package:doc_scanly/features/app_security/presentation/security_keys.dart';
 import 'package:doc_scanly/features/app_security/presentation/widgets/app_lock_observer.dart';
-import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/screens/settings_detail_screens.dart';
+import 'package:doc_scanly/features/cloud_storage/application/usecases/adopt_device_library.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/ensure_document_downloaded.dart';
 import 'package:doc_scanly/features/cloud_storage/application/usecases/import_existing_cloud_folder.dart';
+import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_decision.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_location.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/ios_icloud_channel.dart';
+import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/storage_location_preferences.dart';
 import 'package:doc_scanly/features/cloud_storage/presentation/cloud_storage_keys.dart';
 import 'package:doc_scanly/features/document_creation/application/usecases/add_page.dart';
 import 'package:doc_scanly/features/document_creation/application/usecases/render_page.dart';
@@ -145,6 +147,11 @@ const appVersion = '1.0.0';
 /// [initialLocation] is where the router starts; the guard still redirects from
 /// it, so a flow that wants the dashboard asks for [AppRoutes.home] and lets the
 /// gates decide.
+///
+/// On iOS, [onRecompose] rebuilds the whole application from its host; the
+/// storage screen's "Move documents to iCloud now" uses it to pass through
+/// the migration gate. [continueLocalThisSession] is set only by that gate
+/// when the user keeps the device library after a failed move.
 Future<Widget> buildDocScanly({
   AppDependencies? dependencies,
   Directory? cacheDirectory,
@@ -168,6 +175,8 @@ Future<Widget> buildDocScanly({
   DirectoryPicker? pickSaveLocation,
   String initialLocation = AppRoutes.home,
   ImageProcessingBackend? imageProcessingBackend,
+  Future<void> Function()? onRecompose,
+  bool continueLocalThisSession = false,
 }) async {
   // Awaited together rather than one after another: none needs the other, and
   // everything here happens before the first frame, so each avoidable round
@@ -186,6 +195,55 @@ Future<Widget> buildDocScanly({
   ).wait;
 
   final supportsICloud = isIOS ?? Platform.isIOS;
+
+  // Re-runs this whole composition with the same edges. Used by the startup
+  // screens that stand in for the app until the storage authority is usable.
+  Future<Widget> recompose({bool continueLocal = false}) => buildDocScanly(
+    dependencies: resolvedDependencies,
+    cacheDirectory: resolvedCache,
+    documentsDirectory: resolvedDocuments,
+    publicStore: publicStore,
+    libraryOverride: libraryOverride,
+    scanner: scanner,
+    cameraCapabilities: cameraCapabilities,
+    authenticator: authenticator,
+    pdfRenderer: pdfRenderer,
+    pdfEditor: pdfEditor,
+    share: share,
+    printer: printer,
+    exportPicker: exportPicker,
+    gallery: gallery,
+    files: files,
+    sharedContent: sharedContent,
+    iCloudPlatform: iCloudPlatform,
+    isIOS: isIOS,
+    pickSaveLocation: pickSaveLocation,
+    initialLocation: initialLocation,
+    imageProcessingBackend: imageProcessingBackend,
+    onRecompose: onRecompose,
+    continueLocalThisSession: continueLocal,
+  );
+
+  // The confirmed "Use this device without iCloud" escape. Adoption only
+  // touches preferences, so it is offered even when the iCloud check itself
+  // failed. Its result is never ignored: a failed write keeps the user on
+  // the unavailable screen *with an explanation* and the escape still there,
+  // rather than recomposing onto the very library that was unavailable.
+  final adoptDevice = AdoptDeviceLibrary(
+    StorageLocationPreferences(resolvedDependencies.preferences),
+  );
+  Future<Widget> useDevice() async {
+    final adopted = await adoptDevice();
+    if (adopted case Failed()) {
+      return CloudLibraryUnavailableApp(
+        onRetry: recompose,
+        onUseDevice: useDevice,
+        useDeviceFailed: true,
+      );
+    }
+    return recompose();
+  }
+
   CloudStorageModule? cloudStorage;
   if (supportsICloud) {
     // This is a local compatibility migration and must precede authority
@@ -198,35 +256,37 @@ Future<Widget> buildDocScanly({
       platform:
           iCloudPlatform ??
           IosICloudChannel(telemetry: resolvedDependencies.telemetry),
+      continueLocalThisSession: continueLocalThisSession,
     );
-    if (builtCloud case Success(:final value)) {
-      cloudStorage = value;
-    } else {
-      return CloudLibraryUnavailableApp(
-        onRetry: () => buildDocScanly(
-          dependencies: resolvedDependencies,
-          cacheDirectory: resolvedCache,
-          documentsDirectory: resolvedDocuments,
-          publicStore: publicStore,
-          libraryOverride: libraryOverride,
-          scanner: scanner,
-          cameraCapabilities: cameraCapabilities,
-          authenticator: authenticator,
-          pdfRenderer: pdfRenderer,
-          pdfEditor: pdfEditor,
-          share: share,
-          printer: printer,
-          exportPicker: exportPicker,
-          gallery: gallery,
-          files: files,
-          sharedContent: sharedContent,
-          iCloudPlatform: iCloudPlatform,
-          isIOS: true,
-          pickSaveLocation: pickSaveLocation,
-          initialLocation: initialLocation,
-          imageProcessingBackend: imageProcessingBackend,
-        ),
-      );
+    switch (builtCloud) {
+      case Success(:final value):
+        cloudStorage = value;
+      case Failed():
+        return CloudLibraryUnavailableApp(
+          onRetry: recompose,
+          onUseDevice: useDevice,
+        );
+    }
+
+    final module = cloudStorage;
+
+    switch (module.decision) {
+      // The move runs before anything below is composed: the migration
+      // inventories the device library once, so no screen may be able to write
+      // a document while it copies (`design.md` D2).
+      case MigrateToICloud():
+        return CloudMigrationGateApp(
+          runMigration: module.migrate,
+          onFinished: recompose,
+          onContinueLocal: () => recompose(continueLocal: true),
+        );
+      case ICloudUnavailable():
+        return CloudLibraryUnavailableApp(
+          onRetry: recompose,
+          onUseDevice: useDevice,
+        );
+      case UseICloud() || UseLocal():
+        break;
     }
   }
 
@@ -237,33 +297,14 @@ Future<Widget> buildDocScanly({
   if (publicStore != null) {
     store = publicStore;
   } else if (cloudStorage != null) {
-    final authoritative = await cloudStorage.authoritativeStore();
+    final module = cloudStorage;
+    final authoritative = await module.authoritativeStore();
     if (authoritative case Success(:final value)) {
       store = value;
     } else {
       return CloudLibraryUnavailableApp(
-        onRetry: () => buildDocScanly(
-          dependencies: resolvedDependencies,
-          cacheDirectory: resolvedCache,
-          documentsDirectory: resolvedDocuments,
-          libraryOverride: libraryOverride,
-          scanner: scanner,
-          cameraCapabilities: cameraCapabilities,
-          authenticator: authenticator,
-          pdfRenderer: pdfRenderer,
-          pdfEditor: pdfEditor,
-          share: share,
-          printer: printer,
-          exportPicker: exportPicker,
-          gallery: gallery,
-          files: files,
-          sharedContent: sharedContent,
-          iCloudPlatform: iCloudPlatform,
-          isIOS: true,
-          pickSaveLocation: pickSaveLocation,
-          initialLocation: initialLocation,
-          imageProcessingBackend: imageProcessingBackend,
-        ),
+        onRetry: recompose,
+        onUseDevice: useDevice,
       );
     }
   } else {
@@ -280,8 +321,7 @@ Future<Widget> buildDocScanly({
     ..createSync(recursive: true);
 
   final localDocumentFiles = PublicStoreDocumentFileResolver(store);
-  final usesICloudAuthority =
-      cloudStorage?.resolution.location == StorageLocation.iCloud;
+  final usesICloudAuthority = cloudStorage?.authority == StorageLocation.iCloud;
   final documentFiles = usesICloudAuthority
       ? DownloadAwareDocumentFileResolver(
           delegate: localDocumentFiles,
@@ -366,12 +406,14 @@ Future<Widget> buildDocScanly({
         )
       : null;
 
-  Future<void> reconcileLibrary({bool force = false}) async {
+  /// Returns whether the run changed what the library index holds.
+  Future<bool> reconcileLibrary({bool force = false}) async {
     if (cloudReconcile == null) {
-      await library.reconcile(force: force);
-    } else {
-      await cloudReconcile();
+      final outcome = await library.reconcile(force: force);
+      return outcome.valueOrNull?.changedAnything ?? false;
     }
+    final outcome = await cloudReconcile();
+    return outcome.valueOrNull?.changedAnything ?? false;
   }
 
   final settings = buildSettingsModule(
@@ -385,16 +427,18 @@ Future<Widget> buildDocScanly({
     )(),
   );
 
-  // Read once at startup and kept current by the settings screen. The features
-  // that consume a setting — naming, quality — read it through this holder
-  // rather than hitting preferences on every save, which would put a disk read
-  // in the middle of document creation.
-  final currentSettings = ValueNotifier<AppSettings>(await settings.load());
+  // Loaded once before any consumer is built, which primes the repository's
+  // read model. Features read settings through `settingsModel.current` — the
+  // last *successfully persisted* values — rather than hitting preferences on
+  // every save (a disk read in the middle of document creation) or trusting a
+  // widget to copy them across (which published defaults while loading).
+  final settingsModel = settings.repository;
+  await settings.load();
 
   // Seeded from the stored choice so the very first frame is already in the
   // right theme; a default-then-correct sequence would flash light before dark.
   final themeMode = ThemeModeController(
-    themeModeFor(currentSettings.value.theme),
+    themeModeFor(settingsModel.current.theme),
   );
 
   // One editor instance, shared: generation protects through it and the editing
@@ -421,7 +465,7 @@ Future<Widget> buildDocScanly({
     ids: resolvedDependencies.idGenerator,
     documentReader: library.documentReader,
     documentWriter: library.documentWriter,
-    namingPattern: () => currentSettings.value.namingPattern,
+    namingPattern: () => settingsModel.current.namingPattern,
     // Shared with crop/enhance previews so saving uses the same native-first
     // GPU pipeline and CPU fallback rather than a second pixel implementation.
     renderPage: renderPage,
@@ -465,9 +509,9 @@ Future<Widget> buildDocScanly({
           folderId: folderId,
         ),
     suggestName: () =>
-        creation.generateName(currentSettings.value.namingPattern),
+        creation.generateName(settingsModel.current.namingPattern),
     store: store,
-    desiredCameraResolution: () => currentSettings.value.cameraResolution,
+    desiredCameraResolution: () => settingsModel.current.cameraResolution,
     openSavePdf: (context, session) {
       final handle = savePdfSessions.register(session);
       final route = SavePdfRoute(sessionHandle: handle);
@@ -496,6 +540,9 @@ Future<Widget> buildDocScanly({
     share: share,
     printer: printer,
     exporter: exportPicker,
+    // Read at export time from the persisted settings, so every share surface
+    // starts in the configured folder and a change applies immediately.
+    defaultSaveLocation: () => settingsModel.current.saveLocation,
   );
 
   // Onboarding owns its own gate. The flag is read once here, before the first
@@ -544,7 +591,6 @@ Future<Widget> buildDocScanly({
       permissions: resolvedDependencies.permissions,
       secureStorage: resolvedDependencies.secureStorage,
       documentFiles: documentFiles,
-      currentSettings: currentSettings,
       themeMode: themeMode,
       appVersion: appVersion,
       lockGate: lockGate,
@@ -559,7 +605,7 @@ Future<Widget> buildDocScanly({
         sessionHandle: handle,
         sessions: savePdfSessions,
         renderPage: renderPage,
-        initialQuality: currentSettings.value.pdfQuality,
+        initialQuality: settingsModel.current.pdfQuality,
         candidateRepository: creation.candidateRepository,
         documents: library.documentWriter,
         rollbackDocument: (documentId) async {
@@ -633,7 +679,9 @@ Future<Widget> buildDocScanly({
             },
           )();
         },
+        onRecompose: onRecompose,
       ),
+      storageLocationSummary: cloudStorage?.summary,
       onLibraryRefresh: () => reconcileLibrary(force: true),
       libraryRefreshKey: usesICloudAuthority
           ? CloudStorageKeys.libraryRefresh
@@ -662,7 +710,9 @@ Future<Widget> buildDocScanly({
         // is retried on the next launch/resume, while reconciliation can still
         // adopt user-visible file changes immediately.
         await library.expireTrash();
-        await reconcileLibrary();
+        // Only on a real change: this runs on every resume, and a reload puts
+        // Home back into its loading state.
+        if (await reconcileLibrary()) routeObserver.libraryChanged();
       },
       externalTriggers: usesICloudAuthority
           ? cloudStorage!.cloud.identityChanges

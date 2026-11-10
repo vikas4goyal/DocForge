@@ -8,17 +8,15 @@ import 'package:doc_scanly/core/contracts/models/page.dart';
 import 'package:doc_scanly/features/document_sharing/domain/share_content.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Document doc({String title = 'Invoice', bool hasRecognisedText = false}) =>
-    Document(
-      id: const DocumentId('a'),
-      title: title,
-      createdAt: DateTime.utc(2026, 3, 14),
-      updatedAt: DateTime.utc(2026, 3, 14),
-      pageCount: 3,
-      sizeInBytes: 2048,
-      libraryPath: LibraryPath.parse('a.pdf'),
-      hasRecognisedText: hasRecognisedText,
-    );
+Document doc({String title = 'Invoice'}) => Document(
+  id: const DocumentId('a'),
+  title: title,
+  createdAt: DateTime.utc(2026, 3, 14),
+  updatedAt: DateTime.utc(2026, 3, 14),
+  pageCount: 3,
+  sizeInBytes: 2048,
+  libraryPath: LibraryPath.parse('a.pdf'),
+);
 
 DocumentPage page(int order) => DocumentPage(
   id: PageId('p$order'),

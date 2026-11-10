@@ -5,7 +5,7 @@
 /// another feature (`design.md` §2). PDF quality is chosen in settings and
 /// applied by PDF generation; the naming pattern is chosen in settings and
 /// expanded by PDF generation and import; the recognition script is chosen in
-/// settings and used by OCR.
+/// settings and used by the features that act on them.
 ///
 /// Pure Dart: no Flutter, no plugins, no storage.
 library;
@@ -161,61 +161,4 @@ abstract final class DocumentNaming {
     final hasContent = RegExp('[a-zA-Z0-9]').hasMatch(safe);
     return '${hasContent ? safe : fallback}.pdf';
   }
-}
-
-/// A language recognition can run in.
-///
-/// ML Kit groups languages by *script* rather than by language: one recogniser
-/// reads every Latin-script language, another every Chinese one, and so on. The
-/// enum follows that grouping because it is what the engine actually offers —
-/// modelling individual languages would promise a distinction the recogniser
-/// cannot make.
-enum OcrScript {
-  /// Latin script: English, Spanish, French, German, Portuguese and around
-  /// fifty more.
-  ///
-  /// Bundled into the application binary, so it works with no network and no
-  /// first-use download.
-  latin('la', 'Latin', bundled: true),
-
-  /// Chinese script.
-  chinese('zh', 'Chinese', bundled: false),
-
-  /// Devanagari script: Hindi, Marathi, Nepali and others.
-  devanagari('hi', 'Devanagari', bundled: false),
-
-  /// Japanese script.
-  japanese('ja', 'Japanese', bundled: false),
-
-  /// Korean script.
-  korean('ko', 'Korean', bundled: false);
-
-  const OcrScript(this.languageTag, this.label, {required this.bundled});
-
-  /// BCP-47 tag recorded against a recognition result.
-  final String languageTag;
-
-  /// The name shown to the user.
-  final String label;
-
-  /// Whether the recogniser ships inside the application.
-  ///
-  /// Only [latin] does. The others are separate ML Kit recognisers that have to
-  /// be installed before they can be used, which is why availability is a
-  /// question the UI has to be able to ask — see `OcrLanguagePacks` in the OCR
-  /// feature, which answers it without running recognition.
-  final bool bundled;
-
-  /// The script recognition uses when the user has chosen nothing.
-  static const defaultScript = OcrScript.latin;
-
-  /// The script with [languageTag], or the default when none matches.
-  ///
-  /// Falls back rather than throwing so a settings value written by an older
-  /// release, or by a build that shipped a script this one does not, degrades
-  /// to working recognition instead of an error.
-  static OcrScript fromTag(String? languageTag) => values.firstWhere(
-    (script) => script.languageTag == languageTag,
-    orElse: () => defaultScript,
-  );
 }

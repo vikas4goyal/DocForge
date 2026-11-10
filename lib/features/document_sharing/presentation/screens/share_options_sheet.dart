@@ -20,7 +20,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// normative and come from `specs/document-sharing/spec.md`.
 class ShareOptionsSheet extends StatelessWidget {
   /// Creates the sheet.
-  const ShareOptionsSheet({super.key, this.onDone, this.initialDirectory});
+  const ShareOptionsSheet({super.key, this.onDone});
 
   /// Invoked once content has been handed over or an export has been written.
   ///
@@ -28,9 +28,6 @@ class ShareOptionsSheet extends StatelessWidget {
   /// whoever opened it, and a sheet that closed itself would be untestable
   /// without a navigator.
   final ValueChanged<ShareState>? onDone;
-
-  /// The configured default save location, offered first when exporting.
-  final String? initialDirectory;
 
   @override
   Widget build(BuildContext context) {
@@ -45,7 +42,7 @@ class ShareOptionsSheet extends StatelessWidget {
           ShareStatus.preparing => _Preparing(state: state),
           ShareStatus.exporting => _Preparing(state: state),
           ShareStatus.failure => _Failure(state: state),
-          _ => _Options(state: state, initialDirectory: initialDirectory),
+          _ => _Options(state: state),
         },
       ),
     );
@@ -54,10 +51,9 @@ class ShareOptionsSheet extends StatelessWidget {
 
 /// The list of options.
 class _Options extends StatelessWidget {
-  const _Options({required this.state, required this.initialDirectory});
+  const _Options({required this.state});
 
   final ShareState state;
-  final String? initialDirectory;
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +122,7 @@ class _Options extends StatelessWidget {
           label: 'Export to device storage',
           icon: Icons.save_alt_outlined,
           semanticsLabel: label(ShareAction.export, ShareFormat.pdf),
-          onTap: () => cubit.export(initialDirectory: initialDirectory),
+          onTap: cubit.export,
         ),
         const SizedBox(height: 8),
       ],

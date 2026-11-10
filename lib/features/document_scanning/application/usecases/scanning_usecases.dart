@@ -20,8 +20,11 @@ class LoadCameraResolutions {
 
   /// Returns supported choices, an empty list when enumeration is unavailable,
   /// or a typed failure that presentation can expose with Retry.
-  Future<Result<List<SupportedCameraResolution>>> call() =>
-      _repository.loadActiveResolutions();
+  ///
+  /// [refresh] bypasses any cached answer — used by the user's Retry.
+  Future<Result<List<SupportedCameraResolution>>> call({
+    bool refresh = false,
+  }) => _repository.loadActiveResolutions(refresh: refresh);
 }
 
 /// Resolves a stable desired tier for the active camera.
@@ -99,7 +102,12 @@ class CapturePage {
     DesiredCameraResolution desired =
         const DesiredCameraResolution.fullResolution(),
   }) async {
-    if (!_scanner.isReady) {
+    // Re-resolved before every shot, not only when the camera is closed: the
+    // preference can change in Settings while the camera stays open across a
+    // multi-page session, and a camera left at the old size would make the
+    // setting cosmetic. Unchanged requests are free — capabilities are cached
+    // and `initialise` is a no-op for the resolution already open.
+    if (!_scanner.isReady || resolveCaptureResolution != null) {
       final opened = await initialise(desired);
       // A permission refusal or an unopenable camera is reported as itself:
       // the two lead to different recovery actions and must not be collapsed
@@ -117,6 +125,8 @@ class CapturePage {
         imagePath: result.imagePath,
         quad: PageQuad.full,
         thumbnailPath: result.thumbnailPath,
+        actualWidth: result.actualWidth,
+        actualHeight: result.actualHeight,
       ),
     );
   }

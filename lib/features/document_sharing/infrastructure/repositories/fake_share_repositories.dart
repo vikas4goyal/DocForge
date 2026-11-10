@@ -83,6 +83,10 @@ class FakeExportDestinationPicker implements ExportDocumentRepository {
   /// Every suggested name the picker was offered, in order.
   final List<String> suggestions = [];
 
+  /// Every starting location the picker was asked to open at, in order; null
+  /// where none was requested ("Ask each time").
+  final List<String?> startLocations = [];
+
   @override
   Future<Result<DocumentExportResult>> export({
     required String sourcePath,
@@ -90,6 +94,7 @@ class FakeExportDestinationPicker implements ExportDocumentRepository {
     String? initialDirectory,
   }) async {
     suggestions.add(suggestedName);
+    startLocations.add(initialDirectory);
 
     final configured = failure;
     if (configured != null) {

@@ -27,6 +27,7 @@ import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_locati
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/ios_icloud_channel.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/scripted_icloud_platform.dart';
 import 'package:doc_scanly/features/document_library/infrastructure/models/isar_entities.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 
@@ -98,6 +99,10 @@ var _instanceCount = 0;
 /// [appLockEnabled] seeds the lock the same way, for the flow that proves a
 /// relaunch requires unlocking.
 ///
+/// [beforeCompose] seeds the library [FlowApp.publicStore] addresses before
+/// the app is composed; an iOS cloud flow uses it to give the automatic
+/// migration a device library to move.
+///
 /// [galleryImages], [pickedFiles], [pendingSharedContent] and
 /// [exportDestination] configure what the substituted pickers answer with; see
 /// [buildFakePlatform]. [unlocksSuccessfully] decides what the biometric prompt
@@ -124,6 +129,8 @@ Future<FlowApp> bootDocScanly(
   String? saveLocationDirectory,
   ImageProcessingBackend Function(AppDependencies dependencies)?
   imageProcessingBackendBuilder,
+  Future<void> Function(PublicFileStore store, Fixtures fixtures)?
+  beforeCompose,
 }) async {
   if (!_isarReady) {
     await Isar.initializeIsarCore(download: true);
@@ -139,6 +146,14 @@ Future<FlowApp> bootDocScanly(
   final derivedDirectory = await Directory('${root.path}/derived').create();
   final databaseDirectory = await Directory('${root.path}/db').create();
   final fixtureDirectory = await Directory('${root.path}/fixtures').create();
+  // An iOS flow that does not script iCloud still gets a scripted edge, signed
+  // out: iCloud is DocScanly's default authority, so the simulator's real
+  // Apple account would otherwise decide where every flow's library lives.
+  if (iCloudPlatform == null && (isIOS ?? Platform.isIOS)) {
+    final signedOut = ScriptedICloudPlatform(availabilityValue: 'signedOut');
+    addTearDown(signedOut.dispose);
+    iCloudPlatform = signedOut;
+  }
   Directory? cloudLibraryFolder;
   if (iCloudPlatform != null) {
     cloudLibraryFolder =
@@ -215,21 +230,44 @@ Future<FlowApp> bootDocScanly(
   // A real filesystem store over a directory the flow owns, rather than the
   // device's actual library folder: the flow gets genuine file behaviour
   // without writing into somewhere a user would see.
+  //
+  // An iOS cloud flow instead lets the composition root choose the authority,
+  // exactly as production does. [publicStore] is then the device library the
+  // cloud module would migrate from, so a flow can seed documents that the
+  // automatic migration must move.
+  final composesCloudStorage =
+      iCloudPlatform != null && (isIOS ?? Platform.isIOS);
   final startsInICloud =
       storageLocation == StorageLocation.iCloud ||
       (storageLocation == null &&
           iCloudPlatform is ScriptedICloudPlatform &&
           iCloudPlatform.marker != null);
-  final activeLibraryFolder = startsInICloud
-      ? cloudLibraryFolder!
-      : libraryFolder;
-  final publicStore = FilesystemPublicFileStore.atRoot(activeLibraryFolder);
+  final PublicFileStore publicStore;
+  final Directory activeLibraryFolder;
+  if (composesCloudStorage) {
+    final deviceStore = FilesystemPublicFileStore(libraryFolder);
+    await deviceStore.initialise();
+    publicStore = startsInICloud
+        ? FilesystemPublicFileStore.atRoot(cloudLibraryFolder!)
+        : deviceStore;
+    activeLibraryFolder = startsInICloud
+        ? cloudLibraryFolder!
+        : deviceStore.rootDirectory;
+  } else {
+    activeLibraryFolder = libraryFolder;
+    publicStore = FilesystemPublicFileStore.atRoot(activeLibraryFolder);
+  }
 
-  final app = await buildDocScanly(
+  // Seeded before composition, because the storage decision (and so whether
+  // the migration gate appears) is made while the app is composed.
+  await beforeCompose?.call(publicStore, fixtures);
+
+  final host = GlobalKey<_RecomposeHostState>();
+  Future<Widget> compose() => buildDocScanly(
     dependencies: dependencies,
     cacheDirectory: cacheDirectory,
     documentsDirectory: libraryFolder,
-    publicStore: startsInICloud ? null : publicStore,
+    publicStore: composesCloudStorage ? null : publicStore,
     libraryOverride: LibraryOverride(
       isar: isar,
       documentsDirectory: derivedDirectory,
@@ -247,7 +285,10 @@ Future<FlowApp> bootDocScanly(
     isIOS: isIOS,
     pickSaveLocation: () async => saveLocationDirectory,
     imageProcessingBackend: imageProcessingBackendBuilder?.call(dependencies),
+    // Mirrors main.dart's bootstrap: the running app is replaced wholesale.
+    onRecompose: () async => host.currentState?.replaceWith(await compose()),
   );
+  final app = _RecomposeHost(key: host, initial: await compose());
 
   addTearDown(() async {
     // Not awaited: a screen the flow left mounted can have a library query in
@@ -278,4 +319,28 @@ Future<FlowApp> bootDocScanly(
     iCloudPlatform: iCloudPlatform,
     cloudLibraryFolder: cloudLibraryFolder,
   );
+}
+
+/// Stands in for `main.dart`'s bootstrap widget: holds the composed app and
+/// replaces it when the composition root asks to be rebuilt.
+class _RecomposeHost extends StatefulWidget {
+  const _RecomposeHost({required this.initial, super.key});
+
+  final Widget initial;
+
+  @override
+  State<_RecomposeHost> createState() => _RecomposeHostState();
+}
+
+class _RecomposeHostState extends State<_RecomposeHost> {
+  late Widget _current = widget.initial;
+
+  /// Shows [next] in place of the current application.
+  void replaceWith(Widget next) {
+    if (mounted) setState(() => _current = next);
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      KeyedSubtree(key: ObjectKey(_current), child: _current);
 }

@@ -102,7 +102,7 @@ class LibraryModule {
   /// Loads a preview through unified scanned/PDF-backed page access.
   final LoadDocumentPagePreview loadDocumentPagePreview;
 
-  /// Unified page access injected into OCR and sharing consumers.
+  /// Unified page access injected into page consumers such as sharing.
   final DocumentPageAccessRepository pageAccess;
 
   /// Loads folders for the move picker.
@@ -241,12 +241,17 @@ Future<LibraryModule> buildLibraryModule({
   // live somewhere the user never sees (`design.md` D4).
   final supportDirectory = await getApplicationSupportDirectory();
 
-  final isar = await Isar.open([
-    DocumentEntitySchema,
-    FolderEntitySchema,
-    PageEntitySchema,
-    TrashEntitySchema,
-  ], directory: supportDirectory.path);
+  // A recomposed application (after moving the library to iCloud) runs this
+  // again while the first composition's database is still open, and Isar
+  // refuses a second open of the same instance.
+  final isar =
+      Isar.getInstance() ??
+      await Isar.open([
+        DocumentEntitySchema,
+        FolderEntitySchema,
+        PageEntitySchema,
+        TrashEntitySchema,
+      ], directory: supportDirectory.path);
 
   // Before anything reads a document: layout-1 records address a private path
   // that no longer exists, so a screen built over an unmigrated library would
@@ -286,7 +291,6 @@ LibraryModule buildLibraryModuleOver({
   required SecureStore secureStorage,
   DocumentFileResolver? documentFileResolver,
   ThumbnailRenderer thumbnailRenderer = renderPdfrxThumbnail,
-  DocumentPageTextExtractor pageTextExtractor = extractPdfrxPageText,
 }) {
   final documents = IsarDocumentRepository(isar);
   final folders = IsarFolderRepository(isar);
@@ -311,7 +315,6 @@ LibraryModule buildLibraryModuleOver({
     secureStorage,
     documentsDirectory,
     thumbnailRenderer,
-    pageTextExtractor,
   );
   final displayDensity = PreferenceLibraryDisplayDensityRepository(preferences);
 

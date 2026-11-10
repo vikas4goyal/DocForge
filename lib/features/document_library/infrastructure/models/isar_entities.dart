@@ -96,9 +96,6 @@ class DocumentEntity {
   /// Whether the stored PDF is password-protected.
   late bool isProtected;
 
-  /// Whether recognised text has been stored for this document.
-  late bool hasRecognisedText;
-
   /// Stable iCloud resource identity. Null for local and legacy rows.
   @Index()
   String? cloudResourceIdentifier;
@@ -147,7 +144,6 @@ class DocumentEntity {
     ..isFavourite = document.isFavourite
     ..isArchived = document.isArchived
     ..isProtected = document.isProtected
-    ..hasRecognisedText = document.hasRecognisedText
     ..cloudResourceIdentifier = document.cloudResourceIdentifier
     ..cloudRelativePath = document.cloudRelativePath
     ..contentAvailability = document.contentAvailability.name
@@ -177,7 +173,6 @@ class DocumentEntity {
     isFavourite: isFavourite,
     isArchived: isArchived,
     isProtected: isProtected,
-    hasRecognisedText: hasRecognisedText,
     cloudResourceIdentifier: cloudResourceIdentifier,
     cloudRelativePath: cloudRelativePath,
     contentAvailability: DocumentContentAvailability.values.firstWhere(

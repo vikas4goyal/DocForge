@@ -289,15 +289,26 @@ class DashboardRobot extends Robot {
     await tester.pump(const Duration(milliseconds: 600));
   });
 
+  Finder get _documentTiles => find.byWidgetPredicate(
+    (widget) =>
+        widget.key is ValueKey<String> &&
+        (widget.key! as ValueKey<String>).value.startsWith(
+          '${DashboardKeys.documentTilePrefix}_',
+        ),
+  );
+
+  /// Waits until at least one document row is listed.
+  ///
+  /// An iCloud library is indexed by reconciliation after the dashboard first
+  /// renders, so its rows arrive a moment after [waitUntilLoaded].
+  Future<void> waitForDocuments() =>
+      step('waiting for listed documents', () async {
+        await waitUntilVisible();
+        await pumpUntil(tester, _documentTiles, describe: 'a document row');
+      });
+
   /// Document identifiers currently exposed by dashboard rows.
-  List<String> get visibleDocumentIds => find
-      .byWidgetPredicate(
-        (widget) =>
-            widget.key is ValueKey<String> &&
-            (widget.key! as ValueKey<String>).value.startsWith(
-              '${DashboardKeys.documentTilePrefix}_',
-            ),
-      )
+  List<String> get visibleDocumentIds => _documentTiles
       .evaluate()
       .map(
         (element) => (element.widget.key! as ValueKey<String>).value.substring(
@@ -406,11 +417,83 @@ class SettingsRobot extends Robot {
         await waitUntilVisible();
         await tap(settingKey);
         await waitFor(SettingsKeys.choiceSheet);
-        final option = find.byKey(SettingsKeys.choiceOption(optionName));
-        await tester.ensureVisible(option);
+        // The options are a lazy list that may not have built the rows below
+        // the fold, so ensureVisible alone can find nothing.
+        await tester.scrollUntilVisible(
+          find.byKey(SettingsKeys.choiceOption(optionName)),
+          300,
+          scrollable: find
+              .descendant(
+                of: find.byKey(SettingsKeys.choiceSheet),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
         await tester.pump();
         await tap(SettingsKeys.choiceOption(optionName));
         await waitUntilGone(SettingsKeys.choiceSheet);
+      });
+
+  /// The PDF quality percentage the Settings row currently shows.
+  ///
+  /// Read from the visible "N%" label beside the title — what the user sees —
+  /// rather than from the slider widget's value.
+  int get shownPdfQuality {
+    final label = find.descendant(
+      of: find.byKey(SettingsKeys.pdfQuality),
+      matching: find.byWidgetPredicate(
+        (widget) =>
+            widget is Text && RegExp(r'^\d+%$').hasMatch(widget.data ?? ''),
+      ),
+    );
+    final text = tester.widget<Text>(label.first).data!;
+    return int.parse(text.substring(0, text.length - 1));
+  }
+
+  /// Sets the default PDF quality to [percent] by touching the slider.
+  ///
+  /// A Material slider jumps to wherever a touch lands, so this touches the
+  /// track where [percent] should be, reads the visible label, and corrects
+  /// by the remaining error — the way a person nudges a slider. Each touch
+  /// ends with one write, exactly as a user's would.
+  Future<void> setPdfQuality(int percent) =>
+      step('setting PDF quality to $percent%', () async {
+        await waitUntilVisible();
+        final slider = find.byKey(SettingsKeys.pdfQualitySlider);
+        await tester.scrollUntilVisible(
+          slider,
+          200,
+          scrollable: find
+              .descendant(
+                of: find.byKey(SettingsKeys.screen),
+                matching: find.byType(Scrollable),
+              )
+              .first,
+        );
+        await tester.pumpAndSettle();
+        final rect = tester.getRect(slider);
+        // The track is inset from the widget's edges by the thumb's overlay;
+        // an approximate inset is enough because the loop corrects the rest.
+        const inset = 24.0;
+        final trackWidth = rect.width - 2 * inset;
+        const steps = 70; // 30%…100% in 1% steps.
+        var x = rect.left + inset + (percent - 30) / steps * trackWidth;
+        for (var attempt = 0; attempt < 8; attempt++) {
+          await tester.tapAt(Offset(x, rect.center.dy));
+          await tester.pumpAndSettle();
+          final error = percent - shownPdfQuality;
+          if (error == 0) return;
+          x += error / steps * trackWidth;
+        }
+        expect(shownPdfQuality, percent);
+      });
+
+  /// Verifies the Settings row shows [percent] as the default PDF quality.
+  Future<void> expectPdfQuality(int percent) =>
+      step('checking PDF quality is $percent%', () async {
+        await waitUntilVisible();
+        await waitFor(SettingsKeys.pdfQualitySlider);
+        expect(shownPdfQuality, percent);
       });
 
   /// Opens active-camera capabilities and verifies [tierIds] are offered.

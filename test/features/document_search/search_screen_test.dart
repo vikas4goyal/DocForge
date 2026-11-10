@@ -279,10 +279,7 @@ void main() {
         MaterialApp(
           home: Scaffold(
             body: SearchResultRow(
-              result: SearchResult(
-                document: doc('a', title: 'Invoice 2026'),
-                source: MatchSource.title,
-              ),
+              result: SearchResult(document: doc('a', title: 'Invoice 2026')),
             ),
           ),
         ),
@@ -292,7 +289,7 @@ void main() {
       expect(find.textContaining('pages'), findsOneWidget);
     });
 
-    testWidgets('a long snippet is truncated rather than overflowing', (
+    testWidgets('a long title is truncated rather than overflowing', (
       tester,
     ) async {
       tester.view.physicalSize = const Size(390, 400);
@@ -305,8 +302,6 @@ void main() {
             body: SearchResultRow(
               result: SearchResult(
                 document: doc('a', title: 'A very long document title ' * 4),
-                source: MatchSource.recognisedText,
-                snippet: '…the quick brown fox jumps over the lazy dog… ' * 6,
               ),
             ),
           ),

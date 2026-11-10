@@ -10,7 +10,6 @@
 /// user had switched on.
 library;
 
-import 'package:doc_scanly/core/contracts/models/pdf_quality.dart';
 import 'package:doc_scanly/core/storage/storage_keys.dart';
 import 'package:doc_scanly/features/app_settings/domain/app_settings.dart';
 import 'package:doc_scanly/features/app_settings/presentation/settings_keys.dart';
@@ -36,9 +35,18 @@ void main() {
     final settings = SettingsRobot(tester);
     await settings.waitUntilVisible();
     await settings.choose(SettingsKeys.theme, 'dark');
+    // PDF quality is an inline slider now, not a choice sheet.
+    await settings.setPdfQuality(45);
+    await settings.expectPdfQuality(45);
+    expect(
+      (await app.dependencies.preferences.readInt(
+        PreferenceKeys.pdfQualityPercent,
+      )).valueOrNull,
+      45,
+    );
     await settings.choose(
-      SettingsKeys.pdfQuality,
-      SettingsKeys.optionNameOf(PdfQualityPercent(value: 100)),
+      SettingsKeys.fileNaming,
+      SettingsKeys.optionNameOf(NamingPattern.sequential),
     );
     await settings.expectCameraResolutions(const <String>[
       '720p',
@@ -91,6 +99,13 @@ void main() {
       tester.widget<MaterialApp>(find.byType(MaterialApp)).themeMode,
       ThemeMode.dark,
       reason: 'The chosen theme must survive leaving the screen.',
+    );
+    await settings.expectPdfQuality(45);
+    expect(
+      (await app.dependencies.preferences.readString(
+        PreferenceKeys.fileNamingPattern,
+      )).valueOrNull,
+      NamingPattern.sequential.id,
     );
   });
 

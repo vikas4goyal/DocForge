@@ -137,53 +137,14 @@ void main() {
   });
 
   group('SearchResult', () {
-    test('a title match needs no snippet', () {
-      final result = SearchResult(
-        document: documentNamed('Invoice'),
-        source: MatchSource.title,
-      );
-
-      // The title is already on the row, so repeating it as a snippet would be
-      // the same words twice.
-      expect(result.hasSnippet, isFalse);
-    });
-
-    test('a whitespace-only snippet is not worth showing', () {
-      final result = SearchResult(
-        document: documentNamed('Invoice'),
-        source: MatchSource.recognisedText,
-        snippet: '   ',
-      );
-
-      expect(result.hasSnippet, isFalse);
-    });
-
-    test('a text match carries the matching words in context', () {
-      final result = SearchResult(
-        document: documentNamed('Invoice'),
-        source: MatchSource.recognisedText,
-        snippet: 'total due on receipt',
-      );
-
-      // Which is what tells the user why a document with an unrelated title is
-      // in their results at all.
-      expect(result.hasSnippet, isTrue);
-      expect(result.source, MatchSource.recognisedText);
-    });
-
     test('equal results are equal and hash alike', () {
       final document = documentNamed('Invoice');
-      final a = SearchResult(document: document, source: MatchSource.title);
-      final b = SearchResult(document: document, source: MatchSource.title);
+      final a = SearchResult(document: document);
+      final b = SearchResult(document: document);
 
       expect(a, b);
       expect(a.hashCode, b.hashCode);
-      expect(
-        a,
-        isNot(
-          SearchResult(document: document, source: MatchSource.recognisedText),
-        ),
-      );
+      expect(a, isNot(SearchResult(document: documentNamed('Receipt'))));
     });
   });
 }

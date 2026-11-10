@@ -23,7 +23,6 @@ import 'package:flutter_test/flutter_test.dart';
 const _substitutedPlatformFiles = <String>[
   'lib/features/document_scanning/infrastructure/camera_scanner_repository.dart',
   'lib/features/document_scanning/domain/repositories/scanner_repository.dart',
-  'lib/features/ocr/infrastructure/repositories/fake_ocr_repository.dart',
   'lib/features/app_security/infrastructure/repositories/local_auth_authenticator.dart',
   'lib/features/document_viewer/infrastructure/repositories/pdfrx_renderer.dart',
   'lib/features/document_sharing/infrastructure/repositories/fake_share_repositories.dart',

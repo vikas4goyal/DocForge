@@ -415,6 +415,119 @@ Widget privacyPhoneDark() => PrivacyPolicyScreen(onBack: () {});
 // Settings tiles
 // ---------------------------------------------------------------------------
 
+/// Builds the PDF-quality slider tile at [percent], as Settings composes it.
+Widget _sliderTile(int percent, {bool enabled = true}) => SettingsSliderTile(
+  title: 'PDF quality',
+  value: percent,
+  min: PdfQualityPercent.minimum,
+  max: PdfQualityPercent.maximum,
+  enabled: enabled,
+  valueLabelFor: (value) => '$value%',
+  semanticLabelFor: (value) => 'Default PDF quality, $value percent',
+  description: SettingsCopy.pdfQualityDescription(
+    PdfQualityPercent(value: percent),
+  ),
+  onChanged: (_) {},
+  onChangeEnd: (_) {},
+);
+
+/// The slider tile at the documented 70% default.
+@Preview(
+  name: 'SettingsSliderTile — default',
+  group: 'Settings',
+  theme: appPreviewTheme,
+  wrapper: previewSurface,
+)
+Widget sliderTileDefault() => _sliderTile(70);
+
+/// The slider tile mid-drag, showing an uncommitted 45% draft.
+@Preview(
+  name: 'SettingsSliderTile — dragging',
+  group: 'Settings',
+  theme: appPreviewTheme,
+  wrapper: previewSurface,
+)
+Widget sliderTileDragging() => _sliderTile(45);
+
+/// The slider tile at its 30% minimum.
+@Preview(
+  name: 'SettingsSliderTile — minimum',
+  group: 'Settings',
+  theme: appPreviewTheme,
+  wrapper: previewSurface,
+)
+Widget sliderTileMinimum() => _sliderTile(PdfQualityPercent.minimum);
+
+/// The slider tile at its 100% maximum.
+@Preview(
+  name: 'SettingsSliderTile — maximum',
+  group: 'Settings',
+  theme: appPreviewTheme,
+  wrapper: previewSurface,
+)
+Widget sliderTileMaximum() => _sliderTile(PdfQualityPercent.maximum);
+
+/// The slider tile while settings are loading: shown, but inert.
+@Preview(
+  name: 'SettingsSliderTile — loading',
+  group: 'Settings',
+  theme: appPreviewTheme,
+  wrapper: previewSurface,
+)
+Widget sliderTileLoading() => _sliderTile(70, enabled: false);
+
+/// The slider tile reverted after a failed write, beneath the error banner.
+@Preview(
+  name: 'SettingsSliderTile — error',
+  group: 'Settings',
+  theme: appPreviewTheme,
+)
+Widget sliderTileError() => _screen(
+  _ready.copyWith(
+    status: SettingsStatus.failure,
+    failure: const Failure.storage(),
+  ),
+);
+
+/// The slider tile with its description wrapping at double text scale.
+@Preview(
+  name: 'SettingsSliderTile — long content',
+  group: 'Settings',
+  textScaleFactor: 2,
+  theme: appPreviewTheme,
+  wrapper: previewNarrow,
+)
+Widget sliderTileLongContent() => _sliderTile(55);
+
+/// The slider tile in light mode.
+@Preview(
+  name: 'SettingsSliderTile — light',
+  group: 'Settings',
+  brightness: Brightness.light,
+  theme: appPreviewTheme,
+  wrapper: previewSurface,
+)
+Widget sliderTileLight() => _sliderTile(70);
+
+/// The slider tile in dark mode.
+@Preview(
+  name: 'SettingsSliderTile — dark',
+  group: 'Settings',
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+  wrapper: previewSurface,
+)
+Widget sliderTileDark() => _sliderTile(70);
+
+/// The whole screen mid-drag, with an uncommitted draft on the slider.
+@Preview(
+  name: 'Settings — PDF quality dragging',
+  group: 'Settings',
+  theme: appPreviewTheme,
+)
+Widget settingsPdfQualityDragging() =>
+    _screen(_ready.copyWith(pdfQualityDraft: 45));
+
 /// A choice tile at its default.
 @Preview(
   name: 'SettingsChoiceTile — default',
@@ -422,17 +535,12 @@ Widget privacyPhoneDark() => PrivacyPolicyScreen(onBack: () {});
   theme: appPreviewTheme,
   wrapper: previewSurface,
 )
-Widget choiceTileDefault() => SettingsChoiceTile<PdfQualityPercent>(
-  title: 'PDF quality',
-  value: PdfQualityPercent(value: 70),
-  valueLabel: '70%',
-  options: [
-    PdfQualityPercent(value: 30),
-    PdfQualityPercent(value: 70),
-    PdfQualityPercent(value: 100),
-  ],
-  labelFor: (quality) => '${quality.value}%',
-  descriptionFor: SettingsCopy.pdfQualityDescription,
+Widget choiceTileDefault() => SettingsChoiceTile<AppThemeChoice>(
+  title: 'Theme',
+  value: AppThemeChoice.system,
+  valueLabel: AppThemeChoice.system.label,
+  options: AppThemeChoice.values,
+  labelFor: (choice) => choice.label,
   onSelected: (_) {},
 );
 

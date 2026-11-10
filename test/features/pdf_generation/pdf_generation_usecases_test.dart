@@ -9,7 +9,6 @@ library;
 import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
 import 'package:doc_scanly/core/failures/failure.dart';
 import 'package:doc_scanly/core/failures/result.dart';
@@ -39,7 +38,7 @@ void main() {
     deleted = [];
     store = InMemoryPublicFileStore();
     save = SaveDocument(
-      BuildSearchablePdf(composer, (_) async => const {}),
+      BuildPdf(composer),
       writer,
       clock,
       ids,
@@ -58,9 +57,9 @@ void main() {
     source: PageSource.camera,
   );
 
-  group('BuildSearchablePdf', () {
+  group('BuildPdf', () {
     test('composes the pages it is given, in order', () async {
-      final build = BuildSearchablePdf(composer, (_) async => const {});
+      final build = BuildPdf(composer);
 
       await build(bundle().pages, destinationPath: '/out.pdf');
 
@@ -71,52 +70,8 @@ void main() {
       ]);
     });
 
-    test('attaches recognised text as a layer', () async {
-      final build = BuildSearchablePdf(
-        composer,
-        (ids) async => {
-          'page-0': RecognisedText(
-            pageId: const PageId('page-0'),
-            blocks: const [
-              TextBlock(
-                text: 'Invoice',
-                bounds: NormalisedRect(
-                  left: 0.1,
-                  top: 0.1,
-                  right: 0.5,
-                  bottom: 0.16,
-                ),
-              ),
-            ],
-            languageTag: 'la',
-            recognisedAt: DateTime.utc(2026),
-          ),
-        },
-      );
-
-      await build(bundle().pages, destinationPath: '/out.pdf');
-
-      expect(composer.requests.single.pages.first.hasTextLayer, isTrue);
-      expect(composer.requests.single.isSearchable, isTrue);
-    });
-
-    test('still composes when the text lookup fails', () async {
-      // The spec states outright that a PDF must be produced when OCR is
-      // unavailable. A failed lookup degrades to an unsearchable document, not
-      // to no document.
-      final build = BuildSearchablePdf(
-        composer,
-        (_) async => throw StateError('the text store is unavailable'),
-      );
-
-      final result = await build(bundle().pages, destinationPath: '/out.pdf');
-
-      expect(result, isA<Success<ComposedPdf>>());
-      expect(composer.requests.single.isSearchable, isFalse);
-    });
-
     test('passes the quality through', () async {
-      final build = BuildSearchablePdf(composer, (_) async => const {});
+      final build = BuildPdf(composer);
 
       await build(
         bundle().pages,
@@ -128,7 +83,7 @@ void main() {
     });
 
     test('a token cancelled before it starts composes nothing', () async {
-      final build = BuildSearchablePdf(composer, (_) async => const {});
+      final build = BuildPdf(composer);
       final token = CancellationToken()..cancel();
 
       final result = await build(

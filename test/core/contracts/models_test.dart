@@ -2,7 +2,6 @@ import 'package:doc_scanly/core/contracts/models/document.dart';
 import 'package:doc_scanly/core/contracts/models/ids.dart';
 import 'package:doc_scanly/core/contracts/models/library_path.dart';
 import 'package:doc_scanly/core/contracts/models/page.dart';
-import 'package:doc_scanly/core/contracts/models/recognised_text.dart';
 import 'package:doc_scanly/core/contracts/models/scanned_page_bundle.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -214,7 +213,6 @@ void main() {
         isFavourite: true,
         isArchived: true,
         isProtected: true,
-        hasRecognisedText: true,
       );
 
       expect(Document.fromJson(full.toJson()), full);
@@ -275,92 +273,6 @@ void main() {
     test('the empty summary reports nothing stored', () {
       expect(StorageSummary.empty.totalBytes, 0);
       expect(StorageSummary.empty.documentCount, 0);
-    });
-  });
-
-  group('NormalisedRect', () {
-    test('round-trips through JSON', () {
-      const rect = NormalisedRect(left: 0.1, top: 0.2, right: 0.8, bottom: 0.4);
-
-      expect(NormalisedRect.fromJson(rect.toJson()), rect);
-    });
-
-    test('computes width and height', () {
-      const rect = NormalisedRect(left: 0.2, top: 0.1, right: 0.6, bottom: 0.4);
-
-      expect(rect.width, closeTo(0.4, 1e-9));
-      expect(rect.height, closeTo(0.3, 1e-9));
-    });
-
-    test('rejects an inverted or out-of-range rectangle', () {
-      const inverted = NormalisedRect(
-        left: 0.8,
-        top: 0.2,
-        right: 0.1,
-        bottom: 0.4,
-      );
-      const outOfRange = NormalisedRect(
-        left: 0,
-        top: 0,
-        right: 1.5,
-        bottom: 0.5,
-      );
-
-      expect(inverted.isValid, isFalse);
-      expect(outOfRange.isValid, isFalse);
-    });
-
-    test('accepts a valid rectangle', () {
-      const rect = NormalisedRect(left: 0, top: 0, right: 1, bottom: 1);
-
-      expect(rect.isValid, isTrue);
-    });
-  });
-
-  group('RecognisedText', () {
-    final text = RecognisedText(
-      pageId: const PageId('page-1'),
-      languageTag: 'en',
-      recognisedAt: _fixedTime,
-      blocks: const [
-        TextBlock(
-          text: 'Total',
-          bounds: NormalisedRect(left: 0.1, top: 0.1, right: 0.3, bottom: 0.15),
-        ),
-        TextBlock(
-          text: '42.00',
-          bounds: NormalisedRect(left: 0.6, top: 0.1, right: 0.8, bottom: 0.15),
-        ),
-      ],
-    );
-
-    test('round-trips through JSON with its bounding boxes', () {
-      final restored = RecognisedText.fromJson(text.toJson());
-
-      expect(restored, text);
-      // Bounds must survive the round trip or the invisible text layer would be
-      // written in the wrong place.
-      expect(restored.blocks.first.bounds, text.blocks.first.bounds);
-    });
-
-    test('joins blocks into readable plain text', () {
-      expect(text.plainText, 'Total\n42.00');
-    });
-
-    test('an empty result is valid, not an error', () {
-      final empty = RecognisedText.empty(
-        pageId: const PageId('page-1'),
-        languageTag: 'en',
-        recognisedAt: _fixedTime,
-      );
-
-      expect(empty.isEmpty, isTrue);
-      expect(empty.plainText, isEmpty);
-      expect(RecognisedText.fromJson(empty.toJson()), empty);
-    });
-
-    test('records the language it ran with', () {
-      expect(text.languageTag, 'en');
     });
   });
 

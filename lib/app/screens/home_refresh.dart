@@ -46,6 +46,13 @@ class HomeRefreshObserver extends NavigatorObserver with ChangeNotifier {
     super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
     notifyListeners();
   }
+
+  /// Reports that the library changed with no route going away.
+  ///
+  /// Reconciliation finishes after Home has loaded, so a document it discovers
+  /// — on a new device, or added while the app was in the background — would
+  /// otherwise stay invisible until something else happened to reload Home.
+  void libraryChanged() => notifyListeners();
 }
 
 /// Calls [onRefresh] whenever [observer] reports a route going away.

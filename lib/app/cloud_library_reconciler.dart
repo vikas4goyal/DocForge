@@ -39,6 +39,10 @@ class CloudReconcileOutcome {
 
   /// Folder records removed after an external iCloud deletion.
   final int foldersRemoved;
+
+  /// Whether the pass changed anything in the index.
+  bool get changedAnything =>
+      added + updated + removed + foldersAdded + foldersRemoved > 0;
 }
 
 /// Applies bounded iCloud metadata batches without downloading remote files.

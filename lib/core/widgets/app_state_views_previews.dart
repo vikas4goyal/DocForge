@@ -49,7 +49,7 @@ Widget loadingDark() => const AppLoadingIndicator();
 Widget progressDefault() => const AppProgressIndicator(
   completed: 2,
   total: 5,
-  label: 'Recognising text',
+  label: 'Preparing pages',
 );
 
 /// Progress with a cancel control.
@@ -87,7 +87,7 @@ Widget progressLongContent() => const AppProgressIndicator(
   completed: 7,
   total: 240,
   label:
-      'Recognising text across every page of this unusually long scanned '
+      'Preparing every page of this unusually long scanned '
       'document, which may take a little while',
 );
 
@@ -251,8 +251,12 @@ Widget errorCorruptFile() =>
   theme: appPreviewTheme,
   wrapper: previewSurface,
 )
-Widget errorLongContent() =>
-    AppErrorView(failure: const Failure.ocr(), onRetry: () {});
+Widget errorLongContent() => AppErrorView(
+  failure: const Failure.storage(
+    debugDetail: 'A long technical detail that wraps across lines',
+  ),
+  onRetry: () {},
+);
 
 /// Error view in dark mode.
 @Preview(

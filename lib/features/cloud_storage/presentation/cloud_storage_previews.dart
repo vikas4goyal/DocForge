@@ -1,16 +1,12 @@
-/// Fixture-driven previews for the iOS-only storage-location interface.
+/// Fixture-driven previews for the iOS-only storage-location status screen.
 library;
 
 import 'package:doc_scanly/core/failures/failure.dart';
-import 'package:doc_scanly/core/failures/result.dart';
 import 'package:doc_scanly/core/previews/preview_scaffold.dart';
-import 'package:doc_scanly/core/storage/key_value_store.dart';
-import 'package:doc_scanly/features/cloud_storage/application/usecases/choose_storage_location.dart';
-import 'package:doc_scanly/features/cloud_storage/application/usecases/load_storage_location.dart';
+import 'package:doc_scanly/features/cloud_storage/application/usecases/load_storage_status.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/entities/cloud_availability.dart';
 import 'package:doc_scanly/features/cloud_storage/domain/entities/storage_location.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/scripted_icloud_platform.dart';
-import 'package:doc_scanly/features/cloud_storage/infrastructure/datasource/storage_location_preferences.dart';
 import 'package:doc_scanly/features/cloud_storage/infrastructure/repositories/platform_cloud_container_repository.dart';
 import 'package:doc_scanly/features/cloud_storage/presentation/cubit/storage_location_cubit.dart';
 import 'package:doc_scanly/features/cloud_storage/presentation/cubit/storage_location_state.dart';
@@ -19,34 +15,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter/widget_previews.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+/// A status Cubit fixed to one fixture state; it never reads iCloud.
 class _PreviewStorageLocationCubit extends StorageLocationCubit {
-  _PreviewStorageLocationCubit(this._seeded)
+  _PreviewStorageLocationCubit(StorageLocationState seeded)
     : super(
-        loadLocation: LoadStorageLocation(
-          locations: StorageLocationPreferences(InMemoryPreferenceStore()),
-          cloud: _previewCloud(),
+        loadStatus: LoadStorageStatus(
+          authority: StorageLocation.local,
+          cloud: PlatformCloudContainerRepository(ScriptedICloudPlatform()),
         ),
-        chooseLocation: ChooseStorageLocation(_previewCloud()),
-        runMigration:
-            ({
-              required source,
-              required destination,
-              onProgress,
-              shouldCancel,
-            }) async => const Result<void>.success(null),
-      );
-
-  final StorageLocationState _seeded;
-
-  @override
-  StorageLocationState get state => _seeded;
+      ) {
+    emit(seeded);
+  }
 
   @override
   Future<void> load() async {}
 }
-
-PlatformCloudContainerRepository _previewCloud() =>
-    PlatformCloudContainerRepository(ScriptedICloudPlatform());
 
 Widget _storage(StorageLocationState state) =>
     BlocProvider<StorageLocationCubit>(
@@ -54,126 +37,188 @@ Widget _storage(StorageLocationState state) =>
       child: StorageLocationScreen(onBack: () {}, onImportFolder: () async {}),
     );
 
-const _available = CloudAvailability(CloudAvailabilityStatus.available);
+StorageLocationState _local(CloudAvailabilityStatus reason) =>
+    StorageLocationState(
+      status: StorageLocationStatus.localFallback,
+      location: StorageLocation.local,
+      cloudAvailability: CloudAvailability(reason),
+    );
 
-/// Local authority on a phone.
+const _iCloud = StorageLocationState(
+  status: StorageLocationStatus.iCloudActive,
+  location: StorageLocation.iCloud,
+  cloudAvailability: CloudAvailability(CloudAvailabilityStatus.available),
+);
+
+const _unavailable = StorageLocationState(
+  status: StorageLocationStatus.unavailable,
+  location: StorageLocation.iCloud,
+  cloudAvailability: CloudAvailability(CloudAvailabilityStatus.signedOut),
+);
+
+const _failure = StorageLocationState(
+  status: StorageLocationStatus.failure,
+  failure: Failure.storage(debugDetail: 'offline'),
+);
+
+/// iCloud is the authority.
 @Preview(
-  name: 'Storage location — local',
+  name: 'Storage location — iCloud active',
   group: 'Cloud storage',
   size: PreviewSize.phone,
   theme: appPreviewTheme,
 )
-Widget storageLocationLocal() => _storage(
-  const StorageLocationState(
-    status: StorageLocationStatus.readyLocal,
-    location: StorageLocation.local,
-    cloudAvailability: _available,
-  ),
-);
+Widget storageLocationICloud() => _storage(_iCloud);
 
-/// iCloud authority on a phone in dark mode.
+/// iCloud is the authority, in dark mode.
 @Preview(
-  name: 'Storage location — iCloud, dark',
+  name: 'Storage location — iCloud active, dark',
   group: 'Cloud storage',
   size: PreviewSize.phone,
   brightness: Brightness.dark,
   theme: appPreviewTheme,
 )
-Widget storageLocationICloudDark() => _storage(
-  const StorageLocationState(
-    status: StorageLocationStatus.readyICloud,
-    location: StorageLocation.iCloud,
-    cloudAvailability: _available,
-  ),
-);
+Widget storageLocationICloudDark() => _storage(_iCloud);
 
-/// Startup loading state.
+/// iCloud is the authority on a tablet.
+@Preview(
+  name: 'Storage location — iCloud active, tablet',
+  group: 'Cloud storage',
+  size: PreviewSize.tablet,
+  theme: appPreviewTheme,
+)
+Widget storageLocationICloudTablet() => _storage(_iCloud);
+
+/// Device fallback because no Apple Account is signed in.
+@Preview(
+  name: 'Storage location — device, signed out',
+  group: 'Cloud storage',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget storageLocationSignedOut() =>
+    _storage(_local(CloudAvailabilityStatus.signedOut));
+
+/// Device fallback because iCloud Drive is off for DocScanly.
+@Preview(
+  name: 'Storage location — device, iCloud Drive off',
+  group: 'Cloud storage',
+  size: PreviewSize.phone,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget storageLocationDisabled() =>
+    _storage(_local(CloudAvailabilityStatus.disabled));
+
+/// Device fallback because iCloud is restricted.
+@Preview(
+  name: 'Storage location — device, restricted',
+  group: 'Cloud storage',
+  size: PreviewSize.tablet,
+  theme: appPreviewTheme,
+)
+Widget storageLocationRestricted() =>
+    _storage(_local(CloudAvailabilityStatus.restricted));
+
+/// Device fallback while iCloud is temporarily unavailable.
+@Preview(
+  name: 'Storage location — device, temporarily unavailable',
+  group: 'Cloud storage',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget storageLocationTemporarilyUnavailable() =>
+    _storage(_local(CloudAvailabilityStatus.unavailable));
+
+/// iCloud appeared during the session, so the library can move now.
+@Preview(
+  name: 'Storage location — device, move now',
+  group: 'Cloud storage',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget storageLocationMoveNow() =>
+    _storage(_local(CloudAvailabilityStatus.available));
+
+/// Move-now on a tablet in dark mode.
+@Preview(
+  name: 'Storage location — device, move now, tablet dark',
+  group: 'Cloud storage',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget storageLocationMoveNowTabletDark() =>
+    _storage(_local(CloudAvailabilityStatus.available));
+
+/// Status is loading.
 @Preview(
   name: 'Storage location — loading',
   group: 'Cloud storage',
+  size: PreviewSize.phone,
   theme: appPreviewTheme,
 )
 Widget storageLocationLoading() => _storage(const StorageLocationState());
 
-/// First-install state with no established cloud library or queued migration.
+/// Status is loading on a tablet in dark mode.
 @Preview(
-  name: 'Storage location — empty library',
-  group: 'Cloud storage',
-  theme: appPreviewTheme,
-)
-Widget storageLocationEmpty() => storageLocationLocal();
-
-/// Selected iCloud is unavailable and cannot fall back silently.
-@Preview(
-  name: 'Storage location — unavailable',
-  group: 'Cloud storage',
-  theme: appPreviewTheme,
-)
-Widget storageLocationUnavailable() => _storage(
-  const StorageLocationState(
-    status: StorageLocationStatus.unavailable,
-    location: StorageLocation.iCloud,
-    cloudAvailability: CloudAvailability(CloudAvailabilityStatus.signedOut),
-  ),
-);
-
-/// Migration awaits destructive confirmation.
-@Preview(
-  name: 'Storage location — confirmation',
-  group: 'Cloud storage',
-  theme: appPreviewTheme,
-)
-Widget storageLocationConfirmation() => _storage(
-  const StorageLocationState(
-    status: StorageLocationStatus.confirmationRequired,
-    location: StorageLocation.local,
-    cloudAvailability: _available,
-    pendingChoice: StorageLocationChoice(
-      source: StorageLocation.local,
-      destination: StorageLocation.iCloud,
-    ),
-  ),
-);
-
-/// Long-running copy progress.
-@Preview(
-  name: 'Storage location — migration',
-  group: 'Cloud storage',
-  size: PreviewSize.tablet,
-  theme: appPreviewTheme,
-)
-Widget storageLocationMigration() => _storage(
-  const StorageLocationState(
-    status: StorageLocationStatus.migrating,
-    location: StorageLocation.local,
-    cloudAvailability: _available,
-    progress: .42,
-    completedFiles: 420,
-    totalFiles: 1000,
-    canCancel: true,
-  ),
-);
-
-/// Verification progress on a tablet in dark mode.
-@Preview(
-  name: 'Storage location — verifying, tablet dark',
+  name: 'Storage location — loading, tablet dark',
   group: 'Cloud storage',
   size: PreviewSize.tablet,
   brightness: Brightness.dark,
   theme: appPreviewTheme,
 )
-Widget storageLocationVerifying() => _storage(
-  const StorageLocationState(
-    status: StorageLocationStatus.verifying,
-    location: StorageLocation.local,
-    cloudAvailability: _available,
-    progress: .9,
-    completedFiles: 900,
-    totalFiles: 1000,
-  ),
-);
+Widget storageLocationLoadingDark() => _storage(const StorageLocationState());
 
-/// Confirmation copy at a large accessibility text scale.
+/// A fresh install with nothing to move and iCloud active.
+@Preview(
+  name: 'Storage location — empty library',
+  group: 'Cloud storage',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget storageLocationEmpty() => _storage(_iCloud);
+
+/// The iCloud library is unavailable and cannot fall back silently.
+@Preview(
+  name: 'Storage location — unavailable',
+  group: 'Cloud storage',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget storageLocationUnavailable() => _storage(_unavailable);
+
+/// The unavailable state on a tablet in dark mode.
+@Preview(
+  name: 'Storage location — unavailable, tablet dark',
+  group: 'Cloud storage',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget storageLocationUnavailableTabletDark() => _storage(_unavailable);
+
+/// The status could not be read.
+@Preview(
+  name: 'Storage location — error',
+  group: 'Cloud storage',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget storageLocationError() => _storage(_failure);
+
+/// The error state on a tablet in dark mode.
+@Preview(
+  name: 'Storage location — error, tablet dark',
+  group: 'Cloud storage',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  theme: appPreviewTheme,
+)
+Widget storageLocationErrorTabletDark() => _storage(_failure);
+
+/// Fallback copy at a large accessibility text scale.
 @Preview(
   name: 'Storage location — long content',
   group: 'Cloud storage',
@@ -181,24 +226,26 @@ Widget storageLocationVerifying() => _storage(
   textScaleFactor: 2,
   theme: appPreviewTheme,
 )
-Widget storageLocationLongContent() => storageLocationConfirmation();
+Widget storageLocationLongContent() =>
+    _storage(_local(CloudAvailabilityStatus.disabled));
 
-/// Recoverable migration failure with retry.
+/// Fallback copy at a large text scale on a tablet in dark mode.
 @Preview(
-  name: 'Storage location — error',
+  name: 'Storage location — long content, tablet dark',
   group: 'Cloud storage',
+  size: PreviewSize.tablet,
+  brightness: Brightness.dark,
+  textScaleFactor: 2,
   theme: appPreviewTheme,
 )
-Widget storageLocationError() => _storage(
-  const StorageLocationState(
-    status: StorageLocationStatus.failure,
-    location: StorageLocation.local,
-    cloudAvailability: _available,
-    failure: Failure.storage(debugDetail: 'offline'),
-    pendingChoice: StorageLocationChoice(
-      source: StorageLocation.local,
-      destination: StorageLocation.iCloud,
-    ),
-    canCancel: true,
-  ),
-);
+Widget storageLocationLongContentTabletDark() =>
+    _storage(_local(CloudAvailabilityStatus.disabled));
+
+/// The default state: a library that lives in iCloud Drive.
+@Preview(
+  name: 'Storage location — default',
+  group: 'Cloud storage',
+  size: PreviewSize.phone,
+  theme: appPreviewTheme,
+)
+Widget storageLocationDefault() => _storage(_iCloud);

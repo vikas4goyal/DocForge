@@ -40,13 +40,40 @@ abstract interface class CameraPresetProbe {
 /// Probes Flutter camera controllers and maps only honestly satisfiable tiers.
 class CameraPluginCapabilityRepository implements CameraCapabilityRepository {
   /// Creates the repository over an injected plugin probe.
-  const CameraPluginCapabilityRepository(this._probe);
+  CameraPluginCapabilityRepository(this._probe);
 
   final CameraPresetProbe _probe;
 
+  // Instance-scoped cache of the last successful probe. Capture re-resolves the
+  // preference before every shot, and probing opens a controller per preset —
+  // doing that per shot would be slow and, worse, would try to open the camera
+  // while the capture controller already holds it. The first resolve always
+  // happens before the first capture opens the camera, so the cache is filled
+  // while the device is free. Failures are never cached, so Retry re-probes.
+  List<SupportedCameraResolution>? _cached;
+  Future<Result<List<SupportedCameraResolution>>>? _inFlight;
+
   @override
-  Future<Result<List<SupportedCameraResolution>>>
-  loadActiveResolutions() async {
+  Future<Result<List<SupportedCameraResolution>>> loadActiveResolutions({
+    bool refresh = false,
+  }) {
+    final cached = _cached;
+    if (!refresh && cached != null) {
+      return Future.value(
+        Result<List<SupportedCameraResolution>>.success(cached),
+      );
+    }
+    // Concurrent callers share one probe rather than each opening the camera.
+    return _inFlight ??= _probeAndCache().whenComplete(() => _inFlight = null);
+  }
+
+  Future<Result<List<SupportedCameraResolution>>> _probeAndCache() async {
+    final result = await _measure();
+    if (result case Success(:final value)) _cached = value;
+    return result;
+  }
+
+  Future<Result<List<SupportedCameraResolution>>> _measure() async {
     try {
       final measurements = await _probe.probeActiveCamera();
       if (measurements.isEmpty) {
@@ -69,13 +96,17 @@ class CameraPluginCapabilityRepository implements CameraCapabilityRepository {
         final tier = satisfied.last;
         // One plugin preset can clear several thresholds. Advertise only its
         // highest honest tier so one 4K output does not appear as four choices.
-        byTier.putIfAbsent(
-          tier,
-          () => SupportedCameraResolution(
-            tier: tier,
-            width: measurement.width,
-            height: measurement.height,
-          ),
+        // Measurements arrive smallest first, so a later one in the same tier
+        // replaces an earlier: each tier keeps its *largest* measurement. That
+        // is what makes the top entry — and so Full resolution — the camera's
+        // real maximum rather than the smallest preset that reached the tier.
+        byTier[tier] = SupportedCameraResolution(
+          tier: tier,
+          width: measurement.width,
+          height: measurement.height,
+          // Replayed verbatim when the camera opens, so the selected tier is
+          // requested exactly as it was measured.
+          requestKey: measurement.preset.name,
         );
       }
       final resolutions = byTier.values.toList()
@@ -123,6 +154,9 @@ class FlutterCameraPresetProbe implements CameraPresetProbe {
       ResolutionPreset.high,
       ResolutionPreset.veryHigh,
       ResolutionPreset.ultraHigh,
+      // Without `max` the probe could never see past 2160p, so "Full
+      // resolution" was capped well below a 12 MP sensor's real output.
+      ResolutionPreset.max,
     ]) {
       CameraController? controller;
       try {

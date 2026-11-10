@@ -137,10 +137,14 @@ class CameraResolutionTier
 @JsonSerializable()
 class SupportedCameraResolution with _$SupportedCameraResolution {
   /// Creates a supported tier and exact dimension pair.
+  ///
+  /// [requestKey] is the opaque camera-boundary token that produced these
+  /// dimensions, when known.
   SupportedCameraResolution({
     required this.tier,
     required int width,
     required int height,
+    this.requestKey,
   }) : width = _positive(width, 'width'),
        height = _positive(height, 'height') {
     if (!tier.isSatisfiedBy(width: width, height: height)) {
@@ -167,6 +171,17 @@ class SupportedCameraResolution with _$SupportedCameraResolution {
   /// Actual landscape-or-portrait height reported by the camera boundary.
   @override
   final int height;
+
+  /// The opaque token the camera boundary uses to request exactly these
+  /// dimensions again, or null when it is not known.
+  ///
+  /// The domain never interprets it. The camera adapter stores the plugin
+  /// request that produced the measurement here and replays it when the camera
+  /// opens, so a tier is requested by what was measured for it rather than by a
+  /// tier-to-request guess — two tiers can no longer collapse onto one request.
+  @override
+  @JsonKey(includeIfNull: false)
+  final String? requestKey;
 
   /// Pixel count used to choose the active camera's maximum deterministically.
   int get pixelCount => width * height;
