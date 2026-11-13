@@ -355,8 +355,10 @@ final class DocScanlyImageProcessor {
       kCIInputExtentKey: CIVector(cgRect: image.extent), "inputCount": 256, "inputScale": 1]),
       let output = histogram.outputImage else { return (CIVector(x: 0, y: 0, z: 0), CIVector(x: 1, y: 1, z: 1)) }
     var data = [Float](repeating: 0, count: 256 * 4)
+    // No colour space: the bins are counts, not colours. Colour-managing them
+    // returned empty bins, which left every filter that reads them inert.
     context.render(output, toBitmap: &data, rowBytes: 256 * 16, bounds: CGRect(x: 0, y: 0, width: 256, height: 1),
-      format: .RGBAf, colorSpace: CGColorSpace(name: CGColorSpace.sRGB))
+      format: .RGBAf, colorSpace: nil)
     func limits(_ channel: Int) -> (CGFloat, CGFloat) {
       let total = stride(from: channel, to: data.count, by: 4).reduce(0.0) { $0 + Double(data[$1]) }
       let clip = total * 0.005
@@ -376,14 +378,16 @@ final class DocScanlyImageProcessor {
       kCIInputExtentKey: CIVector(cgRect: image.extent), "inputCount": 256, "inputScale": 1])?.outputImage else { return 1 }
     var data = [Float](repeating: 0, count: 1024)
     let bounds = CGRect(x: 0, y: 0, width: 256, height: 1)
-    let colourSpace = CGColorSpace(name: CGColorSpace.sRGB)
+    // Read back raw, as in channelBounds. Rendered through sRGB the histogram
+    // came back empty, the reference fell to its 1/255 floor, and shadow
+    // removal divided the page down to near-black.
     context.render(
       histogram,
       toBitmap: &data,
       rowBytes: 4096,
       bounds: bounds,
       format: .RGBAf,
-      colorSpace: colourSpace
+      colorSpace: nil
     )
     var weights = [Double](repeating: 0, count: 256)
     for index in 0..<256 {
