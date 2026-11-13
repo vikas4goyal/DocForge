@@ -114,6 +114,30 @@ final class RunnerTests: XCTestCase {
     XCTAssertEqual(shadowed[0], lit[0], accuracy: 30, "shadow \(shadowed) lit \(lit)")
   }
 
+  /// Auto Enhance stretches a low-contrast page to the full range. With empty
+  /// histogram bins its bounds fell back to (0, 1) and it silently did nothing,
+  /// which a preview-versus-full comparison alone cannot notice.
+  func testAutoEnhanceStretchesALowContrastPage() throws {
+    let source = try lowContrastFixture()
+    var request = validRequest(source: source)
+    let destination = directory.appendingPathComponent("auto-levels.jpg")
+    request["destinationPath"] = destination.path
+    request["enhancement"] = ["filter": "autoEnhance", "brightness": 0.0,
+      "contrast": 0.0, "sharpen": 0.0, "shadowRemoval": false]
+    XCTAssertNotNil(try render(request)["result"])
+
+    let input = try pixels(at: source)
+    let output = try pixels(at: destination)
+    let darkRegion = CGRect(x: 0.1, y: 0.2, width: 0.3, height: 0.6)
+    let lightRegion = CGRect(x: 0.6, y: 0.2, width: 0.3, height: 0.6)
+    let darkBefore = input.meanColour(in: darkRegion)[0]
+    let lightBefore = input.meanColour(in: lightRegion)[0]
+    let darkAfter = output.meanColour(in: darkRegion)[0]
+    let lightAfter = output.meanColour(in: lightRegion)[0]
+    XCTAssertLessThan(darkAfter, darkBefore - 40, "dark patch \(darkBefore) -> \(darkAfter)")
+    XCTAssertGreaterThan(lightAfter, lightBefore + 40, "light patch \(lightBefore) -> \(lightAfter)")
+  }
+
   func testGrayscaleAndBlackWhiteMeetStructuralPixelContracts() throws {
     let source = try fixture(width: 96, height: 64)
     var request = validRequest(source: source)
@@ -241,6 +265,22 @@ final class RunnerTests: XCTestCase {
     }
     let url = directory.appendingPathComponent("shadowed-\(width)x\(height).jpg")
     try XCTUnwrap(image.jpegData(compressionQuality: 0.92)).write(to: url)
+    return url
+  }
+
+  /// Two flat grey patches, well inside the range, for auto-levels to stretch.
+  private func lowContrastFixture(width: Int = 400, height: Int = 300) throws -> URL {
+    let format = UIGraphicsImageRendererFormat()
+    format.scale = 1
+    let renderer = UIGraphicsImageRenderer(size: CGSize(width: width, height: height), format: format)
+    let image = renderer.image { context in
+      UIColor(white: 0.35, alpha: 1).setFill()
+      context.cgContext.fill(CGRect(x: 0, y: 0, width: width / 2, height: height))
+      UIColor(white: 0.65, alpha: 1).setFill()
+      context.cgContext.fill(CGRect(x: width / 2, y: 0, width: width - width / 2, height: height))
+    }
+    let url = directory.appendingPathComponent("low-contrast.jpg")
+    try XCTUnwrap(image.jpegData(compressionQuality: 0.94)).write(to: url)
     return url
   }
 
