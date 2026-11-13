@@ -103,6 +103,9 @@ var _instanceCount = 0;
 /// the app is composed; an iOS cloud flow uses it to give the automatic
 /// migration a device library to move.
 ///
+/// [captureImageBytes] replaces the bundled page the substituted camera
+/// writes on every capture.
+///
 /// [galleryImages], [pickedFiles], [pendingSharedContent] and
 /// [exportDestination] configure what the substituted pickers answer with; see
 /// [buildFakePlatform]. [unlocksSuccessfully] decides what the biometric prompt
@@ -117,6 +120,7 @@ Future<FlowApp> bootDocScanly(
   bool unlocksSuccessfully = true,
   List<String> galleryImages = const [],
   bool useBundledGalleryFixture = false,
+  List<int>? captureImageBytes,
   List<String> pickedFiles = const [],
   List<String> pendingSharedContent = const [],
   String? exportDestination,
@@ -210,7 +214,8 @@ Future<FlowApp> bootDocScanly(
   // Materialised before the platform is built, because the substituted camera
   // writes these bytes on every capture and the composer downstream has to be
   // able to decode them.
-  final captureImage = await File(await fixtures.pageOne()).readAsBytes();
+  final captureImage =
+      captureImageBytes ?? await File(await fixtures.pageOne()).readAsBytes();
   final resolvedGalleryImages = useBundledGalleryFixture
       ? <String>[await fixtures.pageTwo()]
       : galleryImages;

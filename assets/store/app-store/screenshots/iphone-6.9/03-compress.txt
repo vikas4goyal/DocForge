@@ -1,0 +1,2 @@
+Title: Shrink PDFs in seconds
+Subtitle: See the exact file size before you save
