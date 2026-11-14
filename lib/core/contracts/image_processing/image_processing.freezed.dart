@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'image_processing.dart';
@@ -9,6 +9,7 @@ part of 'image_processing.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $ImageProcessingCapabilityCopyWith<ImageProcessingCapability> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageProcessingCapability&&(identical(other.backend, backend) || other.backend == backend)&&(identical(other.isSupported, isSupported) || other.isSupported == isSupported)&&(identical(other.maximumTextureSize, maximumTextureSize) || other.maximumTextureSize == maximumTextureSize)&&(identical(other.supportsTiling, supportsTiling) || other.supportsTiling == supportsTiling));
+  final _this = this as ImageProcessingCapability;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageProcessingCapability&&(identical(other.backend, _this.backend) || other.backend == _this.backend)&&(identical(other.isSupported, _this.isSupported) || other.isSupported == _this.isSupported)&&(identical(other.maximumTextureSize, _this.maximumTextureSize) || other.maximumTextureSize == _this.maximumTextureSize)&&(identical(other.supportsTiling, _this.supportsTiling) || other.supportsTiling == _this.supportsTiling));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,backend,isSupported,maximumTextureSize,supportsTiling);
+int get hashCode {
+  final _this = this as ImageProcessingCapability;
+  return Object.hash(runtimeType,_this.backend,_this.isSupported,_this.maximumTextureSize,_this.supportsTiling);
+}
 
 @override
 String toString() {
-  return 'ImageProcessingCapability(backend: $backend, isSupported: $isSupported, maximumTextureSize: $maximumTextureSize, supportsTiling: $supportsTiling)';
+  final _this = this as ImageProcessingCapability;
+  return 'ImageProcessingCapability(backend: ${_this.backend}, isSupported: ${_this.isSupported}, maximumTextureSize: ${_this.maximumTextureSize}, supportsTiling: ${_this.supportsTiling})';
 }
 
 
@@ -63,7 +69,7 @@ class _$ImageProcessingCapabilityCopyWithImpl<$Res>
 /// Create a copy of ImageProcessingCapability
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? backend = null,Object? isSupported = null,Object? maximumTextureSize = null,Object? supportsTiling = null,}) {
-  return _then(_self.copyWith(
+  return _then(ImageProcessingCapability(
 backend: null == backend ? _self.backend : backend // ignore: cast_nullable_to_non_nullable
 as ImageProcessingBackendKind,isSupported: null == isSupported ? _self.isSupported : isSupported // ignore: cast_nullable_to_non_nullable
 as bool,maximumTextureSize: null == maximumTextureSize ? _self.maximumTextureSize : maximumTextureSize // ignore: cast_nullable_to_non_nullable
@@ -227,16 +233,18 @@ _$ImageProcessingCapabilityCopyWith<_ImageProcessingCapability> get copyWith => 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageProcessingCapability&&(identical(other.backend, backend) || other.backend == backend)&&(identical(other.isSupported, isSupported) || other.isSupported == isSupported)&&(identical(other.maximumTextureSize, maximumTextureSize) || other.maximumTextureSize == maximumTextureSize)&&(identical(other.supportsTiling, supportsTiling) || other.supportsTiling == supportsTiling));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageProcessingCapability&&(identical(other.backend, backend) || other.backend == backend)&&(identical(other.isSupported, isSupported) || other.isSupported == isSupported)&&(identical(other.maximumTextureSize, maximumTextureSize) || other.maximumTextureSize == maximumTextureSize)&&(identical(other.supportsTiling, supportsTiling) || other.supportsTiling == supportsTiling));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,backend,isSupported,maximumTextureSize,supportsTiling);
+int get hashCode {
+    return Object.hash(runtimeType,backend,isSupported,maximumTextureSize,supportsTiling);
+}
 
 @override
 String toString() {
-  return 'ImageProcessingCapability(backend: $backend, isSupported: $isSupported, maximumTextureSize: $maximumTextureSize, supportsTiling: $supportsTiling)';
+    return 'ImageProcessingCapability(backend: $backend, isSupported: $isSupported, maximumTextureSize: $maximumTextureSize, supportsTiling: $supportsTiling)';
 }
 
 
@@ -291,16 +299,21 @@ $ImageProcessingTimingsCopyWith<ImageProcessingTimings> get copyWith => _$ImageP
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageProcessingTimings&&(identical(other.decodeMicroseconds, decodeMicroseconds) || other.decodeMicroseconds == decodeMicroseconds)&&(identical(other.transformMicroseconds, transformMicroseconds) || other.transformMicroseconds == transformMicroseconds)&&(identical(other.encodeMicroseconds, encodeMicroseconds) || other.encodeMicroseconds == encodeMicroseconds)&&(identical(other.totalMicroseconds, totalMicroseconds) || other.totalMicroseconds == totalMicroseconds));
+  final _this = this as ImageProcessingTimings;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageProcessingTimings&&(identical(other.decodeMicroseconds, _this.decodeMicroseconds) || other.decodeMicroseconds == _this.decodeMicroseconds)&&(identical(other.transformMicroseconds, _this.transformMicroseconds) || other.transformMicroseconds == _this.transformMicroseconds)&&(identical(other.encodeMicroseconds, _this.encodeMicroseconds) || other.encodeMicroseconds == _this.encodeMicroseconds)&&(identical(other.totalMicroseconds, _this.totalMicroseconds) || other.totalMicroseconds == _this.totalMicroseconds));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,decodeMicroseconds,transformMicroseconds,encodeMicroseconds,totalMicroseconds);
+int get hashCode {
+  final _this = this as ImageProcessingTimings;
+  return Object.hash(runtimeType,_this.decodeMicroseconds,_this.transformMicroseconds,_this.encodeMicroseconds,_this.totalMicroseconds);
+}
 
 @override
 String toString() {
-  return 'ImageProcessingTimings(decodeMicroseconds: $decodeMicroseconds, transformMicroseconds: $transformMicroseconds, encodeMicroseconds: $encodeMicroseconds, totalMicroseconds: $totalMicroseconds)';
+  final _this = this as ImageProcessingTimings;
+  return 'ImageProcessingTimings(decodeMicroseconds: ${_this.decodeMicroseconds}, transformMicroseconds: ${_this.transformMicroseconds}, encodeMicroseconds: ${_this.encodeMicroseconds}, totalMicroseconds: ${_this.totalMicroseconds})';
 }
 
 
@@ -329,7 +342,7 @@ class _$ImageProcessingTimingsCopyWithImpl<$Res>
 /// Create a copy of ImageProcessingTimings
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? decodeMicroseconds = null,Object? transformMicroseconds = null,Object? encodeMicroseconds = null,Object? totalMicroseconds = null,}) {
-  return _then(_self.copyWith(
+  return _then(ImageProcessingTimings(
 decodeMicroseconds: null == decodeMicroseconds ? _self.decodeMicroseconds : decodeMicroseconds // ignore: cast_nullable_to_non_nullable
 as int,transformMicroseconds: null == transformMicroseconds ? _self.transformMicroseconds : transformMicroseconds // ignore: cast_nullable_to_non_nullable
 as int,encodeMicroseconds: null == encodeMicroseconds ? _self.encodeMicroseconds : encodeMicroseconds // ignore: cast_nullable_to_non_nullable
@@ -493,16 +506,18 @@ _$ImageProcessingTimingsCopyWith<_ImageProcessingTimings> get copyWith => __$Ima
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageProcessingTimings&&(identical(other.decodeMicroseconds, decodeMicroseconds) || other.decodeMicroseconds == decodeMicroseconds)&&(identical(other.transformMicroseconds, transformMicroseconds) || other.transformMicroseconds == transformMicroseconds)&&(identical(other.encodeMicroseconds, encodeMicroseconds) || other.encodeMicroseconds == encodeMicroseconds)&&(identical(other.totalMicroseconds, totalMicroseconds) || other.totalMicroseconds == totalMicroseconds));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageProcessingTimings&&(identical(other.decodeMicroseconds, decodeMicroseconds) || other.decodeMicroseconds == decodeMicroseconds)&&(identical(other.transformMicroseconds, transformMicroseconds) || other.transformMicroseconds == transformMicroseconds)&&(identical(other.encodeMicroseconds, encodeMicroseconds) || other.encodeMicroseconds == encodeMicroseconds)&&(identical(other.totalMicroseconds, totalMicroseconds) || other.totalMicroseconds == totalMicroseconds));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,decodeMicroseconds,transformMicroseconds,encodeMicroseconds,totalMicroseconds);
+int get hashCode {
+    return Object.hash(runtimeType,decodeMicroseconds,transformMicroseconds,encodeMicroseconds,totalMicroseconds);
+}
 
 @override
 String toString() {
-  return 'ImageProcessingTimings(decodeMicroseconds: $decodeMicroseconds, transformMicroseconds: $transformMicroseconds, encodeMicroseconds: $encodeMicroseconds, totalMicroseconds: $totalMicroseconds)';
+    return 'ImageProcessingTimings(decodeMicroseconds: $decodeMicroseconds, transformMicroseconds: $transformMicroseconds, encodeMicroseconds: $encodeMicroseconds, totalMicroseconds: $totalMicroseconds)';
 }
 
 
@@ -557,16 +572,21 @@ $ImageRenderRequestCopyWith<ImageRenderRequest> get copyWith => _$ImageRenderReq
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageRenderRequest&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.destinationPath, destinationPath) || other.destinationPath == destinationPath)&&(identical(other.scale, scale) || other.scale == scale)&&(identical(other.enhancement, enhancement) || other.enhancement == enhancement)&&(identical(other.jpegQuality, jpegQuality) || other.jpegQuality == jpegQuality)&&(identical(other.colourPipelineVersion, colourPipelineVersion) || other.colourPipelineVersion == colourPipelineVersion)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.outputWidth, outputWidth) || other.outputWidth == outputWidth)&&(identical(other.outputHeight, outputHeight) || other.outputHeight == outputHeight)&&(identical(other.maximumPreviewDimension, maximumPreviewDimension) || other.maximumPreviewDimension == maximumPreviewDimension));
+  final _this = this as ImageRenderRequest;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageRenderRequest&&(identical(other.requestId, _this.requestId) || other.requestId == _this.requestId)&&(identical(other.sourcePath, _this.sourcePath) || other.sourcePath == _this.sourcePath)&&(identical(other.destinationPath, _this.destinationPath) || other.destinationPath == _this.destinationPath)&&(identical(other.scale, _this.scale) || other.scale == _this.scale)&&(identical(other.enhancement, _this.enhancement) || other.enhancement == _this.enhancement)&&(identical(other.jpegQuality, _this.jpegQuality) || other.jpegQuality == _this.jpegQuality)&&(identical(other.colourPipelineVersion, _this.colourPipelineVersion) || other.colourPipelineVersion == _this.colourPipelineVersion)&&(identical(other.transform, _this.transform) || other.transform == _this.transform)&&(identical(other.outputWidth, _this.outputWidth) || other.outputWidth == _this.outputWidth)&&(identical(other.outputHeight, _this.outputHeight) || other.outputHeight == _this.outputHeight)&&(identical(other.maximumPreviewDimension, _this.maximumPreviewDimension) || other.maximumPreviewDimension == _this.maximumPreviewDimension));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,requestId,sourcePath,destinationPath,scale,enhancement,jpegQuality,colourPipelineVersion,transform,outputWidth,outputHeight,maximumPreviewDimension);
+int get hashCode {
+  final _this = this as ImageRenderRequest;
+  return Object.hash(runtimeType,_this.requestId,_this.sourcePath,_this.destinationPath,_this.scale,_this.enhancement,_this.jpegQuality,_this.colourPipelineVersion,_this.transform,_this.outputWidth,_this.outputHeight,_this.maximumPreviewDimension);
+}
 
 @override
 String toString() {
-  return 'ImageRenderRequest(requestId: $requestId, sourcePath: $sourcePath, destinationPath: $destinationPath, scale: $scale, enhancement: $enhancement, jpegQuality: $jpegQuality, colourPipelineVersion: $colourPipelineVersion, transform: $transform, outputWidth: $outputWidth, outputHeight: $outputHeight, maximumPreviewDimension: $maximumPreviewDimension)';
+  final _this = this as ImageRenderRequest;
+  return 'ImageRenderRequest(requestId: ${_this.requestId}, sourcePath: ${_this.sourcePath}, destinationPath: ${_this.destinationPath}, scale: ${_this.scale}, enhancement: ${_this.enhancement}, jpegQuality: ${_this.jpegQuality}, colourPipelineVersion: ${_this.colourPipelineVersion}, transform: ${_this.transform}, outputWidth: ${_this.outputWidth}, outputHeight: ${_this.outputHeight}, maximumPreviewDimension: ${_this.maximumPreviewDimension})';
 }
 
 
@@ -595,7 +615,7 @@ class _$ImageRenderRequestCopyWithImpl<$Res>
 /// Create a copy of ImageRenderRequest
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? requestId = null,Object? sourcePath = null,Object? destinationPath = null,Object? scale = null,Object? enhancement = null,Object? jpegQuality = null,Object? colourPipelineVersion = null,Object? transform = freezed,Object? outputWidth = freezed,Object? outputHeight = freezed,Object? maximumPreviewDimension = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ImageRenderRequest(
 requestId: null == requestId ? _self.requestId : requestId // ignore: cast_nullable_to_non_nullable
 as String,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
 as String,destinationPath: null == destinationPath ? _self.destinationPath : destinationPath // ignore: cast_nullable_to_non_nullable
@@ -782,16 +802,18 @@ _$ImageRenderRequestCopyWith<_ImageRenderRequest> get copyWith => __$ImageRender
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageRenderRequest&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.destinationPath, destinationPath) || other.destinationPath == destinationPath)&&(identical(other.scale, scale) || other.scale == scale)&&(identical(other.enhancement, enhancement) || other.enhancement == enhancement)&&(identical(other.jpegQuality, jpegQuality) || other.jpegQuality == jpegQuality)&&(identical(other.colourPipelineVersion, colourPipelineVersion) || other.colourPipelineVersion == colourPipelineVersion)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.outputWidth, outputWidth) || other.outputWidth == outputWidth)&&(identical(other.outputHeight, outputHeight) || other.outputHeight == outputHeight)&&(identical(other.maximumPreviewDimension, maximumPreviewDimension) || other.maximumPreviewDimension == maximumPreviewDimension));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageRenderRequest&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.destinationPath, destinationPath) || other.destinationPath == destinationPath)&&(identical(other.scale, scale) || other.scale == scale)&&(identical(other.enhancement, enhancement) || other.enhancement == enhancement)&&(identical(other.jpegQuality, jpegQuality) || other.jpegQuality == jpegQuality)&&(identical(other.colourPipelineVersion, colourPipelineVersion) || other.colourPipelineVersion == colourPipelineVersion)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.outputWidth, outputWidth) || other.outputWidth == outputWidth)&&(identical(other.outputHeight, outputHeight) || other.outputHeight == outputHeight)&&(identical(other.maximumPreviewDimension, maximumPreviewDimension) || other.maximumPreviewDimension == maximumPreviewDimension));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,requestId,sourcePath,destinationPath,scale,enhancement,jpegQuality,colourPipelineVersion,transform,outputWidth,outputHeight,maximumPreviewDimension);
+int get hashCode {
+    return Object.hash(runtimeType,requestId,sourcePath,destinationPath,scale,enhancement,jpegQuality,colourPipelineVersion,transform,outputWidth,outputHeight,maximumPreviewDimension);
+}
 
 @override
 String toString() {
-  return 'ImageRenderRequest(requestId: $requestId, sourcePath: $sourcePath, destinationPath: $destinationPath, scale: $scale, enhancement: $enhancement, jpegQuality: $jpegQuality, colourPipelineVersion: $colourPipelineVersion, transform: $transform, outputWidth: $outputWidth, outputHeight: $outputHeight, maximumPreviewDimension: $maximumPreviewDimension)';
+    return 'ImageRenderRequest(requestId: $requestId, sourcePath: $sourcePath, destinationPath: $destinationPath, scale: $scale, enhancement: $enhancement, jpegQuality: $jpegQuality, colourPipelineVersion: $colourPipelineVersion, transform: $transform, outputWidth: $outputWidth, outputHeight: $outputHeight, maximumPreviewDimension: $maximumPreviewDimension)';
 }
 
 
@@ -862,16 +884,21 @@ $ImageProcessingResultCopyWith<ImageProcessingResult> get copyWith => _$ImagePro
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageProcessingResult&&(identical(other.destinationPath, destinationPath) || other.destinationPath == destinationPath)&&(identical(other.sourceWidth, sourceWidth) || other.sourceWidth == sourceWidth)&&(identical(other.sourceHeight, sourceHeight) || other.sourceHeight == sourceHeight)&&(identical(other.outputWidth, outputWidth) || other.outputWidth == outputWidth)&&(identical(other.outputHeight, outputHeight) || other.outputHeight == outputHeight)&&(identical(other.backend, backend) || other.backend == backend)&&(identical(other.timings, timings) || other.timings == timings));
+  final _this = this as ImageProcessingResult;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageProcessingResult&&(identical(other.destinationPath, _this.destinationPath) || other.destinationPath == _this.destinationPath)&&(identical(other.sourceWidth, _this.sourceWidth) || other.sourceWidth == _this.sourceWidth)&&(identical(other.sourceHeight, _this.sourceHeight) || other.sourceHeight == _this.sourceHeight)&&(identical(other.outputWidth, _this.outputWidth) || other.outputWidth == _this.outputWidth)&&(identical(other.outputHeight, _this.outputHeight) || other.outputHeight == _this.outputHeight)&&(identical(other.backend, _this.backend) || other.backend == _this.backend)&&(identical(other.timings, _this.timings) || other.timings == _this.timings));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,destinationPath,sourceWidth,sourceHeight,outputWidth,outputHeight,backend,timings);
+int get hashCode {
+  final _this = this as ImageProcessingResult;
+  return Object.hash(runtimeType,_this.destinationPath,_this.sourceWidth,_this.sourceHeight,_this.outputWidth,_this.outputHeight,_this.backend,_this.timings);
+}
 
 @override
 String toString() {
-  return 'ImageProcessingResult(destinationPath: $destinationPath, sourceWidth: $sourceWidth, sourceHeight: $sourceHeight, outputWidth: $outputWidth, outputHeight: $outputHeight, backend: $backend, timings: $timings)';
+  final _this = this as ImageProcessingResult;
+  return 'ImageProcessingResult(destinationPath: ${_this.destinationPath}, sourceWidth: ${_this.sourceWidth}, sourceHeight: ${_this.sourceHeight}, outputWidth: ${_this.outputWidth}, outputHeight: ${_this.outputHeight}, backend: ${_this.backend}, timings: ${_this.timings})';
 }
 
 
@@ -900,7 +927,7 @@ class _$ImageProcessingResultCopyWithImpl<$Res>
 /// Create a copy of ImageProcessingResult
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? destinationPath = null,Object? sourceWidth = null,Object? sourceHeight = null,Object? outputWidth = null,Object? outputHeight = null,Object? backend = null,Object? timings = null,}) {
-  return _then(_self.copyWith(
+  return _then(ImageProcessingResult(
 destinationPath: null == destinationPath ? _self.destinationPath : destinationPath // ignore: cast_nullable_to_non_nullable
 as String,sourceWidth: null == sourceWidth ? _self.sourceWidth : sourceWidth // ignore: cast_nullable_to_non_nullable
 as int,sourceHeight: null == sourceHeight ? _self.sourceHeight : sourceHeight // ignore: cast_nullable_to_non_nullable
@@ -1079,16 +1106,18 @@ _$ImageProcessingResultCopyWith<_ImageProcessingResult> get copyWith => __$Image
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageProcessingResult&&(identical(other.destinationPath, destinationPath) || other.destinationPath == destinationPath)&&(identical(other.sourceWidth, sourceWidth) || other.sourceWidth == sourceWidth)&&(identical(other.sourceHeight, sourceHeight) || other.sourceHeight == sourceHeight)&&(identical(other.outputWidth, outputWidth) || other.outputWidth == outputWidth)&&(identical(other.outputHeight, outputHeight) || other.outputHeight == outputHeight)&&(identical(other.backend, backend) || other.backend == backend)&&(identical(other.timings, timings) || other.timings == timings));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ImageProcessingResult&&(identical(other.destinationPath, destinationPath) || other.destinationPath == destinationPath)&&(identical(other.sourceWidth, sourceWidth) || other.sourceWidth == sourceWidth)&&(identical(other.sourceHeight, sourceHeight) || other.sourceHeight == sourceHeight)&&(identical(other.outputWidth, outputWidth) || other.outputWidth == outputWidth)&&(identical(other.outputHeight, outputHeight) || other.outputHeight == outputHeight)&&(identical(other.backend, backend) || other.backend == backend)&&(identical(other.timings, timings) || other.timings == timings));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,destinationPath,sourceWidth,sourceHeight,outputWidth,outputHeight,backend,timings);
+int get hashCode {
+    return Object.hash(runtimeType,destinationPath,sourceWidth,sourceHeight,outputWidth,outputHeight,backend,timings);
+}
 
 @override
 String toString() {
-  return 'ImageProcessingResult(destinationPath: $destinationPath, sourceWidth: $sourceWidth, sourceHeight: $sourceHeight, outputWidth: $outputWidth, outputHeight: $outputHeight, backend: $backend, timings: $timings)';
+    return 'ImageProcessingResult(destinationPath: $destinationPath, sourceWidth: $sourceWidth, sourceHeight: $sourceHeight, outputWidth: $outputWidth, outputHeight: $outputHeight, backend: $backend, timings: $timings)';
 }
 
 
@@ -1150,7 +1179,7 @@ mixin _$ImageProcessingBackendResponse {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageProcessingBackendResponse);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageProcessingBackendResponse);
 }
 
 
@@ -1159,7 +1188,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'ImageProcessingBackendResponse()';
+    return 'ImageProcessingBackendResponse()';
 }
 
 
@@ -1320,16 +1349,18 @@ $ImageProcessingBackendSuccessCopyWith<ImageProcessingBackendSuccess> get copyWi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageProcessingBackendSuccess&&(identical(other.result, result) || other.result == result));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageProcessingBackendSuccess&&(identical(other.result, result) || other.result == result));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,result);
+int get hashCode {
+    return Object.hash(runtimeType,result);
+}
 
 @override
 String toString() {
-  return 'ImageProcessingBackendResponse.success(result: $result)';
+    return 'ImageProcessingBackendResponse.success(result: $result)';
 }
 
 
@@ -1396,16 +1427,18 @@ $ImageProcessingBackendFailureCopyWith<ImageProcessingBackendFailure> get copyWi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageProcessingBackendFailure&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ImageProcessingBackendFailure&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,kind,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,kind,debugDetail);
+}
 
 @override
 String toString() {
-  return 'ImageProcessingBackendResponse.failure(kind: $kind, debugDetail: $debugDetail)';
+    return 'ImageProcessingBackendResponse.failure(kind: $kind, debugDetail: $debugDetail)';
 }
 
 

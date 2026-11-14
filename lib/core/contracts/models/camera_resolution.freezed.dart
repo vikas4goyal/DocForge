@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'camera_resolution.dart';
@@ -9,13 +9,14 @@ part of 'camera_resolution.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$CameraResolutionTier {
 
- String get id; String get label; int get shortEdge; int get longEdge; int get rank;
+
 /// Create a copy of CameraResolutionTier
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -26,16 +27,21 @@ $CameraResolutionTierCopyWith<CameraResolutionTier> get copyWith => _$CameraReso
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CameraResolutionTier&&(identical(other.id, id) || other.id == id)&&(identical(other.label, label) || other.label == label)&&(identical(other.shortEdge, shortEdge) || other.shortEdge == shortEdge)&&(identical(other.longEdge, longEdge) || other.longEdge == longEdge)&&(identical(other.rank, rank) || other.rank == rank));
+  final _this = this as CameraResolutionTier;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CameraResolutionTier&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.label, _this.label) || other.label == _this.label)&&(identical(other.shortEdge, _this.shortEdge) || other.shortEdge == _this.shortEdge)&&(identical(other.longEdge, _this.longEdge) || other.longEdge == _this.longEdge)&&(identical(other.rank, _this.rank) || other.rank == _this.rank));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,label,shortEdge,longEdge,rank);
+int get hashCode {
+  final _this = this as CameraResolutionTier;
+  return Object.hash(runtimeType,_this.id,_this.label,_this.shortEdge,_this.longEdge,_this.rank);
+}
 
 @override
 String toString() {
-  return 'CameraResolutionTier(id: $id, label: $label, shortEdge: $shortEdge, longEdge: $longEdge, rank: $rank)';
+  final _this = this as CameraResolutionTier;
+  return 'CameraResolutionTier(id: ${_this.id}, label: ${_this.label}, shortEdge: ${_this.shortEdge}, longEdge: ${_this.longEdge}, rank: ${_this.rank})';
 }
 
 
@@ -205,7 +211,7 @@ case _:
 /// @nodoc
 mixin _$SupportedCameraResolution {
 
- CameraResolutionTier get tier; int get width; int get height; String? get requestKey;
+
 /// Create a copy of SupportedCameraResolution
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -216,16 +222,21 @@ $SupportedCameraResolutionCopyWith<SupportedCameraResolution> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SupportedCameraResolution&&(identical(other.tier, tier) || other.tier == tier)&&(identical(other.width, width) || other.width == width)&&(identical(other.height, height) || other.height == height)&&(identical(other.requestKey, requestKey) || other.requestKey == requestKey));
+  final _this = this as SupportedCameraResolution;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SupportedCameraResolution&&(identical(other.tier, _this.tier) || other.tier == _this.tier)&&(identical(other.width, _this.width) || other.width == _this.width)&&(identical(other.height, _this.height) || other.height == _this.height)&&(identical(other.requestKey, _this.requestKey) || other.requestKey == _this.requestKey));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,tier,width,height,requestKey);
+int get hashCode {
+  final _this = this as SupportedCameraResolution;
+  return Object.hash(runtimeType,_this.tier,_this.width,_this.height,_this.requestKey);
+}
 
 @override
 String toString() {
-  return 'SupportedCameraResolution(tier: $tier, width: $width, height: $height, requestKey: $requestKey)';
+  final _this = this as SupportedCameraResolution;
+  return 'SupportedCameraResolution(tier: ${_this.tier}, width: ${_this.width}, height: ${_this.height}, requestKey: ${_this.requestKey})';
 }
 
 
@@ -240,7 +251,7 @@ $Res call({
 });
 
 
-
+$CameraResolutionTierCopyWith<$Res> get tier;
 
 }
 /// @nodoc
@@ -262,7 +273,16 @@ as int,requestKey: freezed == requestKey ? _self.requestKey : requestKey // igno
 as String?,
   ));
 }
-
+/// Create a copy of SupportedCameraResolution
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$CameraResolutionTierCopyWith<$Res> get tier {
+  
+  return $CameraResolutionTierCopyWith<$Res>(_self.tier, (value) {
+    return _then(_self.copyWith(tier: value));
+  });
+}
 }
 
 
@@ -425,7 +445,7 @@ mixin _$DesiredCameraResolution {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DesiredCameraResolution);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DesiredCameraResolution);
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -434,7 +454,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'DesiredCameraResolution()';
+    return 'DesiredCameraResolution()';
 }
 
 
@@ -580,7 +600,7 @@ return tier(_that.value);case _:
 @JsonSerializable()
 
 class FullCameraResolution extends DesiredCameraResolution {
-  const FullCameraResolution({final  String? $type}): $type = $type ?? 'fullResolution',super._();
+  const FullCameraResolution({ String? $type}): $type = $type ?? 'fullResolution',super._();
   factory FullCameraResolution.fromJson(Map<String, dynamic> json) => _$FullCameraResolutionFromJson(json);
 
 
@@ -597,7 +617,7 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is FullCameraResolution);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is FullCameraResolution);
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -606,7 +626,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'DesiredCameraResolution.fullResolution()';
+    return 'DesiredCameraResolution.fullResolution()';
 }
 
 
@@ -619,7 +639,7 @@ String toString() {
 @JsonSerializable()
 
 class TierCameraResolution extends DesiredCameraResolution {
-  const TierCameraResolution(this.value, {final  String? $type}): $type = $type ?? 'tier',super._();
+  const TierCameraResolution(this.value, { String? $type}): $type = $type ?? 'tier',super._();
   factory TierCameraResolution.fromJson(Map<String, dynamic> json) => _$TierCameraResolutionFromJson(json);
 
  final  CameraResolutionTier value;
@@ -641,16 +661,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TierCameraResolution&&(identical(other.value, value) || other.value == value));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TierCameraResolution&&(identical(other.value, value) || other.value == value));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,value);
+int get hashCode {
+    return Object.hash(runtimeType,value);
+}
 
 @override
 String toString() {
-  return 'DesiredCameraResolution.tier(value: $value)';
+    return 'DesiredCameraResolution.tier(value: $value)';
 }
 
 

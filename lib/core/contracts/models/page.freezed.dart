@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'page.dart';
@@ -9,6 +9,7 @@ part of 'page.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $NormalisedPointCopyWith<NormalisedPoint> get copyWith => _$NormalisedPointCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NormalisedPoint&&(identical(other.x, x) || other.x == x)&&(identical(other.y, y) || other.y == y));
+  final _this = this as NormalisedPoint;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NormalisedPoint&&(identical(other.x, _this.x) || other.x == _this.x)&&(identical(other.y, _this.y) || other.y == _this.y));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,x,y);
+int get hashCode {
+  final _this = this as NormalisedPoint;
+  return Object.hash(runtimeType,_this.x,_this.y);
+}
 
 @override
 String toString() {
-  return 'NormalisedPoint(x: $x, y: $y)';
+  final _this = this as NormalisedPoint;
+  return 'NormalisedPoint(x: ${_this.x}, y: ${_this.y})';
 }
 
 
@@ -66,7 +72,7 @@ class _$NormalisedPointCopyWithImpl<$Res>
 /// Create a copy of NormalisedPoint
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? x = null,Object? y = null,}) {
-  return _then(_self.copyWith(
+  return _then(NormalisedPoint(
 x: null == x ? _self.x : x // ignore: cast_nullable_to_non_nullable
 as double,y: null == y ? _self.y : y // ignore: cast_nullable_to_non_nullable
 as double,
@@ -229,16 +235,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NormalisedPoint&&(identical(other.x, x) || other.x == x)&&(identical(other.y, y) || other.y == y));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NormalisedPoint&&(identical(other.x, x) || other.x == x)&&(identical(other.y, y) || other.y == y));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,x,y);
+int get hashCode {
+    return Object.hash(runtimeType,x,y);
+}
 
 @override
 String toString() {
-  return 'NormalisedPoint(x: $x, y: $y)';
+    return 'NormalisedPoint(x: $x, y: $y)';
 }
 
 
@@ -294,16 +302,21 @@ $PageQuadCopyWith<PageQuad> get copyWith => _$PageQuadCopyWithImpl<PageQuad>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PageQuad&&(identical(other.topLeft, topLeft) || other.topLeft == topLeft)&&(identical(other.topRight, topRight) || other.topRight == topRight)&&(identical(other.bottomRight, bottomRight) || other.bottomRight == bottomRight)&&(identical(other.bottomLeft, bottomLeft) || other.bottomLeft == bottomLeft));
+  final _this = this as PageQuad;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PageQuad&&(identical(other.topLeft, _this.topLeft) || other.topLeft == _this.topLeft)&&(identical(other.topRight, _this.topRight) || other.topRight == _this.topRight)&&(identical(other.bottomRight, _this.bottomRight) || other.bottomRight == _this.bottomRight)&&(identical(other.bottomLeft, _this.bottomLeft) || other.bottomLeft == _this.bottomLeft));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,topLeft,topRight,bottomRight,bottomLeft);
+int get hashCode {
+  final _this = this as PageQuad;
+  return Object.hash(runtimeType,_this.topLeft,_this.topRight,_this.bottomRight,_this.bottomLeft);
+}
 
 @override
 String toString() {
-  return 'PageQuad(topLeft: $topLeft, topRight: $topRight, bottomRight: $bottomRight, bottomLeft: $bottomLeft)';
+  final _this = this as PageQuad;
+  return 'PageQuad(topLeft: ${_this.topLeft}, topRight: ${_this.topRight}, bottomRight: ${_this.bottomRight}, bottomLeft: ${_this.bottomLeft})';
 }
 
 
@@ -332,7 +345,7 @@ class _$PageQuadCopyWithImpl<$Res>
 /// Create a copy of PageQuad
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? topLeft = null,Object? topRight = null,Object? bottomRight = null,Object? bottomLeft = null,}) {
-  return _then(_self.copyWith(
+  return _then(PageQuad(
 topLeft: null == topLeft ? _self.topLeft : topLeft // ignore: cast_nullable_to_non_nullable
 as NormalisedPoint,topRight: null == topRight ? _self.topRight : topRight // ignore: cast_nullable_to_non_nullable
 as NormalisedPoint,bottomRight: null == bottomRight ? _self.bottomRight : bottomRight // ignore: cast_nullable_to_non_nullable
@@ -535,16 +548,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageQuad&&(identical(other.topLeft, topLeft) || other.topLeft == topLeft)&&(identical(other.topRight, topRight) || other.topRight == topRight)&&(identical(other.bottomRight, bottomRight) || other.bottomRight == bottomRight)&&(identical(other.bottomLeft, bottomLeft) || other.bottomLeft == bottomLeft));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageQuad&&(identical(other.topLeft, topLeft) || other.topLeft == topLeft)&&(identical(other.topRight, topRight) || other.topRight == topRight)&&(identical(other.bottomRight, bottomRight) || other.bottomRight == bottomRight)&&(identical(other.bottomLeft, bottomLeft) || other.bottomLeft == bottomLeft));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,topLeft,topRight,bottomRight,bottomLeft);
+int get hashCode {
+    return Object.hash(runtimeType,topLeft,topRight,bottomRight,bottomLeft);
+}
 
 @override
 String toString() {
-  return 'PageQuad(topLeft: $topLeft, topRight: $topRight, bottomRight: $bottomRight, bottomLeft: $bottomLeft)';
+    return 'PageQuad(topLeft: $topLeft, topRight: $topRight, bottomRight: $bottomRight, bottomLeft: $bottomLeft)';
 }
 
 
@@ -642,16 +657,21 @@ $EnhancementSettingsCopyWith<EnhancementSettings> get copyWith => _$EnhancementS
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EnhancementSettings&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.brightness, brightness) || other.brightness == brightness)&&(identical(other.contrast, contrast) || other.contrast == contrast)&&(identical(other.sharpen, sharpen) || other.sharpen == sharpen)&&(identical(other.shadowRemoval, shadowRemoval) || other.shadowRemoval == shadowRemoval));
+  final _this = this as EnhancementSettings;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EnhancementSettings&&(identical(other.filter, _this.filter) || other.filter == _this.filter)&&(identical(other.brightness, _this.brightness) || other.brightness == _this.brightness)&&(identical(other.contrast, _this.contrast) || other.contrast == _this.contrast)&&(identical(other.sharpen, _this.sharpen) || other.sharpen == _this.sharpen)&&(identical(other.shadowRemoval, _this.shadowRemoval) || other.shadowRemoval == _this.shadowRemoval));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,filter,brightness,contrast,sharpen,shadowRemoval);
+int get hashCode {
+  final _this = this as EnhancementSettings;
+  return Object.hash(runtimeType,_this.filter,_this.brightness,_this.contrast,_this.sharpen,_this.shadowRemoval);
+}
 
 @override
 String toString() {
-  return 'EnhancementSettings(filter: $filter, brightness: $brightness, contrast: $contrast, sharpen: $sharpen, shadowRemoval: $shadowRemoval)';
+  final _this = this as EnhancementSettings;
+  return 'EnhancementSettings(filter: ${_this.filter}, brightness: ${_this.brightness}, contrast: ${_this.contrast}, sharpen: ${_this.sharpen}, shadowRemoval: ${_this.shadowRemoval})';
 }
 
 
@@ -680,7 +700,7 @@ class _$EnhancementSettingsCopyWithImpl<$Res>
 /// Create a copy of EnhancementSettings
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? filter = null,Object? brightness = null,Object? contrast = null,Object? sharpen = null,Object? shadowRemoval = null,}) {
-  return _then(_self.copyWith(
+  return _then(EnhancementSettings(
 filter: null == filter ? _self.filter : filter // ignore: cast_nullable_to_non_nullable
 as EnhancementFilter,brightness: null == brightness ? _self.brightness : brightness // ignore: cast_nullable_to_non_nullable
 as double,contrast: null == contrast ? _self.contrast : contrast // ignore: cast_nullable_to_non_nullable
@@ -853,16 +873,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EnhancementSettings&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.brightness, brightness) || other.brightness == brightness)&&(identical(other.contrast, contrast) || other.contrast == contrast)&&(identical(other.sharpen, sharpen) || other.sharpen == sharpen)&&(identical(other.shadowRemoval, shadowRemoval) || other.shadowRemoval == shadowRemoval));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _EnhancementSettings&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.brightness, brightness) || other.brightness == brightness)&&(identical(other.contrast, contrast) || other.contrast == contrast)&&(identical(other.sharpen, sharpen) || other.sharpen == sharpen)&&(identical(other.shadowRemoval, shadowRemoval) || other.shadowRemoval == shadowRemoval));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,filter,brightness,contrast,sharpen,shadowRemoval);
+int get hashCode {
+    return Object.hash(runtimeType,filter,brightness,contrast,sharpen,shadowRemoval);
+}
 
 @override
 String toString() {
-  return 'EnhancementSettings(filter: $filter, brightness: $brightness, contrast: $contrast, sharpen: $sharpen, shadowRemoval: $shadowRemoval)';
+    return 'EnhancementSettings(filter: $filter, brightness: $brightness, contrast: $contrast, sharpen: $sharpen, shadowRemoval: $shadowRemoval)';
 }
 
 
@@ -924,16 +946,21 @@ $DocumentPageCopyWith<DocumentPage> get copyWith => _$DocumentPageCopyWithImpl<D
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DocumentPage&&(identical(other.id, id) || other.id == id)&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.order, order) || other.order == order)&&(identical(other.imagePath, imagePath) || other.imagePath == imagePath)&&(identical(other.rotation, rotation) || other.rotation == rotation)&&(identical(other.enhancement, enhancement) || other.enhancement == enhancement)&&(identical(other.thumbnailPath, thumbnailPath) || other.thumbnailPath == thumbnailPath));
+  final _this = this as DocumentPage;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DocumentPage&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.documentId, _this.documentId) || other.documentId == _this.documentId)&&(identical(other.order, _this.order) || other.order == _this.order)&&(identical(other.imagePath, _this.imagePath) || other.imagePath == _this.imagePath)&&(identical(other.rotation, _this.rotation) || other.rotation == _this.rotation)&&(identical(other.enhancement, _this.enhancement) || other.enhancement == _this.enhancement)&&(identical(other.thumbnailPath, _this.thumbnailPath) || other.thumbnailPath == _this.thumbnailPath));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,documentId,order,imagePath,rotation,enhancement,thumbnailPath);
+int get hashCode {
+  final _this = this as DocumentPage;
+  return Object.hash(runtimeType,_this.id,_this.documentId,_this.order,_this.imagePath,_this.rotation,_this.enhancement,_this.thumbnailPath);
+}
 
 @override
 String toString() {
-  return 'DocumentPage(id: $id, documentId: $documentId, order: $order, imagePath: $imagePath, rotation: $rotation, enhancement: $enhancement, thumbnailPath: $thumbnailPath)';
+  final _this = this as DocumentPage;
+  return 'DocumentPage(id: ${_this.id}, documentId: ${_this.documentId}, order: ${_this.order}, imagePath: ${_this.imagePath}, rotation: ${_this.rotation}, enhancement: ${_this.enhancement}, thumbnailPath: ${_this.thumbnailPath})';
 }
 
 
@@ -962,7 +989,7 @@ class _$DocumentPageCopyWithImpl<$Res>
 /// Create a copy of DocumentPage
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? documentId = null,Object? order = null,Object? imagePath = null,Object? rotation = null,Object? enhancement = null,Object? thumbnailPath = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DocumentPage(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as PageId,documentId: null == documentId ? _self.documentId : documentId // ignore: cast_nullable_to_non_nullable
 as DocumentId,order: null == order ? _self.order : order // ignore: cast_nullable_to_non_nullable
@@ -1147,16 +1174,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DocumentPage&&(identical(other.id, id) || other.id == id)&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.order, order) || other.order == order)&&(identical(other.imagePath, imagePath) || other.imagePath == imagePath)&&(identical(other.rotation, rotation) || other.rotation == rotation)&&(identical(other.enhancement, enhancement) || other.enhancement == enhancement)&&(identical(other.thumbnailPath, thumbnailPath) || other.thumbnailPath == thumbnailPath));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DocumentPage&&(identical(other.id, id) || other.id == id)&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.order, order) || other.order == order)&&(identical(other.imagePath, imagePath) || other.imagePath == imagePath)&&(identical(other.rotation, rotation) || other.rotation == rotation)&&(identical(other.enhancement, enhancement) || other.enhancement == enhancement)&&(identical(other.thumbnailPath, thumbnailPath) || other.thumbnailPath == thumbnailPath));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,documentId,order,imagePath,rotation,enhancement,thumbnailPath);
+int get hashCode {
+    return Object.hash(runtimeType,id,documentId,order,imagePath,rotation,enhancement,thumbnailPath);
+}
 
 @override
 String toString() {
-  return 'DocumentPage(id: $id, documentId: $documentId, order: $order, imagePath: $imagePath, rotation: $rotation, enhancement: $enhancement, thumbnailPath: $thumbnailPath)';
+    return 'DocumentPage(id: $id, documentId: $documentId, order: $order, imagePath: $imagePath, rotation: $rotation, enhancement: $enhancement, thumbnailPath: $thumbnailPath)';
 }
 
 
@@ -1226,16 +1255,21 @@ $PageRefCopyWith<PageRef> get copyWith => _$PageRefCopyWithImpl<PageRef>(this as
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PageRef&&(identical(other.id, id) || other.id == id)&&(identical(other.imagePath, imagePath) || other.imagePath == imagePath)&&(identical(other.rotation, rotation) || other.rotation == rotation)&&(identical(other.enhancement, enhancement) || other.enhancement == enhancement));
+  final _this = this as PageRef;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PageRef&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.imagePath, _this.imagePath) || other.imagePath == _this.imagePath)&&(identical(other.rotation, _this.rotation) || other.rotation == _this.rotation)&&(identical(other.enhancement, _this.enhancement) || other.enhancement == _this.enhancement));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,imagePath,rotation,enhancement);
+int get hashCode {
+  final _this = this as PageRef;
+  return Object.hash(runtimeType,_this.id,_this.imagePath,_this.rotation,_this.enhancement);
+}
 
 @override
 String toString() {
-  return 'PageRef(id: $id, imagePath: $imagePath, rotation: $rotation, enhancement: $enhancement)';
+  final _this = this as PageRef;
+  return 'PageRef(id: ${_this.id}, imagePath: ${_this.imagePath}, rotation: ${_this.rotation}, enhancement: ${_this.enhancement})';
 }
 
 
@@ -1264,7 +1298,7 @@ class _$PageRefCopyWithImpl<$Res>
 /// Create a copy of PageRef
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? imagePath = null,Object? rotation = null,Object? enhancement = null,}) {
-  return _then(_self.copyWith(
+  return _then(PageRef(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as PageId,imagePath: null == imagePath ? _self.imagePath : imagePath // ignore: cast_nullable_to_non_nullable
 as String,rotation: null == rotation ? _self.rotation : rotation // ignore: cast_nullable_to_non_nullable
@@ -1440,16 +1474,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageRef&&(identical(other.id, id) || other.id == id)&&(identical(other.imagePath, imagePath) || other.imagePath == imagePath)&&(identical(other.rotation, rotation) || other.rotation == rotation)&&(identical(other.enhancement, enhancement) || other.enhancement == enhancement));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageRef&&(identical(other.id, id) || other.id == id)&&(identical(other.imagePath, imagePath) || other.imagePath == imagePath)&&(identical(other.rotation, rotation) || other.rotation == rotation)&&(identical(other.enhancement, enhancement) || other.enhancement == enhancement));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,imagePath,rotation,enhancement);
+int get hashCode {
+    return Object.hash(runtimeType,id,imagePath,rotation,enhancement);
+}
 
 @override
 String toString() {
-  return 'PageRef(id: $id, imagePath: $imagePath, rotation: $rotation, enhancement: $enhancement)';
+    return 'PageRef(id: $id, imagePath: $imagePath, rotation: $rotation, enhancement: $enhancement)';
 }
 
 

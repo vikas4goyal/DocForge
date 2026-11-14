@@ -44,8 +44,8 @@ dependencies:
   go_router: ^18.0.1
   freezed_annotation: ^3.1.0
   json_annotation: ^4.12.0
-  isar_community: ^3.3.2
-  isar_community_flutter_libs: ^3.3.2
+  isar_community: ^3.4.1
+  isar_community_flutter_libs: ^3.4.1
   shared_preferences: ^2.5.5
   flutter_secure_storage: ^10.3.1
   dio: ^5.11.1
@@ -53,7 +53,7 @@ dependencies:
   image: ^4.10.1
   pdf: ^3.13.1
   printing: ^5.15.1
-  pdfrx: ^2.6.5
+  pdfrx: ^2.12.1
   permission_handler: ^13.0.2
   local_auth: ^3.0.2
   image_picker: ^1.2.3
@@ -82,8 +82,8 @@ dependency_overrides:
   # See third_party/file_picker/LOCAL_PATCH.md.
   file_picker:
     path: third_party/file_picker
-  # Vendored fork: upstream 3.3.2 ships an iOS XCFramework with simulator
-  # slices, but does not expose it through Swift Package Manager.
+  # Vendored fork: keeps the static iOS XCFramework and Release force-load
+  # that upstream's newer dynamic Swift Package Manager build would change.
   # See third_party/isar_community_flutter_libs/LOCAL_PATCH.md.
   isar_community_flutter_libs:
     path: third_party/isar_community_flutter_libs
@@ -113,13 +113,13 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  # Pinned <2.15.2: build_runner 2.15.2+ needs analyzer >=13.3.0, but
-  # isar_community_generator 3.3.2 (latest) pins analyzer <11.
-  build_runner: ^2.15.1
-  freezed: ^3.2.5
-  json_serializable: ^6.14.1
-  isar_community_generator: ^3.3.2
-  go_router_builder: ^4.5.0
+  # Pinned <2.17.0: build_runner 2.17+ needs build 5, but
+  # isar_community_generator 3.4.1 (latest) still requires build ^4.
+  build_runner: ^2.16.2
+  freezed: ^4.0.3
+  json_serializable: ^6.15.2
+  isar_community_generator: ^3.4.1
+  go_router_builder: ^4.5.3
   bloc_test: ^10.0.0
   mocktail: ^1.0.5
   alchemist: ^0.14.0

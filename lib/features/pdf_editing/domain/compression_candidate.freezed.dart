@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'compression_candidate.dart';
@@ -9,13 +9,14 @@ part of 'compression_candidate.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$CompressionDraft {
 
- String get sourceDocumentId; int get pageCount; int get originalBytes; PageQualityPlan get qualityPlan; CompressionDestination? get destination;
+
 /// Create a copy of CompressionDraft
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -26,16 +27,21 @@ $CompressionDraftCopyWith<CompressionDraft> get copyWith => _$CompressionDraftCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CompressionDraft&&(identical(other.sourceDocumentId, sourceDocumentId) || other.sourceDocumentId == sourceDocumentId)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.originalBytes, originalBytes) || other.originalBytes == originalBytes)&&(identical(other.qualityPlan, qualityPlan) || other.qualityPlan == qualityPlan)&&(identical(other.destination, destination) || other.destination == destination));
+  final _this = this as CompressionDraft;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CompressionDraft&&(identical(other.sourceDocumentId, _this.sourceDocumentId) || other.sourceDocumentId == _this.sourceDocumentId)&&(identical(other.pageCount, _this.pageCount) || other.pageCount == _this.pageCount)&&(identical(other.originalBytes, _this.originalBytes) || other.originalBytes == _this.originalBytes)&&(identical(other.qualityPlan, _this.qualityPlan) || other.qualityPlan == _this.qualityPlan)&&(identical(other.destination, _this.destination) || other.destination == _this.destination));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sourceDocumentId,pageCount,originalBytes,qualityPlan,destination);
+int get hashCode {
+  final _this = this as CompressionDraft;
+  return Object.hash(runtimeType,_this.sourceDocumentId,_this.pageCount,_this.originalBytes,_this.qualityPlan,_this.destination);
+}
 
 @override
 String toString() {
-  return 'CompressionDraft(sourceDocumentId: $sourceDocumentId, pageCount: $pageCount, originalBytes: $originalBytes, qualityPlan: $qualityPlan, destination: $destination)';
+  final _this = this as CompressionDraft;
+  return 'CompressionDraft(sourceDocumentId: ${_this.sourceDocumentId}, pageCount: ${_this.pageCount}, originalBytes: ${_this.originalBytes}, qualityPlan: ${_this.qualityPlan}, destination: ${_this.destination})';
 }
 
 
@@ -50,7 +56,7 @@ $Res call({
 });
 
 
-
+$PageQualityPlanCopyWith<$Res> get qualityPlan;
 
 }
 /// @nodoc
@@ -73,7 +79,16 @@ as PageQualityPlan,destination: freezed == destination ? _self.destination : des
 as CompressionDestination?,
   ));
 }
-
+/// Create a copy of CompressionDraft
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PageQualityPlanCopyWith<$Res> get qualityPlan {
+  
+  return $PageQualityPlanCopyWith<$Res>(_self.qualityPlan, (value) {
+    return _then(_self.copyWith(qualityPlan: value));
+  });
+}
 }
 
 
@@ -205,7 +220,7 @@ case _:
 /// @nodoc
 mixin _$CompressionCommitResult {
 
- String get documentId; CompressionDestination get destination; int get originalBytes; int get resultBytes;
+
 /// Create a copy of CompressionCommitResult
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -216,16 +231,21 @@ $CompressionCommitResultCopyWith<CompressionCommitResult> get copyWith => _$Comp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CompressionCommitResult&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.destination, destination) || other.destination == destination)&&(identical(other.originalBytes, originalBytes) || other.originalBytes == originalBytes)&&(identical(other.resultBytes, resultBytes) || other.resultBytes == resultBytes));
+  final _this = this as CompressionCommitResult;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is CompressionCommitResult&&(identical(other.documentId, _this.documentId) || other.documentId == _this.documentId)&&(identical(other.destination, _this.destination) || other.destination == _this.destination)&&(identical(other.originalBytes, _this.originalBytes) || other.originalBytes == _this.originalBytes)&&(identical(other.resultBytes, _this.resultBytes) || other.resultBytes == _this.resultBytes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,documentId,destination,originalBytes,resultBytes);
+int get hashCode {
+  final _this = this as CompressionCommitResult;
+  return Object.hash(runtimeType,_this.documentId,_this.destination,_this.originalBytes,_this.resultBytes);
+}
 
 @override
 String toString() {
-  return 'CompressionCommitResult(documentId: $documentId, destination: $destination, originalBytes: $originalBytes, resultBytes: $resultBytes)';
+  final _this = this as CompressionCommitResult;
+  return 'CompressionCommitResult(documentId: ${_this.documentId}, destination: ${_this.destination}, originalBytes: ${_this.originalBytes}, resultBytes: ${_this.resultBytes})';
 }
 
 

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'pdf_jobs.dart';
@@ -9,6 +9,7 @@ part of 'pdf_jobs.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $PdfCandidateFingerprintCopyWith<PdfCandidateFingerprint> get copyWith => _$PdfC
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfCandidateFingerprint&&(identical(other.sourceIdentity, sourceIdentity) || other.sourceIdentity == sourceIdentity)&&(identical(other.configurationIdentity, configurationIdentity) || other.configurationIdentity == configurationIdentity)&&const DeepCollectionEquality().equals(other.orderedPageQualities, orderedPageQualities)&&(identical(other.isProtected, isProtected) || other.isProtected == isProtected));
+  final _this = this as PdfCandidateFingerprint;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfCandidateFingerprint&&(identical(other.sourceIdentity, _this.sourceIdentity) || other.sourceIdentity == _this.sourceIdentity)&&(identical(other.configurationIdentity, _this.configurationIdentity) || other.configurationIdentity == _this.configurationIdentity)&&const DeepCollectionEquality().equals(other.orderedPageQualities, _this.orderedPageQualities)&&(identical(other.isProtected, _this.isProtected) || other.isProtected == _this.isProtected));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sourceIdentity,configurationIdentity,const DeepCollectionEquality().hash(orderedPageQualities),isProtected);
+int get hashCode {
+  final _this = this as PdfCandidateFingerprint;
+  return Object.hash(runtimeType,_this.sourceIdentity,_this.configurationIdentity,const DeepCollectionEquality().hash(_this.orderedPageQualities),_this.isProtected);
+}
 
 @override
 String toString() {
-  return 'PdfCandidateFingerprint(sourceIdentity: $sourceIdentity, configurationIdentity: $configurationIdentity, orderedPageQualities: $orderedPageQualities, isProtected: $isProtected)';
+  final _this = this as PdfCandidateFingerprint;
+  return 'PdfCandidateFingerprint(sourceIdentity: ${_this.sourceIdentity}, configurationIdentity: ${_this.configurationIdentity}, orderedPageQualities: ${_this.orderedPageQualities}, isProtected: ${_this.isProtected})';
 }
 
 
@@ -66,7 +72,7 @@ class _$PdfCandidateFingerprintCopyWithImpl<$Res>
 /// Create a copy of PdfCandidateFingerprint
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? sourceIdentity = null,Object? configurationIdentity = null,Object? orderedPageQualities = null,Object? isProtected = null,}) {
-  return _then(_self.copyWith(
+  return _then(PdfCandidateFingerprint(
 sourceIdentity: null == sourceIdentity ? _self.sourceIdentity : sourceIdentity // ignore: cast_nullable_to_non_nullable
 as String,configurationIdentity: null == configurationIdentity ? _self.configurationIdentity : configurationIdentity // ignore: cast_nullable_to_non_nullable
 as String,orderedPageQualities: null == orderedPageQualities ? _self.orderedPageQualities : orderedPageQualities // ignore: cast_nullable_to_non_nullable
@@ -212,7 +218,7 @@ return $default(_that.sourceIdentity,_that.configurationIdentity,_that.orderedPa
 @JsonSerializable()
 
 class _PdfCandidateFingerprint implements PdfCandidateFingerprint {
-  const _PdfCandidateFingerprint({required this.sourceIdentity, required this.configurationIdentity, required final  List<int> orderedPageQualities, required this.isProtected}): _orderedPageQualities = orderedPageQualities;
+  const _PdfCandidateFingerprint({required this.sourceIdentity, required this.configurationIdentity, required  List<int> orderedPageQualities, required this.isProtected}): _orderedPageQualities = orderedPageQualities;
   factory _PdfCandidateFingerprint.fromJson(Map<String, dynamic> json) => _$PdfCandidateFingerprintFromJson(json);
 
 @override final  String sourceIdentity;
@@ -239,16 +245,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PdfCandidateFingerprint&&(identical(other.sourceIdentity, sourceIdentity) || other.sourceIdentity == sourceIdentity)&&(identical(other.configurationIdentity, configurationIdentity) || other.configurationIdentity == configurationIdentity)&&const DeepCollectionEquality().equals(other._orderedPageQualities, _orderedPageQualities)&&(identical(other.isProtected, isProtected) || other.isProtected == isProtected));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PdfCandidateFingerprint&&(identical(other.sourceIdentity, sourceIdentity) || other.sourceIdentity == sourceIdentity)&&(identical(other.configurationIdentity, configurationIdentity) || other.configurationIdentity == configurationIdentity)&&const DeepCollectionEquality().equals(other.orderedPageQualities, _orderedPageQualities)&&(identical(other.isProtected, isProtected) || other.isProtected == isProtected));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sourceIdentity,configurationIdentity,const DeepCollectionEquality().hash(_orderedPageQualities),isProtected);
+int get hashCode {
+    return Object.hash(runtimeType,sourceIdentity,configurationIdentity,const DeepCollectionEquality().hash(_orderedPageQualities),isProtected);
+}
 
 @override
 String toString() {
-  return 'PdfCandidateFingerprint(sourceIdentity: $sourceIdentity, configurationIdentity: $configurationIdentity, orderedPageQualities: $orderedPageQualities, isProtected: $isProtected)';
+    return 'PdfCandidateFingerprint(sourceIdentity: $sourceIdentity, configurationIdentity: $configurationIdentity, orderedPageQualities: $orderedPageQualities, isProtected: $isProtected)';
 }
 
 
@@ -293,7 +301,7 @@ as bool,
 /// @nodoc
 mixin _$PdfCandidate {
 
- String get handle; int get exactBytes; int get pageCount; PdfCandidateFingerprint get fingerprint;
+
 /// Create a copy of PdfCandidate
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -304,16 +312,21 @@ $PdfCandidateCopyWith<PdfCandidate> get copyWith => _$PdfCandidateCopyWithImpl<P
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfCandidate&&(identical(other.handle, handle) || other.handle == handle)&&(identical(other.exactBytes, exactBytes) || other.exactBytes == exactBytes)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.fingerprint, fingerprint) || other.fingerprint == fingerprint));
+  final _this = this as PdfCandidate;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfCandidate&&(identical(other.handle, _this.handle) || other.handle == _this.handle)&&(identical(other.exactBytes, _this.exactBytes) || other.exactBytes == _this.exactBytes)&&(identical(other.pageCount, _this.pageCount) || other.pageCount == _this.pageCount)&&(identical(other.fingerprint, _this.fingerprint) || other.fingerprint == _this.fingerprint));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,handle,exactBytes,pageCount,fingerprint);
+int get hashCode {
+  final _this = this as PdfCandidate;
+  return Object.hash(runtimeType,_this.handle,_this.exactBytes,_this.pageCount,_this.fingerprint);
+}
 
 @override
 String toString() {
-  return 'PdfCandidate(handle: $handle, exactBytes: $exactBytes, pageCount: $pageCount, fingerprint: $fingerprint)';
+  final _this = this as PdfCandidate;
+  return 'PdfCandidate(handle: ${_this.handle}, exactBytes: ${_this.exactBytes}, pageCount: ${_this.pageCount}, fingerprint: ${_this.fingerprint})';
 }
 
 
@@ -328,7 +341,7 @@ $Res call({
 });
 
 
-
+$PdfCandidateFingerprintCopyWith<$Res> get fingerprint;
 
 }
 /// @nodoc
@@ -350,7 +363,16 @@ as int,fingerprint: null == fingerprint ? _self.fingerprint : fingerprint // ign
 as PdfCandidateFingerprint,
   ));
 }
-
+/// Create a copy of PdfCandidate
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$PdfCandidateFingerprintCopyWith<$Res> get fingerprint {
+  
+  return $PdfCandidateFingerprintCopyWith<$Res>(_self.fingerprint, (value) {
+    return _then(_self.copyWith(fingerprint: value));
+  });
+}
 }
 
 
@@ -482,7 +504,7 @@ case _:
 /// @nodoc
 mixin _$JobProgress {
 
- int get percent;
+
 /// Create a copy of JobProgress
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -493,16 +515,21 @@ $JobProgressCopyWith<JobProgress> get copyWith => _$JobProgressCopyWithImpl<JobP
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is JobProgress&&(identical(other.percent, percent) || other.percent == percent));
+  final _this = this as JobProgress;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is JobProgress&&(identical(other.percent, _this.percent) || other.percent == _this.percent));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,percent);
+int get hashCode {
+  final _this = this as JobProgress;
+  return Object.hash(runtimeType,_this.percent);
+}
 
 @override
 String toString() {
-  return 'JobProgress(percent: $percent)';
+  final _this = this as JobProgress;
+  return 'JobProgress(percent: ${_this.percent})';
 }
 
 
@@ -678,16 +705,21 @@ $JobResultSummaryCopyWith<JobResultSummary> get copyWith => _$JobResultSummaryCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is JobResultSummary&&(identical(other.exactBytes, exactBytes) || other.exactBytes == exactBytes)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.candidateHandle, candidateHandle) || other.candidateHandle == candidateHandle));
+  final _this = this as JobResultSummary;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is JobResultSummary&&(identical(other.exactBytes, _this.exactBytes) || other.exactBytes == _this.exactBytes)&&(identical(other.pageCount, _this.pageCount) || other.pageCount == _this.pageCount)&&(identical(other.candidateHandle, _this.candidateHandle) || other.candidateHandle == _this.candidateHandle));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,exactBytes,pageCount,candidateHandle);
+int get hashCode {
+  final _this = this as JobResultSummary;
+  return Object.hash(runtimeType,_this.exactBytes,_this.pageCount,_this.candidateHandle);
+}
 
 @override
 String toString() {
-  return 'JobResultSummary(exactBytes: $exactBytes, pageCount: $pageCount, candidateHandle: $candidateHandle)';
+  final _this = this as JobResultSummary;
+  return 'JobResultSummary(exactBytes: ${_this.exactBytes}, pageCount: ${_this.pageCount}, candidateHandle: ${_this.candidateHandle})';
 }
 
 
@@ -716,7 +748,7 @@ class _$JobResultSummaryCopyWithImpl<$Res>
 /// Create a copy of JobResultSummary
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? exactBytes = null,Object? pageCount = null,Object? candidateHandle = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(JobResultSummary(
 exactBytes: null == exactBytes ? _self.exactBytes : exactBytes // ignore: cast_nullable_to_non_nullable
 as int,pageCount: null == pageCount ? _self.pageCount : pageCount // ignore: cast_nullable_to_non_nullable
 as int,candidateHandle: freezed == candidateHandle ? _self.candidateHandle : candidateHandle // ignore: cast_nullable_to_non_nullable
@@ -878,16 +910,18 @@ _$JobResultSummaryCopyWith<_JobResultSummary> get copyWith => __$JobResultSummar
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _JobResultSummary&&(identical(other.exactBytes, exactBytes) || other.exactBytes == exactBytes)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.candidateHandle, candidateHandle) || other.candidateHandle == candidateHandle));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _JobResultSummary&&(identical(other.exactBytes, exactBytes) || other.exactBytes == exactBytes)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.candidateHandle, candidateHandle) || other.candidateHandle == candidateHandle));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,exactBytes,pageCount,candidateHandle);
+int get hashCode {
+    return Object.hash(runtimeType,exactBytes,pageCount,candidateHandle);
+}
 
 @override
 String toString() {
-  return 'JobResultSummary(exactBytes: $exactBytes, pageCount: $pageCount, candidateHandle: $candidateHandle)';
+    return 'JobResultSummary(exactBytes: $exactBytes, pageCount: $pageCount, candidateHandle: $candidateHandle)';
 }
 
 
@@ -936,7 +970,7 @@ mixin _$AsyncJobView {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobView);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobView);
 }
 
 
@@ -945,7 +979,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'AsyncJobView()';
+    return 'AsyncJobView()';
 }
 
 
@@ -1125,7 +1159,7 @@ class AsyncJobIdle implements AsyncJobView {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobIdle);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobIdle);
 }
 
 
@@ -1134,7 +1168,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'AsyncJobView.idle()';
+    return 'AsyncJobView.idle()';
 }
 
 
@@ -1162,16 +1196,18 @@ $AsyncJobQueuedCopyWith<AsyncJobQueued> get copyWith => _$AsyncJobQueuedCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobQueued&&(identical(other.generation, generation) || other.generation == generation));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobQueued&&(identical(other.generation, generation) || other.generation == generation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,generation);
+int get hashCode {
+    return Object.hash(runtimeType,generation);
+}
 
 @override
 String toString() {
-  return 'AsyncJobView.queued(generation: $generation)';
+    return 'AsyncJobView.queued(generation: $generation)';
 }
 
 
@@ -1229,16 +1265,18 @@ $AsyncJobRunningCopyWith<AsyncJobRunning> get copyWith => _$AsyncJobRunningCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobRunning&&(identical(other.generation, generation) || other.generation == generation)&&(identical(other.progress, progress) || other.progress == progress));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobRunning&&(identical(other.generation, generation) || other.generation == generation)&&(identical(other.progress, progress) || other.progress == progress));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,generation,progress);
+int get hashCode {
+    return Object.hash(runtimeType,generation,progress);
+}
 
 @override
 String toString() {
-  return 'AsyncJobView.running(generation: $generation, progress: $progress)';
+    return 'AsyncJobView.running(generation: $generation, progress: $progress)';
 }
 
 
@@ -1306,16 +1344,18 @@ $AsyncJobSucceededCopyWith<AsyncJobSucceeded> get copyWith => _$AsyncJobSucceede
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobSucceeded&&(identical(other.generation, generation) || other.generation == generation)&&(identical(other.summary, summary) || other.summary == summary));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobSucceeded&&(identical(other.generation, generation) || other.generation == generation)&&(identical(other.summary, summary) || other.summary == summary));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,generation,summary);
+int get hashCode {
+    return Object.hash(runtimeType,generation,summary);
+}
 
 @override
 String toString() {
-  return 'AsyncJobView.succeeded(generation: $generation, summary: $summary)';
+    return 'AsyncJobView.succeeded(generation: $generation, summary: $summary)';
 }
 
 
@@ -1382,16 +1422,18 @@ $AsyncJobCancelledCopyWith<AsyncJobCancelled> get copyWith => _$AsyncJobCancelle
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobCancelled&&(identical(other.generation, generation) || other.generation == generation));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobCancelled&&(identical(other.generation, generation) || other.generation == generation));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,generation);
+int get hashCode {
+    return Object.hash(runtimeType,generation);
+}
 
 @override
 String toString() {
-  return 'AsyncJobView.cancelled(generation: $generation)';
+    return 'AsyncJobView.cancelled(generation: $generation)';
 }
 
 
@@ -1449,16 +1491,18 @@ $AsyncJobFailedCopyWith<AsyncJobFailed> get copyWith => _$AsyncJobFailedCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobFailed&&(identical(other.generation, generation) || other.generation == generation)&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AsyncJobFailed&&(identical(other.generation, generation) || other.generation == generation)&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,generation,failure);
+int get hashCode {
+    return Object.hash(runtimeType,generation,failure);
+}
 
 @override
 String toString() {
-  return 'AsyncJobView.failed(generation: $generation, failure: $failure)';
+    return 'AsyncJobView.failed(generation: $generation, failure: $failure)';
 }
 
 

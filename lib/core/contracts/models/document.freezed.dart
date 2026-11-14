@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'document.dart';
@@ -9,6 +9,7 @@ part of 'document.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -58,16 +59,21 @@ $DocumentCopyWith<Document> get copyWith => _$DocumentCopyWithImpl<Document>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Document&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.sizeInBytes, sizeInBytes) || other.sizeInBytes == sizeInBytes)&&(identical(other.libraryPath, libraryPath) || other.libraryPath == libraryPath)&&(identical(other.folderId, folderId) || other.folderId == folderId)&&(identical(other.isFavourite, isFavourite) || other.isFavourite == isFavourite)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isProtected, isProtected) || other.isProtected == isProtected)&&(identical(other.cloudResourceIdentifier, cloudResourceIdentifier) || other.cloudResourceIdentifier == cloudResourceIdentifier)&&(identical(other.cloudRelativePath, cloudRelativePath) || other.cloudRelativePath == cloudRelativePath)&&(identical(other.contentAvailability, contentAvailability) || other.contentAvailability == contentAvailability)&&(identical(other.trashId, trashId) || other.trashId == trashId)&&(identical(other.trashedAt, trashedAt) || other.trashedAt == trashedAt));
+  final _this = this as Document;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Document&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.updatedAt, _this.updatedAt) || other.updatedAt == _this.updatedAt)&&(identical(other.pageCount, _this.pageCount) || other.pageCount == _this.pageCount)&&(identical(other.sizeInBytes, _this.sizeInBytes) || other.sizeInBytes == _this.sizeInBytes)&&(identical(other.libraryPath, _this.libraryPath) || other.libraryPath == _this.libraryPath)&&(identical(other.folderId, _this.folderId) || other.folderId == _this.folderId)&&(identical(other.isFavourite, _this.isFavourite) || other.isFavourite == _this.isFavourite)&&(identical(other.isArchived, _this.isArchived) || other.isArchived == _this.isArchived)&&(identical(other.isProtected, _this.isProtected) || other.isProtected == _this.isProtected)&&(identical(other.cloudResourceIdentifier, _this.cloudResourceIdentifier) || other.cloudResourceIdentifier == _this.cloudResourceIdentifier)&&(identical(other.cloudRelativePath, _this.cloudRelativePath) || other.cloudRelativePath == _this.cloudRelativePath)&&(identical(other.contentAvailability, _this.contentAvailability) || other.contentAvailability == _this.contentAvailability)&&(identical(other.trashId, _this.trashId) || other.trashId == _this.trashId)&&(identical(other.trashedAt, _this.trashedAt) || other.trashedAt == _this.trashedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,createdAt,updatedAt,pageCount,sizeInBytes,libraryPath,folderId,isFavourite,isArchived,isProtected,cloudResourceIdentifier,cloudRelativePath,contentAvailability,trashId,trashedAt);
+int get hashCode {
+  final _this = this as Document;
+  return Object.hash(runtimeType,_this.id,_this.title,_this.createdAt,_this.updatedAt,_this.pageCount,_this.sizeInBytes,_this.libraryPath,_this.folderId,_this.isFavourite,_this.isArchived,_this.isProtected,_this.cloudResourceIdentifier,_this.cloudRelativePath,_this.contentAvailability,_this.trashId,_this.trashedAt);
+}
 
 @override
 String toString() {
-  return 'Document(id: $id, title: $title, createdAt: $createdAt, updatedAt: $updatedAt, pageCount: $pageCount, sizeInBytes: $sizeInBytes, libraryPath: $libraryPath, folderId: $folderId, isFavourite: $isFavourite, isArchived: $isArchived, isProtected: $isProtected, cloudResourceIdentifier: $cloudResourceIdentifier, cloudRelativePath: $cloudRelativePath, contentAvailability: $contentAvailability, trashId: $trashId, trashedAt: $trashedAt)';
+  final _this = this as Document;
+  return 'Document(id: ${_this.id}, title: ${_this.title}, createdAt: ${_this.createdAt}, updatedAt: ${_this.updatedAt}, pageCount: ${_this.pageCount}, sizeInBytes: ${_this.sizeInBytes}, libraryPath: ${_this.libraryPath}, folderId: ${_this.folderId}, isFavourite: ${_this.isFavourite}, isArchived: ${_this.isArchived}, isProtected: ${_this.isProtected}, cloudResourceIdentifier: ${_this.cloudResourceIdentifier}, cloudRelativePath: ${_this.cloudRelativePath}, contentAvailability: ${_this.contentAvailability}, trashId: ${_this.trashId}, trashedAt: ${_this.trashedAt})';
 }
 
 
@@ -96,7 +102,7 @@ class _$DocumentCopyWithImpl<$Res>
 /// Create a copy of Document
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? title = null,Object? createdAt = null,Object? updatedAt = null,Object? pageCount = null,Object? sizeInBytes = null,Object? libraryPath = null,Object? folderId = freezed,Object? isFavourite = null,Object? isArchived = null,Object? isProtected = null,Object? cloudResourceIdentifier = freezed,Object? cloudRelativePath = freezed,Object? contentAvailability = null,Object? trashId = freezed,Object? trashedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(Document(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as DocumentId,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -317,16 +323,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Document&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.sizeInBytes, sizeInBytes) || other.sizeInBytes == sizeInBytes)&&(identical(other.libraryPath, libraryPath) || other.libraryPath == libraryPath)&&(identical(other.folderId, folderId) || other.folderId == folderId)&&(identical(other.isFavourite, isFavourite) || other.isFavourite == isFavourite)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isProtected, isProtected) || other.isProtected == isProtected)&&(identical(other.cloudResourceIdentifier, cloudResourceIdentifier) || other.cloudResourceIdentifier == cloudResourceIdentifier)&&(identical(other.cloudRelativePath, cloudRelativePath) || other.cloudRelativePath == cloudRelativePath)&&(identical(other.contentAvailability, contentAvailability) || other.contentAvailability == contentAvailability)&&(identical(other.trashId, trashId) || other.trashId == trashId)&&(identical(other.trashedAt, trashedAt) || other.trashedAt == trashedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Document&&(identical(other.id, id) || other.id == id)&&(identical(other.title, title) || other.title == title)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.updatedAt, updatedAt) || other.updatedAt == updatedAt)&&(identical(other.pageCount, pageCount) || other.pageCount == pageCount)&&(identical(other.sizeInBytes, sizeInBytes) || other.sizeInBytes == sizeInBytes)&&(identical(other.libraryPath, libraryPath) || other.libraryPath == libraryPath)&&(identical(other.folderId, folderId) || other.folderId == folderId)&&(identical(other.isFavourite, isFavourite) || other.isFavourite == isFavourite)&&(identical(other.isArchived, isArchived) || other.isArchived == isArchived)&&(identical(other.isProtected, isProtected) || other.isProtected == isProtected)&&(identical(other.cloudResourceIdentifier, cloudResourceIdentifier) || other.cloudResourceIdentifier == cloudResourceIdentifier)&&(identical(other.cloudRelativePath, cloudRelativePath) || other.cloudRelativePath == cloudRelativePath)&&(identical(other.contentAvailability, contentAvailability) || other.contentAvailability == contentAvailability)&&(identical(other.trashId, trashId) || other.trashId == trashId)&&(identical(other.trashedAt, trashedAt) || other.trashedAt == trashedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,title,createdAt,updatedAt,pageCount,sizeInBytes,libraryPath,folderId,isFavourite,isArchived,isProtected,cloudResourceIdentifier,cloudRelativePath,contentAvailability,trashId,trashedAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,title,createdAt,updatedAt,pageCount,sizeInBytes,libraryPath,folderId,isFavourite,isArchived,isProtected,cloudResourceIdentifier,cloudRelativePath,contentAvailability,trashId,trashedAt);
+}
 
 @override
 String toString() {
-  return 'Document(id: $id, title: $title, createdAt: $createdAt, updatedAt: $updatedAt, pageCount: $pageCount, sizeInBytes: $sizeInBytes, libraryPath: $libraryPath, folderId: $folderId, isFavourite: $isFavourite, isArchived: $isArchived, isProtected: $isProtected, cloudResourceIdentifier: $cloudResourceIdentifier, cloudRelativePath: $cloudRelativePath, contentAvailability: $contentAvailability, trashId: $trashId, trashedAt: $trashedAt)';
+    return 'Document(id: $id, title: $title, createdAt: $createdAt, updatedAt: $updatedAt, pageCount: $pageCount, sizeInBytes: $sizeInBytes, libraryPath: $libraryPath, folderId: $folderId, isFavourite: $isFavourite, isArchived: $isArchived, isProtected: $isProtected, cloudResourceIdentifier: $cloudResourceIdentifier, cloudRelativePath: $cloudRelativePath, contentAvailability: $contentAvailability, trashId: $trashId, trashedAt: $trashedAt)';
 }
 
 
@@ -407,16 +415,21 @@ $FolderCopyWith<Folder> get copyWith => _$FolderCopyWithImpl<Folder>(this as Fol
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Folder&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.relativePath, relativePath) || other.relativePath == relativePath)&&(identical(other.documentCount, documentCount) || other.documentCount == documentCount)&&(identical(other.trashId, trashId) || other.trashId == trashId)&&(identical(other.trashedAt, trashedAt) || other.trashedAt == trashedAt));
+  final _this = this as Folder;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is Folder&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.name, _this.name) || other.name == _this.name)&&(identical(other.createdAt, _this.createdAt) || other.createdAt == _this.createdAt)&&(identical(other.relativePath, _this.relativePath) || other.relativePath == _this.relativePath)&&(identical(other.documentCount, _this.documentCount) || other.documentCount == _this.documentCount)&&(identical(other.trashId, _this.trashId) || other.trashId == _this.trashId)&&(identical(other.trashedAt, _this.trashedAt) || other.trashedAt == _this.trashedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,createdAt,relativePath,documentCount,trashId,trashedAt);
+int get hashCode {
+  final _this = this as Folder;
+  return Object.hash(runtimeType,_this.id,_this.name,_this.createdAt,_this.relativePath,_this.documentCount,_this.trashId,_this.trashedAt);
+}
 
 @override
 String toString() {
-  return 'Folder(id: $id, name: $name, createdAt: $createdAt, relativePath: $relativePath, documentCount: $documentCount, trashId: $trashId, trashedAt: $trashedAt)';
+  final _this = this as Folder;
+  return 'Folder(id: ${_this.id}, name: ${_this.name}, createdAt: ${_this.createdAt}, relativePath: ${_this.relativePath}, documentCount: ${_this.documentCount}, trashId: ${_this.trashId}, trashedAt: ${_this.trashedAt})';
 }
 
 
@@ -445,7 +458,7 @@ class _$FolderCopyWithImpl<$Res>
 /// Create a copy of Folder
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? name = null,Object? createdAt = null,Object? relativePath = null,Object? documentCount = null,Object? trashId = freezed,Object? trashedAt = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(Folder(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as FolderId,name: null == name ? _self.name : name // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
@@ -629,16 +642,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _Folder&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.relativePath, relativePath) || other.relativePath == relativePath)&&(identical(other.documentCount, documentCount) || other.documentCount == documentCount)&&(identical(other.trashId, trashId) || other.trashId == trashId)&&(identical(other.trashedAt, trashedAt) || other.trashedAt == trashedAt));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _Folder&&(identical(other.id, id) || other.id == id)&&(identical(other.name, name) || other.name == name)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.relativePath, relativePath) || other.relativePath == relativePath)&&(identical(other.documentCount, documentCount) || other.documentCount == documentCount)&&(identical(other.trashId, trashId) || other.trashId == trashId)&&(identical(other.trashedAt, trashedAt) || other.trashedAt == trashedAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,name,createdAt,relativePath,documentCount,trashId,trashedAt);
+int get hashCode {
+    return Object.hash(runtimeType,id,name,createdAt,relativePath,documentCount,trashId,trashedAt);
+}
 
 @override
 String toString() {
-  return 'Folder(id: $id, name: $name, createdAt: $createdAt, relativePath: $relativePath, documentCount: $documentCount, trashId: $trashId, trashedAt: $trashedAt)';
+    return 'Folder(id: $id, name: $name, createdAt: $createdAt, relativePath: $relativePath, documentCount: $documentCount, trashId: $trashId, trashedAt: $trashedAt)';
 }
 
 
@@ -701,16 +716,21 @@ $StorageSummaryCopyWith<StorageSummary> get copyWith => _$StorageSummaryCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StorageSummary&&(identical(other.totalBytes, totalBytes) || other.totalBytes == totalBytes)&&(identical(other.documentCount, documentCount) || other.documentCount == documentCount));
+  final _this = this as StorageSummary;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is StorageSummary&&(identical(other.totalBytes, _this.totalBytes) || other.totalBytes == _this.totalBytes)&&(identical(other.documentCount, _this.documentCount) || other.documentCount == _this.documentCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,totalBytes,documentCount);
+int get hashCode {
+  final _this = this as StorageSummary;
+  return Object.hash(runtimeType,_this.totalBytes,_this.documentCount);
+}
 
 @override
 String toString() {
-  return 'StorageSummary(totalBytes: $totalBytes, documentCount: $documentCount)';
+  final _this = this as StorageSummary;
+  return 'StorageSummary(totalBytes: ${_this.totalBytes}, documentCount: ${_this.documentCount})';
 }
 
 
@@ -739,7 +759,7 @@ class _$StorageSummaryCopyWithImpl<$Res>
 /// Create a copy of StorageSummary
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? totalBytes = null,Object? documentCount = null,}) {
-  return _then(_self.copyWith(
+  return _then(StorageSummary(
 totalBytes: null == totalBytes ? _self.totalBytes : totalBytes // ignore: cast_nullable_to_non_nullable
 as int,documentCount: null == documentCount ? _self.documentCount : documentCount // ignore: cast_nullable_to_non_nullable
 as int,
@@ -904,16 +924,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _StorageSummary&&(identical(other.totalBytes, totalBytes) || other.totalBytes == totalBytes)&&(identical(other.documentCount, documentCount) || other.documentCount == documentCount));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _StorageSummary&&(identical(other.totalBytes, totalBytes) || other.totalBytes == totalBytes)&&(identical(other.documentCount, documentCount) || other.documentCount == documentCount));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,totalBytes,documentCount);
+int get hashCode {
+    return Object.hash(runtimeType,totalBytes,documentCount);
+}
 
 @override
 String toString() {
-  return 'StorageSummary(totalBytes: $totalBytes, documentCount: $documentCount)';
+    return 'StorageSummary(totalBytes: $totalBytes, documentCount: $documentCount)';
 }
 
 

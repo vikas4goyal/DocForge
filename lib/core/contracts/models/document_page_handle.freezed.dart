@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'document_page_handle.dart';
@@ -9,6 +9,7 @@ part of 'document_page_handle.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$DocumentPageSource {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DocumentPageSource);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is DocumentPageSource);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'DocumentPageSource()';
+    return 'DocumentPageSource()';
 }
 
 
@@ -191,16 +192,18 @@ $StoredImageDocumentPageSourceCopyWith<StoredImageDocumentPageSource> get copyWi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StoredImageDocumentPageSource&&(identical(other.imagePath, imagePath) || other.imagePath == imagePath)&&(identical(other.thumbnailPath, thumbnailPath) || other.thumbnailPath == thumbnailPath));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StoredImageDocumentPageSource&&(identical(other.imagePath, imagePath) || other.imagePath == imagePath)&&(identical(other.thumbnailPath, thumbnailPath) || other.thumbnailPath == thumbnailPath));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,imagePath,thumbnailPath);
+int get hashCode {
+    return Object.hash(runtimeType,imagePath,thumbnailPath);
+}
 
 @override
 String toString() {
-  return 'DocumentPageSource.storedImage(imagePath: $imagePath, thumbnailPath: $thumbnailPath)';
+    return 'DocumentPageSource.storedImage(imagePath: $imagePath, thumbnailPath: $thumbnailPath)';
 }
 
 
@@ -253,7 +256,7 @@ class PdfDocumentPageSource implements DocumentPageSource {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfDocumentPageSource);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfDocumentPageSource);
 }
 
 
@@ -262,7 +265,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'DocumentPageSource.pdfPage()';
+    return 'DocumentPageSource.pdfPage()';
 }
 
 
@@ -285,16 +288,21 @@ $DocumentPageHandleCopyWith<DocumentPageHandle> get copyWith => _$DocumentPageHa
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DocumentPageHandle&&(identical(other.id, id) || other.id == id)&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.pageNumber, pageNumber) || other.pageNumber == pageNumber)&&(identical(other.source, source) || other.source == source));
+  final _this = this as DocumentPageHandle;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DocumentPageHandle&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.documentId, _this.documentId) || other.documentId == _this.documentId)&&(identical(other.pageNumber, _this.pageNumber) || other.pageNumber == _this.pageNumber)&&(identical(other.source, _this.source) || other.source == _this.source));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,documentId,pageNumber,source);
+int get hashCode {
+  final _this = this as DocumentPageHandle;
+  return Object.hash(runtimeType,_this.id,_this.documentId,_this.pageNumber,_this.source);
+}
 
 @override
 String toString() {
-  return 'DocumentPageHandle(id: $id, documentId: $documentId, pageNumber: $pageNumber, source: $source)';
+  final _this = this as DocumentPageHandle;
+  return 'DocumentPageHandle(id: ${_this.id}, documentId: ${_this.documentId}, pageNumber: ${_this.pageNumber}, source: ${_this.source})';
 }
 
 
@@ -323,7 +331,7 @@ class _$DocumentPageHandleCopyWithImpl<$Res>
 /// Create a copy of DocumentPageHandle
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? documentId = null,Object? pageNumber = null,Object? source = null,}) {
-  return _then(_self.copyWith(
+  return _then(DocumentPageHandle(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as PageId,documentId: null == documentId ? _self.documentId : documentId // ignore: cast_nullable_to_non_nullable
 as DocumentId,pageNumber: null == pageNumber ? _self.pageNumber : pageNumber // ignore: cast_nullable_to_non_nullable
@@ -496,16 +504,18 @@ _$DocumentPageHandleCopyWith<_DocumentPageHandle> get copyWith => __$DocumentPag
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DocumentPageHandle&&(identical(other.id, id) || other.id == id)&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.pageNumber, pageNumber) || other.pageNumber == pageNumber)&&(identical(other.source, source) || other.source == source));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DocumentPageHandle&&(identical(other.id, id) || other.id == id)&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.pageNumber, pageNumber) || other.pageNumber == pageNumber)&&(identical(other.source, source) || other.source == source));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,id,documentId,pageNumber,source);
+int get hashCode {
+    return Object.hash(runtimeType,id,documentId,pageNumber,source);
+}
 
 @override
 String toString() {
-  return 'DocumentPageHandle(id: $id, documentId: $documentId, pageNumber: $pageNumber, source: $source)';
+    return 'DocumentPageHandle(id: $id, documentId: $documentId, pageNumber: $pageNumber, source: $source)';
 }
 
 
@@ -569,16 +579,21 @@ $MaterializedDocumentPageCopyWith<MaterializedDocumentPage> get copyWith => _$Ma
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MaterializedDocumentPage&&(identical(other.path, path) || other.path == path));
+  final _this = this as MaterializedDocumentPage;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is MaterializedDocumentPage&&(identical(other.path, _this.path) || other.path == _this.path));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,path);
+int get hashCode {
+  final _this = this as MaterializedDocumentPage;
+  return Object.hash(runtimeType,_this.path);
+}
 
 @override
 String toString() {
-  return 'MaterializedDocumentPage(path: $path)';
+  final _this = this as MaterializedDocumentPage;
+  return 'MaterializedDocumentPage(path: ${_this.path})';
 }
 
 
@@ -771,16 +786,18 @@ $AuthoritativeDocumentPageCopyWith<AuthoritativeDocumentPage> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthoritativeDocumentPage&&(identical(other.path, path) || other.path == path));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthoritativeDocumentPage&&(identical(other.path, path) || other.path == path));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,path);
+int get hashCode {
+    return Object.hash(runtimeType,path);
+}
 
 @override
 String toString() {
-  return 'MaterializedDocumentPage.authoritative(path: $path)';
+    return 'MaterializedDocumentPage.authoritative(path: $path)';
 }
 
 
@@ -837,16 +854,18 @@ $CachedDocumentPageCopyWith<CachedDocumentPage> get copyWith => _$CachedDocument
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CachedDocumentPage&&(identical(other.path, path) || other.path == path));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CachedDocumentPage&&(identical(other.path, path) || other.path == path));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,path);
+int get hashCode {
+    return Object.hash(runtimeType,path);
+}
 
 @override
 String toString() {
-  return 'MaterializedDocumentPage.cached(path: $path)';
+    return 'MaterializedDocumentPage.cached(path: $path)';
 }
 
 
@@ -903,16 +922,18 @@ $TemporaryDocumentPageCopyWith<TemporaryDocumentPage> get copyWith => _$Temporar
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TemporaryDocumentPage&&(identical(other.path, path) || other.path == path));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is TemporaryDocumentPage&&(identical(other.path, path) || other.path == path));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,path);
+int get hashCode {
+    return Object.hash(runtimeType,path);
+}
 
 @override
 String toString() {
-  return 'MaterializedDocumentPage.temporary(path: $path)';
+    return 'MaterializedDocumentPage.temporary(path: $path)';
 }
 
 

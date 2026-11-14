@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'bulk_document_action.dart';
@@ -9,6 +9,7 @@ part of 'bulk_document_action.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $BulkDocumentRequestCopyWith<BulkDocumentRequest> get copyWith => _$BulkDocument
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BulkDocumentRequest&&const DeepCollectionEquality().equals(other.documentIds, documentIds)&&(identical(other.destructiveActionConfirmed, destructiveActionConfirmed) || other.destructiveActionConfirmed == destructiveActionConfirmed));
+  final _this = this as BulkDocumentRequest;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BulkDocumentRequest&&const DeepCollectionEquality().equals(other.documentIds, _this.documentIds)&&(identical(other.destructiveActionConfirmed, _this.destructiveActionConfirmed) || other.destructiveActionConfirmed == _this.destructiveActionConfirmed));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(documentIds),destructiveActionConfirmed);
+int get hashCode {
+  final _this = this as BulkDocumentRequest;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.documentIds),_this.destructiveActionConfirmed);
+}
 
 @override
 String toString() {
-  return 'BulkDocumentRequest(documentIds: $documentIds, destructiveActionConfirmed: $destructiveActionConfirmed)';
+  final _this = this as BulkDocumentRequest;
+  return 'BulkDocumentRequest(documentIds: ${_this.documentIds}, destructiveActionConfirmed: ${_this.destructiveActionConfirmed})';
 }
 
 
@@ -63,7 +69,7 @@ class _$BulkDocumentRequestCopyWithImpl<$Res>
 /// Create a copy of BulkDocumentRequest
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? documentIds = null,Object? destructiveActionConfirmed = null,}) {
-  return _then(_self.copyWith(
+  return _then(BulkDocumentRequest(
 documentIds: null == documentIds ? _self.documentIds : documentIds // ignore: cast_nullable_to_non_nullable
 as List<DocumentId>,destructiveActionConfirmed: null == destructiveActionConfirmed ? _self.destructiveActionConfirmed : destructiveActionConfirmed // ignore: cast_nullable_to_non_nullable
 as bool,
@@ -207,7 +213,7 @@ return $default(_that.documentIds,_that.destructiveActionConfirmed);case _:
 
 
 class _BulkDocumentRequest implements BulkDocumentRequest {
-  const _BulkDocumentRequest({required final  List<DocumentId> documentIds, this.destructiveActionConfirmed = false}): _documentIds = documentIds;
+  const _BulkDocumentRequest({required  List<DocumentId> documentIds, this.destructiveActionConfirmed = false}): _documentIds = documentIds;
   
 
  final  List<DocumentId> _documentIds;
@@ -229,16 +235,18 @@ _$BulkDocumentRequestCopyWith<_BulkDocumentRequest> get copyWith => __$BulkDocum
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BulkDocumentRequest&&const DeepCollectionEquality().equals(other._documentIds, _documentIds)&&(identical(other.destructiveActionConfirmed, destructiveActionConfirmed) || other.destructiveActionConfirmed == destructiveActionConfirmed));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BulkDocumentRequest&&const DeepCollectionEquality().equals(other.documentIds, _documentIds)&&(identical(other.destructiveActionConfirmed, destructiveActionConfirmed) || other.destructiveActionConfirmed == destructiveActionConfirmed));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_documentIds),destructiveActionConfirmed);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_documentIds),destructiveActionConfirmed);
+}
 
 @override
 String toString() {
-  return 'BulkDocumentRequest(documentIds: $documentIds, destructiveActionConfirmed: $destructiveActionConfirmed)';
+    return 'BulkDocumentRequest(documentIds: $documentIds, destructiveActionConfirmed: $destructiveActionConfirmed)';
 }
 
 
@@ -291,16 +299,21 @@ $BulkDocumentFailureCopyWith<BulkDocumentFailure> get copyWith => _$BulkDocument
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BulkDocumentFailure&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.failure, failure) || other.failure == failure));
+  final _this = this as BulkDocumentFailure;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BulkDocumentFailure&&(identical(other.documentId, _this.documentId) || other.documentId == _this.documentId)&&(identical(other.failure, _this.failure) || other.failure == _this.failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,documentId,failure);
+int get hashCode {
+  final _this = this as BulkDocumentFailure;
+  return Object.hash(runtimeType,_this.documentId,_this.failure);
+}
 
 @override
 String toString() {
-  return 'BulkDocumentFailure(documentId: $documentId, failure: $failure)';
+  final _this = this as BulkDocumentFailure;
+  return 'BulkDocumentFailure(documentId: ${_this.documentId}, failure: ${_this.failure})';
 }
 
 
@@ -329,7 +342,7 @@ class _$BulkDocumentFailureCopyWithImpl<$Res>
 /// Create a copy of BulkDocumentFailure
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? documentId = null,Object? failure = null,}) {
-  return _then(_self.copyWith(
+  return _then(BulkDocumentFailure(
 documentId: null == documentId ? _self.documentId : documentId // ignore: cast_nullable_to_non_nullable
 as DocumentId,failure: null == failure ? _self.failure : failure // ignore: cast_nullable_to_non_nullable
 as Failure,
@@ -498,16 +511,18 @@ _$BulkDocumentFailureCopyWith<_BulkDocumentFailure> get copyWith => __$BulkDocum
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BulkDocumentFailure&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.failure, failure) || other.failure == failure));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BulkDocumentFailure&&(identical(other.documentId, documentId) || other.documentId == documentId)&&(identical(other.failure, failure) || other.failure == failure));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,documentId,failure);
+int get hashCode {
+    return Object.hash(runtimeType,documentId,failure);
+}
 
 @override
 String toString() {
-  return 'BulkDocumentFailure(documentId: $documentId, failure: $failure)';
+    return 'BulkDocumentFailure(documentId: $documentId, failure: $failure)';
 }
 
 
@@ -569,16 +584,21 @@ $BulkDocumentOutcomeCopyWith<BulkDocumentOutcome> get copyWith => _$BulkDocument
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is BulkDocumentOutcome&&const DeepCollectionEquality().equals(other.succeeded, succeeded)&&const DeepCollectionEquality().equals(other.failed, failed));
+  final _this = this as BulkDocumentOutcome;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is BulkDocumentOutcome&&const DeepCollectionEquality().equals(other.succeeded, _this.succeeded)&&const DeepCollectionEquality().equals(other.failed, _this.failed));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(succeeded),const DeepCollectionEquality().hash(failed));
+int get hashCode {
+  final _this = this as BulkDocumentOutcome;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.succeeded),const DeepCollectionEquality().hash(_this.failed));
+}
 
 @override
 String toString() {
-  return 'BulkDocumentOutcome(succeeded: $succeeded, failed: $failed)';
+  final _this = this as BulkDocumentOutcome;
+  return 'BulkDocumentOutcome(succeeded: ${_this.succeeded}, failed: ${_this.failed})';
 }
 
 
@@ -607,7 +627,7 @@ class _$BulkDocumentOutcomeCopyWithImpl<$Res>
 /// Create a copy of BulkDocumentOutcome
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? succeeded = null,Object? failed = null,}) {
-  return _then(_self.copyWith(
+  return _then(BulkDocumentOutcome(
 succeeded: null == succeeded ? _self.succeeded : succeeded // ignore: cast_nullable_to_non_nullable
 as List<DocumentId>,failed: null == failed ? _self.failed : failed // ignore: cast_nullable_to_non_nullable
 as List<BulkDocumentFailure>,
@@ -751,7 +771,7 @@ return $default(_that.succeeded,_that.failed);case _:
 
 
 class _BulkDocumentOutcome extends BulkDocumentOutcome {
-  const _BulkDocumentOutcome({final  List<DocumentId> succeeded = const <DocumentId>[], final  List<BulkDocumentFailure> failed = const <BulkDocumentFailure>[]}): _succeeded = succeeded,_failed = failed,super._();
+  const _BulkDocumentOutcome({ List<DocumentId> succeeded = const <DocumentId>[],  List<BulkDocumentFailure> failed = const <BulkDocumentFailure>[]}): _succeeded = succeeded,_failed = failed,super._();
   
 
  final  List<DocumentId> _succeeded;
@@ -779,16 +799,18 @@ _$BulkDocumentOutcomeCopyWith<_BulkDocumentOutcome> get copyWith => __$BulkDocum
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _BulkDocumentOutcome&&const DeepCollectionEquality().equals(other._succeeded, _succeeded)&&const DeepCollectionEquality().equals(other._failed, _failed));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _BulkDocumentOutcome&&const DeepCollectionEquality().equals(other.succeeded, _succeeded)&&const DeepCollectionEquality().equals(other.failed, _failed));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_succeeded),const DeepCollectionEquality().hash(_failed));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_succeeded),const DeepCollectionEquality().hash(_failed));
+}
 
 @override
 String toString() {
-  return 'BulkDocumentOutcome(succeeded: $succeeded, failed: $failed)';
+    return 'BulkDocumentOutcome(succeeded: $succeeded, failed: $failed)';
 }
 
 
