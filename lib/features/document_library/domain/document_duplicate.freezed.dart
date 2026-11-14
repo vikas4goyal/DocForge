@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'document_duplicate.dart';
@@ -9,6 +9,7 @@ part of 'document_duplicate.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -25,16 +26,21 @@ $DuplicateDocumentRequestCopyWith<DuplicateDocumentRequest> get copyWith => _$Du
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DuplicateDocumentRequest&&(identical(other.sourceDocumentId, sourceDocumentId) || other.sourceDocumentId == sourceDocumentId)&&(identical(other.title, title) || other.title == title)&&const DeepCollectionEquality().equals(other.destinationFolders, destinationFolders)&&(identical(other.destinationFolderId, destinationFolderId) || other.destinationFolderId == destinationFolderId));
+  final _this = this as DuplicateDocumentRequest;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DuplicateDocumentRequest&&(identical(other.sourceDocumentId, _this.sourceDocumentId) || other.sourceDocumentId == _this.sourceDocumentId)&&(identical(other.title, _this.title) || other.title == _this.title)&&const DeepCollectionEquality().equals(other.destinationFolders, _this.destinationFolders)&&(identical(other.destinationFolderId, _this.destinationFolderId) || other.destinationFolderId == _this.destinationFolderId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sourceDocumentId,title,const DeepCollectionEquality().hash(destinationFolders),destinationFolderId);
+int get hashCode {
+  final _this = this as DuplicateDocumentRequest;
+  return Object.hash(runtimeType,_this.sourceDocumentId,_this.title,const DeepCollectionEquality().hash(_this.destinationFolders),_this.destinationFolderId);
+}
 
 @override
 String toString() {
-  return 'DuplicateDocumentRequest(sourceDocumentId: $sourceDocumentId, title: $title, destinationFolders: $destinationFolders, destinationFolderId: $destinationFolderId)';
+  final _this = this as DuplicateDocumentRequest;
+  return 'DuplicateDocumentRequest(sourceDocumentId: ${_this.sourceDocumentId}, title: ${_this.title}, destinationFolders: ${_this.destinationFolders}, destinationFolderId: ${_this.destinationFolderId})';
 }
 
 
@@ -63,7 +69,7 @@ class _$DuplicateDocumentRequestCopyWithImpl<$Res>
 /// Create a copy of DuplicateDocumentRequest
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? sourceDocumentId = null,Object? title = null,Object? destinationFolders = null,Object? destinationFolderId = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(DuplicateDocumentRequest(
 sourceDocumentId: null == sourceDocumentId ? _self.sourceDocumentId : sourceDocumentId // ignore: cast_nullable_to_non_nullable
 as DocumentId,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,destinationFolders: null == destinationFolders ? _self.destinationFolders : destinationFolders // ignore: cast_nullable_to_non_nullable
@@ -209,7 +215,7 @@ return $default(_that.sourceDocumentId,_that.title,_that.destinationFolders,_tha
 
 
 class _DuplicateDocumentRequest implements DuplicateDocumentRequest {
-  const _DuplicateDocumentRequest({required this.sourceDocumentId, required this.title, required final  List<String> destinationFolders, this.destinationFolderId}): _destinationFolders = destinationFolders;
+  const _DuplicateDocumentRequest({required this.sourceDocumentId, required this.title, required  List<String> destinationFolders, this.destinationFolderId}): _destinationFolders = destinationFolders;
   
 
 @override final  DocumentId sourceDocumentId;
@@ -233,16 +239,18 @@ _$DuplicateDocumentRequestCopyWith<_DuplicateDocumentRequest> get copyWith => __
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DuplicateDocumentRequest&&(identical(other.sourceDocumentId, sourceDocumentId) || other.sourceDocumentId == sourceDocumentId)&&(identical(other.title, title) || other.title == title)&&const DeepCollectionEquality().equals(other._destinationFolders, _destinationFolders)&&(identical(other.destinationFolderId, destinationFolderId) || other.destinationFolderId == destinationFolderId));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DuplicateDocumentRequest&&(identical(other.sourceDocumentId, sourceDocumentId) || other.sourceDocumentId == sourceDocumentId)&&(identical(other.title, title) || other.title == title)&&const DeepCollectionEquality().equals(other.destinationFolders, _destinationFolders)&&(identical(other.destinationFolderId, destinationFolderId) || other.destinationFolderId == destinationFolderId));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sourceDocumentId,title,const DeepCollectionEquality().hash(_destinationFolders),destinationFolderId);
+int get hashCode {
+    return Object.hash(runtimeType,sourceDocumentId,title,const DeepCollectionEquality().hash(_destinationFolders),destinationFolderId);
+}
 
 @override
 String toString() {
-  return 'DuplicateDocumentRequest(sourceDocumentId: $sourceDocumentId, title: $title, destinationFolders: $destinationFolders, destinationFolderId: $destinationFolderId)';
+    return 'DuplicateDocumentRequest(sourceDocumentId: $sourceDocumentId, title: $title, destinationFolders: $destinationFolders, destinationFolderId: $destinationFolderId)';
 }
 
 
@@ -297,16 +305,21 @@ $DuplicateDocumentOutcomeCopyWith<DuplicateDocumentOutcome> get copyWith => _$Du
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is DuplicateDocumentOutcome&&(identical(other.document, document) || other.document == document));
+  final _this = this as DuplicateDocumentOutcome;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is DuplicateDocumentOutcome&&(identical(other.document, _this.document) || other.document == _this.document));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,document);
+int get hashCode {
+  final _this = this as DuplicateDocumentOutcome;
+  return Object.hash(runtimeType,_this.document);
+}
 
 @override
 String toString() {
-  return 'DuplicateDocumentOutcome(document: $document)';
+  final _this = this as DuplicateDocumentOutcome;
+  return 'DuplicateDocumentOutcome(document: ${_this.document})';
 }
 
 
@@ -335,7 +348,7 @@ class _$DuplicateDocumentOutcomeCopyWithImpl<$Res>
 /// Create a copy of DuplicateDocumentOutcome
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? document = null,}) {
-  return _then(_self.copyWith(
+  return _then(DuplicateDocumentOutcome(
 document: null == document ? _self.document : document // ignore: cast_nullable_to_non_nullable
 as Document,
   ));
@@ -502,16 +515,18 @@ _$DuplicateDocumentOutcomeCopyWith<_DuplicateDocumentOutcome> get copyWith => __
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _DuplicateDocumentOutcome&&(identical(other.document, document) || other.document == document));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _DuplicateDocumentOutcome&&(identical(other.document, document) || other.document == document));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,document);
+int get hashCode {
+    return Object.hash(runtimeType,document);
+}
 
 @override
 String toString() {
-  return 'DuplicateDocumentOutcome(document: $document)';
+    return 'DuplicateDocumentOutcome(document: $document)';
 }
 
 

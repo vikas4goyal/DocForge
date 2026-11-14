@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'pdf_quality.dart';
@@ -9,13 +9,14 @@ part of 'pdf_quality.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
 /// @nodoc
 mixin _$PdfQualityPercent {
 
- int get value;
+
 /// Create a copy of PdfQualityPercent
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -26,16 +27,21 @@ $PdfQualityPercentCopyWith<PdfQualityPercent> get copyWith => _$PdfQualityPercen
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfQualityPercent&&(identical(other.value, value) || other.value == value));
+  final _this = this as PdfQualityPercent;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfQualityPercent&&(identical(other.value, _this.value) || other.value == _this.value));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,value);
+int get hashCode {
+  final _this = this as PdfQualityPercent;
+  return Object.hash(runtimeType,_this.value);
+}
 
 @override
 String toString() {
-  return 'PdfQualityPercent(value: $value)';
+  final _this = this as PdfQualityPercent;
+  return 'PdfQualityPercent(value: ${_this.value})';
 }
 
 
@@ -214,16 +220,21 @@ $PageQualityPlanCopyWith<PageQualityPlan> get copyWith => _$PageQualityPlanCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PageQualityPlan&&(identical(other.documentQuality, documentQuality) || other.documentQuality == documentQuality)&&const DeepCollectionEquality().equals(other.pageOverrides, pageOverrides));
+  final _this = this as PageQualityPlan;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PageQualityPlan&&(identical(other.documentQuality, _this.documentQuality) || other.documentQuality == _this.documentQuality)&&const DeepCollectionEquality().equals(other.pageOverrides, _this.pageOverrides));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,documentQuality,const DeepCollectionEquality().hash(pageOverrides));
+int get hashCode {
+  final _this = this as PageQualityPlan;
+  return Object.hash(runtimeType,_this.documentQuality,const DeepCollectionEquality().hash(_this.pageOverrides));
+}
 
 @override
 String toString() {
-  return 'PageQualityPlan(documentQuality: $documentQuality, pageOverrides: $pageOverrides)';
+  final _this = this as PageQualityPlan;
+  return 'PageQualityPlan(documentQuality: ${_this.documentQuality}, pageOverrides: ${_this.pageOverrides})';
 }
 
 
@@ -252,7 +263,7 @@ class _$PageQualityPlanCopyWithImpl<$Res>
 /// Create a copy of PageQualityPlan
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? documentQuality = null,Object? pageOverrides = null,}) {
-  return _then(_self.copyWith(
+  return _then(PageQualityPlan(
 documentQuality: null == documentQuality ? _self.documentQuality : documentQuality // ignore: cast_nullable_to_non_nullable
 as PdfQualityPercent,pageOverrides: null == pageOverrides ? _self.pageOverrides : pageOverrides // ignore: cast_nullable_to_non_nullable
 as Map<String, PdfQualityPercent>,
@@ -405,7 +416,7 @@ return $default(_that.documentQuality,_that.pageOverrides);case _:
 @JsonSerializable()
 
 class _PageQualityPlan extends PageQualityPlan {
-  const _PageQualityPlan({required this.documentQuality, final  Map<String, PdfQualityPercent> pageOverrides = const <String, PdfQualityPercent>{}}): _pageOverrides = pageOverrides,super._();
+  const _PageQualityPlan({required this.documentQuality,  Map<String, PdfQualityPercent> pageOverrides = const <String, PdfQualityPercent>{}}): _pageOverrides = pageOverrides,super._();
   factory _PageQualityPlan.fromJson(Map<String, dynamic> json) => _$PageQualityPlanFromJson(json);
 
 @override final  PdfQualityPercent documentQuality;
@@ -430,16 +441,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageQualityPlan&&(identical(other.documentQuality, documentQuality) || other.documentQuality == documentQuality)&&const DeepCollectionEquality().equals(other._pageOverrides, _pageOverrides));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PageQualityPlan&&(identical(other.documentQuality, documentQuality) || other.documentQuality == documentQuality)&&const DeepCollectionEquality().equals(other.pageOverrides, _pageOverrides));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,documentQuality,const DeepCollectionEquality().hash(_pageOverrides));
+int get hashCode {
+    return Object.hash(runtimeType,documentQuality,const DeepCollectionEquality().hash(_pageOverrides));
+}
 
 @override
 String toString() {
-  return 'PageQualityPlan(documentQuality: $documentQuality, pageOverrides: $pageOverrides)';
+    return 'PageQualityPlan(documentQuality: $documentQuality, pageOverrides: $pageOverrides)';
 }
 
 

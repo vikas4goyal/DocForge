@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'trash.dart';
@@ -9,6 +9,7 @@ part of 'trash.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $TrashInventoryCopyWith<TrashInventory> get copyWith => _$TrashInventoryCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TrashInventory&&(identical(other.documentCount, documentCount) || other.documentCount == documentCount)&&(identical(other.otherFileCount, otherFileCount) || other.otherFileCount == otherFileCount)&&(identical(other.folderCount, folderCount) || other.folderCount == folderCount)&&(identical(other.sizeInBytes, sizeInBytes) || other.sizeInBytes == sizeInBytes));
+  final _this = this as TrashInventory;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TrashInventory&&(identical(other.documentCount, _this.documentCount) || other.documentCount == _this.documentCount)&&(identical(other.otherFileCount, _this.otherFileCount) || other.otherFileCount == _this.otherFileCount)&&(identical(other.folderCount, _this.folderCount) || other.folderCount == _this.folderCount)&&(identical(other.sizeInBytes, _this.sizeInBytes) || other.sizeInBytes == _this.sizeInBytes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,documentCount,otherFileCount,folderCount,sizeInBytes);
+int get hashCode {
+  final _this = this as TrashInventory;
+  return Object.hash(runtimeType,_this.documentCount,_this.otherFileCount,_this.folderCount,_this.sizeInBytes);
+}
 
 @override
 String toString() {
-  return 'TrashInventory(documentCount: $documentCount, otherFileCount: $otherFileCount, folderCount: $folderCount, sizeInBytes: $sizeInBytes)';
+  final _this = this as TrashInventory;
+  return 'TrashInventory(documentCount: ${_this.documentCount}, otherFileCount: ${_this.otherFileCount}, folderCount: ${_this.folderCount}, sizeInBytes: ${_this.sizeInBytes})';
 }
 
 
@@ -66,7 +72,7 @@ class _$TrashInventoryCopyWithImpl<$Res>
 /// Create a copy of TrashInventory
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? documentCount = null,Object? otherFileCount = null,Object? folderCount = null,Object? sizeInBytes = null,}) {
-  return _then(_self.copyWith(
+  return _then(TrashInventory(
 documentCount: null == documentCount ? _self.documentCount : documentCount // ignore: cast_nullable_to_non_nullable
 as int,otherFileCount: null == otherFileCount ? _self.otherFileCount : otherFileCount // ignore: cast_nullable_to_non_nullable
 as int,folderCount: null == folderCount ? _self.folderCount : folderCount // ignore: cast_nullable_to_non_nullable
@@ -233,16 +239,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TrashInventory&&(identical(other.documentCount, documentCount) || other.documentCount == documentCount)&&(identical(other.otherFileCount, otherFileCount) || other.otherFileCount == otherFileCount)&&(identical(other.folderCount, folderCount) || other.folderCount == folderCount)&&(identical(other.sizeInBytes, sizeInBytes) || other.sizeInBytes == sizeInBytes));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TrashInventory&&(identical(other.documentCount, documentCount) || other.documentCount == documentCount)&&(identical(other.otherFileCount, otherFileCount) || other.otherFileCount == otherFileCount)&&(identical(other.folderCount, folderCount) || other.folderCount == folderCount)&&(identical(other.sizeInBytes, sizeInBytes) || other.sizeInBytes == sizeInBytes));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,documentCount,otherFileCount,folderCount,sizeInBytes);
+int get hashCode {
+    return Object.hash(runtimeType,documentCount,otherFileCount,folderCount,sizeInBytes);
+}
 
 @override
 String toString() {
-  return 'TrashInventory(documentCount: $documentCount, otherFileCount: $otherFileCount, folderCount: $folderCount, sizeInBytes: $sizeInBytes)';
+    return 'TrashInventory(documentCount: $documentCount, otherFileCount: $otherFileCount, folderCount: $folderCount, sizeInBytes: $sizeInBytes)';
 }
 
 
@@ -300,16 +308,21 @@ $TrashEntryCopyWith<TrashEntry> get copyWith => _$TrashEntryCopyWithImpl<TrashEn
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is TrashEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.originalRelativePath, originalRelativePath) || other.originalRelativePath == originalRelativePath)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.inventory, inventory) || other.inventory == inventory)&&const DeepCollectionEquality().equals(other.documentIds, documentIds)&&const DeepCollectionEquality().equals(other.folderIds, folderIds));
+  final _this = this as TrashEntry;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is TrashEntry&&(identical(other.id, _this.id) || other.id == _this.id)&&(identical(other.kind, _this.kind) || other.kind == _this.kind)&&(identical(other.displayName, _this.displayName) || other.displayName == _this.displayName)&&(identical(other.originalRelativePath, _this.originalRelativePath) || other.originalRelativePath == _this.originalRelativePath)&&(identical(other.deletedAt, _this.deletedAt) || other.deletedAt == _this.deletedAt)&&(identical(other.expiresAt, _this.expiresAt) || other.expiresAt == _this.expiresAt)&&(identical(other.inventory, _this.inventory) || other.inventory == _this.inventory)&&const DeepCollectionEquality().equals(other.documentIds, _this.documentIds)&&const DeepCollectionEquality().equals(other.folderIds, _this.folderIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,displayName,originalRelativePath,deletedAt,expiresAt,inventory,const DeepCollectionEquality().hash(documentIds),const DeepCollectionEquality().hash(folderIds));
+int get hashCode {
+  final _this = this as TrashEntry;
+  return Object.hash(runtimeType,_this.id,_this.kind,_this.displayName,_this.originalRelativePath,_this.deletedAt,_this.expiresAt,_this.inventory,const DeepCollectionEquality().hash(_this.documentIds),const DeepCollectionEquality().hash(_this.folderIds));
+}
 
 @override
 String toString() {
-  return 'TrashEntry(id: $id, kind: $kind, displayName: $displayName, originalRelativePath: $originalRelativePath, deletedAt: $deletedAt, expiresAt: $expiresAt, inventory: $inventory, documentIds: $documentIds, folderIds: $folderIds)';
+  final _this = this as TrashEntry;
+  return 'TrashEntry(id: ${_this.id}, kind: ${_this.kind}, displayName: ${_this.displayName}, originalRelativePath: ${_this.originalRelativePath}, deletedAt: ${_this.deletedAt}, expiresAt: ${_this.expiresAt}, inventory: ${_this.inventory}, documentIds: ${_this.documentIds}, folderIds: ${_this.folderIds})';
 }
 
 
@@ -338,7 +351,7 @@ class _$TrashEntryCopyWithImpl<$Res>
 /// Create a copy of TrashEntry
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? kind = null,Object? displayName = null,Object? originalRelativePath = null,Object? deletedAt = null,Object? expiresAt = null,Object? inventory = null,Object? documentIds = null,Object? folderIds = null,}) {
-  return _then(_self.copyWith(
+  return _then(TrashEntry(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as TrashId,kind: null == kind ? _self.kind : kind // ignore: cast_nullable_to_non_nullable
 as TrashEntryKind,displayName: null == displayName ? _self.displayName : displayName // ignore: cast_nullable_to_non_nullable
@@ -498,7 +511,7 @@ return $default(_that.id,_that.kind,_that.displayName,_that.originalRelativePath
 @JsonSerializable()
 
 class _TrashEntry extends TrashEntry {
-  const _TrashEntry({required this.id, required this.kind, required this.displayName, required this.originalRelativePath, required this.deletedAt, required this.expiresAt, required this.inventory, final  List<DocumentId> documentIds = const <DocumentId>[], final  List<FolderId> folderIds = const <FolderId>[]}): _documentIds = documentIds,_folderIds = folderIds,super._();
+  const _TrashEntry({required this.id, required this.kind, required this.displayName, required this.originalRelativePath, required this.deletedAt, required this.expiresAt, required this.inventory,  List<DocumentId> documentIds = const <DocumentId>[],  List<FolderId> folderIds = const <FolderId>[]}): _documentIds = documentIds,_folderIds = folderIds,super._();
   factory _TrashEntry.fromJson(Map<String, dynamic> json) => _$TrashEntryFromJson(json);
 
 @override final  TrashId id;
@@ -536,16 +549,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _TrashEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.originalRelativePath, originalRelativePath) || other.originalRelativePath == originalRelativePath)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.inventory, inventory) || other.inventory == inventory)&&const DeepCollectionEquality().equals(other._documentIds, _documentIds)&&const DeepCollectionEquality().equals(other._folderIds, _folderIds));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _TrashEntry&&(identical(other.id, id) || other.id == id)&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.displayName, displayName) || other.displayName == displayName)&&(identical(other.originalRelativePath, originalRelativePath) || other.originalRelativePath == originalRelativePath)&&(identical(other.deletedAt, deletedAt) || other.deletedAt == deletedAt)&&(identical(other.expiresAt, expiresAt) || other.expiresAt == expiresAt)&&(identical(other.inventory, inventory) || other.inventory == inventory)&&const DeepCollectionEquality().equals(other.documentIds, _documentIds)&&const DeepCollectionEquality().equals(other.folderIds, _folderIds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,kind,displayName,originalRelativePath,deletedAt,expiresAt,inventory,const DeepCollectionEquality().hash(_documentIds),const DeepCollectionEquality().hash(_folderIds));
+int get hashCode {
+    return Object.hash(runtimeType,id,kind,displayName,originalRelativePath,deletedAt,expiresAt,inventory,const DeepCollectionEquality().hash(_documentIds),const DeepCollectionEquality().hash(_folderIds));
+}
 
 @override
 String toString() {
-  return 'TrashEntry(id: $id, kind: $kind, displayName: $displayName, originalRelativePath: $originalRelativePath, deletedAt: $deletedAt, expiresAt: $expiresAt, inventory: $inventory, documentIds: $documentIds, folderIds: $folderIds)';
+    return 'TrashEntry(id: $id, kind: $kind, displayName: $displayName, originalRelativePath: $originalRelativePath, deletedAt: $deletedAt, expiresAt: $expiresAt, inventory: $inventory, documentIds: $documentIds, folderIds: $folderIds)';
 }
 
 

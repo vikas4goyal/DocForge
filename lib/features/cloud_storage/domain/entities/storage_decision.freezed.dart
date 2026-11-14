@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'storage_decision.dart';
@@ -9,6 +9,7 @@ part of 'storage_decision.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$StorageDecision {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StorageDecision);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StorageDecision);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'StorageDecision()';
+    return 'StorageDecision()';
 }
 
 
@@ -202,16 +203,18 @@ $UseICloudCopyWith<UseICloud> get copyWith => _$UseICloudCopyWithImpl<UseICloud>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UseICloud&&(identical(other.writeMarker, writeMarker) || other.writeMarker == writeMarker));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is UseICloud&&(identical(other.writeMarker, writeMarker) || other.writeMarker == writeMarker));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,writeMarker);
+int get hashCode {
+    return Object.hash(runtimeType,writeMarker);
+}
 
 @override
 String toString() {
-  return 'StorageDecision.useICloud(writeMarker: $writeMarker)';
+    return 'StorageDecision.useICloud(writeMarker: $writeMarker)';
 }
 
 
@@ -268,16 +271,18 @@ $MigrateToICloudCopyWith<MigrateToICloud> get copyWith => _$MigrateToICloudCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is MigrateToICloud&&(identical(other.resume, resume) || other.resume == resume));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is MigrateToICloud&&(identical(other.resume, resume) || other.resume == resume));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,resume);
+int get hashCode {
+    return Object.hash(runtimeType,resume);
+}
 
 @override
 String toString() {
-  return 'StorageDecision.migrateToICloud(resume: $resume)';
+    return 'StorageDecision.migrateToICloud(resume: $resume)';
 }
 
 
@@ -334,16 +339,18 @@ $UseLocalCopyWith<UseLocal> get copyWith => _$UseLocalCopyWithImpl<UseLocal>(thi
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UseLocal&&(identical(other.reason, reason) || other.reason == reason));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is UseLocal&&(identical(other.reason, reason) || other.reason == reason));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,reason);
+int get hashCode {
+    return Object.hash(runtimeType,reason);
+}
 
 @override
 String toString() {
-  return 'StorageDecision.useLocal(reason: $reason)';
+    return 'StorageDecision.useLocal(reason: $reason)';
 }
 
 
@@ -400,16 +407,18 @@ $ICloudUnavailableCopyWith<ICloudUnavailable> get copyWith => _$ICloudUnavailabl
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ICloudUnavailable&&(identical(other.reason, reason) || other.reason == reason));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ICloudUnavailable&&(identical(other.reason, reason) || other.reason == reason));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,reason);
+int get hashCode {
+    return Object.hash(runtimeType,reason);
+}
 
 @override
 String toString() {
-  return 'StorageDecision.iCloudUnavailable(reason: $reason)';
+    return 'StorageDecision.iCloudUnavailable(reason: $reason)';
 }
 
 

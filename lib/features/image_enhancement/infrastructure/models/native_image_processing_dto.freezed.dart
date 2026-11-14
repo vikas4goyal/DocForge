@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'native_image_processing_dto.dart';
@@ -9,6 +9,7 @@ part of 'native_image_processing_dto.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -28,16 +29,21 @@ $NativeHomographyDtoCopyWith<NativeHomographyDto> get copyWith => _$NativeHomogr
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeHomographyDto&&(identical(other.h00, h00) || other.h00 == h00)&&(identical(other.h01, h01) || other.h01 == h01)&&(identical(other.h02, h02) || other.h02 == h02)&&(identical(other.h10, h10) || other.h10 == h10)&&(identical(other.h11, h11) || other.h11 == h11)&&(identical(other.h12, h12) || other.h12 == h12)&&(identical(other.h20, h20) || other.h20 == h20)&&(identical(other.h21, h21) || other.h21 == h21));
+  final _this = this as NativeHomographyDto;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeHomographyDto&&(identical(other.h00, _this.h00) || other.h00 == _this.h00)&&(identical(other.h01, _this.h01) || other.h01 == _this.h01)&&(identical(other.h02, _this.h02) || other.h02 == _this.h02)&&(identical(other.h10, _this.h10) || other.h10 == _this.h10)&&(identical(other.h11, _this.h11) || other.h11 == _this.h11)&&(identical(other.h12, _this.h12) || other.h12 == _this.h12)&&(identical(other.h20, _this.h20) || other.h20 == _this.h20)&&(identical(other.h21, _this.h21) || other.h21 == _this.h21));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,h00,h01,h02,h10,h11,h12,h20,h21);
+int get hashCode {
+  final _this = this as NativeHomographyDto;
+  return Object.hash(runtimeType,_this.h00,_this.h01,_this.h02,_this.h10,_this.h11,_this.h12,_this.h20,_this.h21);
+}
 
 @override
 String toString() {
-  return 'NativeHomographyDto(h00: $h00, h01: $h01, h02: $h02, h10: $h10, h11: $h11, h12: $h12, h20: $h20, h21: $h21)';
+  final _this = this as NativeHomographyDto;
+  return 'NativeHomographyDto(h00: ${_this.h00}, h01: ${_this.h01}, h02: ${_this.h02}, h10: ${_this.h10}, h11: ${_this.h11}, h12: ${_this.h12}, h20: ${_this.h20}, h21: ${_this.h21})';
 }
 
 
@@ -66,7 +72,7 @@ class _$NativeHomographyDtoCopyWithImpl<$Res>
 /// Create a copy of NativeHomographyDto
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? h00 = null,Object? h01 = null,Object? h02 = null,Object? h10 = null,Object? h11 = null,Object? h12 = null,Object? h20 = null,Object? h21 = null,}) {
-  return _then(_self.copyWith(
+  return _then(NativeHomographyDto(
 h00: null == h00 ? _self.h00 : h00 // ignore: cast_nullable_to_non_nullable
 as double,h01: null == h01 ? _self.h01 : h01 // ignore: cast_nullable_to_non_nullable
 as double,h02: null == h02 ? _self.h02 : h02 // ignore: cast_nullable_to_non_nullable
@@ -241,16 +247,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeHomographyDto&&(identical(other.h00, h00) || other.h00 == h00)&&(identical(other.h01, h01) || other.h01 == h01)&&(identical(other.h02, h02) || other.h02 == h02)&&(identical(other.h10, h10) || other.h10 == h10)&&(identical(other.h11, h11) || other.h11 == h11)&&(identical(other.h12, h12) || other.h12 == h12)&&(identical(other.h20, h20) || other.h20 == h20)&&(identical(other.h21, h21) || other.h21 == h21));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeHomographyDto&&(identical(other.h00, h00) || other.h00 == h00)&&(identical(other.h01, h01) || other.h01 == h01)&&(identical(other.h02, h02) || other.h02 == h02)&&(identical(other.h10, h10) || other.h10 == h10)&&(identical(other.h11, h11) || other.h11 == h11)&&(identical(other.h12, h12) || other.h12 == h12)&&(identical(other.h20, h20) || other.h20 == h20)&&(identical(other.h21, h21) || other.h21 == h21));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,h00,h01,h02,h10,h11,h12,h20,h21);
+int get hashCode {
+    return Object.hash(runtimeType,h00,h01,h02,h10,h11,h12,h20,h21);
+}
 
 @override
 String toString() {
-  return 'NativeHomographyDto(h00: $h00, h01: $h01, h02: $h02, h10: $h10, h11: $h11, h12: $h12, h20: $h20, h21: $h21)';
+    return 'NativeHomographyDto(h00: $h00, h01: $h01, h02: $h02, h10: $h10, h11: $h11, h12: $h12, h20: $h20, h21: $h21)';
 }
 
 
@@ -312,16 +320,21 @@ $NativeEnhancementSettingsDtoCopyWith<NativeEnhancementSettingsDto> get copyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeEnhancementSettingsDto&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.brightness, brightness) || other.brightness == brightness)&&(identical(other.contrast, contrast) || other.contrast == contrast)&&(identical(other.sharpen, sharpen) || other.sharpen == sharpen)&&(identical(other.shadowRemoval, shadowRemoval) || other.shadowRemoval == shadowRemoval));
+  final _this = this as NativeEnhancementSettingsDto;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeEnhancementSettingsDto&&(identical(other.filter, _this.filter) || other.filter == _this.filter)&&(identical(other.brightness, _this.brightness) || other.brightness == _this.brightness)&&(identical(other.contrast, _this.contrast) || other.contrast == _this.contrast)&&(identical(other.sharpen, _this.sharpen) || other.sharpen == _this.sharpen)&&(identical(other.shadowRemoval, _this.shadowRemoval) || other.shadowRemoval == _this.shadowRemoval));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,filter,brightness,contrast,sharpen,shadowRemoval);
+int get hashCode {
+  final _this = this as NativeEnhancementSettingsDto;
+  return Object.hash(runtimeType,_this.filter,_this.brightness,_this.contrast,_this.sharpen,_this.shadowRemoval);
+}
 
 @override
 String toString() {
-  return 'NativeEnhancementSettingsDto(filter: $filter, brightness: $brightness, contrast: $contrast, sharpen: $sharpen, shadowRemoval: $shadowRemoval)';
+  final _this = this as NativeEnhancementSettingsDto;
+  return 'NativeEnhancementSettingsDto(filter: ${_this.filter}, brightness: ${_this.brightness}, contrast: ${_this.contrast}, sharpen: ${_this.sharpen}, shadowRemoval: ${_this.shadowRemoval})';
 }
 
 
@@ -350,7 +363,7 @@ class _$NativeEnhancementSettingsDtoCopyWithImpl<$Res>
 /// Create a copy of NativeEnhancementSettingsDto
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? filter = null,Object? brightness = null,Object? contrast = null,Object? sharpen = null,Object? shadowRemoval = null,}) {
-  return _then(_self.copyWith(
+  return _then(NativeEnhancementSettingsDto(
 filter: null == filter ? _self.filter : filter // ignore: cast_nullable_to_non_nullable
 as EnhancementFilter,brightness: null == brightness ? _self.brightness : brightness // ignore: cast_nullable_to_non_nullable
 as double,contrast: null == contrast ? _self.contrast : contrast // ignore: cast_nullable_to_non_nullable
@@ -519,16 +532,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeEnhancementSettingsDto&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.brightness, brightness) || other.brightness == brightness)&&(identical(other.contrast, contrast) || other.contrast == contrast)&&(identical(other.sharpen, sharpen) || other.sharpen == sharpen)&&(identical(other.shadowRemoval, shadowRemoval) || other.shadowRemoval == shadowRemoval));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeEnhancementSettingsDto&&(identical(other.filter, filter) || other.filter == filter)&&(identical(other.brightness, brightness) || other.brightness == brightness)&&(identical(other.contrast, contrast) || other.contrast == contrast)&&(identical(other.sharpen, sharpen) || other.sharpen == sharpen)&&(identical(other.shadowRemoval, shadowRemoval) || other.shadowRemoval == shadowRemoval));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,filter,brightness,contrast,sharpen,shadowRemoval);
+int get hashCode {
+    return Object.hash(runtimeType,filter,brightness,contrast,sharpen,shadowRemoval);
+}
 
 @override
 String toString() {
-  return 'NativeEnhancementSettingsDto(filter: $filter, brightness: $brightness, contrast: $contrast, sharpen: $sharpen, shadowRemoval: $shadowRemoval)';
+    return 'NativeEnhancementSettingsDto(filter: $filter, brightness: $brightness, contrast: $contrast, sharpen: $sharpen, shadowRemoval: $shadowRemoval)';
 }
 
 
@@ -587,16 +602,21 @@ $NativeImageRenderRequestDtoCopyWith<NativeImageRenderRequestDto> get copyWith =
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeImageRenderRequestDto&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.destinationPath, destinationPath) || other.destinationPath == destinationPath)&&(identical(other.scale, scale) || other.scale == scale)&&(identical(other.enhancement, enhancement) || other.enhancement == enhancement)&&(identical(other.jpegQuality, jpegQuality) || other.jpegQuality == jpegQuality)&&(identical(other.colourPipelineVersion, colourPipelineVersion) || other.colourPipelineVersion == colourPipelineVersion)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.outputWidth, outputWidth) || other.outputWidth == outputWidth)&&(identical(other.outputHeight, outputHeight) || other.outputHeight == outputHeight)&&(identical(other.maximumPreviewDimension, maximumPreviewDimension) || other.maximumPreviewDimension == maximumPreviewDimension));
+  final _this = this as NativeImageRenderRequestDto;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeImageRenderRequestDto&&(identical(other.schemaVersion, _this.schemaVersion) || other.schemaVersion == _this.schemaVersion)&&(identical(other.requestId, _this.requestId) || other.requestId == _this.requestId)&&(identical(other.sourcePath, _this.sourcePath) || other.sourcePath == _this.sourcePath)&&(identical(other.destinationPath, _this.destinationPath) || other.destinationPath == _this.destinationPath)&&(identical(other.scale, _this.scale) || other.scale == _this.scale)&&(identical(other.enhancement, _this.enhancement) || other.enhancement == _this.enhancement)&&(identical(other.jpegQuality, _this.jpegQuality) || other.jpegQuality == _this.jpegQuality)&&(identical(other.colourPipelineVersion, _this.colourPipelineVersion) || other.colourPipelineVersion == _this.colourPipelineVersion)&&(identical(other.transform, _this.transform) || other.transform == _this.transform)&&(identical(other.outputWidth, _this.outputWidth) || other.outputWidth == _this.outputWidth)&&(identical(other.outputHeight, _this.outputHeight) || other.outputHeight == _this.outputHeight)&&(identical(other.maximumPreviewDimension, _this.maximumPreviewDimension) || other.maximumPreviewDimension == _this.maximumPreviewDimension));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,schemaVersion,requestId,sourcePath,destinationPath,scale,enhancement,jpegQuality,colourPipelineVersion,transform,outputWidth,outputHeight,maximumPreviewDimension);
+int get hashCode {
+  final _this = this as NativeImageRenderRequestDto;
+  return Object.hash(runtimeType,_this.schemaVersion,_this.requestId,_this.sourcePath,_this.destinationPath,_this.scale,_this.enhancement,_this.jpegQuality,_this.colourPipelineVersion,_this.transform,_this.outputWidth,_this.outputHeight,_this.maximumPreviewDimension);
+}
 
 @override
 String toString() {
-  return 'NativeImageRenderRequestDto(schemaVersion: $schemaVersion, requestId: $requestId, sourcePath: $sourcePath, destinationPath: $destinationPath, scale: $scale, enhancement: $enhancement, jpegQuality: $jpegQuality, colourPipelineVersion: $colourPipelineVersion, transform: $transform, outputWidth: $outputWidth, outputHeight: $outputHeight, maximumPreviewDimension: $maximumPreviewDimension)';
+  final _this = this as NativeImageRenderRequestDto;
+  return 'NativeImageRenderRequestDto(schemaVersion: ${_this.schemaVersion}, requestId: ${_this.requestId}, sourcePath: ${_this.sourcePath}, destinationPath: ${_this.destinationPath}, scale: ${_this.scale}, enhancement: ${_this.enhancement}, jpegQuality: ${_this.jpegQuality}, colourPipelineVersion: ${_this.colourPipelineVersion}, transform: ${_this.transform}, outputWidth: ${_this.outputWidth}, outputHeight: ${_this.outputHeight}, maximumPreviewDimension: ${_this.maximumPreviewDimension})';
 }
 
 
@@ -625,7 +645,7 @@ class _$NativeImageRenderRequestDtoCopyWithImpl<$Res>
 /// Create a copy of NativeImageRenderRequestDto
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? schemaVersion = null,Object? requestId = null,Object? sourcePath = null,Object? destinationPath = null,Object? scale = null,Object? enhancement = null,Object? jpegQuality = null,Object? colourPipelineVersion = null,Object? transform = freezed,Object? outputWidth = freezed,Object? outputHeight = freezed,Object? maximumPreviewDimension = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(NativeImageRenderRequestDto(
 schemaVersion: null == schemaVersion ? _self.schemaVersion : schemaVersion // ignore: cast_nullable_to_non_nullable
 as int,requestId: null == requestId ? _self.requestId : requestId // ignore: cast_nullable_to_non_nullable
 as String,sourcePath: null == sourcePath ? _self.sourcePath : sourcePath // ignore: cast_nullable_to_non_nullable
@@ -829,16 +849,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeImageRenderRequestDto&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.destinationPath, destinationPath) || other.destinationPath == destinationPath)&&(identical(other.scale, scale) || other.scale == scale)&&(identical(other.enhancement, enhancement) || other.enhancement == enhancement)&&(identical(other.jpegQuality, jpegQuality) || other.jpegQuality == jpegQuality)&&(identical(other.colourPipelineVersion, colourPipelineVersion) || other.colourPipelineVersion == colourPipelineVersion)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.outputWidth, outputWidth) || other.outputWidth == outputWidth)&&(identical(other.outputHeight, outputHeight) || other.outputHeight == outputHeight)&&(identical(other.maximumPreviewDimension, maximumPreviewDimension) || other.maximumPreviewDimension == maximumPreviewDimension));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeImageRenderRequestDto&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.requestId, requestId) || other.requestId == requestId)&&(identical(other.sourcePath, sourcePath) || other.sourcePath == sourcePath)&&(identical(other.destinationPath, destinationPath) || other.destinationPath == destinationPath)&&(identical(other.scale, scale) || other.scale == scale)&&(identical(other.enhancement, enhancement) || other.enhancement == enhancement)&&(identical(other.jpegQuality, jpegQuality) || other.jpegQuality == jpegQuality)&&(identical(other.colourPipelineVersion, colourPipelineVersion) || other.colourPipelineVersion == colourPipelineVersion)&&(identical(other.transform, transform) || other.transform == transform)&&(identical(other.outputWidth, outputWidth) || other.outputWidth == outputWidth)&&(identical(other.outputHeight, outputHeight) || other.outputHeight == outputHeight)&&(identical(other.maximumPreviewDimension, maximumPreviewDimension) || other.maximumPreviewDimension == maximumPreviewDimension));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,schemaVersion,requestId,sourcePath,destinationPath,scale,enhancement,jpegQuality,colourPipelineVersion,transform,outputWidth,outputHeight,maximumPreviewDimension);
+int get hashCode {
+    return Object.hash(runtimeType,schemaVersion,requestId,sourcePath,destinationPath,scale,enhancement,jpegQuality,colourPipelineVersion,transform,outputWidth,outputHeight,maximumPreviewDimension);
+}
 
 @override
 String toString() {
-  return 'NativeImageRenderRequestDto(schemaVersion: $schemaVersion, requestId: $requestId, sourcePath: $sourcePath, destinationPath: $destinationPath, scale: $scale, enhancement: $enhancement, jpegQuality: $jpegQuality, colourPipelineVersion: $colourPipelineVersion, transform: $transform, outputWidth: $outputWidth, outputHeight: $outputHeight, maximumPreviewDimension: $maximumPreviewDimension)';
+    return 'NativeImageRenderRequestDto(schemaVersion: $schemaVersion, requestId: $requestId, sourcePath: $sourcePath, destinationPath: $destinationPath, scale: $scale, enhancement: $enhancement, jpegQuality: $jpegQuality, colourPipelineVersion: $colourPipelineVersion, transform: $transform, outputWidth: $outputWidth, outputHeight: $outputHeight, maximumPreviewDimension: $maximumPreviewDimension)';
 }
 
 
@@ -925,16 +947,21 @@ $NativeImageProcessingCapabilityDtoCopyWith<NativeImageProcessingCapabilityDto> 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeImageProcessingCapabilityDto&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.backend, backend) || other.backend == backend)&&(identical(other.isSupported, isSupported) || other.isSupported == isSupported)&&(identical(other.maximumTextureSize, maximumTextureSize) || other.maximumTextureSize == maximumTextureSize)&&(identical(other.supportsTiling, supportsTiling) || other.supportsTiling == supportsTiling));
+  final _this = this as NativeImageProcessingCapabilityDto;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeImageProcessingCapabilityDto&&(identical(other.schemaVersion, _this.schemaVersion) || other.schemaVersion == _this.schemaVersion)&&(identical(other.backend, _this.backend) || other.backend == _this.backend)&&(identical(other.isSupported, _this.isSupported) || other.isSupported == _this.isSupported)&&(identical(other.maximumTextureSize, _this.maximumTextureSize) || other.maximumTextureSize == _this.maximumTextureSize)&&(identical(other.supportsTiling, _this.supportsTiling) || other.supportsTiling == _this.supportsTiling));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,schemaVersion,backend,isSupported,maximumTextureSize,supportsTiling);
+int get hashCode {
+  final _this = this as NativeImageProcessingCapabilityDto;
+  return Object.hash(runtimeType,_this.schemaVersion,_this.backend,_this.isSupported,_this.maximumTextureSize,_this.supportsTiling);
+}
 
 @override
 String toString() {
-  return 'NativeImageProcessingCapabilityDto(schemaVersion: $schemaVersion, backend: $backend, isSupported: $isSupported, maximumTextureSize: $maximumTextureSize, supportsTiling: $supportsTiling)';
+  final _this = this as NativeImageProcessingCapabilityDto;
+  return 'NativeImageProcessingCapabilityDto(schemaVersion: ${_this.schemaVersion}, backend: ${_this.backend}, isSupported: ${_this.isSupported}, maximumTextureSize: ${_this.maximumTextureSize}, supportsTiling: ${_this.supportsTiling})';
 }
 
 
@@ -963,7 +990,7 @@ class _$NativeImageProcessingCapabilityDtoCopyWithImpl<$Res>
 /// Create a copy of NativeImageProcessingCapabilityDto
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? schemaVersion = null,Object? backend = null,Object? isSupported = null,Object? maximumTextureSize = null,Object? supportsTiling = null,}) {
-  return _then(_self.copyWith(
+  return _then(NativeImageProcessingCapabilityDto(
 schemaVersion: null == schemaVersion ? _self.schemaVersion : schemaVersion // ignore: cast_nullable_to_non_nullable
 as int,backend: null == backend ? _self.backend : backend // ignore: cast_nullable_to_non_nullable
 as ImageProcessingBackendKind,isSupported: null == isSupported ? _self.isSupported : isSupported // ignore: cast_nullable_to_non_nullable
@@ -1132,16 +1159,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeImageProcessingCapabilityDto&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.backend, backend) || other.backend == backend)&&(identical(other.isSupported, isSupported) || other.isSupported == isSupported)&&(identical(other.maximumTextureSize, maximumTextureSize) || other.maximumTextureSize == maximumTextureSize)&&(identical(other.supportsTiling, supportsTiling) || other.supportsTiling == supportsTiling));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeImageProcessingCapabilityDto&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.backend, backend) || other.backend == backend)&&(identical(other.isSupported, isSupported) || other.isSupported == isSupported)&&(identical(other.maximumTextureSize, maximumTextureSize) || other.maximumTextureSize == maximumTextureSize)&&(identical(other.supportsTiling, supportsTiling) || other.supportsTiling == supportsTiling));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,schemaVersion,backend,isSupported,maximumTextureSize,supportsTiling);
+int get hashCode {
+    return Object.hash(runtimeType,schemaVersion,backend,isSupported,maximumTextureSize,supportsTiling);
+}
 
 @override
 String toString() {
-  return 'NativeImageProcessingCapabilityDto(schemaVersion: $schemaVersion, backend: $backend, isSupported: $isSupported, maximumTextureSize: $maximumTextureSize, supportsTiling: $supportsTiling)';
+    return 'NativeImageProcessingCapabilityDto(schemaVersion: $schemaVersion, backend: $backend, isSupported: $isSupported, maximumTextureSize: $maximumTextureSize, supportsTiling: $supportsTiling)';
 }
 
 
@@ -1200,16 +1229,21 @@ $NativeImageProcessingTimingsDtoCopyWith<NativeImageProcessingTimingsDto> get co
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeImageProcessingTimingsDto&&(identical(other.decodeMicroseconds, decodeMicroseconds) || other.decodeMicroseconds == decodeMicroseconds)&&(identical(other.transformMicroseconds, transformMicroseconds) || other.transformMicroseconds == transformMicroseconds)&&(identical(other.encodeMicroseconds, encodeMicroseconds) || other.encodeMicroseconds == encodeMicroseconds)&&(identical(other.totalMicroseconds, totalMicroseconds) || other.totalMicroseconds == totalMicroseconds));
+  final _this = this as NativeImageProcessingTimingsDto;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeImageProcessingTimingsDto&&(identical(other.decodeMicroseconds, _this.decodeMicroseconds) || other.decodeMicroseconds == _this.decodeMicroseconds)&&(identical(other.transformMicroseconds, _this.transformMicroseconds) || other.transformMicroseconds == _this.transformMicroseconds)&&(identical(other.encodeMicroseconds, _this.encodeMicroseconds) || other.encodeMicroseconds == _this.encodeMicroseconds)&&(identical(other.totalMicroseconds, _this.totalMicroseconds) || other.totalMicroseconds == _this.totalMicroseconds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,decodeMicroseconds,transformMicroseconds,encodeMicroseconds,totalMicroseconds);
+int get hashCode {
+  final _this = this as NativeImageProcessingTimingsDto;
+  return Object.hash(runtimeType,_this.decodeMicroseconds,_this.transformMicroseconds,_this.encodeMicroseconds,_this.totalMicroseconds);
+}
 
 @override
 String toString() {
-  return 'NativeImageProcessingTimingsDto(decodeMicroseconds: $decodeMicroseconds, transformMicroseconds: $transformMicroseconds, encodeMicroseconds: $encodeMicroseconds, totalMicroseconds: $totalMicroseconds)';
+  final _this = this as NativeImageProcessingTimingsDto;
+  return 'NativeImageProcessingTimingsDto(decodeMicroseconds: ${_this.decodeMicroseconds}, transformMicroseconds: ${_this.transformMicroseconds}, encodeMicroseconds: ${_this.encodeMicroseconds}, totalMicroseconds: ${_this.totalMicroseconds})';
 }
 
 
@@ -1238,7 +1272,7 @@ class _$NativeImageProcessingTimingsDtoCopyWithImpl<$Res>
 /// Create a copy of NativeImageProcessingTimingsDto
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? decodeMicroseconds = null,Object? transformMicroseconds = null,Object? encodeMicroseconds = null,Object? totalMicroseconds = null,}) {
-  return _then(_self.copyWith(
+  return _then(NativeImageProcessingTimingsDto(
 decodeMicroseconds: null == decodeMicroseconds ? _self.decodeMicroseconds : decodeMicroseconds // ignore: cast_nullable_to_non_nullable
 as int,transformMicroseconds: null == transformMicroseconds ? _self.transformMicroseconds : transformMicroseconds // ignore: cast_nullable_to_non_nullable
 as int,encodeMicroseconds: null == encodeMicroseconds ? _self.encodeMicroseconds : encodeMicroseconds // ignore: cast_nullable_to_non_nullable
@@ -1405,16 +1439,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeImageProcessingTimingsDto&&(identical(other.decodeMicroseconds, decodeMicroseconds) || other.decodeMicroseconds == decodeMicroseconds)&&(identical(other.transformMicroseconds, transformMicroseconds) || other.transformMicroseconds == transformMicroseconds)&&(identical(other.encodeMicroseconds, encodeMicroseconds) || other.encodeMicroseconds == encodeMicroseconds)&&(identical(other.totalMicroseconds, totalMicroseconds) || other.totalMicroseconds == totalMicroseconds));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeImageProcessingTimingsDto&&(identical(other.decodeMicroseconds, decodeMicroseconds) || other.decodeMicroseconds == decodeMicroseconds)&&(identical(other.transformMicroseconds, transformMicroseconds) || other.transformMicroseconds == transformMicroseconds)&&(identical(other.encodeMicroseconds, encodeMicroseconds) || other.encodeMicroseconds == encodeMicroseconds)&&(identical(other.totalMicroseconds, totalMicroseconds) || other.totalMicroseconds == totalMicroseconds));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,decodeMicroseconds,transformMicroseconds,encodeMicroseconds,totalMicroseconds);
+int get hashCode {
+    return Object.hash(runtimeType,decodeMicroseconds,transformMicroseconds,encodeMicroseconds,totalMicroseconds);
+}
 
 @override
 String toString() {
-  return 'NativeImageProcessingTimingsDto(decodeMicroseconds: $decodeMicroseconds, transformMicroseconds: $transformMicroseconds, encodeMicroseconds: $encodeMicroseconds, totalMicroseconds: $totalMicroseconds)';
+    return 'NativeImageProcessingTimingsDto(decodeMicroseconds: $decodeMicroseconds, transformMicroseconds: $transformMicroseconds, encodeMicroseconds: $encodeMicroseconds, totalMicroseconds: $totalMicroseconds)';
 }
 
 
@@ -1472,16 +1508,21 @@ $NativeImageProcessingResultDtoCopyWith<NativeImageProcessingResultDto> get copy
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeImageProcessingResultDto&&(identical(other.destinationPath, destinationPath) || other.destinationPath == destinationPath)&&(identical(other.sourceWidth, sourceWidth) || other.sourceWidth == sourceWidth)&&(identical(other.sourceHeight, sourceHeight) || other.sourceHeight == sourceHeight)&&(identical(other.outputWidth, outputWidth) || other.outputWidth == outputWidth)&&(identical(other.outputHeight, outputHeight) || other.outputHeight == outputHeight)&&(identical(other.backend, backend) || other.backend == backend)&&(identical(other.timings, timings) || other.timings == timings));
+  final _this = this as NativeImageProcessingResultDto;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeImageProcessingResultDto&&(identical(other.destinationPath, _this.destinationPath) || other.destinationPath == _this.destinationPath)&&(identical(other.sourceWidth, _this.sourceWidth) || other.sourceWidth == _this.sourceWidth)&&(identical(other.sourceHeight, _this.sourceHeight) || other.sourceHeight == _this.sourceHeight)&&(identical(other.outputWidth, _this.outputWidth) || other.outputWidth == _this.outputWidth)&&(identical(other.outputHeight, _this.outputHeight) || other.outputHeight == _this.outputHeight)&&(identical(other.backend, _this.backend) || other.backend == _this.backend)&&(identical(other.timings, _this.timings) || other.timings == _this.timings));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,destinationPath,sourceWidth,sourceHeight,outputWidth,outputHeight,backend,timings);
+int get hashCode {
+  final _this = this as NativeImageProcessingResultDto;
+  return Object.hash(runtimeType,_this.destinationPath,_this.sourceWidth,_this.sourceHeight,_this.outputWidth,_this.outputHeight,_this.backend,_this.timings);
+}
 
 @override
 String toString() {
-  return 'NativeImageProcessingResultDto(destinationPath: $destinationPath, sourceWidth: $sourceWidth, sourceHeight: $sourceHeight, outputWidth: $outputWidth, outputHeight: $outputHeight, backend: $backend, timings: $timings)';
+  final _this = this as NativeImageProcessingResultDto;
+  return 'NativeImageProcessingResultDto(destinationPath: ${_this.destinationPath}, sourceWidth: ${_this.sourceWidth}, sourceHeight: ${_this.sourceHeight}, outputWidth: ${_this.outputWidth}, outputHeight: ${_this.outputHeight}, backend: ${_this.backend}, timings: ${_this.timings})';
 }
 
 
@@ -1510,7 +1551,7 @@ class _$NativeImageProcessingResultDtoCopyWithImpl<$Res>
 /// Create a copy of NativeImageProcessingResultDto
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? destinationPath = null,Object? sourceWidth = null,Object? sourceHeight = null,Object? outputWidth = null,Object? outputHeight = null,Object? backend = null,Object? timings = null,}) {
-  return _then(_self.copyWith(
+  return _then(NativeImageProcessingResultDto(
 destinationPath: null == destinationPath ? _self.destinationPath : destinationPath // ignore: cast_nullable_to_non_nullable
 as String,sourceWidth: null == sourceWidth ? _self.sourceWidth : sourceWidth // ignore: cast_nullable_to_non_nullable
 as int,sourceHeight: null == sourceHeight ? _self.sourceHeight : sourceHeight // ignore: cast_nullable_to_non_nullable
@@ -1692,16 +1733,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeImageProcessingResultDto&&(identical(other.destinationPath, destinationPath) || other.destinationPath == destinationPath)&&(identical(other.sourceWidth, sourceWidth) || other.sourceWidth == sourceWidth)&&(identical(other.sourceHeight, sourceHeight) || other.sourceHeight == sourceHeight)&&(identical(other.outputWidth, outputWidth) || other.outputWidth == outputWidth)&&(identical(other.outputHeight, outputHeight) || other.outputHeight == outputHeight)&&(identical(other.backend, backend) || other.backend == backend)&&(identical(other.timings, timings) || other.timings == timings));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeImageProcessingResultDto&&(identical(other.destinationPath, destinationPath) || other.destinationPath == destinationPath)&&(identical(other.sourceWidth, sourceWidth) || other.sourceWidth == sourceWidth)&&(identical(other.sourceHeight, sourceHeight) || other.sourceHeight == sourceHeight)&&(identical(other.outputWidth, outputWidth) || other.outputWidth == outputWidth)&&(identical(other.outputHeight, outputHeight) || other.outputHeight == outputHeight)&&(identical(other.backend, backend) || other.backend == backend)&&(identical(other.timings, timings) || other.timings == timings));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,destinationPath,sourceWidth,sourceHeight,outputWidth,outputHeight,backend,timings);
+int get hashCode {
+    return Object.hash(runtimeType,destinationPath,sourceWidth,sourceHeight,outputWidth,outputHeight,backend,timings);
+}
 
 @override
 String toString() {
-  return 'NativeImageProcessingResultDto(destinationPath: $destinationPath, sourceWidth: $sourceWidth, sourceHeight: $sourceHeight, outputWidth: $outputWidth, outputHeight: $outputHeight, backend: $backend, timings: $timings)';
+    return 'NativeImageProcessingResultDto(destinationPath: $destinationPath, sourceWidth: $sourceWidth, sourceHeight: $sourceHeight, outputWidth: $outputWidth, outputHeight: $outputHeight, backend: $backend, timings: $timings)';
 }
 
 
@@ -1771,16 +1814,21 @@ $NativeImageProcessingResponseDtoCopyWith<NativeImageProcessingResponseDto> get 
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeImageProcessingResponseDto&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.result, result) || other.result == result)&&(identical(other.failureKind, failureKind) || other.failureKind == failureKind)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+  final _this = this as NativeImageProcessingResponseDto;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is NativeImageProcessingResponseDto&&(identical(other.schemaVersion, _this.schemaVersion) || other.schemaVersion == _this.schemaVersion)&&(identical(other.result, _this.result) || other.result == _this.result)&&(identical(other.failureKind, _this.failureKind) || other.failureKind == _this.failureKind)&&(identical(other.debugDetail, _this.debugDetail) || other.debugDetail == _this.debugDetail));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,schemaVersion,result,failureKind,debugDetail);
+int get hashCode {
+  final _this = this as NativeImageProcessingResponseDto;
+  return Object.hash(runtimeType,_this.schemaVersion,_this.result,_this.failureKind,_this.debugDetail);
+}
 
 @override
 String toString() {
-  return 'NativeImageProcessingResponseDto(schemaVersion: $schemaVersion, result: $result, failureKind: $failureKind, debugDetail: $debugDetail)';
+  final _this = this as NativeImageProcessingResponseDto;
+  return 'NativeImageProcessingResponseDto(schemaVersion: ${_this.schemaVersion}, result: ${_this.result}, failureKind: ${_this.failureKind}, debugDetail: ${_this.debugDetail})';
 }
 
 
@@ -1809,7 +1857,7 @@ class _$NativeImageProcessingResponseDtoCopyWithImpl<$Res>
 /// Create a copy of NativeImageProcessingResponseDto
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? schemaVersion = null,Object? result = freezed,Object? failureKind = freezed,Object? debugDetail = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(NativeImageProcessingResponseDto(
 schemaVersion: null == schemaVersion ? _self.schemaVersion : schemaVersion // ignore: cast_nullable_to_non_nullable
 as int,result: freezed == result ? _self.result : result // ignore: cast_nullable_to_non_nullable
 as NativeImageProcessingResultDto?,failureKind: freezed == failureKind ? _self.failureKind : failureKind // ignore: cast_nullable_to_non_nullable
@@ -1988,16 +2036,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeImageProcessingResponseDto&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.result, result) || other.result == result)&&(identical(other.failureKind, failureKind) || other.failureKind == failureKind)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _NativeImageProcessingResponseDto&&(identical(other.schemaVersion, schemaVersion) || other.schemaVersion == schemaVersion)&&(identical(other.result, result) || other.result == result)&&(identical(other.failureKind, failureKind) || other.failureKind == failureKind)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,schemaVersion,result,failureKind,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,schemaVersion,result,failureKind,debugDetail);
+}
 
 @override
 String toString() {
-  return 'NativeImageProcessingResponseDto(schemaVersion: $schemaVersion, result: $result, failureKind: $failureKind, debugDetail: $debugDetail)';
+    return 'NativeImageProcessingResponseDto(schemaVersion: $schemaVersion, result: $result, failureKind: $failureKind, debugDetail: $debugDetail)';
 }
 
 

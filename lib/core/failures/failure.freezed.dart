@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'failure.dart';
@@ -9,6 +9,7 @@ part of 'failure.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$Failure {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is Failure);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is Failure);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'Failure()';
+    return 'Failure()';
 }
 
 
@@ -264,16 +265,18 @@ $CameraFailureCopyWith<CameraFailure> get copyWith => _$CameraFailureCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CameraFailure&&(identical(other.inUseByAnotherApp, inUseByAnotherApp) || other.inUseByAnotherApp == inUseByAnotherApp)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CameraFailure&&(identical(other.inUseByAnotherApp, inUseByAnotherApp) || other.inUseByAnotherApp == inUseByAnotherApp)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,inUseByAnotherApp,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,inUseByAnotherApp,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.camera(inUseByAnotherApp: $inUseByAnotherApp, debugDetail: $debugDetail)';
+    return 'Failure.camera(inUseByAnotherApp: $inUseByAnotherApp, debugDetail: $debugDetail)';
 }
 
 
@@ -336,16 +339,18 @@ $PermissionFailureCopyWith<PermissionFailure> get copyWith => _$PermissionFailur
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PermissionFailure&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.permanentlyDenied, permanentlyDenied) || other.permanentlyDenied == permanentlyDenied)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PermissionFailure&&(identical(other.kind, kind) || other.kind == kind)&&(identical(other.permanentlyDenied, permanentlyDenied) || other.permanentlyDenied == permanentlyDenied)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,kind,permanentlyDenied,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,kind,permanentlyDenied,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.permission(kind: $kind, permanentlyDenied: $permanentlyDenied, debugDetail: $debugDetail)';
+    return 'Failure.permission(kind: $kind, permanentlyDenied: $permanentlyDenied, debugDetail: $debugDetail)';
 }
 
 
@@ -404,16 +409,18 @@ $PdfFailureCopyWith<PdfFailure> get copyWith => _$PdfFailureCopyWithImpl<PdfFail
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.pdf(debugDetail: $debugDetail)';
+    return 'Failure.pdf(debugDetail: $debugDetail)';
 }
 
 
@@ -470,16 +477,18 @@ $StorageFullFailureCopyWith<StorageFullFailure> get copyWith => _$StorageFullFai
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StorageFullFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StorageFullFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.storageFull(debugDetail: $debugDetail)';
+    return 'Failure.storageFull(debugDetail: $debugDetail)';
 }
 
 
@@ -538,16 +547,18 @@ $ImportFailureCopyWith<ImportFailure> get copyWith => _$ImportFailureCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ImportFailure&&(identical(other.unsupportedType, unsupportedType) || other.unsupportedType == unsupportedType)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ImportFailure&&(identical(other.unsupportedType, unsupportedType) || other.unsupportedType == unsupportedType)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,unsupportedType,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,unsupportedType,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.import(unsupportedType: $unsupportedType, debugDetail: $debugDetail)';
+    return 'Failure.import(unsupportedType: $unsupportedType, debugDetail: $debugDetail)';
 }
 
 
@@ -608,16 +619,18 @@ $ExportFailureCopyWith<ExportFailure> get copyWith => _$ExportFailureCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ExportFailure&&(identical(other.noReceivingApp, noReceivingApp) || other.noReceivingApp == noReceivingApp)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ExportFailure&&(identical(other.noReceivingApp, noReceivingApp) || other.noReceivingApp == noReceivingApp)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,noReceivingApp,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,noReceivingApp,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.export(noReceivingApp: $noReceivingApp, debugDetail: $debugDetail)';
+    return 'Failure.export(noReceivingApp: $noReceivingApp, debugDetail: $debugDetail)';
 }
 
 
@@ -679,16 +692,18 @@ $AuthFailureCopyWith<AuthFailure> get copyWith => _$AuthFailureCopyWithImpl<Auth
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthFailure&&(identical(other.rejected, rejected) || other.rejected == rejected)&&(identical(other.notEnrolled, notEnrolled) || other.notEnrolled == notEnrolled)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is AuthFailure&&(identical(other.rejected, rejected) || other.rejected == rejected)&&(identical(other.notEnrolled, notEnrolled) || other.notEnrolled == notEnrolled)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,rejected,notEnrolled,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,rejected,notEnrolled,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.auth(rejected: $rejected, notEnrolled: $notEnrolled, debugDetail: $debugDetail)';
+    return 'Failure.auth(rejected: $rejected, notEnrolled: $notEnrolled, debugDetail: $debugDetail)';
 }
 
 
@@ -748,16 +763,18 @@ $ValidationFailureCopyWith<ValidationFailure> get copyWith => _$ValidationFailur
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ValidationFailure&&(identical(other.issue, issue) || other.issue == issue)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is ValidationFailure&&(identical(other.issue, issue) || other.issue == issue)&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,issue,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,issue,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.validation(issue: $issue, debugDetail: $debugDetail)';
+    return 'Failure.validation(issue: $issue, debugDetail: $debugDetail)';
 }
 
 
@@ -815,16 +832,18 @@ $NotFoundFailureCopyWith<NotFoundFailure> get copyWith => _$NotFoundFailureCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is NotFoundFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is NotFoundFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.notFound(debugDetail: $debugDetail)';
+    return 'Failure.notFound(debugDetail: $debugDetail)';
 }
 
 
@@ -881,16 +900,18 @@ $CorruptFileFailureCopyWith<CorruptFileFailure> get copyWith => _$CorruptFileFai
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CorruptFileFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CorruptFileFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.corruptFile(debugDetail: $debugDetail)';
+    return 'Failure.corruptFile(debugDetail: $debugDetail)';
 }
 
 
@@ -947,16 +968,18 @@ $SecureStorageFailureCopyWith<SecureStorageFailure> get copyWith => _$SecureStor
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SecureStorageFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is SecureStorageFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.secureStorageUnavailable(debugDetail: $debugDetail)';
+    return 'Failure.secureStorageUnavailable(debugDetail: $debugDetail)';
 }
 
 
@@ -1013,16 +1036,18 @@ $StorageFailureCopyWith<StorageFailure> get copyWith => _$StorageFailureCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is StorageFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is StorageFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.storage(debugDetail: $debugDetail)';
+    return 'Failure.storage(debugDetail: $debugDetail)';
 }
 
 
@@ -1074,7 +1099,7 @@ class CancelledFailure extends Failure {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is CancelledFailure);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is CancelledFailure);
 }
 
 
@@ -1083,7 +1108,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'Failure.cancelled()';
+    return 'Failure.cancelled()';
 }
 
 
@@ -1111,16 +1136,18 @@ $UnexpectedFailureCopyWith<UnexpectedFailure> get copyWith => _$UnexpectedFailur
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is UnexpectedFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is UnexpectedFailure&&(identical(other.debugDetail, debugDetail) || other.debugDetail == debugDetail));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,debugDetail);
+int get hashCode {
+    return Object.hash(runtimeType,debugDetail);
+}
 
 @override
 String toString() {
-  return 'Failure.unexpected(debugDetail: $debugDetail)';
+    return 'Failure.unexpected(debugDetail: $debugDetail)';
 }
 
 

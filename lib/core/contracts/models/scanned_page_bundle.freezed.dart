@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'scanned_page_bundle.dart';
@@ -9,6 +9,7 @@ part of 'scanned_page_bundle.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 
@@ -31,16 +32,21 @@ $ScannedPageBundleCopyWith<ScannedPageBundle> get copyWith => _$ScannedPageBundl
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScannedPageBundle&&const DeepCollectionEquality().equals(other.pages, pages)&&(identical(other.source, source) || other.source == source)&&(identical(other.suggestedTitle, suggestedTitle) || other.suggestedTitle == suggestedTitle));
+  final _this = this as ScannedPageBundle;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ScannedPageBundle&&const DeepCollectionEquality().equals(other.pages, _this.pages)&&(identical(other.source, _this.source) || other.source == _this.source)&&(identical(other.suggestedTitle, _this.suggestedTitle) || other.suggestedTitle == _this.suggestedTitle));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(pages),source,suggestedTitle);
+int get hashCode {
+  final _this = this as ScannedPageBundle;
+  return Object.hash(runtimeType,const DeepCollectionEquality().hash(_this.pages),_this.source,_this.suggestedTitle);
+}
 
 @override
 String toString() {
-  return 'ScannedPageBundle(pages: $pages, source: $source, suggestedTitle: $suggestedTitle)';
+  final _this = this as ScannedPageBundle;
+  return 'ScannedPageBundle(pages: ${_this.pages}, source: ${_this.source}, suggestedTitle: ${_this.suggestedTitle})';
 }
 
 
@@ -69,7 +75,7 @@ class _$ScannedPageBundleCopyWithImpl<$Res>
 /// Create a copy of ScannedPageBundle
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? pages = null,Object? source = null,Object? suggestedTitle = freezed,}) {
-  return _then(_self.copyWith(
+  return _then(ScannedPageBundle(
 pages: null == pages ? _self.pages : pages // ignore: cast_nullable_to_non_nullable
 as List<PageRef>,source: null == source ? _self.source : source // ignore: cast_nullable_to_non_nullable
 as PageSource,suggestedTitle: freezed == suggestedTitle ? _self.suggestedTitle : suggestedTitle // ignore: cast_nullable_to_non_nullable
@@ -214,7 +220,7 @@ return $default(_that.pages,_that.source,_that.suggestedTitle);case _:
 @JsonSerializable()
 
 class _ScannedPageBundle extends ScannedPageBundle {
-  const _ScannedPageBundle({required final  List<PageRef> pages, required this.source, this.suggestedTitle}): _pages = pages,super._();
+  const _ScannedPageBundle({required  List<PageRef> pages, required this.source, this.suggestedTitle}): _pages = pages,super._();
   factory _ScannedPageBundle.fromJson(Map<String, dynamic> json) => _$ScannedPageBundleFromJson(json);
 
 /// Pages in the order they will appear in the finished document.
@@ -244,16 +250,18 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _ScannedPageBundle&&const DeepCollectionEquality().equals(other._pages, _pages)&&(identical(other.source, source) || other.source == source)&&(identical(other.suggestedTitle, suggestedTitle) || other.suggestedTitle == suggestedTitle));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _ScannedPageBundle&&const DeepCollectionEquality().equals(other.pages, _pages)&&(identical(other.source, source) || other.source == source)&&(identical(other.suggestedTitle, suggestedTitle) || other.suggestedTitle == suggestedTitle));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_pages),source,suggestedTitle);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_pages),source,suggestedTitle);
+}
 
 @override
 String toString() {
-  return 'ScannedPageBundle(pages: $pages, source: $source, suggestedTitle: $suggestedTitle)';
+    return 'ScannedPageBundle(pages: $pages, source: $source, suggestedTitle: $suggestedTitle)';
 }
 
 

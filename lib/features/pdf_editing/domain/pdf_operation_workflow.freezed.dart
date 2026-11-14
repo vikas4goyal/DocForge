@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // coverage:ignore-file
-// ignore_for_file: type=lint
+// ignore_for_file: type=lint, type=warning, deprecated_member_use, deprecated_member_use_from_same_package
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
 part of 'pdf_operation_workflow.dart';
@@ -9,6 +9,7 @@ part of 'pdf_operation_workflow.dart';
 // FreezedGenerator
 // **************************************************************************
 
+// GENERATED CODE - DO NOT MODIFY BY HAND
 // dart format off
 T _$identity<T>(T value) => value;
 /// @nodoc
@@ -20,7 +21,7 @@ mixin _$PdfOperationDraft {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfOperationDraft);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfOperationDraft);
 }
 
 
@@ -29,7 +30,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'PdfOperationDraft()';
+    return 'PdfOperationDraft()';
 }
 
 
@@ -216,16 +217,18 @@ $PdfSplitDraftCopyWith<PdfSplitDraft> get copyWith => _$PdfSplitDraftCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfSplitDraft&&(identical(other.boundary, boundary) || other.boundary == boundary)&&(identical(other.firstTitle, firstTitle) || other.firstTitle == firstTitle)&&(identical(other.secondTitle, secondTitle) || other.secondTitle == secondTitle));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfSplitDraft&&(identical(other.boundary, boundary) || other.boundary == boundary)&&(identical(other.firstTitle, firstTitle) || other.firstTitle == firstTitle)&&(identical(other.secondTitle, secondTitle) || other.secondTitle == secondTitle));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,boundary,firstTitle,secondTitle);
+int get hashCode {
+    return Object.hash(runtimeType,boundary,firstTitle,secondTitle);
+}
 
 @override
 String toString() {
-  return 'PdfOperationDraft.split(boundary: $boundary, firstTitle: $firstTitle, secondTitle: $secondTitle)';
+    return 'PdfOperationDraft.split(boundary: $boundary, firstTitle: $firstTitle, secondTitle: $secondTitle)';
 }
 
 
@@ -269,7 +272,7 @@ as String,
 
 
 class PdfMergeDraft implements PdfOperationDraft {
-  const PdfMergeDraft({required final  List<DocumentId> documentIds, required this.outputTitle}): _documentIds = documentIds;
+  const PdfMergeDraft({required  List<DocumentId> documentIds, required this.outputTitle}): _documentIds = documentIds;
   
 
  final  List<DocumentId> _documentIds;
@@ -291,16 +294,18 @@ $PdfMergeDraftCopyWith<PdfMergeDraft> get copyWith => _$PdfMergeDraftCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfMergeDraft&&const DeepCollectionEquality().equals(other._documentIds, _documentIds)&&(identical(other.outputTitle, outputTitle) || other.outputTitle == outputTitle));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfMergeDraft&&const DeepCollectionEquality().equals(other.documentIds, _documentIds)&&(identical(other.outputTitle, outputTitle) || other.outputTitle == outputTitle));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_documentIds),outputTitle);
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_documentIds),outputTitle);
+}
 
 @override
 String toString() {
-  return 'PdfOperationDraft.merge(documentIds: $documentIds, outputTitle: $outputTitle)';
+    return 'PdfOperationDraft.merge(documentIds: $documentIds, outputTitle: $outputTitle)';
 }
 
 
@@ -358,16 +363,18 @@ $PdfCompressDraftCopyWith<PdfCompressDraft> get copyWith => _$PdfCompressDraftCo
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfCompressDraft&&(identical(other.sourceEffect, sourceEffect) || other.sourceEffect == sourceEffect));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfCompressDraft&&(identical(other.sourceEffect, sourceEffect) || other.sourceEffect == sourceEffect));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,sourceEffect);
+int get hashCode {
+    return Object.hash(runtimeType,sourceEffect);
+}
 
 @override
 String toString() {
-  return 'PdfOperationDraft.compress(sourceEffect: $sourceEffect)';
+    return 'PdfOperationDraft.compress(sourceEffect: $sourceEffect)';
 }
 
 
@@ -424,16 +431,18 @@ $PdfWatermarkDraftCopyWith<PdfWatermarkDraft> get copyWith => _$PdfWatermarkDraf
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfWatermarkDraft&&(identical(other.text, text) || other.text == text));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfWatermarkDraft&&(identical(other.text, text) || other.text == text));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,text);
+int get hashCode {
+    return Object.hash(runtimeType,text);
+}
 
 @override
 String toString() {
-  return 'PdfOperationDraft.watermark(text: $text)';
+    return 'PdfOperationDraft.watermark(text: $text)';
 }
 
 
@@ -491,16 +500,18 @@ $PdfProtectionDraftCopyWith<PdfProtectionDraft> get copyWith => _$PdfProtectionD
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfProtectionDraft&&(identical(other.remove, remove) || other.remove == remove)&&(identical(other.sourceEffect, sourceEffect) || other.sourceEffect == sourceEffect));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfProtectionDraft&&(identical(other.remove, remove) || other.remove == remove)&&(identical(other.sourceEffect, sourceEffect) || other.sourceEffect == sourceEffect));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,remove,sourceEffect);
+int get hashCode {
+    return Object.hash(runtimeType,remove,sourceEffect);
+}
 
 @override
 String toString() {
-  return 'PdfOperationDraft.protection(remove: $remove, sourceEffect: $sourceEffect)';
+    return 'PdfOperationDraft.protection(remove: $remove, sourceEffect: $sourceEffect)';
 }
 
 
@@ -543,7 +554,7 @@ as PdfSourceEffect,
 
 
 class PdfPagesDraft implements PdfOperationDraft {
-  const PdfPagesDraft({required this.operation, required final  List<int> pageIndices, required this.sourceEffect}): _pageIndices = pageIndices;
+  const PdfPagesDraft({required this.operation, required  List<int> pageIndices, required this.sourceEffect}): _pageIndices = pageIndices;
   
 
  final  PdfEditOperation operation;
@@ -566,16 +577,18 @@ $PdfPagesDraftCopyWith<PdfPagesDraft> get copyWith => _$PdfPagesDraftCopyWithImp
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfPagesDraft&&(identical(other.operation, operation) || other.operation == operation)&&const DeepCollectionEquality().equals(other._pageIndices, _pageIndices)&&(identical(other.sourceEffect, sourceEffect) || other.sourceEffect == sourceEffect));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfPagesDraft&&(identical(other.operation, operation) || other.operation == operation)&&const DeepCollectionEquality().equals(other.pageIndices, _pageIndices)&&(identical(other.sourceEffect, sourceEffect) || other.sourceEffect == sourceEffect));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,operation,const DeepCollectionEquality().hash(_pageIndices),sourceEffect);
+int get hashCode {
+    return Object.hash(runtimeType,operation,const DeepCollectionEquality().hash(_pageIndices),sourceEffect);
+}
 
 @override
 String toString() {
-  return 'PdfOperationDraft.pages(operation: $operation, pageIndices: $pageIndices, sourceEffect: $sourceEffect)';
+    return 'PdfOperationDraft.pages(operation: $operation, pageIndices: $pageIndices, sourceEffect: $sourceEffect)';
 }
 
 
@@ -629,16 +642,21 @@ $PdfOperationReviewCopyWith<PdfOperationReview> get copyWith => _$PdfOperationRe
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfOperationReview&&(identical(other.draft, draft) || other.draft == draft)&&(identical(other.title, title) || other.title == title)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.confirmLabel, confirmLabel) || other.confirmLabel == confirmLabel));
+  final _this = this as PdfOperationReview;
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfOperationReview&&(identical(other.draft, _this.draft) || other.draft == _this.draft)&&(identical(other.title, _this.title) || other.title == _this.title)&&(identical(other.summary, _this.summary) || other.summary == _this.summary)&&(identical(other.confirmLabel, _this.confirmLabel) || other.confirmLabel == _this.confirmLabel));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,draft,title,summary,confirmLabel);
+int get hashCode {
+  final _this = this as PdfOperationReview;
+  return Object.hash(runtimeType,_this.draft,_this.title,_this.summary,_this.confirmLabel);
+}
 
 @override
 String toString() {
-  return 'PdfOperationReview(draft: $draft, title: $title, summary: $summary, confirmLabel: $confirmLabel)';
+  final _this = this as PdfOperationReview;
+  return 'PdfOperationReview(draft: ${_this.draft}, title: ${_this.title}, summary: ${_this.summary}, confirmLabel: ${_this.confirmLabel})';
 }
 
 
@@ -667,7 +685,7 @@ class _$PdfOperationReviewCopyWithImpl<$Res>
 /// Create a copy of PdfOperationReview
 /// with the given fields replaced by the non-null parameter values.
 @pragma('vm:prefer-inline') @override $Res call({Object? draft = null,Object? title = null,Object? summary = null,Object? confirmLabel = null,}) {
-  return _then(_self.copyWith(
+  return _then(PdfOperationReview(
 draft: null == draft ? _self.draft : draft // ignore: cast_nullable_to_non_nullable
 as PdfOperationDraft,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,summary: null == summary ? _self.summary : summary // ignore: cast_nullable_to_non_nullable
@@ -834,16 +852,18 @@ _$PdfOperationReviewCopyWith<_PdfOperationReview> get copyWith => __$PdfOperatio
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PdfOperationReview&&(identical(other.draft, draft) || other.draft == draft)&&(identical(other.title, title) || other.title == title)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.confirmLabel, confirmLabel) || other.confirmLabel == confirmLabel));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PdfOperationReview&&(identical(other.draft, draft) || other.draft == draft)&&(identical(other.title, title) || other.title == title)&&(identical(other.summary, summary) || other.summary == summary)&&(identical(other.confirmLabel, confirmLabel) || other.confirmLabel == confirmLabel));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,draft,title,summary,confirmLabel);
+int get hashCode {
+    return Object.hash(runtimeType,draft,title,summary,confirmLabel);
+}
 
 @override
 String toString() {
-  return 'PdfOperationReview(draft: $draft, title: $title, summary: $summary, confirmLabel: $confirmLabel)';
+    return 'PdfOperationReview(draft: $draft, title: $title, summary: $summary, confirmLabel: $confirmLabel)';
 }
 
 
@@ -902,7 +922,7 @@ mixin _$PdfOperationResult {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfOperationResult);
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfOperationResult);
 }
 
 
@@ -911,7 +931,7 @@ int get hashCode => runtimeType.hashCode;
 
 @override
 String toString() {
-  return 'PdfOperationResult()';
+    return 'PdfOperationResult()';
 }
 
 
@@ -1073,16 +1093,18 @@ $PdfInPlaceOperationResultCopyWith<PdfInPlaceOperationResult> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfInPlaceOperationResult&&(identical(other.document, document) || other.document == document)&&(identical(other.message, message) || other.message == message));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfInPlaceOperationResult&&(identical(other.document, document) || other.document == document)&&(identical(other.message, message) || other.message == message));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,document,message);
+int get hashCode {
+    return Object.hash(runtimeType,document,message);
+}
 
 @override
 String toString() {
-  return 'PdfOperationResult.inPlace(document: $document, message: $message)';
+    return 'PdfOperationResult.inPlace(document: $document, message: $message)';
 }
 
 
@@ -1134,7 +1156,7 @@ $DocumentCopyWith<$Res> get document {
 
 
 class PdfDerivedOperationResult implements PdfOperationResult {
-  const PdfDerivedOperationResult({required final  List<Document> documents}): _documents = documents;
+  const PdfDerivedOperationResult({required  List<Document> documents}): _documents = documents;
   
 
  final  List<Document> _documents;
@@ -1155,16 +1177,18 @@ $PdfDerivedOperationResultCopyWith<PdfDerivedOperationResult> get copyWith => _$
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfDerivedOperationResult&&const DeepCollectionEquality().equals(other._documents, _documents));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is PdfDerivedOperationResult&&const DeepCollectionEquality().equals(other.documents, _documents));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_documents));
+int get hashCode {
+    return Object.hash(runtimeType,const DeepCollectionEquality().hash(_documents));
+}
 
 @override
 String toString() {
-  return 'PdfOperationResult.derived(documents: $documents)';
+    return 'PdfOperationResult.derived(documents: $documents)';
 }
 
 
