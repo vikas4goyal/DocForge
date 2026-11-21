@@ -179,6 +179,10 @@ platform :ios do
       # Internal testers only: external distribution requires Beta App Review
       # (and a Beta App Description in App Store Connect).
       distribute_external: false,
+      # pilot defaults submit_beta_review to true and submits for Beta App Review
+      # whenever `groups` is set, even with distribute_external: false. Internal
+      # groups need no review, so turn it off explicitly.
+      submit_beta_review: false,
       groups: ["QA"],
       changelog: "improvement and bug fixes"
     )
