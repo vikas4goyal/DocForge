@@ -17,21 +17,29 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <!-- An SF Symbol rather than an image asset: it is vector, ships
-                                 with the system, and renders correctly at every scale and in
-                                 both appearances without us maintaining 1x/2x/3x PNGs. -->
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="YRO-k0-Ey4">
-                                <rect key="frame" x="164.5" y="371.5" width="64" height="56"/>
+                            <!-- Full-bleed brand gradient: storyboards cannot draw gradients,
+                                 so a small stretched bitmap stands in. -->
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" image="LaunchGradient" id="Grd-Bg-001">
+                                <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                            </imageView>
+                            <!-- The app-icon artwork without its tile, so launch reads as the
+                                 icon opening up to fill the screen. -->
+                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" translatesAutoresizingMaskIntoConstraints="NO" image="LaunchLogo" id="YRO-k0-Ey4">
+                                <rect key="frame" x="106.5" y="300" width="180" height="180"/>
                                 <constraints>
-                                    <constraint firstAttribute="width" constant="64" id="Wid-th-001"/>
-                                    <constraint firstAttribute="height" constant="56" id="Hei-gh-001"/>
+                                    <constraint firstAttribute="width" constant="180" id="Wid-th-001"/>
+                                    <constraint firstAttribute="height" constant="180" id="Hei-gh-001"/>
                                 </constraints>
-                                <color key="tintColor" name="LaunchTint"/>
-                                <imageReference key="image" image="doc.text.fill" catalog="system" symbolScale="large"/>
                             </imageView>
                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="DocScanly" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Lbl-Do-cFg">
-                                <rect key="frame" x="146" y="443.5" width="101" height="34"/>
-                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="28"/>
+                                <rect key="frame" x="120" y="500" width="153" height="41"/>
+                                <fontDescription key="fontDescription" type="system" weight="bold" pointSize="34"/>
+                                <color key="textColor" name="LaunchTint"/>
+                                <nil key="highlightedColor"/>
+                            </label>
+                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Scan · Enhance · Share" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Tag-Li-001">
+                                <rect key="frame" x="110" y="547" width="173" height="20"/>
+                                <fontDescription key="fontDescription" type="system" weight="medium" pointSize="16"/>
                                 <color key="textColor" name="LaunchTint"/>
                                 <nil key="highlightedColor"/>
                             </label>
@@ -39,12 +47,18 @@
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" name="LaunchBackground"/>
                         <constraints>
+                            <constraint firstItem="Grd-Bg-001" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="Grd-tp-001"/>
+                            <constraint firstItem="Grd-Bg-001" firstAttribute="bottom" secondItem="Ze5-6b-2t3" secondAttribute="bottom" id="Grd-bt-001"/>
+                            <constraint firstItem="Grd-Bg-001" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="Grd-ld-001"/>
+                            <constraint firstItem="Grd-Bg-001" firstAttribute="trailing" secondItem="Ze5-6b-2t3" secondAttribute="trailing" id="Grd-tr-001"/>
                             <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="1a2-6s-vTC"/>
-                            <!-- Sits slightly above centre so the wordmark below it reads as
+                            <!-- Sits above centre so the logo and wordmark together read as
                                  the optical middle of the screen rather than low. -->
-                            <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-28" id="4X2-HB-R7a"/>
+                            <constraint firstItem="YRO-k0-Ey4" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" constant="-36" id="4X2-HB-R7a"/>
                             <constraint firstItem="Lbl-Do-cFg" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Lbl-cX-001"/>
-                            <constraint firstItem="Lbl-Do-cFg" firstAttribute="top" secondItem="YRO-k0-Ey4" secondAttribute="bottom" constant="16" id="Lbl-tp-001"/>
+                            <constraint firstItem="Lbl-Do-cFg" firstAttribute="top" secondItem="YRO-k0-Ey4" secondAttribute="bottom" constant="20" id="Lbl-tp-001"/>
+                            <constraint firstItem="Tag-Li-001" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="Tag-cX-001"/>
+                            <constraint firstItem="Tag-Li-001" firstAttribute="top" secondItem="Lbl-Do-cFg" secondAttribute="bottom" constant="6" id="Tag-tp-001"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -54,12 +68,13 @@
         </scene>
     </scenes>
     <resources>
-        <image name="doc.text.fill" catalog="system" width="115" height="128"/>
+        <image name="LaunchGradient" width="390" height="844"/>
+        <image name="LaunchLogo" width="180" height="180"/>
         <namedColor name="LaunchBackground">
-            <color red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.2627" green="0.2196" blue="0.7922" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
         <namedColor name="LaunchTint">
-            <color red="0.24705882352941178" green="0.31764705882352939" blue="0.70980392156862748" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
     </resources>
 </document>

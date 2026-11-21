@@ -1,12 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- Launch splash before Android 12: the brand gradient with the icon artwork
+     centred. Android 12+ draws its own splash from values-v31/styles.xml. -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <item>
+        <shape android:shape="rectangle">
+            <!-- 315 degrees (angles must be multiples of 45) runs top-left to bottom-right, matching the icon. -->
+            <gradient
+                android:angle="315"
+                android:startColor="#6366F1"
+                android:centerColor="#4338CA"
+                android:endColor="#2E1065"
+                android:type="linear" />
+        </shape>
+    </item>
+    <item android:gravity="center">
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:src="@drawable/launch_logo" />
+    </item>
 </layer-list>
